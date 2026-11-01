@@ -1,0 +1,149 @@
+// PreuReal.cat — Esquema de base de datos
+// Datos reales: municipios (Idescat/Gencat), lloguer fiances Incasòl (Gencat),
+// àrees tensades (Resolucions TER/800/2024 i TER/2408/2024), edificis ICGC (RTT).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  passwordHash String
+  name         String?
+  locale       String        @default("ca")
+  role         String        @default("USER") // USER | ADMIN
+  plan         String        @default("FREE") // FREE | PREMIUM | PRO
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  subscriptions Subscription[]
+  searchLogs   SearchLog[]
+  priceReports PriceReport[]
+  passwordTokens PasswordToken[]
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id])
+  stripeCustomerId     String?
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  plan                 String   // PREMIUM | PRO
+  status               String   // active | trialing | past_due | canceled | incomplete
+  currentPeriodEnd     DateTime?
+  demo                 Boolean  @default(false) // suscripción creada en modo prueba (sin Stripe)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model PasswordToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Municipios de Cataluña (código INE de 5 dígitos) con datos reales de lloguer
+model Municipality {
+  code            String  @id // "080193" (6 dígitos formato Gencat/ICGC) 
+  ineCode         String? // "08019" (5 dígitos)
+  name            String
+  comarca         String?
+  province        String?
+  lat             Float
+  lng             Float
+  rentLatest      Float?  // €/mes — fiances Incasòl, último período disponible
+  rentPeriod      String? // "2025" o "2026 I trim."
+  rentPrevYear    Float?  // año anterior para tendencia
+  rentPrevPeriod  String?
+  rentHistory     String? // JSON {"2005": 550.2, ...}
+  contractsLatest Int?    // nº contratos con fianza depositada (muestra)
+  isTense         Boolean @default(false)
+  tenseList       String? // "A" (TER/800/2024) | "B" (TER/2408/2024)
+  boundary        String? // GeoJSON del límite municipal (cache ICGC)
+  boundaryFetchedAt DateTime?
+  updatedAt       DateTime @updatedAt
+}
+
+// Edificios reales (ICGC RTT construccions) cacheados por la app
+model Building {
+  id               String   @id @default(cuid())
+  externalId       String   @unique // id RTT o refcat catastral
+  source           String   @default("ICGC_RTT")
+  municipalityCode String?
+  tipus            String?  // edi (edifici) | ill (illa) | ...
+  estat            String?
+  altura           Int?
+  nom              String?
+  polygonJson      String   // [[ [lng,lat], ... ]]
+  centroidLat      Float
+  centroidLng      Float
+  refcat           String?  // referencia catastral (si se conoce)
+  yearBuilt        Int?     // año de construcción (Catastro, cuando esté disponible)
+  yearSource       String?  // "CADASTRE_DNP" | "IMPORT"
+  cachedAt         DateTime @default(now())
+
+  @@index([municipalityCode])
+  @@index([centroidLat, centroidLng])
+}
+
+// Registro de consultas (cuota + analítica)
+model SearchLog {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  buildingId       String?
+  municipalityCode String?
+  ipHash           String?
+  kind             String   @default("DETAIL") // DETAIL | TEASER
+  createdAt        DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// Eventos de conversión (embudo de ventas)
+model Event {
+  id        String   @id @default(cuid())
+  type      String // SIGNUP | LOGIN | MAP_QUERY | PAYWALL_VIEW | CHECKOUT_START | CHECKOUT_DEMO | SUBSCRIBE_SUCCESS | PRICE_REPORT | EXPORT | PASSWORD_RESET
+  userId    String?
+  meta      String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+}
+
+// Informes de precio enviados por usuarios (crowdsourcing para fase 2)
+model PriceReport {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  municipalityCode String?
+  buildingId       String?
+  offerEurMonth    Float?
+  offerEurM2       Float?
+  surfaceM2        Float?
+  rooms            Int?
+  note             String?
+  createdAt        DateTime @default(now())
+}
+
+// Correos automáticos (log del modo sandbox o resultado de Resend)
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  provider  String   @default("sandbox") // sandbox | resend
+  status    String   @default("logged") // logged | sent | error
+  error     String?
+  createdAt DateTime @default(now())
+}
