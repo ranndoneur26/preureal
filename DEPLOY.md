@@ -173,7 +173,7 @@ git checkout v1.0.0 && docker compose build && docker compose up -d
 
 ---
 
-## 8. Activar pagos reales y email (CUANDO lo autorices)
+## 8. Activar pagos reales, email y Google OAuth (CUANDO lo autorices)
 
 **Stripe** (no se toca hasta tu OK):
 1. Cuenta Stripe + 2 precios: Premium 7,99 €/mes y Pro 19,99 €/mes.
@@ -186,6 +186,17 @@ git checkout v1.0.0 && docker compose build && docker compose up -d
 1. Alta en Resend, verifica `preureal.cat` (registro DNS SPF/DKIM que te dan).
 2. `.env`: `RESEND_API_KEY=re_…`, `MAIL_FROM="PreuReal.cat <hola@preureal.cat>"` → `docker compose up -d`.
    Sin clave, la app sigue funcionando con el proveedor `sandbox` (solo log en `EmailLog`).
+
+**Google OAuth — botón "Continua amb Google"** (opcional; sin credenciales el botón se oculta solo):
+1. Ve a [Google Cloud Console](https://console.cloud.google.com) → crea un proyecto (ej. "PreuReal.cat").
+2. **APIs y servicios → Pantalla de consentimiento OAuth**: tipo *Externo*, nombre de la app, email de soporte, dominio `preureal.cat`. Alcances sugeridos: `openid`, `email`, `profile` (no sensibles, no requieren verificación de Google).
+3. **Credenciales → Crear credenciales → ID de cliente OAuth** → tipo *Aplicación web*:
+   - Orígenes JavaScript autorizados: `https://preureal.cat` (y `http://localhost:3000` para desarrollo)
+   - URI de redirección autorizadas: `https://preureal.cat/api/auth/google/callback` (y `http://localhost:3000/api/auth/google/callback`)
+4. `.env`: `GOOGLE_CLIENT_ID=…apps.googleusercontent.com`, `GOOGLE_CLIENT_SECRET=GOCSPX-…` → `docker compose up -d`.
+5. Verificación: el botón aparece en registro/login y el flujo completo crea la sesión (usuario nuevo con contraseña aleatoria inutilizable; si el email ya existía, entra en esa cuenta — solo si Google lo tiene verificado).
+
+> Seguridad ya implementada en el código: estado CSRF (cookie httpOnly de un solo uso), `email_verified` obligatorio, correu normalizado (puntos/+alias de Gmail) y rate limit en ambos endpoints.
 
 ---
 

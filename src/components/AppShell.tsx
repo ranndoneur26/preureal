@@ -82,8 +82,15 @@ export default function AppShell() {
   );
 
   const view = route.split("?")[0];
-  const token = typeof window !== "undefined"
-    ? new URLSearchParams(window.location.hash.split("?")[1] || "").get("token")
+  const hashQuery = typeof window !== "undefined"
+    ? window.location.hash.split("?")[1] || ""
+    : "";
+  const token = hashQuery
+    ? new URLSearchParams(hashQuery).get("token")
+    : null;
+  // errores del callback de Google: /#/entrada?error=GOOGLE_XXX
+  const oauthError = hashQuery
+    ? new URLSearchParams(hashQuery).get("error")
     : null;
 
   return (
@@ -95,7 +102,10 @@ export default function AppShell() {
           {view === "/mapa" && <MapView />}
           {view === "/preus" && <PricingView />}
           {(view === "/registre" || view === "/entrada" || view === "/oblidat") && (
-            <AuthView mode={view === "/registre" ? "register" : view === "/entrada" ? "login" : "forgot"} />
+            <AuthView
+              mode={view === "/registre" ? "register" : view === "/entrada" ? "login" : "forgot"}
+              oauthError={view === "/entrada" ? oauthError || undefined : undefined}
+            />
           )}
           {view === "/restablir" && <AuthView mode="reset" token={token || undefined} />}
           {view === "/panell" && <PanelView />}
