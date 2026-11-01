@@ -54,5 +54,6 @@ test
 prompt
 
 server.log
-# Skills directory
-/skills/.localpg/
+# Carpeta skills del sandbox + PostgreSQL local incrustat (binaris/dades)
+/skills/
+.localpg/

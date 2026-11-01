@@ -37,10 +37,11 @@ VERCEL_FILES = [
     "data/municipalities.json",
     # scripts d'operació referenciats per VERCEL.md / README.md
     "scripts/seed.ts", "scripts/update_all.sh", "scripts/prepare_data.py",
-    "scripts/gen_api_dispatcher.py",
+    "scripts/gen_api_dispatcher.py", "scripts/check_repo.mjs",
 ]
 VERCEL_MUST_HAVE = VERCEL_FILES + [
     "src/instrumentation.ts", "src/lib/db.ts", "src/app/page.tsx",
+    "src/app/globals.css",
     "src/app/api/[[...path]]/route.ts",
     "src/app/api/_impl/auth/login/route.ts",
     "src/app/api/_impl/stripe/checkout/route.ts",

@@ -46,7 +46,10 @@ git init && git add -A && git commit -m "PreuReal.cat"
 El build no necessita cap configuració addicional:
 
 - `postinstall` → `prisma generate` (el client Prisma es genera sempre)
-- `build` → `prisma generate && next build`
+- `build` → `node scripts/check_repo.mjs && prisma generate && next build`
+  — el guardia `check_repo.mjs` detecta repos **mezclados** (p. ex. una
+  carpeta `app/` antiga a l'arrel al costat de `src/app/`, que fa fallar
+  Turbopack amb `Can't resolve './globals.css'`) i explica com arreglar-ho
 - Vercel detecta `bun.lock` i instal·la amb Bun (si preferiu npm, afegiu
   un `package-lock.json` propi)
 - API consolidada en **3 Serverless Functions** (límit del pla Hobby:
