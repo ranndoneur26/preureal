@@ -13,12 +13,12 @@ if (existsSync("app")) {
 ✗ Carpeta "app/" en la raíz del proyecto — repositorio mezclado o antiguo.
   Next.js compilaría "app/" (raíz) y fallaría con: Can't resolve './globals.css'
 
-  Solución: el repo debe contener SOLO la estructura de preureal-vercel-v4.zip
+  Solución: el repo debe contener SOLO la estructura de preureal-vercel-v5.zip
   (src/, prisma/, public/, package.json…, sin ninguna carpeta app/ raíz).
   Vuelve a subir el contenido íntegro del ZIP con un historial nuevo:
 
-    unzip -o preureal-vercel-v4.zip -d preureal && cd preureal
-    git init && git add -A && git commit -m "PreuReal.cat v4"
+    unzip -o preureal-vercel-v5.zip -d preureal && cd preureal
+    git init && git add -A && git commit -m "PreuReal.cat v5"
     git branch -M main
     git remote add origin <URL-de-tu-repo>   # si aún no existe
     git push -uf origin main

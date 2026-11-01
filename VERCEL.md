@@ -26,19 +26,19 @@ DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
 # → credencials admin: admin@preureal.cat / $ADMIN_PASSWORD
 ```
 
-> Alternativa: el paquet complet (`preureal-v3.zip`) inclou `db/custom.db`
-> (l'arxiu SQLite original amb usuaris, informes i historial). Per portar
-> TOTES les dades: `python3 scripts/migrate_sqlite_to_pg.py` (vegeu DEPLOY.md
+> Alternativa: amb el paquet complet (el genera `python3 scripts/make_zip.py --full`)
+> tens `db/custom.db` (l'arxiu SQLite original amb usuaris, informes i historial).
+> Per portar TOTES les dades: `python3 scripts/migrate_sqlite_to_pg.py` (vegeu DEPLOY.md
 > d'aquell paquet).
 
 ## 3. Puja el codi a Vercel
 
-El paquet `preureal-vercel-v4.zip` conté **només els fitxers necessaris per
+El paquet `preureal-vercel-v5.zip` conté **només els fitxers necessaris per
 al desplegament**: codi font, Prisma, configs, dades de seed i aquesta guia.
 Sense infraestructura local (SQLite, Docker, scripts del sandbox).
 
 ```bash
-unzip preureal-vercel-v4.zip -d preureal && cd preureal
+unzip preureal-vercel-v5.zip -d preureal && cd preureal
 git init && git add -A && git commit -m "PreuReal.cat"
 # GitHub → vercel.com/new → import → framework Next.js (auto)
 ```

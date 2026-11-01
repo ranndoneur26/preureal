@@ -147,7 +147,7 @@ def main():
     mode = "--full" if "--full" in args else "--vercel"
     args = [a for a in args if not a.startswith("--")]
     default_out = os.path.join(
-        ROOT, "download", "preureal-v3.zip" if mode == "--full" else "preureal-vercel-v4.zip")
+        ROOT, "download", "preureal-v3.zip" if mode == "--full" else "preureal-vercel-v5.zip")
     out = args[0] if args else default_out
 
     if mode == "--vercel":
