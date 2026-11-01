@@ -48,6 +48,14 @@ git init && git add -A && git commit -m "PreuReal.cat"
 
 ## 5. Actualitzar dades de lloguer
 
+> **Nota sobre el límit de functions (pla Hobby):** Vercel Hobby permet màxim
+> **12 Serverless Functions** per deployment. Per això l'API està consolidada en
+> **3 functions**: el catch-all `/api/[[...path]]` (enruta les ~43 rutes via
+> `src/app/api/_impl/**`, generat per `scripts/gen_api_dispatcher.py`),
+> `/api/health` i `/api/stripe/webhook`. Si afegeixes una ruta nova:
+> crea `src/app/api/<ruta>/route.ts` dins `_impl/` i re-executa el generador.
+> En passar a Pro pots tornar a rutes individuals si ho prefereixes.
+
 ```bash
 bash scripts/update_all.sh     # local: descarrega Excels oficials + Socrata → upsert a PG
 ```

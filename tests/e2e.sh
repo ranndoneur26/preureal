@@ -6,6 +6,13 @@
 # Execució: bash tests/e2e.sh
 # =============================================================================
 BASE="${BASE:-http://localhost:3202}"
+# Si l'entorn inyecta un DATABASE_URL no-Postgres (p. ex. la plataforma del sandbox
+# posa file:...), els checks que consulten la BD directament amb psycopg2 fallarien.
+# Apuntem al PostgreSQL local del projecte en aquest cas.
+case "${DATABASE_URL:-}" in
+  postgres*) : ;;
+  *) export DATABASE_URL="postgresql://preureal@127.0.0.1:5432/preureal" ;;
+esac
 PASS=0; FAIL=0
 JAR_A=/tmp/e2e_userA.jar; JAR_B=/tmp/e2e_admin.jar; JAR_C=/tmp/e2e_userC.jar
 EMAIL_A="e2e.usuari.a@gmail.com"
