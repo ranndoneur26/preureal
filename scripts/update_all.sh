@@ -93,8 +93,10 @@ bun run scripts/seed.ts
 # --- 4. Verificación --------------------------------------------------------
 echo "» [4/4] Verificando la base de datos..."
 python3 - <<'PY'
-import sqlite3
-db = sqlite3.connect("/home/z/my-project/db/custom.db")
+import os, sqlite3
+# dentro de Docker, docker-compose define PREUREAL_DB=/data/custom.db
+DB = os.environ.get("PREUREAL_DB", "/home/z/my-project/db/custom.db")
+db = sqlite3.connect(DB)
 # purga de filas artificiales del dataset Socrata (999998/999999, lat/lng 0,0)
 db.execute("DELETE FROM Municipality WHERE code LIKE '9999%'")
 db.commit()

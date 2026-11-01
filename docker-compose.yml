@@ -1,0 +1,75 @@
+# ============================================================================
+# PreuReal.cat — orquestación de producción
+#
+#   docker compose build          # construir ambas imágenes (comparte caché)
+#   docker compose up -d          # arrancar (dbinit → app → caddy)
+#   docker compose logs -f app    # ver logs de la app
+#   docker compose ps             # estado
+#
+# Actualizar datos oficiales (Incasòl/DOGC):
+#   docker compose run --rm dbinit bash scripts/update_all.sh
+#
+# Requisito: .env junto a este archivo (copia .env.production.example → .env)
+# ============================================================================
+name: preureal
+
+services:
+  # --- 1. inicialización de la BD (prisma db push + seed idempotente) -------
+  # También se usa como caja de herramientas para actualizar datos oficiales.
+  dbinit:
+    build:
+      context: .
+      target: build
+    image: preureal/tools:latest
+    restart: "no"
+    env_file: .env
+    environment:
+      DATABASE_URL: file:/data/custom.db
+      # ruta que usa update_all.sh para verificar la BD
+      PREUREAL_DB: /data/custom.db
+    volumes:
+      - ./dbdata:/data
+    command: >
+      sh -c "bunx prisma db push --skip-generate
+      && (bun run scripts/seed.ts || echo '⚠ seed falló (¿ICGC no disponible?) —
+      la app arranca igual; reintenta después con update_all.sh')"
+
+  # --- 2. aplicación ---------------------------------------------------------
+  app:
+    build:
+      context: .
+      target: runtime
+    image: preureal/app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # la BD vive SIEMPRE en el volumen, se ignora la ruta del .env
+      DATABASE_URL: file:/data/custom.db
+    volumes:
+      - ./dbdata:/data
+    expose:
+      - "3000"
+    depends_on:
+      dbinit:
+        condition: service_completed_successfully
+
+  # --- 3. reverse proxy con HTTPS automático (Let's Encrypt) -----------------
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    environment:
+      DOMAIN: ${DOMAIN:-preureal.cat}
+    volumes:
+      - ./deploy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # certificados TLS
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:

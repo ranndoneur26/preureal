@@ -1,0 +1,41 @@
+# ============================================================================
+# PreuReal.cat — Caddy de producción (HTTPS automático Let's Encrypt)
+#
+# La variable DOMAIN viene de docker-compose.yml (fichero .env del host).
+# Con DOMAIN=preureal.cat  → preureal.cat + www.preureal.cat con TLS automático.
+#
+# MODO PRUEBA SIN DOMINIO (acceso por IP): comenta el bloque www* y usa:
+#   DOMAIN=:80   → sirve por HTTP en el puerto 80, sin TLS (solo para validar
+#   que todo funciona antes de apuntar el DNS).
+# ============================================================================
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	reverse_proxy app:3000 {
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(self)"
+	}
+
+	log {
+		output file /data/caddy-access.log {
+			roll_size 50 MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
