@@ -1,8 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  /* config options here */
+  // 'standalone' només serveix per autoallotjament (Docker/VPS). A Vercel el
+  // builder fa el seu propi empaquetat i el mode standalone sobta — i el
+  // script build:selfhost copiaria fitxers que no existeixen. VERCEL=1 el
+  // defineix la pròpia plataforma durant el build.
+  output: process.env.VERCEL ? undefined : "standalone",
   typescript: {
     ignoreBuildErrors: true,
   },

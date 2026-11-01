@@ -23,7 +23,9 @@
 # ============================================================================
 set -euo pipefail
 
-ROOT="/home/z/my-project"
+# Carpeta del projecte = pare del directori d'aquest script (portable:
+# funciona al sandbox, a un clon de GitHub o dins del paquet Vercel).
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="/tmp"
 URL_BASE="https://habitatge.gencat.cat/web/.content/home/dades/estadistiques/01_Estadistiques_de_construccio_i_mercat_immobiliari/03_Mercat_de_lloguer/02_Lloguers_per_ambits_geografics"
 UA="Mozilla/5.0 (compatible; PreuReal.cat update/1.0)"
@@ -53,7 +55,12 @@ for cmd in curl python3 bun; do
 done
 python3 -c "import openpyxl" 2>/dev/null || {
   echo "  ✗ Falta openpyxl (pip install openpyxl)"; exit 1; }
-[ -d "$ROOT/db" ] || { echo "  ✗ No existe $ROOT/db"; exit 1; }
+# db/ (SQLite local) només cal a l'entorn sandbox; a PostgreSQL (Neon/Vercel)
+# DATABASE_URL ja defineix la destinació i el directori db/ no existeix.
+case "${DATABASE_URL:-}" in
+  postgres*) ;;
+  *) [ -d "$ROOT/db" ] || { echo "  ✗ No existe $ROOT/db (i DATABASE_URL no és postgres)"; exit 1; } ;;
+esac
 echo "  ✓ curl / python3 / openpyxl / bun OK"
 
 # --- 1. Descarga de los Excels oficiales de Incasòl -------------------------

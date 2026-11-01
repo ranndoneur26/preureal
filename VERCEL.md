@@ -15,23 +15,42 @@ reinicis i cold starts, i usuaris/subscripcions són reals.
 ## 2. Aplica l'esquema i les dades
 
 ```bash
-# des del projecte:
+# 2a. Esquema (17 taules, migració versionada):
 DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
-  bunx prisma migrate deploy          # crea les 17 taules (migració versionada)
+  bunx prisma migrate deploy
 
-# porta les dades reals de l'arxiu SQLite (947 municipis, edificis, usuaris):
+# 2b. Dades reals: 948 municipis amb lloguer Incasòl, edificis ICGC de
+#     l'Eixample (API ICGC) i usuari administrador:
 DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
-  python3 scripts/migrate_sqlite_to_pg.py
-# → verifica integritat taula a taula (recomptes + mostra Barcelona)
+  ADMIN_PASSWORD="una-contrasenya-forta" bun run scripts/seed.ts
+# → credencials admin: admin@preureal.cat / $ADMIN_PASSWORD
 ```
+
+> Alternativa: el paquet complet (`preureal-v3.zip`) inclou `db/custom.db`
+> (l'arxiu SQLite original amb usuaris, informes i historial). Per portar
+> TOTES les dades: `python3 scripts/migrate_sqlite_to_pg.py` (vegeu DEPLOY.md
+> d'aquell paquet).
 
 ## 3. Puja el codi a Vercel
 
+El paquet `preureal-vercel-v4.zip` conté **només els fitxers necessaris per
+al desplegament**: codi font, Prisma, configs, dades de seed i aquesta guia.
+Sense infraestructura local (SQLite, Docker, scripts del sandbox).
+
 ```bash
-unzip preureal-vercel.zip -d preureal && cd preureal
+unzip preureal-vercel-v4.zip -d preureal && cd preureal
 git init && git add -A && git commit -m "PreuReal.cat"
 # GitHub → vercel.com/new → import → framework Next.js (auto)
 ```
+
+El build no necessita cap configuració addicional:
+
+- `postinstall` → `prisma generate` (el client Prisma es genera sempre)
+- `build` → `prisma generate && next build`
+- Vercel detecta `bun.lock` i instal·la amb Bun (si preferiu npm, afegiu
+  un `package-lock.json` propi)
+- API consolidada en **3 Serverless Functions** (límit del pla Hobby:
+  12) — vegeu la nota de la secció 5
 
 ## 4. Variables d'entorn (Vercel → Settings → Environment Variables)
 
