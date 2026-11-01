@@ -83,3 +83,8 @@ E1 fals èxit d'informes · E3 importació descartava preus/mostres · E4 MRR so
 - **C. Documentació**: `AUDIT.md` (auditoria), `VERCEL.md` (desplegament Vercel+Neon), `DEPLOY.md` (VPS/Docker amb postgres), `.env.production.example`, aquest informe.
 - **D. Informe final**: aquest document.
 - **E. Paquet final**: `download/preureal-v2.zip` (projecte complet preparat per a Vercel, sense node_modules/secrets).
+
+## 8. Correccions posteriors (2026-11-02, verificades en executar-se)
+
+1. **Preview del sandbox bloquejat (V8, refinament)**: la capçalera `X-Frame-Options: SAMEORIGIN` afegida a la correcció V8 impedía incrustar l'app a l'iframe del preview (origen diferent). Substituïda per CSP `frame-ancestors` (estàndard actual): `*` en dev/preview i `'self'` en producció, configurable amb `FRAME_ANCESTORS` (documentat a `.env.production.example` i VERCEL.md). Verificat: la capçalera surt a la resposta i el preview carrega.
+2. **Restauració del PostgreSQL local del sandbox**: el reciclatge del sandbox esborra els binaris instal·lats al sistema. Nou entorn **persistent i auto-reparable**: PostgreSQL 17.11 incrustat a `.localpg/` (dins del projecte), gestió amb `scripts/pg_local.sh` (init/start/ensure/stop/status), dimoni `scripts/dev_keepalive.sh` (rearraanca el servidor de dev si el port 3000 queda lliure) i bootstrap automàtic a `src/instrumentation.ts`: en arrencar, si la `DATABASE_URL` heretada és `file:` (la plataforma inyecta SQLite) o el clúster local no respon, arrenca `.localpg` i reescriu la URL — mai s'executa a Vercel ni al build de producció. Dades re-migrades i verificades amb `migrate_sqlite_to_pg.py`: **7.617 files, integritat OK** (947 municipis, 6.567 edificis). Health check: `ok:true, provider: postgresql`.

@@ -11,6 +11,23 @@
 
 ---
 
+## 0. Entorno de desarrollo local (sandbox / portátil del desarrollador)
+
+PostgreSQL incrustado, persistente y sin root, dentro del propio proyecto (sin Docker):
+
+```bash
+bash scripts/pg_local.sh ensure          # arranca el clúster .localpg y crea la BD si falta
+python3 scripts/migrate_sqlite_to_pg.py  # importa + verifica datos (idempotente, 7.617 filas)
+```
+
+- **Binarios**: `.localpg/vendor` (PostgreSQL 17 del paquete npm `@embedded-postgres/linux-x64`; si faltan, `pg_local.sh` los re-descarga solo).
+- **Datos**: `.localpg/data` → sobreviven a reinicios/reciclajes; tras apagar la máquina basta `bash scripts/pg_local.sh start`.
+- **`.env` local**: `DATABASE_URL=postgresql://preureal@127.0.0.1:5432/preureal`
+- **Auto-reparación**: `src/instrumentation.ts` arranca el clúster al arrancar el servidor si la `DATABASE_URL` heredada es `file:` (la plataforma del sandbox inyecta SQLite) o si el clúster local no responde. Nunca se ejecuta en Vercel ni durante `next build`.
+- **Keepalive (solo sandbox)**: `setsid nohup bash scripts/dev_keepalive.sh </dev/null >/dev/null 2>&1 &` mantiene el puerto 3000 arriba rearrancando `next dev` si el entorno lo mata.
+
+---
+
 ## 1. Arquitectura
 
 ```

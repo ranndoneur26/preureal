@@ -31,7 +31,7 @@ H=$(curl -s $BASE/api/health)
 echo "$H" | grep -q '"ok":true' && echo "$H" | grep -q '"provider":"postgresql"' && check "health: BD PostgreSQL operativa" 0 || check "health: BD PostgreSQL operativa" 1
 curl -s $BASE/ | grep -qi "PreuReal" && check "pàgina principal serveix HTML" 0 || check "pàgina principal serveix HTML" 1
 HDRS=$(curl -sI $BASE/)
-echo "$HDRS" | grep -qi "X-Frame-Options" && check "capçaleres de seguretat presents" 0 || check "capçaleres de seguretat presents" 1
+echo "$HDRS" | grep -qi "frame-ancestors" && check "capçaleres de seguretat presents (CSP frame-ancestors)" 0 || check "capçaleres de seguretat presents (CSP frame-ancestors)" 1
 
 # 2. CERCA MUNICIPIS (insensible a majúscules — PG)
 echo "» Cerques"

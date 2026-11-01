@@ -44,6 +44,7 @@ git init && git add -A && git commit -m "PreuReal.cat"
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth (redirect URI: `https://DOMINI/api/auth/google/callback`) | Opcional |
 | `RESEND_API_KEY` / `MAIL_FROM` | correus reals (sense: sandbox a EmailLog)  | Opcional    |
 | `STRIPE_*`              | activació de pagaments reals                      | Opcional    |
+| `FRAME_ANCESTORS`       | per defecte `'self'` en producció (anti-clickjacking); només canviar si s'incrusta el mapa com a widget en un altre domini | Opcional |
 
 ## 5. Actualitzar dades de lloguer
 
