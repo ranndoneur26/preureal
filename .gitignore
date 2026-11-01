@@ -57,3 +57,6 @@ server.log
 # Carpeta skills del sandbox + PostgreSQL local incrustat (binaris/dades)
 /skills/
 .localpg/
+
+# lliurables de la plataforma (fora del repo)
+/download/
