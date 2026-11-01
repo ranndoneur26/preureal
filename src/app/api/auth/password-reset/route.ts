@@ -3,6 +3,7 @@ import * as crypto from "crypto";
 import { db } from "@/lib/db";
 import { logEvent, rateLimit } from "@/lib/analytics";
 import { resetMail, sendMail } from "@/lib/mail";
+import { normalizeEmail } from "@/lib/email";
 
 /** Demana un enllaç de restabliment de contrasenya. */
 export async function POST(req: Request) {
@@ -11,7 +12,8 @@ export async function POST(req: Request) {
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
 
   const body = await req.json().catch(() => null);
-  const email = String(body?.email || "").trim().toLowerCase();
+  // normalitza Gmail (punts/+alias) abans de cercar el compte
+  const email = normalizeEmail(String(body?.email || ""));
   const user = await db.user.findUnique({ where: { email } });
 
   // resposta sempre ok (no revelem si el correu existeix)

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSession, verifyPassword } from "@/lib/auth";
 import { logEvent, rateLimit } from "@/lib/analytics";
+import { normalizeEmail } from "@/lib/email";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") || "local";
@@ -9,7 +10,8 @@ export async function POST(req: Request) {
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
 
   const body = await req.json().catch(() => null);
-  const email = String(body?.email || "").trim().toLowerCase();
+  // normalitza Gmail (punts/+alias) abans de cercar el compte
+  const email = normalizeEmail(String(body?.email || ""));
   const password = String(body?.password || "");
 
   const user = await db.user.findUnique({ where: { email } });
