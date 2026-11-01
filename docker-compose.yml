@@ -1,20 +1,40 @@
 # ============================================================================
-# PreuReal.cat — orquestación de producción
+# PreuReal.cat — orquestación de producción (PostgreSQL incluido)
 #
-#   docker compose build          # construir ambas imágenes (comparte caché)
-#   docker compose up -d          # arrancar (dbinit → app → caddy)
+#   docker compose build          # construir las imágenes
+#   docker compose up -d          # arrancar (postgres → dbinit → app → caddy)
 #   docker compose logs -f app    # ver logs de la app
 #   docker compose ps             # estado
 #
 # Actualizar datos oficiales (Incasòl/DOGC):
 #   docker compose run --rm dbinit bash scripts/update_all.sh
 #
-# Requisito: .env junto a este archivo (copia .env.production.example → .env)
+# Migrar el archivo SQLite original a este PostgreSQL:
+#   docker compose run --rm dbinit python3 scripts/migrate_sqlite_to_pg.py
+#
+# Requisito: .env junto a este archivo (copia .env.production.example → .env).
+# DATABASE_URL ya no hace falta en el .env para VPS: se compone abajo.
 # ============================================================================
 name: preureal
 
 services:
-  # --- 1. inicialización de la BD (prisma db push + seed idempotente) -------
+  # --- 0. PostgreSQL persistente --------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: preureal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-canvia_aquesta_clau}
+      POSTGRES_DB: preureal
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U preureal -d preureal"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # --- 1. inicialización de la BD (migraciones versionadas + seed) ----------
   # También se usa como caja de herramientas para actualizar datos oficiales.
   dbinit:
     build:
@@ -24,15 +44,14 @@ services:
     restart: "no"
     env_file: .env
     environment:
-      DATABASE_URL: file:/data/custom.db
-      # ruta que usa update_all.sh para verificar la BD
-      PREUREAL_DB: /data/custom.db
-    volumes:
-      - ./dbdata:/data
+      DATABASE_URL: postgresql://preureal:${POSTGRES_PASSWORD:-canvia_aquesta_clau}@postgres:5432/preureal
     command: >
-      sh -c "bunx prisma db push --skip-generate
+      sh -c "bunx prisma migrate deploy
       && (bun run scripts/seed.ts || echo '⚠ seed falló (¿ICGC no disponible?) —
       la app arranca igual; reintenta después con update_all.sh')"
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   # --- 2. aplicación ---------------------------------------------------------
   app:
@@ -43,10 +62,8 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      # la BD vive SIEMPRE en el volumen, se ignora la ruta del .env
-      DATABASE_URL: file:/data/custom.db
-    volumes:
-      - ./dbdata:/data
+      # la BD vive SIEMPRE en el servicio postgres, se ignora la ruta del .env
+      DATABASE_URL: postgresql://preureal:${POSTGRES_PASSWORD:-canvia_aquesta_clau}@postgres:5432/preureal
     expose:
       - "3000"
     depends_on:
@@ -71,5 +88,6 @@ services:
       - app
 
 volumes:
+  pg_data:
   caddy_data:
   caddy_config:

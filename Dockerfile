@@ -29,7 +29,7 @@ COPY . .
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 python3-pip curl sqlite3 ca-certificates \
  && rm -rf /var/lib/apt/lists/* \
- && pip3 install --no-cache-dir --break-system-packages openpyxl
+ && pip3 install --no-cache-dir --break-system-packages openpyxl psycopg2-binary
 
 RUN bunx prisma generate
 # bun run build = next build + copia .next/static y public a .next/standalone

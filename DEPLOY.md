@@ -1,6 +1,12 @@
 # PreuReal.cat — Guía de despliegue a producción
 
-> Última actualización: noviembre 2026 · Stack: Next.js 16 (standalone) + Prisma/SQLite + Caddy + Docker
+> **ACTUALITZACIÓ (2026-11):** la base de dades ara és **PostgreSQL** (servei inclòs
+> a docker-compose.yml amb volum persistent i healthcheck). El volum ./dbdata i la
+> SQLite ja no s'usen al desplegament Docker. Per migrar l'arxiu SQLite original:
+> `docker compose run --rm dbinit python3 scripts/migrate_sqlite_to_pg.py`.
+> Per desplegar a Vercel, vegeu VERCEL.md (Neon/Supabase).
+
+> Última actualización: noviembre 2026 · Stack: Next.js 16 (standalone) + Prisma/PostgreSQL + Caddy + Docker
 > Coste objetivo: **≈ 5 €/mes VPS + ≈ 15 €/año dominio** (coherente con el plan de negocio: break-even con 1–3 suscriptores)
 
 ---
