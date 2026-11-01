@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
-import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink } from "lucide-react";
+import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, AlertTriangle, Home } from "lucide-react";
 
 interface MunLite {
   code: string;
@@ -17,9 +17,21 @@ interface MunLite {
   tenseList?: string | null;
 }
 
+interface AddressResult {
+  label: string;
+  lat: number;
+  lng: number;
+  municipalityCode: string | null;
+  municipalityName: string | null;
+  comarca: string | null;
+  postalCode: string | null;
+  portal: string | null;
+  street: string | null;
+}
+
 interface LookupResult {
   kind: "full" | "teaser";
-  building?: { id?: string; refcat?: string | null; yearBuilt?: { year: number; source: string } | null; tipus?: string | null; altura?: number | null; nom?: string | null };
+  building?: { id?: string; refcat?: string | null; yearBuilt?: { year: number; source: string } | null; tipus?: string | null; altura?: number | null; nom?: string | null; avgRentEurMonth?: number | null; sampleSize?: number | null };
   municipality?: {
     code: string; name: string; comarca: string | null; province: string | null;
     rentLatest: number | null; rentPeriod: string | null;
@@ -42,6 +54,12 @@ function rentColor(rent: number | null | undefined): string {
   return "#dd5a35";
 }
 
+/** Un text que sembla referència catastral (14+ alfanumèrics sense espais). */
+function looksLikeRefcat(q: string): boolean {
+  const s = q.replace(/\s+/g, "").toUpperCase();
+  return /^[0-9]{7}[A-Z][A-Z0-9]{5,7}$/.test(s) || /^[0-9A-Z]{14,20}$/.test(s) && /[0-9]/.test(s) && /[A-Z]/.test(s);
+}
+
 export default function MapView() {
   const { t, locale, auth, navigate } = useApp();
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -53,15 +71,19 @@ export default function MapView() {
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MunLite[]>([]);
+  const [addresses, setAddresses] = useState<AddressResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [selectedMun, setSelectedMun] = useState<MunLite | null>(null);
   const [zoomHint, setZoomHint] = useState(false);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [buildingsError, setBuildingsError] = useState<string | null>(null);
+  const [coverageWarn, setCoverageWarn] = useState<string | null>(null);
   const [panelState, setPanelState] = useState<"closed" | "loading" | "teaser" | "full" | "paywall">("closed");
   const [lookup, setLookup] = useState<LookupResult | null>(null);
   const [quota, setQuota] = useState<{ used: number; limit: number } | null>(auth.quota);
   const [demoNotice, setDemoNotice] = useState<string | null>(null);
+  const [favState, setFavState] = useState<"idle" | "saved" | "error" | "plan">("idle");
+  const [pdfMsg, setPdfMsg] = useState<string | null>(null);
 
   useEffect(() => { setQuota(auth.quota); }, [auth.quota]);
 
@@ -109,6 +131,7 @@ export default function MapView() {
       layerRef.current.clearLayers();
       setZoomHint(true);
       setLoadingBuildings(false);
+      setCoverageWarn(null);
       return;
     }
     setZoomHint(false);
@@ -131,19 +154,34 @@ export default function MapView() {
         } else {
           setBuildingsError("service");
         }
+        setCoverageWarn(null);
         return;
       }
       const data = await res.json();
       drawBuildings(data.buildings || []);
+      // Fase 8.1: mai es presenta la vista com a completa si falten mosaics
+      const cov = data.coverage;
+      if (cov && cov.failed > 0) {
+        setCoverageWarn(locale === "ca"
+          ? `${cov.failed} de ${cov.total} zones no s'han pogut carregar: la vista NO està completa. Ampla-hi o torna-ho a provar.`
+          : `${cov.failed} de ${cov.total} zonas no se pudieron cargar: la vista NO está completa. Amplía o inténtalo de nuevo.`);
+      } else if (cov && cov.empty > 0) {
+        setCoverageWarn(locale === "ca"
+          ? `${cov.empty} de ${cov.total} zones sense edificis registrats (àrees rurals o sense dades ICGC).`
+          : `${cov.empty} de ${cov.total} zonas sin edificios registrados (áreas rurales o sin datos ICGC).`);
+      } else {
+        setCoverageWarn(null);
+      }
     } catch {
       setBuildingsError("service");
+      setCoverageWarn(null);
     } finally {
       setLoadingBuildings(false);
     }
      
-  }, []);
+  }, [locale]);
 
-  // recarrega edificis quan canvia l'idioma/sessió per refrescar colors i accés
+  // recarrega edificis quan canvia l'idioma per refrescar colors i accés
   useEffect(() => {
     loadBuildingsInView();
      
@@ -156,7 +194,9 @@ export default function MapView() {
     layer.clearLayers();
     for (const b of buildings) {
       let color = "#9aa5a0";
-      if (b.munRent) color = rentColor(b.munRent);
+      // si l'edifici té dada pròpia importada, el color ve d'aquesta dada real
+      if (b.avgRentEurMonth) color = rentColor(b.avgRentEurMonth);
+      else if (b.munRent) color = rentColor(b.munRent);
       const poly = L.polygon(b.ring.map((p: number[]) => [p[1], p[0]]), {
         color: "#3d4a42",
         weight: 0.7,
@@ -189,13 +229,15 @@ export default function MapView() {
     setPanelState("loading");
     setLookup(null);
     setDemoNotice(null);
+    setFavState("idle");
+    setPdfMsg(null);
     try {
       const res = await fetch("/api/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ lat, lng, buildingId: b.id }),
       });
-      if (seq !== lookupSeqRef.current) return; // respuesta obsoleta
+      if (seq !== lookupSeqRef.current) return; // resposta obsoleta
       if (res.status === 402) {
         const d = await res.json().catch(() => ({}));
         setLookup(d);
@@ -203,7 +245,7 @@ export default function MapView() {
         return;
       }
       const d: LookupResult = await res.json();
-      if (seq !== lookupSeqRef.current) return; // respuesta obsoleta
+      if (seq !== lookupSeqRef.current) return; // resposta obsoleta
       setLookup(d);
       setPanelState(d.kind === "full" ? "full" : "teaser");
       if (d.kind === "full" && d.quota) setQuota(d.quota);
@@ -212,20 +254,55 @@ export default function MapView() {
     }
   }, []);
 
-  // ---- Cercador de municipis ----
+  // ---- Cercador: municipis + adreces (ICGC) + refcat (BD) ----
   useEffect(() => {
-    if (query.trim().length < 2) {
+    const q = query.trim();
+    if (q.length < 2) {
       setResults([]);
+      setAddresses([]);
       return;
     }
     const id = setTimeout(async () => {
+      // 1) municipis (BD local, instantani)
       try {
-        const res = await fetch(`/api/municipalities?q=${encodeURIComponent(query.trim())}&limit=8`);
+        const res = await fetch(`/api/municipalities?q=${encodeURIComponent(q)}&limit=8`);
         const d = await res.json();
         setResults(d.municipalities || []);
-        setShowResults(true);
-      } catch {}
-    }, 220);
+      } catch {
+        setResults([]);
+      }
+      // 2) refcat: si sembla una referència catastral, cerca'l a la BD d'edificis
+      if (looksLikeRefcat(q)) {
+        try {
+          const res = await fetch(`/api/lookup-refcat?rc=${encodeURIComponent(q.replace(/\s+/g, "").toUpperCase())}`);
+          const d = await res.json();
+          if (d.result) {
+            setAddresses([{
+              label: `Ref. catastral ${d.result.refcat}${d.result.nom ? " · " + d.result.nom : ""}`,
+              lat: d.result.lat,
+              lng: d.result.lng,
+              municipalityCode: d.result.municipalityCode,
+              municipalityName: null,
+              comarca: null,
+              postalCode: null,
+              portal: null,
+              street: d.result.nom || null,
+            }]);
+            setShowResults(true);
+            return;
+          }
+        } catch {}
+      }
+      // 3) adreces (Geocodificador ICGC via proxy)
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(q)}`);
+        const d = await res.json();
+        setAddresses(d.results || []);
+      } catch {
+        setAddresses([]);
+      }
+      setShowResults(true);
+    }, 260);
     return () => clearTimeout(id);
   }, [query]);
 
@@ -258,6 +335,18 @@ export default function MapView() {
     }
   }, [loadBuildingsInView]);
 
+  const selectAddress = useCallback((a: AddressResult) => {
+    const map = mapRef.current;
+    const L = LRef.current;
+    if (!map || !L) return;
+    setShowResults(false);
+    setQuery(a.label);
+    setSelectedMun(null);
+    boundaryRef.current?.clearLayers();
+    map.flyTo([a.lat, a.lng], 18, { duration: 0.8 });
+    setTimeout(() => loadBuildingsInView(), 900);
+  }, [loadBuildingsInView]);
+
   const doCheckout = async (plan: "PREMIUM" | "PRO") => {
     try {
       const res = await fetch("/api/stripe/checkout", {
@@ -276,8 +365,69 @@ export default function MapView() {
         setDemoNotice(d.message || d.error || "Error");
       }
     } catch {
-      setDemoNotice("Error de xarxa");
+      setDemoNotice(locale === "ca" ? "Error de xarxa" : "Error de red");
     }
+  };
+
+  const toggleFavorite = async () => {
+    const mun = lookup?.municipality;
+    const bId = lookup?.building?.id;
+    if (!mun) return;
+    setFavState("idle");
+    try {
+      const res = await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          buildingId: bId || null,
+          municipalityCode: bId ? null : mun.code,
+          label: bId ? lookup?.building?.nom || lookup?.building?.refcat || mun.name : mun.name,
+        }),
+      });
+      if (res.status === 403) {
+        setFavState("plan");
+      } else if (res.ok) {
+        setFavState("saved");
+      } else {
+        setFavState("error");
+      }
+    } catch {
+      setFavState("error");
+    }
+  };
+
+  const downloadPdf = () => {
+    const mun = lookup?.municipality;
+    const bId = lookup?.building?.id;
+    if (!mun) return;
+    setPdfMsg(null);
+    const qs = bId ? `building=${bId}` : `mun=${mun.code}`;
+    fetch(`/api/reports/pdf?${qs}`).then(async (res) => {
+      if (res.status === 403) {
+        const d = await res.json().catch(() => ({}));
+        setPdfMsg(d.plan === "PRO"
+          ? (locale === "ca" ? "L'informe d'edifici requereix el pla Pro." : "El informe de edificio requiere el plan Pro.")
+          : (locale === "ca" ? "L'informe PDF requereix el pla Premium." : "El informe PDF requiere el plan Premium."));
+        return;
+      }
+      if (res.status === 429) {
+        setPdfMsg(locale === "ca" ? "Massa descàrregues; espera un moment." : "Demasiadas descargas; espera un momento.");
+        return;
+      }
+      if (!res.ok) {
+        setPdfMsg(locale === "ca" ? "No s'ha pogut generar l'informe." : "No se pudo generar el informe.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }).catch(() => setPdfMsg(locale === "ca" ? "Error de xarxa" : "Error de red"));
   };
 
   return (
@@ -294,23 +444,28 @@ export default function MapView() {
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => results.length && setShowResults(true)}
+                onFocus={() => (results.length || addresses.length) && setShowResults(true)}
                 onBlur={() => setTimeout(() => setShowResults(false), 180)}
                 placeholder={t.map.searchPlaceholder}
                 className="w-full px-2 py-3 text-sm outline-none bg-transparent"
                 aria-label={t.map.searchPlaceholder}
               />
               {query && (
-                <button onClick={() => { setQuery(""); setSelectedMun(null); boundaryRef.current?.clearLayers(); }}>
+                <button onClick={() => { setQuery(""); setSelectedMun(null); setAddresses([]); boundaryRef.current?.clearLayers(); }}>
                   <X className="w-4 h-4 text-[#6b6f68]" />
                 </button>
               )}
             </div>
-            {showResults && results.length > 0 && (
+            {showResults && (results.length > 0 || addresses.length > 0) && (
               <div className="absolute mt-1 w-full bg-white rounded-xl shadow-xl border border-[#e5e1da] overflow-hidden max-h-80 overflow-y-auto pr-scroll">
+                {results.length > 0 && (
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-[#6b6f68]">
+                    {locale === "ca" ? "Municipis" : "Municipios"}
+                  </div>
+                )}
                 {results.map((m) => (
                   <button
-                    key={m.code}
+                    key={`mun-${m.code}`}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectMunicipality(m)}
                     className="w-full text-left px-4 py-2.5 hover:bg-[#f0ede8] flex items-center justify-between gap-2"
@@ -326,6 +481,33 @@ export default function MapView() {
                     </span>
                   </button>
                 ))}
+                {addresses.length > 0 && (
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-[#6b6f68]">
+                    {locale === "ca" ? "Adreces i referències cadastrals" : "Direcciones y referencias catastrales"}
+                  </div>
+                )}
+                {addresses.map((a, i) => (
+                  <button
+                    key={`addr-${i}`}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => selectAddress(a)}
+                    className="w-full text-left px-4 py-2.5 hover:bg-[#f0ede8] flex items-start justify-between gap-2"
+                  >
+                    <span className="text-sm flex items-start gap-1.5">
+                      <Home className="w-3.5 h-3.5 mt-0.5 text-[#6b6f68] shrink-0" />
+                      <span>
+                        {a.label}
+                        {a.postalCode && <span className="text-xs text-[#6b6f68]"> · CP {a.postalCode}</span>}
+                      </span>
+                    </span>
+                    {a.municipalityCode && <span className="text-[10px] text-[#6b6f68] shrink-0">{a.municipalityName}</span>}
+                  </button>
+                ))}
+                {results.length === 0 && addresses.length === 0 && (
+                  <div className="px-4 py-3 text-xs text-[#6b6f68]">
+                    {locale === "ca" ? "Cap resultat. Prova el nom d'un municipi, una adreça amb número o una referència catastral." : "Ningún resultado. Prueba el nombre de un municipio, una dirección con número o una referencia catastral."}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -356,6 +538,11 @@ export default function MapView() {
               {locale === "ca"
                 ? "El servei de cartografia no està disponible ara mateix. Torna-ho a provar."
                 : "El servicio de cartografía no está disponible ahora mismo. Inténtalo de nuevo."}
+            </div>
+          )}
+          {coverageWarn && !buildingsError && (
+            <div className="bg-[#fff7e8] rounded-lg px-3 py-2 text-xs shadow border border-[#f2d9a4] text-[#8a6116] flex items-center gap-2">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {coverageWarn}
             </div>
           )}
         </div>
@@ -445,6 +632,10 @@ export default function MapView() {
                 t={t}
                 navigate={navigate}
                 doCheckout={doCheckout}
+                toggleFavorite={toggleFavorite}
+                favState={favState}
+                downloadPdf={downloadPdf}
+                pdfMsg={pdfMsg}
               />
             )}
           </div>
@@ -468,20 +659,26 @@ function TenseBadge({ note }: { note: string }) {
 }
 
 function FullPanel({
-  lookup, quota, t, navigate, doCheckout,
+  lookup, quota, t, navigate, doCheckout, toggleFavorite, favState, downloadPdf, pdfMsg,
 }: {
   lookup: LookupResult;
   quota: { used: number; limit: number } | null;
   t: any;
   navigate: (r: string) => void;
   doCheckout: (p: "PREMIUM" | "PRO") => void;
+  toggleFavorite: () => void;
+  favState: "idle" | "saved" | "error" | "plan";
+  downloadPdf: () => void;
+  pdfMsg: string | null;
 }) {
   const { locale, auth } = useApp();
   const mun = lookup.municipality!;
   const [yourRent, setYourRent] = useState("");
   const [yourM2, setYourM2] = useState("");
+  const [contractType, setContractType] = useState("HABITATGE");
   const [reportOpen, setReportOpen] = useState(false);
   const [reportSent, setReportSent] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   const hist = mun.rentHistory ? Object.entries(mun.rentHistory).sort() : [];
   const histShow = hist.slice(-8);
@@ -499,19 +696,39 @@ function FullPanel({
       : null;
 
   const submitReport = async () => {
-    await fetch("/api/reports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        municipalityCode: mun.code,
-        buildingId: lookup.building?.id || null,
-        offerEurMonth: yourRentNum || undefined,
-        surfaceM2: parseFloat(yourM2) || undefined,
-      }),
-    });
-    setReportSent(true);
-    setReportOpen(false);
+    setReportError(null);
+    // Fase 10 (E1): només s'informa d'èxit quan el servidor ho confirma
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          municipalityCode: mun.code,
+          buildingId: lookup.building?.id || null,
+          offerEurMonth: yourRentNum || undefined,
+          surfaceM2: parseFloat(yourM2) || undefined,
+          contractType,
+        }),
+      });
+      if (res.status === 409) {
+        setReportError(locale === "ca"
+          ? "Ja has enviat un informe igual en les últimes 24 hores."
+          : "Ya has enviado un informe igual en las últimas 24 horas.");
+        return;
+      }
+      if (!res.ok) {
+        setReportError(locale === "ca" ? "No s'ha pogut enviar. Torna-ho a provar." : "No se pudo enviar. Inténtalo de nuevo.");
+        return;
+      }
+      setReportSent(true);
+      setReportOpen(false);
+    } catch {
+      setReportError(locale === "ca" ? "Error de xarxa. Torna-ho a provar." : "Error de red. Inténtalo de nuevo.");
+    }
   };
+
+  const bAvg = lookup.building?.avgRentEurMonth;
+  const bSamples = lookup.building?.sampleSize;
 
   return (
     <div className="space-y-4">
@@ -534,6 +751,11 @@ function FullPanel({
             </span>
           )}
         </div>
+        {mun.rentLatest === null && (
+          <div className="mt-2 text-xs text-[#b0431c]">
+            {locale === "ca" ? "Aquest municipi no té lloguer registrat al període actual (sense dades oficials; no s'inventa cap xifra)." : "Este municipio no tiene alquiler registrado en el período actual (sin datos oficiales; no se inventa ninguna cifra)."}
+          </div>
+        )}
         <div className="mt-2 text-xs text-[#6b6f68] space-y-0.5">
           <div>{t.map.panel.period}: <b>{mun.rentPeriod || "—"}</b></div>
           {mun.contractsLatest !== null && (
@@ -547,7 +769,7 @@ function FullPanel({
       </div>
 
       {/* EDIFICI */}
-      {(lookup.building?.yearBuilt || lookup.building?.refcat) && (
+      {(lookup.building?.yearBuilt || lookup.building?.refcat || bAvg) && (
         <div className="rounded-xl border border-[#e5e1da] p-4">
           <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide mb-2">
             {locale === "ca" ? "Edifici" : "Edificio"}
@@ -557,7 +779,7 @@ function FullPanel({
             <b>
               {lookup.building?.yearBuilt
                 ? `${lookup.building.yearBuilt.year} (${lookup.building.yearBuilt.source === "CADASTRE_DNP" ? "Cadastre" : lookup.building.yearBuilt.source})`
-                : lookup.building?.refcat ? t.map.panel.yearUnavailable : "—"}
+                : locale === "ca" ? "No disponible" : "No disponible"}
             </b>
           </div>
           {lookup.building?.refcat && (
@@ -566,12 +788,54 @@ function FullPanel({
               <b className="font-mono text-xs">{lookup.building.refcat}</b>
             </div>
           )}
+          {/* Fase 9: dada a nivell d'edifici SI EXISTEIX importació; si no, es diu clar */}
+          <div className="flex justify-between text-sm py-1">
+            <span className="text-[#6b6f68]">{locale === "ca" ? "Preu real de l'illa" : "Precio real de la manzana"}</span>
+            <b>
+              {bAvg
+                ? `${bAvg.toFixed(0)} €/mes (${bSamples ?? "?"} ${locale === "ca" ? "mostres" : "muestras"})`
+                : locale === "ca" ? "No disponible" : "No disponible"}
+            </b>
+          </div>
         </div>
       )}
 
-      {/* COMPARADOR */}
+      {/* COMPARADOR + ACCIONS */}
       <div className="rounded-xl border-2 border-[#0f2e21] p-4">
-        <div className="font-bold text-[#0f2e21]">{t.map.panel.compare}</div>
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-bold text-[#0f2e21]">{t.map.panel.compare}</div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleFavorite}
+              title={locale === "ca" ? "Desa als preferits (Premium)" : "Guarda en favoritos (Premium)"}
+              className={`p-1.5 rounded-lg hover:bg-[#f0ede8] ${favState === "saved" ? "text-[#e8673c]" : "text-[#6b6f68]"}`}
+            >
+              <Star className={`w-4 h-4 ${favState === "saved" ? "fill-[#e8673c]" : ""}`} />
+            </button>
+            <button
+              onClick={downloadPdf}
+              title={locale === "ca" ? "Descarrega l'informe PDF (Premium)" : "Descarga el informe PDF (Premium)"}
+              className="p-1.5 rounded-lg hover:bg-[#f0ede8] text-[#6b6f68]"
+            >
+              <FileDown className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        {favState === "saved" && (
+          <div className="mt-2 text-xs text-[#1e7a41]">{locale === "ca" ? "Desat als preferits." : "Guardado en favoritos."}</div>
+        )}
+        {favState === "plan" && (
+          <div className="mt-2 text-xs text-[#8a6116]">
+            {locale === "ca" ? "Els preferits són del pla Premium." : "Los favoritos son del plan Premium."}{" "}
+            <button onClick={() => navigate("/preus")} className="underline">{t.map.panel.upgrade}</button>
+          </div>
+        )}
+        {favState === "error" && (
+          <div className="mt-2 text-xs text-[#b0431c]">{locale === "ca" ? "No s'ha pogut desar ara mateix." : "No se pudo guardar ahora mismo."}</div>
+        )}
+        {pdfMsg && (
+          <div className="mt-2 text-xs text-[#8a6116]">{pdfMsg}</div>
+        )}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs text-[#6b6f68]">{t.map.panel.yourRent}</label>
@@ -604,25 +868,44 @@ function FullPanel({
             </span>
           </div>
         )}
+        {delta !== null && (
+          <div className="mt-1 text-[10px] text-[#6b6f68] text-center">
+            {locale === "ca" ? "Comparació amb la MITJANA municipal (dades agregades Incasòl); no és una valoració de l'immoble." : "Comparación con la MEDIA municipal (datos agregados Incasòl); no es una valoración del inmueble."}
+          </div>
+        )}
         <button
-          onClick={() => setReportOpen(true)}
+          onClick={() => setReportOpen((v) => !v)}
           className="mt-3 w-full py-2 rounded-lg border border-[#e5e1da] text-xs font-semibold hover:bg-[#f0ede8] flex items-center justify-center gap-1.5"
         >
           <MapPin className="w-3.5 h-3.5" />
           {reportSent ? t.map.panel.reportThanks : t.map.panel.report}
         </button>
         {reportOpen && !reportSent && (
-          <div className="mt-2 flex gap-2">
-            <input
-              autoFocus
-              value={yourRent}
-              onChange={(e) => setYourRent(e.target.value.replace(/[^0-9.]/g, ""))}
-              className="flex-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
-              placeholder={t.map.panel.yourRent}
-            />
-            <button onClick={submitReport} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold">
-              {t.map.panel.reportBtn}
-            </button>
+          <div className="mt-2 space-y-2">
+            <select
+              value={contractType}
+              onChange={(e) => setContractType(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+              aria-label={locale === "ca" ? "Tipus de contracte" : "Tipo de contrato"}
+            >
+              <option value="HABITATGE">{locale === "ca" ? "Habitatge" : "Vivienda"}</option>
+              <option value="HABITATGE_COMPARTIT">{locale === "ca" ? "Habitatge compartit" : "Vivienda compartida"}</option>
+              <option value="LOCAL">{locale === "ca" ? "Local comercial" : "Local comercial"}</option>
+              <option value="ALTRE">{locale === "ca" ? "Altres" : "Otros"}</option>
+            </select>
+            <div className="flex gap-2">
+              <input
+                autoFocus
+                value={yourRent}
+                onChange={(e) => setYourRent(e.target.value.replace(/[^0-9.]/g, ""))}
+                className="flex-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                placeholder={t.map.panel.yourRent}
+              />
+              <button onClick={submitReport} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold">
+                {t.map.panel.reportBtn}
+              </button>
+            </div>
+            {reportError && <div className="text-xs text-[#b0431c]">{reportError}</div>}
           </div>
         )}
       </div>
@@ -657,10 +940,6 @@ function FullPanel({
             {t.map.panel.upgrade}
           </button>
         </div>
-      )}
-
-      {auth.user && auth.user.plan !== "FREE" && (
-        <button onClick={() => doCheckout(auth.user!.plan === "FREE" ? "PREMIUM" : "PRO")} className="hidden" />
       )}
     </div>
   );

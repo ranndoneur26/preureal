@@ -10,6 +10,7 @@ export interface AuthUser {
   role: "USER" | "ADMIN";
   plan: "FREE" | "PREMIUM" | "PRO";
   locale?: string;
+  emailVerified?: boolean;
 }
 
 export interface AuthState {

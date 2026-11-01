@@ -9,6 +9,9 @@ import AuthView from "@/components/views/AuthView";
 import PanelView from "@/components/views/PanelView";
 import AdminView from "@/components/views/AdminView";
 import LegalView from "@/components/views/LegalView";
+import ComparadorView from "@/components/views/ComparadorView";
+import SubscriptionResultView from "@/components/views/SubscriptionResultView";
+import CookieConsent from "@/components/CookieConsent";
 import { AppContext, AppCtx, AuthUser } from "@/components/app-context";
 import { LogOut, Languages, User as UserIcon } from "lucide-react";
 
@@ -100,7 +103,10 @@ export default function AppShell() {
         <main className="flex-1 flex flex-col">
           {view === "/" && <LandingView />}
           {view === "/mapa" && <MapView />}
+          {view === "/comparador" && <ComparadorView />}
           {view === "/preus" && <PricingView />}
+          {view === "/subscripcio/exit" && <SubscriptionResultView mode="exit" />}
+          {view === "/subscripcio/cancelat" && <SubscriptionResultView mode="cancelat" />}
           {(view === "/registre" || view === "/entrada" || view === "/oblidat") && (
             <AuthView
               mode={view === "/registre" ? "register" : view === "/entrada" ? "login" : "forgot"}
@@ -116,6 +122,7 @@ export default function AppShell() {
           {view === "/faq" && <LegalView kind="faq" />}
         </main>
         <Footer />
+        <CookieConsent />
       </div>
     </AppContext.Provider>
   );
@@ -145,6 +152,7 @@ function Header({ route }: { route: string }) {
               </button>
               <nav className="hidden md:flex items-center gap-1">
                 {link("/mapa", t.nav.mapa)}
+                {link("/comparador", locale === "ca" ? "Comparador" : "Comparador")}
                 {link("/preus", t.nav.preus)}
                 {link("/faq", t.nav.faq)}
                 {auth.user?.role === "ADMIN" && link("/admin", t.nav.admin)}
@@ -211,6 +219,7 @@ function Header({ route }: { route: string }) {
             </div>
             <div id="mobile-nav" className="hidden md:hidden border-t border-[#e5e1da] bg-[#faf9f7] px-4 py-3 flex-col gap-1">
               {link("/mapa", t.nav.mapa)}
+              {link("/comparador", locale === "ca" ? "Comparador" : "Comparador")}
               {link("/preus", t.nav.preus)}
               {link("/faq", t.nav.faq)}
               {auth.user ? (

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 
-/** GET /api/admin/stats — KPIs del negocio (solo admin). */
+/** GET /api/admin/stats — KPIs del negocio (solo admin). MRR REAL (Fase 12). */
 export async function GET() {
   try {
     await requireAdmin();
@@ -12,6 +12,30 @@ export async function GET() {
 
   const now = new Date();
   const d30 = new Date(now.getTime() - 30 * 86400 * 1000);
+
+  // MRR real: només subscripcions STRIPE (no demo) amb estat pagable,
+  // proratitzades pel pla. Les demo es comptabilitzen apart com a "demoMrr".
+  const subs = await db.subscription.findMany({
+    where: { status: { in: ["active", "trialing", "past_due"] } },
+    select: { plan: true, status: true, demo: true, currentPeriodEnd: true },
+  });
+  let mrr = 0;
+  let demoMrr = 0;
+  let mrrPastDue = 0;
+  for (const s of subs) {
+    const price = s.plan === "PRO" ? 19.99 : s.plan === "PREMIUM" ? 7.99 : 0;
+    if (s.demo) {
+      demoMrr += price;
+      continue;
+    }
+    // període expirat i no renovat no compta com a ingressos corrents
+    if (s.currentPeriodEnd && s.currentPeriodEnd < now && s.status !== "past_due") continue;
+    if (s.status === "past_due") {
+      mrrPastDue += price;
+      continue;
+    }
+    mrr += price;
+  }
 
   const [users, premium, pro, signups30, queries30, paywalls30, subscribe30, teaser30, reports, emails] =
     await Promise.all([
@@ -26,8 +50,6 @@ export async function GET() {
       db.priceReport.count(),
       db.emailLog.count(),
     ]);
-
-  const mrr = premium * 7.99 + pro * 19.99;
 
   // serie diaria últimos 30 días (signup + query)
   const events = await db.event.findMany({
@@ -48,6 +70,9 @@ export async function GET() {
     users,
     plans: { free: users - premium - pro, premium, pro },
     mrr: +mrr.toFixed(2),
+    mrrPastDue: +mrrPastDue.toFixed(2),
+    demoMrr: +demoMrr.toFixed(2),
+    activeSubs: subs.filter((s) => !s.demo && (s.status === "active" || s.status === "trialing")).length,
     funnel30: { signups: signups30, queries: queries30, paywalls: paywalls30, subscribes: subscribe30, teasers: teaser30 },
     series,
     reports,

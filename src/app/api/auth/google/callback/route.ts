@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import * as crypto from "crypto";
 import { db } from "@/lib/db";
 import { createSession, hashPassword } from "@/lib/auth";
-import { logEvent, rateLimit } from "@/lib/analytics";
+import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/security";
 import { normalizeEmail } from "@/lib/email";
 import { sendMail, welcomeMail } from "@/lib/mail";
 import {
@@ -26,8 +27,8 @@ import {
  * Tots els errors tornen a /#/entrada?error=GOOGLE_* (text a i18n).
  */
 export async function GET(req: Request) {
-  const ip = req.headers.get("x-forwarded-for") || "local";
-  rateLimit(`googlecb:${ip}`, 20, 60_000);
+  const ip = clientIp(req);
+  await rateLimit(`googlecb:${ip}`, 20, 60_000);
 
   const base = publicOrigin(req);
   const toError = (code: string) => NextResponse.redirect(`${base}/#/entrada?error=${code}`);
@@ -60,7 +61,7 @@ export async function GET(req: Request) {
 
   let user = await db.user.findUnique({ where: { email } });
   if (user) {
-    await logEvent("LOGIN_GOOGLE", user.id);
+    await db.event.create({ data: { type: "LOGIN_GOOGLE", userId: user.id } }).catch(() => {});
   } else {
     // contrasenya aleatòria: el compte només es pot obrir amb Google
     // (l'usuari sempre pot afegir-hi contrasenya amb el restabliment de contrasenya)
@@ -75,7 +76,7 @@ export async function GET(req: Request) {
         plan: "FREE",
       },
     });
-    await logEvent("SIGNUP_GOOGLE", user.id);
+    await db.event.create({ data: { type: "SIGNUP_GOOGLE", userId: user.id } }).catch(() => {});
     const mail = welcomeMail(user.name, user.locale === "es" ? "es" : "ca");
     sendMail({ to: email, subject: mail.subject, html: mail.html });
   }

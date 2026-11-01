@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { PLANS } from "@/lib/plans";
-import { logEvent, rateLimit } from "@/lib/analytics";
+import { rateLimit } from "@/lib/rate-limit";
+import { audit } from "@/lib/security";
 
 /**
  * POST /api/stripe/checkout { plan: "PREMIUM" | "PRO" }
@@ -16,11 +17,15 @@ import { logEvent, rateLimit } from "@/lib/analytics";
  *    marcada en la BD para poder probar el embudo completo sin cobros.
  */
 export async function POST(req: Request) {
-  const rl = rateLimit("checkout", 10, 60_000);
+  let user;
+  try {
+    user = await requireUser();
+  } catch {
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+  // rate limit PER USUARI (E5 de l'auditoria: abans era una clau global compartida)
+  const rl = await rateLimit(`checkout:${user.id}`, 10, 60_000);
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
-
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   const planId = String(body?.plan || "");
@@ -33,21 +38,22 @@ export async function POST(req: Request) {
   if (!secret) {
     if (process.env.DEMO_CHECKOUT === "true") {
       // MODO PRUEBA: activa la suscripción sin Stripe, marcada como demo
-      const user = await db.user.update({
-        where: { id: session.userId },
+      const updated = await db.user.update({
+        where: { id: user.id },
         data: { plan: planId },
       });
       const sub = await db.subscription.create({
         data: {
-          userId: user.id,
+          userId: updated.id,
           plan: planId,
           status: "active",
           currentPeriodEnd: new Date(Date.now() + 30 * 24 * 3600 * 1000),
           demo: true,
         },
       });
-      await logEvent("CHECKOUT_DEMO", user.id, { plan: planId });
-      await logEvent("SUBSCRIBE_SUCCESS", user.id, { plan: planId, demo: true });
+      await db.event.create({ data: { type: "CHECKOUT_DEMO", userId: updated.id, meta: JSON.stringify({ plan: planId }) } }).catch(() => {});
+      await db.event.create({ data: { type: "SUBSCRIBE_SUCCESS", userId: updated.id, meta: JSON.stringify({ plan: planId, demo: true }) } }).catch(() => {});
+      await audit(updated.id, "CHECKOUT_DEMO", sub.id, { plan: planId });
       return NextResponse.json({
         ok: true,
         mode: "DEMO",
@@ -78,18 +84,18 @@ export async function POST(req: Request) {
     );
   }
   const stripe = new Stripe(secret);
-  const user = await db.user.findUnique({ where: { id: session.userId } });
-  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
   const cs = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
     customer_email: user.email,
-    success_url: `${origin}/#/suscripte?ok=1`,
-    cancel_url: `${origin}/#/preus?cancelat=1`,
+    // la confirmació definitiva SEMPRE via webhook signat; la pantalla de
+    // retorn només consulta l'estat real de la sessió (Fase 7)
+    success_url: `${origin}/#/subscripcio/exit?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/#/subscripcio/cancelat`,
     metadata: { userId: user.id, plan: planId },
   });
-  await logEvent("CHECKOUT_START", user.id, { plan: planId });
+  await db.event.create({ data: { type: "CHECKOUT_START", userId: user.id, meta: JSON.stringify({ plan: planId }) } }).catch(() => {});
   return NextResponse.json({ ok: true, mode: "STRIPE", url: cs.url });
 }

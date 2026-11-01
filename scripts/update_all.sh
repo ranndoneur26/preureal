@@ -86,25 +86,56 @@ fi
 echo "» [2/4] Ejecutando prepare_data.py (Socrata + Excels + zonas tensadas)..."
 python3 scripts/prepare_data.py
 
-# --- 3. Upsert en SQLite ----------------------------------------------------
+# --- 3. Upsert en la base de datos (PostgreSQL o SQLite) --------------------
 echo "» [3/4] Ejecutando seed.ts (upsert idempotente)..."
 bun run scripts/seed.ts
 
-# --- 4. Verificación --------------------------------------------------------
+# --- 4. Verificación (PostgreSQL si DATABASE_URL es postgres, si no SQLite) --
 echo "» [4/4] Verificando la base de datos..."
 python3 - <<'PY'
-import os, sqlite3
-# dentro de Docker, docker-compose define PREUREAL_DB=/data/custom.db
-DB = os.environ.get("PREUREAL_DB", "/home/z/my-project/db/custom.db")
-db = sqlite3.connect(DB)
-# purga de filas artificiales del dataset Socrata (999998/999999, lat/lng 0,0)
-db.execute("DELETE FROM Municipality WHERE code LIKE '9999%'")
-db.commit()
-tot, = db.execute("SELECT COUNT(*) FROM Municipality").fetchone()
-rent, = db.execute("SELECT COUNT(*) FROM Municipality WHERE rentLatest IS NOT NULL").fetchone()
-period, = db.execute("SELECT MAX(rentPeriod) FROM Municipality").fetchone()
-tense, = db.execute("SELECT COUNT(*) FROM Municipality WHERE isTense = 1").fetchone()
-bld, = db.execute("SELECT COUNT(*) FROM Building").fetchone()
+import os
+
+DB_URL = os.environ.get("DATABASE_URL", "")
+
+if DB_URL.startswith("postgres"):
+    # PostgreSQL (producció / Vercel)
+    import psycopg2
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+    # purga de filas artificiales del dataset Socrata (999998/999999)
+    cur.execute("DELETE FROM \"Municipality\" WHERE \"code\" LIKE '9999%'")
+    conn.commit()
+    cur.execute('SELECT COUNT(*) FROM "Municipality"')
+    tot = cur.fetchone()[0]
+    cur.execute('SELECT COUNT(*) FROM "Municipality" WHERE "rentLatest" IS NOT NULL')
+    rent = cur.fetchone()[0]
+    cur.execute('SELECT MAX("rentPeriod") FROM "Municipality"')
+    period = cur.fetchone()[0]
+    cur.execute('SELECT COUNT(*) FROM "Municipality" WHERE "isTense" = true')
+    tense = cur.fetchone()[0]
+    cur.execute('SELECT COUNT(*) FROM "Building"')
+    bld = cur.fetchone()[0]
+    conn.close()
+else:
+    # SQLite (desarrollo local sin PostgreSQL)
+    import sqlite3
+    DB = os.environ.get("PREUREAL_DB", "/home/z/my-project/db/custom.db")
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+    cur.execute("DELETE FROM Municipality WHERE code LIKE '9999%'")
+    conn.commit()
+    cur.execute("SELECT COUNT(*) FROM Municipality")
+    tot = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM Municipality WHERE rentLatest IS NOT NULL")
+    rent = cur.fetchone()[0]
+    cur.execute("SELECT MAX(rentPeriod) FROM Municipality")
+    period = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM Municipality WHERE isTense = 1")
+    tense = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM Building")
+    bld = cur.fetchone()[0]
+    conn.close()
+
 print(f"  ✓ Municipios: {tot} | con alquiler: {rent} | último periodo: {period}")
 print(f"  ✓ Zonas tensadas vigentes: {tense} | Edificios en BD: {bld}")
 if rent < 600: print("  ⚠ Pocos municipios con alquiler — revisa los Excels"); exit(1)

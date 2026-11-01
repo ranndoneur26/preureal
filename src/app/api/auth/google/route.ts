@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import * as crypto from "crypto";
-import { rateLimit } from "@/lib/analytics";
+import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/security";
 import { googleAuthUrl, googleOAuthEnabled, GOOGLE_STATE_COOKIE, publicOrigin } from "@/lib/google";
 
 /**
@@ -10,8 +11,8 @@ import { googleAuthUrl, googleOAuthEnabled, GOOGLE_STATE_COOKIE, publicOrigin } 
  * Si no hi ha credencials configurades, torna a l'entrada amb error GOOGLE_OFF.
  */
 export async function GET(req: Request) {
-  const ip = req.headers.get("x-forwarded-for") || "local";
-  rateLimit(`google:${ip}`, 10, 60_000);
+  const ip = clientIp(req);
+  await rateLimit(`google:${ip}`, 10, 60_000);
 
   const base = publicOrigin(req);
   if (!googleOAuthEnabled()) {

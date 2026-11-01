@@ -12,7 +12,7 @@ export async function GET(req: Request) {
   const limit = Math.min(parseInt(searchParams.get("limit") || "50", 10) || 50, 200);
 
   const where: any = {};
-  if (q) where.name = { contains: q };
+  if (q) where.name = { contains: q, mode: "insensitive" }; // PG: cerca insensible
   if (tenseOnly) where.isTense = true;
 
   const rows = await db.municipality.findMany({

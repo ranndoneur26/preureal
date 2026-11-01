@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/auth";
+import { getAuthUser } from "@/lib/auth";
 import { canConsult } from "@/lib/plans";
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ user: null });
-
-  const user = await db.user.findUnique({ where: { id: session.userId } });
+  const user = await getAuthUser();
   if (!user) return NextResponse.json({ user: null });
 
-  const quota = await canConsult(user.id, (user.plan as "FREE") || "FREE");
+  const quota = await canConsult(user.id, (user.plan as "FREE" | "PREMIUM" | "PRO") || "FREE");
   return NextResponse.json({
     user: {
       id: user.id,
@@ -19,6 +16,7 @@ export async function GET() {
       role: user.role,
       plan: user.plan,
       locale: user.locale,
+      emailVerified: Boolean(user.emailVerifiedAt),
     },
     quota: { used: quota.used, limit: quota.limit },
   });

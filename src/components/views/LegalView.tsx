@@ -41,6 +41,11 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
           <>
             <Block title={ca ? "1. Titular" : "1. Titularidad"}>
               <Placeholder ca={ca} what={ca ? "raó social, NIF, domicili social, correu de contacte i telèfon de l'entitat titular de la web" : "razón social, NIF, domicilio social, correo de contacto y teléfono de la entidad titular de la web"} />
+              <p className="mt-2 text-xs text-[#6b6f68]">
+                {ca
+                  ? "Dades identificatives exigides per l'article 10 de la LSSI-CE (Llei 34/2002, de societats de la informació i de comerç electrònic). Es completaran quan el propietari les proporcioni; no s'inventen mai."
+                  : "Datos identificativos exigidos por el artículo 10 de la LSSI-CE (Ley 34/2002). Se completarán cuando el propietario los proporcione; nunca se inventan."}
+              </p>
             </Block>
             <Block title={ca ? "2. Objecte" : "2. Objeto"}>
               <p>
@@ -60,7 +65,7 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
                 <li>{ca ? "Cartografia: Institut Cartogràfic i Geològic de Catalunya (ICGC), llicència CC-BY 4.0" : "Cartografía: Instituto Cartográfico y Geológico de Cataluña (ICGC), licencia CC-BY 4.0"}</li>
                 <li>{ca ? "Base cartogràfica © OpenStreetMap contributors i © CARTO" : "Base cartográfica © OpenStreetMap contributors y © CARTO"}</li>
                 <li>{ca ? "Referències cadastrals: serveis lliures de la Direcció General del Catastro" : "Referencias catastrales: servicios libres de la Dirección General del Catastro"}</li>
-                <li>{ca ? "Àrees tensades: Resolucions TER/800/2024 i TER/2408/2024, DOGC" : "Áreas tensionadas: Resoluciones TER/800/2024 y TER/2408/2024, DOGC"}</li>
+                <li>{ca ? "Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026" : "Áreas tensionadas: Resoluciones TER/3739/2026 y TER/3740/2026, DOGC 19-10-2026"}</li>
               </ul>
             </Block>
             <Block title={ca ? "4. Propietat intel·lectual" : "4. Propiedad intelectual"}>
@@ -102,8 +107,13 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
             <Block title={ca ? "4. Conservació i drets" : "4. Conservación y derechos"}>
               <p>
                 {ca
-                  ? "Es conserven mentre hi hagi compte actiu. Pots exercir drets d'accés, rectificació, supressió, oposició, limitació i portabilitat escrivint al correu de privacitat del responsable. També pots demanar l'esborrament del compte des del teu panell o demanar-ho al suport."
-                  : "Se conservan mientras exista cuenta activa. Puedes ejercer los derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad escribiendo al correo de privacidad del responsable. También puedes solicitar el borrado de la cuenta desde tu panel o pedirlo al soporte."}
+                  ? "Es conserven mentre hi hagi compte actiu. Els registres d'ús pseudonimitzats (hash d'IP) es conserven màxim 24 mesos amb fins estadístics i de seguretat. Els logs de correus transaccionals, 12 mesos."
+                  : "Se conservan mientras exista cuenta activa. Los registros de uso seudonimizados (hash de IP) se conservan máximo 24 meses con fines estadísticos y de seguridad. Los logs de correos transaccionales, 12 meses."}
+              </p>
+              <p className="mt-2">
+                {ca
+                  ? "Drets (art. 15-22 RGPD): accés, rectificació, supressió, oposició, limitació, portabilitat i no ser objecte de decisions automatitzades. Pots exercir-los tu mateix: exportació de dades i eliminació del compte al teu panell d'usuari (Panell → Dades personals / Seguretat), o escrivint al correu de privacitat del responsable. També pots reclamar a l'Agència Espanyola de Protecció de Dades (www.aepd.es)."
+                  : "Derechos (art. 15-22 RGPD): acceso, rectificación, supresión, oposición, limitación, portabilidad y a no ser objeto de decisiones automatizadas. Puedes ejercerlos tú mismo: exportación de datos y eliminación de la cuenta en tu panel de usuario (Panel → Datos personales / Seguridad), o escribiendo al correo de privacidad del responsable. También puedes reclamar en la Agencia Española de Protección de Datos (www.aepd.es)."}
               </p>
             </Block>
           </>
@@ -114,8 +124,13 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
             <Block title={ca ? "Cookies que utilitzem" : "Cookies que utilizamos"}>
               <ul className="list-disc pl-5 space-y-1.5">
                 <li><b>pr_session</b> — {ca ? "cookie tècnica de sessió (httpOnly), imprescindible per iniciar la sessió. No requereix consentiment." : "cookie técnica de sesión (httpOnly), imprescindible para iniciar sesión. No requiere consentimiento."}</li>
-                <li>{ca ? "Preferències (localStorage): idioma escollit. No és una cookie ni requereix consentiment." : "Preferencias (localStorage): idioma elegido. No es una cookie ni requiere consentimiento."}</li>
+                <li>{ca ? "Preferències (localStorage): idioma escollit i la pròpia decisió de consentiment. No són cookies ni requereixen consentiment." : "Preferencias (localStorage): idioma elegido y la propia decisión de consentimiento. No son cookies ni requieren consentimiento."}</li>
               </ul>
+              <p className="mt-2">
+                {ca
+                  ? "En la primera visita es mostra un banner de consentiment. Com que no carreguem cap tecnologia no essencial, el servei funciona completament tant si acceptes com si rebutges."
+                  : "En la primera visita se muestra un banner de consentimiento. Como no cargamos ninguna tecnología no esencial, el servicio funciona completamente tanto si aceptas como si rechazas."}
+              </p>
             </Block>
             <Block title={ca ? "Analítica" : "Analítica"}>
               <p>

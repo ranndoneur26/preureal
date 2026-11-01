@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { escapeHtml } from "@/lib/security";
 
 /**
  * Correos automáticos de PreuReal.cat.
@@ -81,10 +82,12 @@ function layout(title: string, body: string, locale: "ca" | "es") {
 }
 
 export function welcomeMail(name: string | null, locale: "ca" | "es") {
+  // el nom ve de l'usuari: SEMPRE escapam (V2 de l'auditoria — injecció HTML)
+  const safeName = name ? escapeHtml(name) : "";
   const title =
     locale === "ca"
-      ? `Benvingut/da a PreuReal.cat${name ? ", " + name : ""}!`
-      : `Bienvenido/a a PreuReal.cat${name ? ", " + name : ""}`;
+      ? `Benvingut/da a PreuReal.cat${safeName ? ", " + safeName : ""}!`
+      : `Bienvenido/a a PreuReal.cat${safeName ? ", " + safeName : ""}`;
   const body =
     locale === "ca"
       ? `<p>Ja pots consultar el <b>preu mitjà real de lloguer registrat oficialment</b> (fiances Incasòl) als municipis de Catalunya, juntament amb l'estat d'àrea de mercat residencial tensat.</p>
@@ -100,6 +103,16 @@ export function receiptMail(planName: string, amount: string, locale: "ca" | "es
     locale === "ca"
       ? `<p>El teu pla <b>${planName}</b> ja està actiu (${amount}/mes). Gràcies per donar suport a un projecte independent!</p><p>Ja tens consultes il·limitades al mapa.</p>`
       : `<p>Tu plan <b>${planName}</b> ya está activo (${amount}/mes). ¡Gracias por apoyar un proyecto independiente!</p><p>Ya tienes consultas ilimitadas en el mapa.</p>`;
+  return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
+}
+
+export function verifyMail(token: string, locale: "ca" | "es") {
+  const url = `${process.env.NEXT_PUBLIC_SITE_URL || ""}/#/verifica?token=${token}`;
+  const title = locale === "ca" ? "Verifica el teu correu" : "Verifica tu correo";
+  const body =
+    locale === "ca"
+      ? `<p>Confirma la teva adreça electrònica clicant aquest enllaç (vàlid 24 hores):</p><p><a href="${url}">${url}</a></p>`
+      : `<p>Confirma tu dirección de correo electrónico abriendo este enlace (válido 24 horas):</p><p><a href="${url}">${url}</a></p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
 

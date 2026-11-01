@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { rateLimit } from "@/lib/analytics";
+import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/security";
 import { bboxAreaHa, splitBbox, getOrFetchBuildings } from "@/lib/icgc";
 
 /**
@@ -28,19 +29,30 @@ export async function GET(req: Request) {
   }
   const chunks = splitBbox(view, 40);
 
-  const ip = req.headers.get("x-forwarded-for") || "local";
-  const rl = rateLimit(`buildings:${ip}`, 40, 60_000);
+  const ip = clientIp(req);
+  const rl = await rateLimit(`buildings:${ip}`, 60, 60_000);
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
 
   try {
     const seen = new Map<string, any>();
     let fromCache = true;
     // fetch paral·lel dels mosaics (cortesia: màxim 9 crides ICGC per petició)
-    const results = await Promise.all(
+    const results = await Promise.allSettled(
       chunks.map((chunk) => getOrFetchBuildings(chunk))
     );
-    for (const { buildings, fromCache: cached } of results) {
+    let chunksWithBuildings = 0;
+    let chunksEmpty = 0;
+    let chunksFailed = 0;
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (r.status === "rejected") {
+        chunksFailed++;
+        continue;
+      }
+      const { buildings, fromCache: cached } = r.value;
       if (!cached) fromCache = false;
+      if (buildings.length > 0) chunksWithBuildings++;
+      else chunksEmpty++;
       for (const b of buildings) if (!seen.has(b.id)) seen.set(b.id, b);
     }
     const merged = [...seen.values()];
@@ -57,6 +69,15 @@ export async function GET(req: Request) {
     return NextResponse.json({
       fromCache,
       chunks: chunks.length,
+      // cobertura real de la vista (Fase 8.1): mai es marca "complet" si
+      // hi ha mosaics buits o fallits
+      coverage: {
+        total: chunks.length,
+        withBuildings: chunksWithBuildings,
+        empty: chunksEmpty,
+        failed: chunksFailed,
+        complete: chunksFailed === 0,
+      },
       buildings: merged.map((b) => {
         const m = b.municipalityCode ? munMap.get(b.municipalityCode) : undefined;
         return {
@@ -67,6 +88,8 @@ export async function GET(req: Request) {
           nom: b.nom,
           yearBuilt: b.yearBuilt,
           refcat: b.refcat,
+          avgRentEurMonth: b.avgRentEurMonth ?? null,
+          sampleSize: b.sampleSize ?? null,
           munRent: m?.rentLatest ?? null,
           munTense: m?.isTense ?? null,
           municipalityCode: b.municipalityCode,
