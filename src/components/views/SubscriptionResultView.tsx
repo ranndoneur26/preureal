@@ -27,9 +27,11 @@ export default function SubscriptionResultView({ mode }: { mode: "exit" | "cance
     const hq = window.location.hash.split("?")[1] || "";
     const sessionId = new URLSearchParams(hq).get("session_id");
     if (!sessionId) {
-      setState("error");
-      setDetail(ca ? "Falta l'identificador de sessió de Stripe." : "Falta el identificador de sesión de Stripe.");
-      return;
+      const id = setTimeout(() => {
+        setState("error");
+        setDetail(ca ? "Falta l'identificador de sessió de Stripe." : "Falta el identificador de sesión de Stripe.");
+      }, 0);
+      return () => clearTimeout(id);
     }
     fetch("/api/stripe/return", {
       method: "POST",
