@@ -35,6 +35,10 @@ while True:
     municipis.extend(batch)
     off += 1000
 print("municipis descarregats:", len(municipis))
+# el dataset inclou files artificials ("999998 No consta", "999999 Altres/Diversos")
+# amb lat/lng 0,0 — es filtren per no contaminar el cercador
+municipis = [m for m in municipis if not m["codi"].startswith("9999")]
+print("municipis reals (sense filtres artificials):", len(municipis))
 
 PROVINCE_BY_CODE = {
     "08": "Barcelona", "17": "Girona", "25": "Lleida", "43": "Tarragona",

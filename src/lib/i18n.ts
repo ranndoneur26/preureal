@@ -18,7 +18,7 @@ export const STRINGS = {
     how: {
       title: "Com funciona",
       s1t: "1. Cerca el teu municipi",
-      s1d: "Escriu el nom del municipi o del barri: hi ha 948 municipis de Catalunya amb dades oficials de fiances de lloguer (Incasòl, via habitatge.gencat.cat).",
+      s1d: "Escriu el nom del municipi o del barri: hi ha 947 municipis de Catalunya amb dades oficials de fiances de lloguer (Incasòl, via habitatge.gencat.cat).",
       s2t: "2. Fes clic sobre un edifici",
       s2d: "El mapa mostra els edificis reals (cartografia ICGC). En fer clic veus el preu mitjà real registrat oficialment, l'àrea tensada i la referència catastral.",
       s3t: "3. Compara i decideix",
@@ -181,7 +181,7 @@ export const STRINGS = {
     hero: {
       badge: "Datos oficiales · fianzas Incasòl",
       title: "Sé si te cobra de más antes de firmar el alquiler",
-      subtitle: "Consulta el precio medio real del alquiler registrado oficialmente en cualquiera de los 948 municipios de Cataluña, si la zona es área de mercado residencial tensionado y el año de construcción del edificio, directamente sobre el mapa.",
+      subtitle: "Consulta el precio medio real del alquiler registrado oficialmente en cualquiera de los 947 municipios de Cataluña, si la zona es área de mercado residencial tensionado y el año de construcción del edificio, directamente sobre el mapa.",
       ctaPrimary: "Abrir el mapa gratis",
       ctaSecondary: "Cómo funciona",
       trust: "Sin tarjeta · 3 consultas detalladas gratis cada mes",
@@ -189,7 +189,7 @@ export const STRINGS = {
     how: {
       title: "Cómo funciona",
       s1t: "1. Busca tu municipio",
-      s1d: "Escribe el nombre del municipio o del barrio: hay 948 municipios de Cataluña con datos oficiales de fianzas de alquiler (Incasòl, vía habitatge.gencat.cat).",
+      s1d: "Escribe el nombre del municipio o del barrio: hay 947 municipios de Cataluña con datos oficiales de fianzas de alquiler (Incasòl, vía habitatge.gencat.cat).",
       s2t: "2. Haz clic sobre un edificio",
       s2d: "El mapa muestra los edificios reales (cartografía ICGC). Al hacer clic ves el precio medio real registrado oficialmente, el área tensionada y la referencia catastral.",
       s3t: "3. Compara y decide",
