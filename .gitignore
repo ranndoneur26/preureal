@@ -60,3 +60,5 @@ server.log
 
 # lliurables de la plataforma (fora del repo)
 /download/
+# artefactos del sandbox
+/tool-results/

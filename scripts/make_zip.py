@@ -110,6 +110,24 @@ def build_vercel_files():
     files += VERCEL_FILES
     files = sorted(set(files))
 
+    # Guardia d'arquitectura: l'API consolidada només permet el catch-all,
+    # health, webhook i els handlers de _impl/. Una ruta route.ts a qualsevol
+    # altra ubicació (p. ex. restaurada per un checkpoint de la plataforma)
+    # crearia UNA funció serverless per ruta i trencaria el límit de 12 del
+    # pla Hobby — s'exclou amb avís fort.
+    ALLOWED_API_ROUTES = {
+        "src/app/api/[[...path]]/route.ts",
+        "src/app/api/health/route.ts",
+        "src/app/api/stripe/webhook/route.ts",
+    }
+    stray = [f for f in files
+             if f.startswith("src/app/api/") and f.endswith("/route.ts")
+             and f not in ALLOWED_API_ROUTES and "/_impl/" not in f]
+    if stray:
+        print(f"⚠ EXCLUÏTS del ZIP (ruta API fora de l'arquitectura consolidada "
+              f"— l'endpoint viu a src/app/api/_impl/): {stray}")
+        files = [f for f in files if f not in stray]
+
     miss = [m for m in VERCEL_MUST_HAVE if m not in files]
     if miss:
         sys.exit(f"✗ FALTEN fitxers imprescindibles (vercel): {miss}")
