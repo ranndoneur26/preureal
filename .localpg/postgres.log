@@ -38,3 +38,5 @@ Success. You can now start the database server using:
 2026-11-02 12:12:43.551 UTC [2078] LOG:  listening on Unix socket "/tmp/.localpg-sock/.s.PGSQL.5432"
 2026-11-02 12:12:43.552 UTC [2081] LOG:  database system was shut down at 2026-11-02 12:12:43 UTC
 2026-11-02 12:12:43.560 UTC [2078] LOG:  database system is ready to accept connections
+2026-11-02 12:17:43.651 UTC [2079] LOG:  checkpoint starting: time
+2026-11-02 12:17:52.667 UTC [2079] LOG:  checkpoint complete: wrote 93 buffers (0.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=9.016 s, sync=0.001 s, total=9.017 s; sync files=41, longest=0.001 s, average=0.001 s; distance=184 kB, estimate=184 kB; lsn=0/1EE1868, redo lsn=0/1EE17D8
