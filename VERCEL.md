@@ -41,13 +41,21 @@ DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
 
 ## 3. Puja el codi a Vercel
 
-El paquet `preureal-vercel-v10.zip` conté **només els fitxers necessaris per
+El paquet `PreuReal-cat-Vercel-v11.zip` conté **només els fitxers necessaris per
 al desplegament**: codi font, Prisma, configs, dades de seed i aquesta guia.
 Sense infraestructura local (SQLite, Docker, scripts del sandbox).
 
+> ⚠️ **No ho pugis arrossegant fitxers a la web de GitHub**: la web només
+> admet ~100 fitxers per pujada i `src/` en té 125 — la carpeta no pujaria
+> i el build fallaria amb `Falta "src/app/"`. Fes servir `git` per terminal
+> (o GitHub Desktop), com es mostra a sota.
+
 ```bash
-unzip preureal-vercel-v10.zip -d preureal && cd preureal
-git init && git add -A && git commit -m "PreuReal.cat"
+unzip PreuReal-cat-Vercel-v11.zip -d preureal && cd preureal
+git init && git add -A && git commit -m "PreuReal.cat v11"
+git branch -M main
+git remote add origin <URL-de-tu-repo>   # si el repo ja existeix
+git push -uf origin main                 # -f substitueix el contingut vell
 # GitHub → vercel.com/new → import → framework Next.js (auto)
 ```
 
