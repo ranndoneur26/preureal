@@ -15,11 +15,11 @@ reinicis i cold starts, i usuaris/subscripcions són reals.
 ## 2. Aplica l'esquema i les dades
 
 ```bash
-# 2a. Esquema (17 taules, migració versionada):
+# 2a. Esquema (18 taules, migració versionada):
 DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
   bunx prisma migrate deploy
 
-# 2b. Dades reals: 948 municipis amb lloguer Incasòl, edificis ICGC de
+# 2b. Dades reals: 947 municipis amb lloguer Incasòl, edificis ICGC de
 #     l'Eixample (API ICGC) i usuari administrador:
 DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
   ADMIN_PASSWORD="una-contrasenya-forta" bun run scripts/seed.ts
@@ -33,12 +33,12 @@ DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
 
 ## 3. Puja el codi a Vercel
 
-El paquet `preureal-vercel-v6.zip` conté **només els fitxers necessaris per
+El paquet `preureal-vercel-v7.zip` conté **només els fitxers necessaris per
 al desplegament**: codi font, Prisma, configs, dades de seed i aquesta guia.
 Sense infraestructura local (SQLite, Docker, scripts del sandbox).
 
 ```bash
-unzip preureal-vercel-v6.zip -d preureal && cd preureal
+unzip preureal-vercel-v7.zip -d preureal && cd preureal
 git init && git add -A && git commit -m "PreuReal.cat"
 # GitHub → vercel.com/new → import → framework Next.js (auto)
 ```
@@ -66,6 +66,7 @@ El build no necessita cap configuració addicional:
 | `AUTH_SECRET`           | `openssl rand -hex 32`                            | ✅ |
 | `DEMO_CHECKOUT`         | `true` mentre no hi hagi Stripe real              | Recomanada  |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth (redirect URI: `https://DOMINI/api/auth/google/callback`) | Opcional |
+| `GOOGLE_REDIRECT_URI` | només si cal sobreescriure la redirect URI de Google | Opcional |
 | `RESEND_API_KEY` / `MAIL_FROM` | correus reals (sense: sandbox a EmailLog)  | Opcional    |
 | `STRIPE_*`              | activació de pagaments reals                      | Opcional    |
 | `FRAME_ANCESTORS`       | per defecte `'self'` en producció (anti-clickjacking); només canviar si s'incrusta el mapa com a widget en un altre domini | Opcional |

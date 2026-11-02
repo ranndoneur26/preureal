@@ -8,7 +8,7 @@ import { rateLimit } from "@/lib/rate-limit";
  * POST /api/stripe/portal — crea una sessió del Portal de Client de Stripe
  * (gestionar targeta, factures, cancel·lació) — Fase 7.
  */
-export async function POST() {
+export async function POST(req: Request) {
   let user;
   try {
     user = await requireUser();

@@ -23,6 +23,6 @@ export async function POST() {
     data: { status: "canceled" },
   });
   await db.event.create({ data: { type: "DEMO_CANCEL", userId: user.id } }).catch(() => {});
-  await audit(user.id, "DEMO_CANCEL", null, null);
+  await audit(user.id, "DEMO_CANCEL", null, undefined);
   return NextResponse.json({ ok: true });
 }

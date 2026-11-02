@@ -144,6 +144,13 @@ async function seedEixampleBuildings() {
 async function seedAdmin() {
   const email = "admin@preureal.cat";
   const password = process.env.ADMIN_PASSWORD || "PreuReal2026!";
+  if (!process.env.ADMIN_PASSWORD) {
+    console.warn(
+      "\n⚠ ADMIN_PASSWORD no definida: el admin queda con la contraseña POR DEFECTO.\n" +
+      "  Para producción (Neon/Vercel) ejecuta siempre:\n" +
+      '  ADMIN_PASSWORD="una-contrasenya-forta" bun run scripts/seed.ts\n',
+    );
+  }
   const hash = await bcrypt.hash(password, 10);
   await db.user.upsert({
     where: { email },

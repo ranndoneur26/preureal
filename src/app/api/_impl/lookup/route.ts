@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Building } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { canConsult } from "@/lib/plans";
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
   const session = await getAuthUser();
 
   // 1) edifici (opcional)
-  let building = null;
+  let building: Building | null = null;
   if (buildingId) {
     building = await db.building.findUnique({ where: { id: buildingId } });
   }

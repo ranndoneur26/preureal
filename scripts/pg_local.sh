@@ -59,6 +59,8 @@ case "${1:-start}" in
     ensure_vendor
     if running; then echo "✓ PostgreSQL ja en marxa (port $PORT)"; exit 0; fi
     [ -d "$PGDATA" ] || bash "$SELF" init
+    # el reciclatge del sandbox pot trencar els permisos del datadir (0700 obligatori)
+    chmod 700 "$PGDATA" 2>/dev/null
     "$PGBIN/pg_ctl" -D "$PGDATA" -l "$LOG" -w -t 30 \
       -o "-p $PORT -c listen_addresses=127.0.0.1 -k $ROOT/.localpg" start >/dev/null
     echo "✓ PostgreSQL arrencat (port $PORT)"

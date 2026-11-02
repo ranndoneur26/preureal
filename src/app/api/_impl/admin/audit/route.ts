@@ -14,7 +14,6 @@ export async function GET(req: Request) {
   const logs = await db.auditLog.findMany({
     orderBy: { createdAt: "desc" },
     take,
-    include: { },
   });
   // resol correus d'actor (n+1 evitat: consultem els actorId presents)
   const actorIds = [...new Set(logs.map((l) => l.actorId).filter(Boolean))] as string[];

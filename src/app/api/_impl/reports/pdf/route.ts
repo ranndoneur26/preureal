@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+import type { Building, Municipality } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { planAllows } from "@/lib/plans";
@@ -38,8 +39,8 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "BAD_INPUT", message: "Cal ?mun= o ?building=" }, { status: 400 });
   }
 
-  let mun = null;
-  let building = null;
+  let mun: Municipality | null = null;
+  let building: Building | null = null;
   if (munCode) {
     if (!(await planAllows(plan, "pdfMunicipi"))) {
       return NextResponse.json({ error: "PLAN_REQUIRED", plan: "PREMIUM" }, { status: 403 });

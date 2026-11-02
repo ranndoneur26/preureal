@@ -84,6 +84,7 @@ export async function GET(req: Request) {
   await createSession({
     userId: user.id,
     email: user.email,
+    tv: user.tokenVersion,
     role: user.role === "ADMIN" ? "ADMIN" : "USER",
     plan: (user.plan as "FREE" | "PREMIUM" | "PRO") || "FREE",
   });

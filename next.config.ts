@@ -6,9 +6,6 @@ const nextConfig: NextConfig = {
   // script build:selfhost copiaria fitxers que no existeixen. VERCEL=1 el
   // defineix la pròpia plataforma durant el build.
   output: process.env.VERCEL ? undefined : "standalone",
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   reactStrictMode: false,
   async headers() {
     // 'frame-ancestors' (CSP) substitueix X-Frame-Options, que és obsolet i no

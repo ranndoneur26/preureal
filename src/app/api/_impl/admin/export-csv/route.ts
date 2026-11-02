@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "BAD_TYPE" }, { status: 400 });
   }
 
-  await audit(admin.id, "CSV_EXPORT", type, null);
+  await audit(admin.id, "CSV_EXPORT", type, undefined);
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",

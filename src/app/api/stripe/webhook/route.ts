@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const s = event.data.object as Stripe.Subscription;
-        const status = event.type === "deleted" ? "canceled" : s.status;
+        const status = event.type === "customer.subscription.deleted" ? "canceled" : s.status;
         const item = s.items.data[0];
         const periodEnd = item?.current_period_end ? new Date(item.current_period_end * 1000) : null;
         const priceId = item?.price?.id || null;

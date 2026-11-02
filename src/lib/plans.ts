@@ -1,6 +1,5 @@
 /** Definición de planes de PreuReal.cat (Fase 5: límits configurables des de l'admin). */
 import { db } from "@/lib/db";
-import type { Plan } from "@prisma/client";
 
 export type PlanId = "FREE" | "PREMIUM" | "PRO";
 
