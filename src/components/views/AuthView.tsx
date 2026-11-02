@@ -1,0 +1,265 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useApp } from "@/components/app-context";
+import { MapPin } from "lucide-react";
+
+export default function AuthView({
+  mode,
+  token,
+  oauthError,
+}: {
+  mode: "register" | "login" | "forgot" | "reset";
+  token?: string;
+  oauthError?: string;
+}) {
+  const { t, navigate, locale, auth } = useApp();
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState<string | null>(oauthError || null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  // el botó de Google només es mostra si l'OAuth està configurat al servidor
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/google/status")
+      .then((r) => r.json())
+      .then((d) => setGoogleEnabled(Boolean(d.enabled)))
+      .catch(() => setGoogleEnabled(false));
+  }, []);
+
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [k]: e.target.value });
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      if (mode === "register") {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...form, locale }),
+        });
+        const d = await res.json();
+        if (!res.ok) {
+          setError(d.error || "DEFAULT");
+          return;
+        }
+        await auth.refresh();
+        navigate("/mapa");
+      } else if (mode === "login") {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: form.email, password: form.password }),
+        });
+        const d = await res.json();
+        if (!res.ok) {
+          setError(d.error || "DEFAULT");
+          return;
+        }
+        await auth.refresh();
+        navigate("/mapa");
+      } else if (mode === "forgot") {
+        const res = await fetch("/api/auth/password-reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: form.email }),
+        });
+        setInfo(t.auth.forgotSent);
+      } else if (mode === "reset") {
+        const res = await fetch("/api/auth/password-reset/confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, password: form.password }),
+        });
+        const d = await res.json();
+        if (!res.ok) {
+          setError(d.error || "DEFAULT");
+          return;
+        }
+        await auth.refresh();
+        navigate("/mapa");
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const titles =
+    mode === "register"
+      ? { h: t.auth.registreTitle, btn: t.auth.registreCta }
+      : mode === "login"
+      ? { h: t.auth.entradaTitle, btn: t.auth.entradaCta }
+      : mode === "forgot"
+      ? { h: t.auth.forgotTitle, btn: t.auth.forgotCta }
+      : { h: t.auth.resetTitle, btn: t.auth.resetCta };
+
+  const errText = error
+    ? (t.auth.errors as Record<string, string>)[error] || t.auth.errors.DEFAULT
+    : null;
+
+  return (
+    <div className="flex-1 flex items-center justify-center px-4 py-14">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-12 h-12 rounded-2xl bg-[#0f2e21] text-white flex items-center justify-center mx-auto">
+            <MapPin className="w-6 h-6 text-[#7fd6a4]" />
+          </div>
+          <h1 className="mt-4 text-2xl font-extrabold">{titles.h}</h1>
+        </div>
+
+        <form onSubmit={submit} className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4">
+          {googleEnabled && (mode === "login" || mode === "register") && (
+            <>
+              <a
+                href="/api/auth/google"
+                className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#3c4043] hover:bg-[#faf9f7] transition-colors"
+              >
+                <GoogleIcon />
+                {t.auth.googleCta}
+              </a>
+              <div className="flex items-center gap-3 text-xs text-[#9aa094]">
+                <span className="h-px flex-1 bg-[#e5e1da]" />
+                {t.auth.orEmail}
+                <span className="h-px flex-1 bg-[#e5e1da]" />
+              </div>
+            </>
+          )}
+          {mode === "register" && (
+            <Field label={t.auth.name}>
+              <input value={form.name} onChange={set("name")} className="pr-input" autoComplete="name" />
+            </Field>
+          )}
+          {mode !== "reset" && (
+            <Field label={t.auth.email}>
+              <input
+                type="email"
+                required
+                value={form.email}
+                onChange={set("email")}
+                className="pr-input"
+                autoComplete="email"
+              />
+            </Field>
+          )}
+          {mode !== "forgot" && (
+            <Field label={t.auth.password}>
+              <input
+                type="password"
+                required
+                minLength={8}
+                value={form.password}
+                onChange={set("password")}
+                className="pr-input"
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
+              />
+            </Field>
+          )}
+
+          {errText && (
+            <div className="rounded-lg bg-[#fdeae2] border border-[#f2c4ac] text-[#b0431c] text-sm px-3 py-2">
+              {errText}
+            </div>
+          )}
+          {info && (
+            <div className="rounded-lg bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm px-3 py-2">
+              {info}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={busy}
+            className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors disabled:opacity-60"
+          >
+            {busy ? "..." : titles.btn}
+          </button>
+
+          <div className="text-sm text-center space-y-1.5 pt-2">
+            {mode === "login" && (
+              <>
+                <div className="text-[#6b6f68]">
+                  {t.auth.noAccount}{" "}
+                  <button onClick={() => navigate("/registre")} className="text-[#e8673c] font-semibold">
+                    {t.nav.registre}
+                  </button>
+                </div>
+                <div>
+                  <button onClick={() => navigate("/oblidat")} className="text-[#6b6f68] hover:underline">
+                    {t.auth.forgot}
+                  </button>
+                </div>
+              </>
+            )}
+            {mode === "register" && (
+              <div className="text-[#6b6f68]">
+                {t.auth.haveAccount}{" "}
+                <button onClick={() => navigate("/entrada")} className="text-[#e8673c] font-semibold">
+                  {t.nav.entrada}
+                </button>
+              </div>
+            )}
+            {(mode === "forgot" || mode === "reset") && (
+              <div>
+                <button onClick={() => navigate("/entrada")} className="text-[#6b6f68] hover:underline">
+                  {t.nav.entrada}
+                </button>
+              </div>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <style jsx global>{`
+        .pr-input {
+          width: 100%;
+          padding: 0.65rem 0.8rem;
+          border: 1px solid #e5e1da;
+          border-radius: 0.6rem;
+          font-size: 0.9rem;
+          outline: none;
+          background: #faf9f7;
+        }
+        .pr-input:focus {
+          border-color: #e8673c;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-xs font-semibold text-[#4b5349] mb-1 block">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path
+        fill="#FFC107"
+        d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.5 6.1 29.5 4 24 4 13 4 4 13 4 24s9 20 20 20 20-9 20-20c0-1.2-.1-2.3-.4-3.5z"
+      />
+      <path
+        fill="#FF3D00"
+        d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"
+      />
+      <path
+        fill="#4CAF50"
+        d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"
+      />
+      <path
+        fill="#1976D2"
+        d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.2 5.2C36.9 39.2 44 34 44 24c0-1.2-.1-2.3-.4-3.5z"
+      />
+    </svg>
+  );
+}

@@ -1,0 +1,275 @@
+// PreuReal.cat — Esquema de base de datos (PostgreSQL)
+// Datos reales: municipios (Idescat/Gencat), lloguer fiances Incasòl (Gencat),
+// àrees tensades (Resolucions TER/3739/2026 + TER/3740/2026), edificis ICGC (RTT).
+//
+// Backend: PostgreSQL gestionat (Neon/Supabase) — compatible Vercel serverless.
+// Migració versionada: prisma/migrations/ (aplicar amb `npx prisma migrate deploy`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  passwordHash    String
+  name            String?
+  locale          String        @default("ca")
+  role            String        @default("USER") // USER | ADMIN
+  plan            String        @default("FREE") // FREE | PREMIUM | PRO
+  active          Boolean       @default(true) // desactivació per admin (RGPD/bans)
+  emailVerifiedAt DateTime?     // verificació de correu (Fase 6)
+  tokenVersion    Int           @default(0) // +1 invalida totes les sessions actives
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  subscriptions   Subscription[]
+  searchLogs      SearchLog[]
+  priceReports    PriceReport[]
+  passwordTokens  PasswordToken[]
+  emailTokens     EmailToken[]
+  favorites       Favorite[]
+  savedComparisons SavedComparison[]
+
+  @@index([role])
+  @@index([plan])
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id])
+  stripeCustomerId     String?
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  plan                 String   // PREMIUM | PRO
+  status               String   // active | trialing | past_due | canceled | incomplete | incomplete_expired
+  currentPeriodEnd     DateTime?
+  demo                 Boolean  @default(false) // suscripción creada en modo prueba (sin Stripe)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model PasswordToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Tokens de verificació de correu (Fase 6)
+model EmailToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Municipios de Cataluña (código INE de 5 dígitos) con datos reales de lloguer
+model Municipality {
+  code            String  @id // "080193" (6 dígitos formato Gencat/ICGC)
+  ineCode         String? // "08019" (5 dígitos)
+  name            String
+  comarca         String?
+  province        String?
+  lat             Float
+  lng             Float
+  rentLatest      Float?  // €/mes — fiances Incasòl, último período disponible
+  rentPeriod      String? // "2025" o "2026 I trim."
+  rentPrevYear    Float?  // año anterior para tendencia
+  rentPrevPeriod  String?
+  rentHistory     String? // JSON {"2005": 550.2, ...}
+  contractsLatest Int?    // nº contratos con fianza depositada (muestra)
+  isTense         Boolean @default(false)
+  tenseList       String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
+  boundary        String? // GeoJSON del límite municipal (cache ICGC)
+  boundaryFetchedAt DateTime?
+  updatedAt       DateTime @updatedAt
+
+  @@index([name])
+  @@index([isTense])
+}
+
+// Edificios reales (ICGC RTT construccions) cacheados por la app
+model Building {
+  id               String   @id @default(cuid())
+  externalId       String   @unique // id RTT o refcat catastral
+  source           String   @default("ICGC_RTT")
+  municipalityCode String?
+  tipus            String?  // edi (edifici) | ill (illa) | ...
+  estat            String?
+  altura           Int?
+  nom              String?
+  polygonJson      String   // [[ [lng,lat], ... ]]
+  centroidLat      Float
+  centroidLng      Float
+  refcat           String?  // referencia catastral (si se conoce)
+  yearBuilt        Int?     // año de construcción (Catastro, cuando esté disponible)
+  yearSource       String?  // "CADASTRE_DNP" | "IMPORT"
+  // Dades de lloguer a nivell edifici/illa (importació Incasòl — Fase 9.1)
+  avgRentEurMonth  Float?   // preu mitjà real de l'illa/edifici (font importada)
+  sampleSize       Int?     // mostres (contractes) de les quals surt la mitjana
+  cachedAt         DateTime @default(now())
+
+  @@index([municipalityCode])
+  @@index([centroidLat, centroidLng])
+}
+
+// Registro de consultas (cuota + analítica + historial d'usuari)
+model SearchLog {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  buildingId       String?
+  municipalityCode String?
+  ipHash           String?
+  kind             String   @default("DETAIL") // DETAIL | TEASER
+  createdAt        DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([municipalityCode])
+}
+
+// Eventos de conversión (embudo de ventas)
+model Event {
+  id        String   @id @default(cuid())
+  type      String // SIGNUP | LOGIN | MAP_QUERY | PAYWALL_VIEW | CHECKOUT_START | CHECKOUT_DEMO | SUBSCRIBE_SUCCESS | PRICE_REPORT | EXPORT | PASSWORD_RESET
+  userId    String?
+  meta      String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+}
+
+// Informes de precio enviados por usuarios (crowdsourcing, amb moderació — Fase 10)
+model PriceReport {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  municipalityCode String?
+  buildingId       String?
+  offerEurMonth    Float?
+  offerEurM2       Float?
+  surfaceM2        Float?
+  rooms            Int?
+  contractType     String?  // HABITATGE | HABITATGE_COMPARTIT | LOCAL | ALTRE
+  reportedAt       DateTime? // data de l'operació declarada per l'usuari
+  note             String?
+  status           String   @default("PENDING") // PENDING | ACCEPTED | REJECTED
+  reviewedAt       DateTime?
+  reviewNote       String?
+  createdAt        DateTime @default(now())
+
+  @@index([status])
+  @@index([municipalityCode, createdAt])
+}
+
+// Correos automáticos (log del modo sandbox o resultado de Resend)
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  provider  String   @default("sandbox") // sandbox | resend
+  status    String   @default("logged") // logged | sent | error
+  error     String?
+  createdAt DateTime @default(now())
+}
+
+// --- Taules noves (BLOC A/B/C de l'encàrrec) --------------------------------
+
+// Rate limiting COMPARTIT entre instàncies (serverless) — V3 de l'auditoria
+model RateLimit {
+  key     String   @id // "login:1.2.3.4" | "lookup:userId" ...
+  count   Int      @default(0)
+  resetAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([resetAt])
+}
+
+// Idempotència de webhooks Stripe — V9 de l'auditoria
+model StripeEvent {
+  eventId     String   @id // event.id de Stripe
+  type        String
+  processedAt DateTime @default(now())
+}
+
+// Historial d'auditoria d'accions administratives — Fase 12
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?  // usuari admin que fa l'acció
+  action    String   // USER_PLAN_CHANGE | USER_ROLE_CHANGE | USER_DEACTIVATE | IMPORT_RUN | REPORT_MODERATE | ...
+  target    String?  // identificador de l'objecte (userId, codi municipi...)
+  meta      String?  // JSON amb detalls (abans→després)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+// Execucions d'importació de dades — Fase 9.2
+model ImportRun {
+  id        String   @id @default(cuid())
+  source    String   // INCASOL_EDIFICIS | INCASOL_MUNICIPIS | ...
+  status    String   // OK | PARTIAL | ERROR
+  rowsTotal Int      @default(0)
+  created   Int      @default(0)
+  updated   Int      @default(0)
+  skipped   Int      @default(0)
+  error     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Límits i preus dels plans — configurables des de l'admin (Fase 5)
+model PlanSetting {
+  plan       String   @id // FREE | PREMIUM | PRO
+  quotaMonth Int      // consultes detallades/mes (-1 = il·limitades)
+  priceEur   Float
+  features   String?  // JSON {exportCsv: bool, historial: bool, ...}
+  updatedAt  DateTime @updatedAt
+}
+
+// Edificis i municipis preferits de l'usuari — Fase 9
+model Favorite {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  entityKey        String   // "BUILDING:<id>" | "MUNI:<code>"
+  buildingId       String?
+  municipalityCode String?
+  label            String?  // nom per mostrar (nom municipi / refcat)
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, entityKey])
+  @@index([userId])
+}
+
+// Comparacions desades — Fase 8
+model SavedComparison {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  entities  String   // JSON [{type:"MUNI"|"BUILDING", code:"..."}]
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
