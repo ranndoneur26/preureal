@@ -24,7 +24,7 @@ const PROVENANCE = [
     font: "DOGC — Resolucions TER/3739/2026 i TER/3740/2026 (19-10-2026)",
     llicencia: "Document oficial publicat al DOGC",
     unitat: "llistes A (3739) i B (3740) de municipis",
-    ambit: "170 municipis",
+    ambit: "171 municipis",
     periodicitat: "Cada actualització del DOGC (normalment semestral)",
     metodologia: "Classificació legal dels municipis segons les resolucions del Departament de Territori, Habitatge i Transició Ecològica.",
     qualitat: "ALTA — text legal, revisió manual",

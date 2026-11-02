@@ -44,21 +44,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-local-*
-.claude
-.z-ai-config
-*.log
-dev.log
-dev.out.log
-test
-prompt
 
-server.log
-# Carpeta skills del sandbox + PostgreSQL local incrustat (binaris/dades)
-/skills/
-.localpg/
-
-# lliurables de la plataforma (fora del repo)
-/download/
-# artefactos del sandbox
-/tool-results/
+# autoallotjament (volum docker a l'host)
+/dbdata/

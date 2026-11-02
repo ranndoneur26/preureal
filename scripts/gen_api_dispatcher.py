@@ -12,7 +12,7 @@ import os
 import re
 import sys
 
-ROOT = "/home/z/my-project"
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 API = os.path.join(ROOT, "src", "app", "api")
 OUT = os.path.join(API, "[[...path]]", "route.ts")
 

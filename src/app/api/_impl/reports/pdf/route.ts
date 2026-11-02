@@ -157,7 +157,7 @@ export async function GET(req: Request) {
     y -= 16;
     line(
       mun.isTense
-        ? `Aquest municipi ESTÀ declarat àrea de mercat residencial tensat (llista ${mun.tenseList === "A" ? "A — TER/3739/2026" : mun.tenseList === "B" ? "B — TER/3740/2026" : mun.tenseList || "—"}). Aplica l'índex de referència de lloguers.`
+        ? `Aquest municipi ESTÀ declarat àrea de mercat residencial tensat (llista ${mun.tenseList === "A" ? "A — TER/3739/2026" : mun.tenseList === "C" || mun.tenseList === "B" ? "C — TER/3740/2026" : mun.tenseList || "—"}). Aplica l'índex de referència de lloguers.`
         : "Aquest municipi NO consta a les resolucions TER/3739/2026 ni TER/3740/2026 (DOGC 19-10-2026).",
       9
     );

@@ -6,39 +6,47 @@ reinicis i cold starts, i usuaris/subscripcions són reals.
 
 ## 1. Crea la base de dades PostgreSQL
 
-**Neon (recomanat, plan gratuit):**
+**Supabase (projecte ja creat):** `https://tkbjifmflpxqszaozqlw.supabase.co`
+1. Dashboard → **Project Settings → Database → Connection string → URI**.
+2. Per al **runtime** (Vercel): usa el **Connection pooler** (port `6543`,
+   transacció) — `postgresql://postgres.tkbjifmflpxqszaozqlw:[DB-PASSWORD]@aws-0-<regio>.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require`
+3. Per fer el **migrate deploy** una vegada: usa el mode **session** (port
+   `5432` del pooler) o la connexió directa — Prisma necessita una sessió
+   real per crear l'esquema (pgBouncer en mode transacció no ho permet).
+4. La contrasenya és la **Database Password** del projecte (Settings →
+   Database). Si no la tens: Reset database password.
+5. ⚠️ Les claus **anon / service_role JWT NO serveixen** per connectar Prisma:
+   aquesta app parla directe amb PostgreSQL, no fa servir el SDK de Supabase.
+   La `service_role` és un secret: no la shares ni la commitis (si s'ha
+   compartit per xat, **rotala** a Settings → API).
+
+**Neon (alternativa, plan gratuit):**
 1. https://neon.tech → crea projecte `preureal` (regió EU-central).
 2. Copia el **Pooled connection string** (conté `-pooler`).
-
-**Supabase (alternativa):** Settings → Database → Connection string (Pooled).
 
 ## 2. Aplica l'esquema i les dades
 
 ```bash
 # 2a. Esquema (18 taules, migració versionada):
 DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
-  bunx prisma migrate deploy
+  npx prisma migrate deploy
 
 # 2b. Dades reals: 947 municipis amb lloguer Incasòl, edificis ICGC de
 #     l'Eixample (API ICGC) i usuari administrador:
 DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
-  ADMIN_PASSWORD="una-contrasenya-forta" bun run scripts/seed.ts
+  ADMIN_PASSWORD="una-contrasenya-forta" npm run db:seed
 # → credencials admin: admin@preureal.cat / $ADMIN_PASSWORD
 ```
 
-> Alternativa: amb el paquet complet (el genera `python3 scripts/make_zip.py --full`)
-> tens `db/custom.db` (l'arxiu SQLite original amb usuaris, informes i historial).
-> Per portar TOTES les dades: `python3 scripts/migrate_sqlite_to_pg.py` (vegeu DEPLOY.md
-> d'aquell paquet).
 
 ## 3. Puja el codi a Vercel
 
-El paquet `preureal-vercel-v7.zip` conté **només els fitxers necessaris per
+El paquet `preureal-vercel-v10.zip` conté **només els fitxers necessaris per
 al desplegament**: codi font, Prisma, configs, dades de seed i aquesta guia.
 Sense infraestructura local (SQLite, Docker, scripts del sandbox).
 
 ```bash
-unzip preureal-vercel-v7.zip -d preureal && cd preureal
+unzip preureal-vercel-v10.zip -d preureal && cd preureal
 git init && git add -A && git commit -m "PreuReal.cat"
 # GitHub → vercel.com/new → import → framework Next.js (auto)
 ```
@@ -52,8 +60,7 @@ El build no necessita cap configuració addicional:
   un `prisma/schema.prisma` antic amb `provider = "sqlite"` (fallaria amb
   el críptic `P1012: Environment variable not found: DATABASE_URL`) —
   i explica com arreglar-ho
-- Vercel detecta `bun.lock` i instal·la amb Bun (si preferiu npm, afegiu
-  un `package-lock.json` propi)
+- Vercel detecta `package-lock.json` i instal·la amb npm
 - API consolidada en **3 Serverless Functions** (límit del pla Hobby:
   12) — vegeu la nota de la secció 5
 
@@ -91,4 +98,4 @@ bash scripts/update_all.sh     # local: descarrega Excels oficials + Socrata →
 - El pla **Hobby** de Vercel + **Neon free** són suficients per començar.
 - Health check: `GET /api/health` inclou estat de la BD (latència) i integracions.
 - Backups: Neon/Supabase en fan automàticament; extra: `pg_dump` programat.
-- Per VPS/Docker amb PostgreSQL local, vegeu `DEPLOY.md` i `docker-compose.yml`.
+- Autoallotjament (VPS/Docker): `npm run build:selfhost` i `npm start` (mode `standalone`) amb un PostgreSQL propi.

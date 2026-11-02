@@ -4,7 +4,7 @@
  * Es reutilitza el sistema de sessions propi (JWT a cookie, src/lib/auth.ts):
  * el callback fa find-or-create de l'usuari i crida createSession().
  *
- * Configuració (Google Cloud Console — veure DEPLOY.md §8):
+ * Configuració (Google Cloud Console — veure .env.production.example):
  *   GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET
  *   Redirect URI autoritzada: {NEXT_PUBLIC_SITE_URL}/api/auth/google/callback
  *

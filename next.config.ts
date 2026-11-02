@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
+  // Arrel de Turbopack fixada a la carpeta del projecte: evita que Next triï un
+  // package-lock.json d'una carpeta pare (p. ex. ~/package-lock.json) com a arrel.
+  turbopack: { root: path.resolve(__dirname) },
   // 'standalone' només serveix per autoallotjament (Docker/VPS). A Vercel el
   // builder fa el seu propi empaquetat i el mode standalone sobta — i el
   // script build:selfhost copiaria fitxers que no existeixen. VERCEL=1 el

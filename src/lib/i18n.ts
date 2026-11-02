@@ -10,7 +10,7 @@ export const STRINGS = {
     hero: {
       badge: "Dades oficials · fiances Incasòl",
       title: "Sap si et cobra de més abans de signar el lloguer",
-      subtitle: "Consulta el preu mitjà real del lloguer registrat oficialment a qualsevol municipi de Catalunya (948), la zona si és àrea de mercat residencial tensat i l'any de construcció de l'edifici. directament sobre el mapa.",
+      subtitle: "Consulta el preu mitjà real del lloguer registrat oficialment a qualsevol municipi de Catalunya (947), la zona si és àrea de mercat residencial tensat i l'any de construcció de l'edifici. directament sobre el mapa.",
       ctaPrimary: "Obre el mapa gratis",
       ctaSecondary: "Com funciona",
       trust: "Sense targeta · 3 consultes detallades gratis cada mes",
@@ -34,7 +34,7 @@ export const STRINGS = {
     data: {
       title: "Dades 100% oficials",
       sources: [
-        { t: "Fiances de lloguer (Incasòl)", d: "Preu mitjà mensual i nombre de contractes per municipi. Explotació estadística del registre de fiances, publicada per habitatge.gencat.cat (dades fins al 2026 1r trimestre)." },
+        { t: "Fiances de lloguer (Incasòl)", d: "Preu mitjà mensual i nombre de contractes per municipi. Explotació estadística del registre de fiances, publicada per habitatge.gencat.cat (dades fins al 2025)." },
         { t: "Cartografia d'edificis (ICGC)", d: "Polígons reals d'edificis i illes de cases de l'Institut Cartogràfic i Geològic de Catalunya (RTT, llicència CC-BY 4.0)." },
         { t: "Referència catastral (ICGC/Cadastre)", d: "Parcel·les cadastrals via API Territorial de l'ICGC. Any de construcció via serveis lliures del Cadastre quan estan disponibles." },
         { t: "Àrees tensades (Generalitat)", d: "Llistes oficials de municipis amb regulació de preus de lloguer (Resolucions TER/800/2024 i TER/2408/2024)." },
@@ -45,7 +45,7 @@ export const STRINGS = {
       title: "Preus clars, sense sorpreses",
       subtitle: "Comença gratis. Passa't a Premium quan estiguis buscant pis de debò.",
       free: { name: "Gratuït", price: "0 €", per: "per sempre", cta: "Comença gratis", feats: ["Mapa de tota Catalunya", "3 consultes detallades cada mes", "Preu mitjà real per municipi", "Marcador d'àrea tensada", "Comparador de preu"] },
-      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultes il·limitades", "Històric de lloguer per municipi (2005–2026)", "Tendència de preus any rere any", "Comparador avançat", "Suport prioritari"], popular: "El més triat" },
+      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultes il·limitades", "Històric de lloguer per municipi (2005–2025)", "Tendència de preus any rere any", "Comparador avançat", "Suport prioritari"], popular: "El més triat" },
       pro: { name: "Pro · agents", price: "19,99 €", per: "al mes", cta: "Activa Pro", feats: ["Tot el de Premium", "Exportació CSV de dades per municipi", "Ideal per a agents i gestors", "Accés prioritari a noves dades", "Factura nominal"] },
       demoNote: "MODO PRUEBA: la compra está simulada (sin cobro real) hasta que el propietario conecte su cuenta de Stripe.",
       stripeOff: "Els pagaments encara no estan actius: el propietari ha de connectar el seu compte de Stripe.",
@@ -212,7 +212,7 @@ export const STRINGS = {
     data: {
       title: "Datos 100% oficiales",
       sources: [
-        { t: "Fianzas de alquiler (Incasòl)", d: "Precio medio mensual y número de contratos por municipio. Explotación estadística del registro de fianzas, publicada por habitatge.gencat.cat (datos hasta el 1er trimestre 2026)." },
+        { t: "Fianzas de alquiler (Incasòl)", d: "Precio medio mensual y número de contratos por municipio. Explotación estadística del registro de fianzas, publicada por habitatge.gencat.cat (datos hasta 2025)." },
         { t: "Cartografía de edificios (ICGC)", d: "Polígonos reales de edificios y manzanas del Instituto Cartográfico y Geológico de Cataluña (RTT, licencia CC-BY 4.0)." },
         { t: "Referencia catastral (ICGC/Cadastre)", d: "Parcelas catastrales vía API Territorial del ICGC. Año de construcción vía servicios libres del Catastro cuando están disponibles." },
         { t: "Áreas tensionadas (Generalitat)", d: "Listas oficiales de municipios con regulación de precios de alquiler (Resoluciones TER/800/2024 y TER/2408/2024)." },
@@ -223,7 +223,7 @@ export const STRINGS = {
       title: "Precios claros, sin sorpresas",
       subtitle: "Empieza gratis. Pásate a Premium cuando estés buscando piso de verdad.",
       free: { name: "Gratuito", price: "0 €", per: "para siempre", cta: "Empieza gratis", feats: ["Mapa de toda Cataluña", "3 consultas detalladas cada mes", "Precio medio real por municipio", "Marcador de área tensionada", "Comparador de precio"] },
-      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultas ilimitadas", "Histórico de alquiler por municipio (2005–2026)", "Tendencia de precios año a año", "Comparador avanzado", "Soporte prioritario"], popular: "El más elegido" },
+      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultas ilimitadas", "Histórico de alquiler por municipio (2005–2025)", "Tendencia de precios año a año", "Comparador avanzado", "Soporte prioritario"], popular: "El más elegido" },
       pro: { name: "Pro · agentes", price: "19,99 €", per: "al mes", cta: "Activa Pro", feats: ["Todo lo de Premium", "Exportación CSV de datos por municipio", "Ideal para agentes y gestores", "Acceso prioritario a nuevos datos", "Factura nominal"] },
       demoNote: "MODO PRUEBA: la compra está simulada (sin cobro real) hasta que el propietario conecte su cuenta de Stripe.",
       stripeOff: "Los pagos aún no están activos: el propietario debe conectar su cuenta de Stripe.",

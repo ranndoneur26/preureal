@@ -1,0 +1,1 @@
+/home/z/my-project/.localpg/vendor/bin/postgres "-D" "/home/z/my-project/.localpg/data" "-p" "5432" "-c" "listen_addresses=127.0.0.1" "-k" "/tmp/.localpg-sock"

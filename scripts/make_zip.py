@@ -26,13 +26,14 @@ ROOT = "/home/z/my-project"
 VERCEL_DIRS = ["src", "prisma", "public"]  # sencers (walk del sistema de fitxers)
 VERCEL_FILES = [
     # configs de build
-    "package.json", "bun.lock", "next.config.ts", "tsconfig.json",
+    "package.json", "package-lock.json", "next.config.ts", "tsconfig.json",
     "tailwind.config.ts", "postcss.config.mjs", "components.json",
     "eslint.config.mjs",
     # repo + entorn
     ".gitignore", ".env.production.example",
     # documentació de desplegament
     "VERCEL.md", "README.md",
+    "TASKS.md", "PROJECT_CONTEXT.md", "MIGRATION_ZAI.md",
     # dades de seed (municipis amb lloguer Incasòl real)
     "data/municipalities.json",
     # scripts d'operació referenciats per VERCEL.md / README.md
@@ -165,7 +166,7 @@ def main():
     mode = "--full" if "--full" in args else "--vercel"
     args = [a for a in args if not a.startswith("--")]
     default_out = os.path.join(
-        ROOT, "download", "preureal-v3.zip" if mode == "--full" else "preureal-vercel-v7.zip")
+        ROOT, "download", "preureal-v3.zip" if mode == "--full" else "preureal-vercel-v10.zip")
     out = args[0] if args else default_out
 
     if mode == "--vercel":

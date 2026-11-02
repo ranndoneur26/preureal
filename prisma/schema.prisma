@@ -3,8 +3,7 @@
 // àrees tensades (Resolucions TER/3739/2026 + TER/3740/2026), edificis ICGC (RTT).
 //
 // Backend: PostgreSQL gestionat (Neon/Supabase) — compatible Vercel serverless.
-// Migració versionada: prisma/migrations/ (vegeu scripts/migrate_sqlite_to_pg.py
-// per portar les dades de l'arxiu SQLite original).
+// Migració versionada: prisma/migrations/ (aplicar amb `npx prisma migrate deploy`).
 
 generator client {
   provider = "prisma-client-js"
@@ -96,7 +95,7 @@ model Municipality {
   rentHistory     String? // JSON {"2005": 550.2, ...}
   contractsLatest Int?    // nº contratos con fianza depositada (muestra)
   isTense         Boolean @default(false)
-  tenseList       String? // "A" (TER/3739/2026) | "B" (TER/3740/2026)
+  tenseList       String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
   boundary        String? // GeoJSON del límite municipal (cache ICGC)
   boundaryFetchedAt DateTime?
   updatedAt       DateTime @updatedAt

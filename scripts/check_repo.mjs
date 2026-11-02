@@ -19,12 +19,12 @@ function fallo(msg) {
   console.error(`
 ${msg}
 
-  Solución: el repo debe contener SOLO la estructura de preureal-vercel-v7.zip
+  Solución: el repo debe contener SOLO la estructura de preureal-vercel-v10.zip
   (src/, prisma/, public/, package.json…). Vuelve a subir el contenido íntegro
   del ZIP con un historial NUEVO (no mezcles con la carpeta vieja):
 
-    unzip preureal-vercel-v7.zip -d preureal && cd preureal
-    git init && git add -A && git commit -m "PreuReal.cat v7"
+    unzip preureal-vercel-v10.zip -d preureal && cd preureal
+    git init && git add -A && git commit -m "PreuReal.cat v10"
     git branch -M main
     git remote add origin <URL-de-tu-repo>   # si aún no existe
     git push -uf origin main

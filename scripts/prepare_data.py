@@ -6,8 +6,9 @@ Fonts (totes oficials):
   font Idescat/ICGC.
 - Lloguer mitjà mensual i contractes (fiances Incasòl): Excels oficials de
   habitatge.gencat.cat "Lloguers per àmbits geogràfics".
-- Àrees de mercat residencial tensat: Resolució TER/800/2024 (140 municipis) i
-  Resolució TER/2408/2024 (131 municipis), publicades per habitatge.gencat.cat.
+- Àrees de mercat residencial tensat vigents: Resolucions TER/3739/2026 (pròrroga)
+  i TER/3740/2026 (municipis nous), DOGC 19-10-2026 (llistes TENSE_A i TENSE_C
+  més avall). Històric: TER/800/2024 i TER/2408/2024.
 
 Sortida: data/municipalities.json (llista de municipis amb històric de lloguer).
 """
@@ -20,7 +21,7 @@ from collections import OrderedDict
 import openpyxl
 
 BASE = "/tmp"
-OUT = "/home/z/my-project/data"
+OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 os.makedirs(OUT, exist_ok=True)
 
 # --- 1. Municipis (Socrata 9aju-tpwc) -------------------------------------
@@ -207,12 +208,21 @@ def load_contractes_with_names(path):
 conts_by_name = load_contractes_with_names(os.path.join(BASE, "municipis_anual_contractes.xlsx"))
 print("lloguer per nom:", len(rents_by_name), "| contractes per nom:", len(conts_by_name))
 
+# Noms que el dataset Socrata escriu diferent de l'Excel Incasòl i del DOGC.
+# Sense això el municipi no es marca com a tensat ni rep lloguer.
+NAME_ALIASES = {
+    "Palamós i Sant Joan": "Palamós",  # TER/3739/2026 (llista A)
+}
+
+# Toponimia oficial de sortida (el font concatena entitats; l'INE oficial és "Palamós")
+OUTPUT_NAME_FIXES = {"Palamós i Sant Joan": "Palamós"}
+
 result = []
 matched_a = matched_b = matched_rent = unmatched_rent = 0
 for m in municipis:
     code5 = m["codi"].strip()
     nom = m["nom"].strip()
-    jk = join_key(nom)
+    jk = join_key(NAME_ALIASES.get(nom, nom))
     rent_entry = rents_by_name.get(jk)
     hist = rent_entry["hist"] if rent_entry else {}
     contracts = conts_by_name.get(jk) or {}
@@ -255,7 +265,7 @@ for m in municipis:
     result.append({
         "code": code5,  # codi Gencat de 6 dígits (compatible ICGC CODIMUNI)
         "ineCode": rent_entry["code"] if rent_entry else None,  # codi INE de 5 dígits
-        "name": nom,
+        "name": OUTPUT_NAME_FIXES.get(nom, nom),
         "comarca": m.get("nom_comarca"),
         "province": PROVINCE_BY_CODE.get(code5[:2]),
         "lat": float(m["latitud"]),
@@ -271,7 +281,12 @@ for m in municipis:
         "tenseList": tense_list,
     })
 
-print(f"cruïlla: {len(result)} municipis | amb lloguer: {matched_rent} | tensats: A={matched_a} B={matched_b}")
+print(f"cruïlla: {len(result)} municipis | amb lloguer: {matched_rent} | tensats: A={matched_a} C={matched_b}")
+# Control de qualitat: cada municipi de les resolucions ha de cruzar amb el dataset.
+if matched_a != len(TENSE_A) or matched_b != len(TENSE_C):
+    _found = {join_key(NAME_ALIASES.get(m["nom"].strip(), m["nom"].strip())) for m in municipis}
+    _miss = [n for n in TENSE_A + TENSE_C if join_key(n) not in _found]
+    print(f"⚠ Tensats sense cruïlla: A={matched_a}/{len(TENSE_A)} C={matched_b}/{len(TENSE_C)} → {_miss}")
 with open(os.path.join(OUT, "municipalities.json"), "w", encoding="utf-8") as f:
     json.dump(result, f, ensure_ascii=False)
 print("desat a data/municipalities.json")

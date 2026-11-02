@@ -1,11 +1,11 @@
 /**
  * PreuReal.cat — Seed de la base de datos con datos reales.
  *
- * 1. Municipios (948) con lloguer Incasòl real (data/municipalities.json)
+ * 1. Municipios (947) con lloguer Incasòl real (data/municipalities.json)
  * 2. Edificios reales del Eixample de Barcelona (ICGC RTT, API Territorial)
  * 3. Usuario administrador
  *
- * Ejecutar: bun run scripts/seed.ts
+ * Ejecutar: npm run db:seed   (equivale a: npx tsx scripts/seed.ts)
  */
 import { PrismaClient } from "@prisma/client";
 import * as fs from "fs";
@@ -148,7 +148,7 @@ async function seedAdmin() {
     console.warn(
       "\n⚠ ADMIN_PASSWORD no definida: el admin queda con la contraseña POR DEFECTO.\n" +
       "  Para producción (Neon/Vercel) ejecuta siempre:\n" +
-      '  ADMIN_PASSWORD="una-contrasenya-forta" bun run scripts/seed.ts\n',
+      '  ADMIN_PASSWORD="una-contrasenya-forta" npm run db:seed\n',
     );
   }
   const hash = await bcrypt.hash(password, 10);
