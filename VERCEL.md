@@ -33,12 +33,12 @@ DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
 
 ## 3. Puja el codi a Vercel
 
-El paquet `preureal-vercel-v5.zip` conté **només els fitxers necessaris per
+El paquet `preureal-vercel-v6.zip` conté **només els fitxers necessaris per
 al desplegament**: codi font, Prisma, configs, dades de seed i aquesta guia.
 Sense infraestructura local (SQLite, Docker, scripts del sandbox).
 
 ```bash
-unzip preureal-vercel-v5.zip -d preureal && cd preureal
+unzip preureal-vercel-v6.zip -d preureal && cd preureal
 git init && git add -A && git commit -m "PreuReal.cat"
 # GitHub → vercel.com/new → import → framework Next.js (auto)
 ```
@@ -47,9 +47,11 @@ El build no necessita cap configuració addicional:
 
 - `postinstall` → `prisma generate` (el client Prisma es genera sempre)
 - `build` → `node scripts/check_repo.mjs && prisma generate && next build`
-  — el guardia `check_repo.mjs` detecta repos **mezclados** (p. ex. una
-  carpeta `app/` antiga a l'arrel al costat de `src/app/`, que fa fallar
-  Turbopack amb `Can't resolve './globals.css'`) i explica com arreglar-ho
+  — el guardia `check_repo.mjs` detecta repos **mezclados**: una carpeta
+  `app/` antiga a l'arrel (fallaria amb `Can't resolve './globals.css'`) o
+  un `prisma/schema.prisma` antic amb `provider = "sqlite"` (fallaria amb
+  el críptic `P1012: Environment variable not found: DATABASE_URL`) —
+  i explica com arreglar-ho
 - Vercel detecta `bun.lock` i instal·la amb Bun (si preferiu npm, afegiu
   un `package-lock.json` propi)
 - API consolidada en **3 Serverless Functions** (límit del pla Hobby:
