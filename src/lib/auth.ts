@@ -9,8 +9,8 @@ import type { User } from "@prisma/client";
  *
  * JWT signat (HS256) dins d'una cookie httpOnly + SameSite=Lax + Secure en
  * producció. Millores de seguretat (BLOC A):
- *  - AUTH_SECRET és OBLIGATORI en producció: si falta, l'app no arranca
- *    (abans hi havia un secret de desenvolupament com a fallback).
+ *  - AUTH_SECRET és OBLIGATORI en producció: si falta, falla al PRIMER ÚS en
+ *    runtime (mai durant el build — vegeu getSecretKey()).
  *  - El JWT incorpora `tv` (tokenVersion): canviar contrasenya o desactivar
  *    un usuari incrementa el comptador i revoca TOTES les sessions actives.
  *  - requireUser() verifica contra la BD (usuari existent, actiu, versió de
@@ -18,21 +18,37 @@ import type { User } from "@prisma/client";
  */
 
 const COOKIE = "pr_session";
-const SECRET = (() => {
+const encoder = new TextEncoder();
+
+/**
+ * Secret LAZY: s'avalua al primer ús en runtime i es cacheja.
+ *
+ * Per què no a nivell de mòdul: `next build` importa els mòduls de ruta per
+ * recollir la seva configuració ("collect page data"). Una validació amb
+ * throw a l'arrel del mòdul faria fallir el BUILD sencer encara que les
+ * variables d'entorn estiguin (o no) ben configurades per al runtime —
+ * exactament el que va passar a Vercel ("Failed to collect page data for
+ * /api/[[...path]]"). Amb aquesta versió, el build mai depèn de AUTH_SECRET.
+ */
+let cachedSecretKey: Uint8Array | null = null;
+function getSecretKey(): Uint8Array {
+  if (cachedSecretKey) return cachedSecretKey;
   const s = process.env.AUTH_SECRET;
   if (!s) {
     if (process.env.NODE_ENV === "production" && process.env.VERCEL) {
-      throw new Error("AUTH_SECRET és obligatori en producció (openssl rand -hex 32)");
+      throw new Error(
+        "AUTH_SECRET és obligatori en producció — configura'l a Vercel → " +
+          "Settings → Environment Variables (valor: openssl rand -hex 32)",
+      );
     }
     // desenvolupament: secret local amb avís
     console.warn("[auth] AUTH_SECRET no definit — s'usa un secret local de desenvolupament");
-    return "dev-secret-preureal-local";
+    cachedSecretKey = encoder.encode("dev-secret-preureal-local");
+    return cachedSecretKey;
   }
-  return s;
-})();
-
-const encoder = new TextEncoder();
-const secretKey = encoder.encode(SECRET);
+  cachedSecretKey = encoder.encode(s);
+  return cachedSecretKey;
+}
 
 export interface SessionPayload {
   userId: string;
@@ -69,7 +85,7 @@ export async function createSession(payload: SessionPayload) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("30d")
-    .sign(secretKey);
+    .sign(getSecretKey());
   const jar = await cookies();
   jar.set(COOKIE, token, {
     httpOnly: true,
@@ -92,7 +108,7 @@ export async function revokeSessions(userId: string) {
 
 async function decodeToken(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey);
+    const { payload } = await jwtVerify(token, getSecretKey());
     return {
       userId: String(payload.userId),
       email: String(payload.email),
