@@ -1,0 +1,104 @@
+import { NextResponse } from "next/server";
+
+/**
+ * GET /api/provenance — registre de proveniència de les dades (Fase 9).
+ * Cada dataset amb font, llicència, període, unitat, àmbit, metodologia,
+ * mostres esperades i indicador de qualitat. La UI i els PDF ho citen.
+ */
+const PROVENANCE = [
+  {
+    id: "incasol_fiances_municipi",
+    nom: "Lloguer mitjà per municipi (fiances Incasòl)",
+    font: "Incasòl / Agència de l'Habitatge de Catalunya (habitatge.gencat.cat)",
+    llicencia: "Dades oficials de la Generalitat de Catalunya, reutilització subjecta a les condicions de l'avís legal",
+    unitat: "€/mes (mitjana de fiances depositades)",
+    ambit: "Municipi (947 de Catalunya)",
+    periodicitat: "Anual (i trimestral quan hi ha avanç)",
+    metodologia: "Mitjana de les fiances registrades a Incasòl; els contractes sense fiança o amb fiança no registrada no hi són.",
+    qualitat: "ALTA — font oficial administrativa",
+    camps: ["rentLatest", "rentPeriod", "rentPrevYear", "rentHistory", "contractsLatest"],
+  },
+  {
+    id: "dogc_areas_tensades",
+    nom: "Àrees de mercat residencial tensat",
+    font: "DOGC — Resolucions TER/3739/2026 i TER/3740/2026 (19-10-2026)",
+    llicencia: "Document oficial publicat al DOGC",
+    unitat: "llistes A (3739) i B (3740) de municipis",
+    ambit: "171 municipis",
+    periodicitat: "Cada actualització del DOGC (normalment semestral)",
+    metodologia: "Classificació legal dels municipis segons les resolucions del Departament de Territori, Habitatge i Transició Ecològica.",
+    qualitat: "ALTA — text legal, revisió manual",
+    camps: ["isTense", "tenseList"],
+  },
+  {
+    id: "icgc_rtt_edificis",
+    nom: "Edificis i illes de cases (RTT)",
+    font: "ICGC — API Territorial, capa construccions-rtt",
+    llicencia: "CC-BY 4.0 (ICGC)",
+    unitat: "polígons geogràfics d'edificis/illes",
+    ambit: "Tota Catalunya (carrega per mosaics ≤ 50 ha)",
+    periodicitat: "Cau de l'app: 30 dies",
+    metodologia: "Polígons reals del Mapa Topogràfic; l'assignació municipal es resol amb els límits administratius de l'ICGC.",
+    qualitat: "ALTA — cartografia oficial",
+    camps: ["polygon", "tipus", "estat", "altura", "nom"],
+  },
+  {
+    id: "icgc_parcelles_refcat",
+    nom: "Referència catastral de parcel·la",
+    font: "ICGC — capa parcelles-cadastre (dades del Cadastre)",
+    llicencia: "Consulta en línia; l'ús comercial de dades cadastrals requereix autorització (vegeu avís legal)",
+    unitat: "referència catastral (14-20 caràcters)",
+    ambit: "Per punt consultat",
+    periodicitat: "Temps real amb cau",
+    metodologia: "Recuperació de la parcel·la que conté el punt seleccionat al mapa.",
+    qualitat: "ALTA — identificador oficial",
+    camps: ["refcat"],
+  },
+  {
+    id: "catastro_any_construccio",
+    nom: "Any de construcció",
+    font: "Cadastre (Direcció General del Catastro) — serveis lliures Consulta_DNPPC",
+    llicencia: "Serveis lliures del Cadastre; l'ús massiu requereix autorització",
+    unitat: "any (de la construcció principal de la parcel·la)",
+    ambit: "Per edifici consultat",
+    periodicitat: "Cau de l'app: indefinit mentre la dada no canviï",
+    metodologia: "Consulta de dades no protegides de parcel·la; si el servei no respon, el camp es mostra com a no disponible (mai s'inventa).",
+    qualitat: "MITJANA — degradació elegant si el servei cau",
+    camps: ["yearBuilt", "yearSource"],
+  },
+  {
+    id: "incasol_edificis_importacio",
+    nom: "Lloguer a nivell d'edifici/illa (importació)",
+    font: "Importació administrativa (conveni Incasòl pendent d'autorització del propietari)",
+    llicencia: "Pendent de conveni; les files importades citen la seva font",
+    unitat: "€/mes mitjana de l'illa + nº de mostres",
+    ambit: "Només illes amb dades importades",
+    periodicitat: "Per importació manual (historial a /api/admin/imports)",
+    metodologia: "Càrrega via panell d'administració; cada fila inclou mostres (n).",
+    qualitat: "SEGONS FONT — indicat fila a fila amb avgRentEurMonth/sampleSize",
+    camps: ["avgRentEurMonth", "sampleSize"],
+  },
+  {
+    id: "reports_ciutadans",
+    nom: "Informes de preus declarats pels usuaris",
+    font: "Crowdsourcing d'usuaris registrats",
+    llicencia: "Dades aportades pels usuaris (anonimitzades)",
+    unitat: "€/mes declarats",
+    ambit: "Per municipi/edifici declarat",
+    periodicitat: "Continu, amb moderació prèvia",
+    metodologia: "Validació de rangs, detecció de duplicats i moderació humana; MAI es barregen amb les dades oficials: sempre es presenten per separat.",
+    qualitat: "DECLARATIU — pot contenir errors; es mostra com a tal",
+    camps: ["PriceReport (status=ACCEPTED)"],
+  },
+];
+
+export async function GET() {
+  return NextResponse.json({
+    datasets: PROVENANCE,
+    principis: [
+      "Les dades oficials i les declaracions d'usuaris es presenten SEMPRE per separat.",
+      "Si una dada no està disponible, es mostra com a no disponible (mai s'inventa).",
+      "Cada xifra cita la seva font i el període de referència.",
+    ],
+  });
+}
