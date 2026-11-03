@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { getSiteUrl } from "@/lib/site-url";
 
 /**
  * SEO: metadades bilingües (ca principal, es secundari), Open Graph i
  * JSON-LD. El sitemap i robots estan a public/.
+ * metadataBase usa el helper segur: un NEXT_PUBLIC_SITE_URL mal escrit
+ * mai més no pot aturar el build (cau a la URL oficial per defecte).
  */
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://preureal.cat"),
+  metadataBase: getSiteUrl(),
   title: {
     default: "PreuReal.cat — Preu real del lloguer a Catalunya, illa a illa",
     template: "%s | PreuReal.cat",
