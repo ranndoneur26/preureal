@@ -32,8 +32,7 @@ VERCEL_FILES = [
     # repo + entorn
     ".gitignore", ".env.production.example",
     # documentació de desplegament
-    "VERCEL.md", "README.md", "CHANGES.md",
-    "TASKS.md", "PROJECT_CONTEXT.md", "MIGRATION_ZAI.md",
+    "VERCEL.md", "README.md", "CORRECCIONS_P1.md",
     # dades de seed (municipis amb lloguer Incasòl real)
     "data/municipalities.json",
     # scripts d'operació referenciats per VERCEL.md / README.md
