@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { escapeHtml } from "@/lib/security";
+import { getSiteUrlOrigin } from "@/lib/site-url";
 
 /**
  * Correos automáticos de PreuReal.cat.
@@ -107,7 +108,8 @@ export function receiptMail(planName: string, amount: string, locale: "ca" | "es
 }
 
 export function verifyMail(token: string, locale: "ca" | "es") {
-  const url = `${process.env.NEXT_PUBLIC_SITE_URL || ""}/#/verifica?token=${token}`;
+  // URL sempre absoluta i ben formada (mai relativa, mai env mal escrita)
+  const url = `${getSiteUrlOrigin()}/#/verifica?token=${token}`;
   const title = locale === "ca" ? "Verifica el teu correu" : "Verifica tu correo";
   const body =
     locale === "ca"
@@ -117,7 +119,8 @@ export function verifyMail(token: string, locale: "ca" | "es") {
 }
 
 export function resetMail(token: string, locale: "ca" | "es") {
-  const url = `${process.env.NEXT_PUBLIC_SITE_URL || ""}/#/restablir?token=${token}`;
+  // URL sempre absoluta i ben formada (mai relativa, mai env mal escrita)
+  const url = `${getSiteUrlOrigin()}/#/restablir?token=${token}`;
   const title = locale === "ca" ? "Restableix la contrasenya" : "Restablece la contraseña";
   const body =
     locale === "ca"

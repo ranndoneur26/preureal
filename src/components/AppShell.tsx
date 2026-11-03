@@ -7,6 +7,7 @@ import MapView from "@/components/views/MapView";
 import PricingView from "@/components/views/PricingView";
 import AuthView from "@/components/views/AuthView";
 import CheckEmailView from "@/components/views/CheckEmailView";
+import VerificaView from "@/components/views/VerificaView";
 import PanelView from "@/components/views/PanelView";
 import AdminView from "@/components/views/AdminView";
 import LegalView from "@/components/views/LegalView";
@@ -116,6 +117,7 @@ export default function AppShell() {
           )}
           {view === "/restablir" && <AuthView mode="reset" token={token || undefined} />}
           {view === "/revisa-correu" && <CheckEmailView />}
+          {view === "/verifica" && <VerificaView token={token || undefined} />}
           {view === "/panell" && <PanelView />}
           {view === "/admin" && <AdminView />}
           {view === "/avis-legal" && <LegalView kind="avis" />}
