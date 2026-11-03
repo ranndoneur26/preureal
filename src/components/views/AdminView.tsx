@@ -356,6 +356,12 @@ export default function AdminView() {
                 </div>
               </div>
               <div className="text-xs text-[#6b6f68] mt-1">→ {e.to}</div>
+              {/* Diagnòstic: error real retornat pel proveïdor (Resend) quan status === "error" */}
+              {e.error ? (
+                <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-2 whitespace-pre-wrap break-all">
+                  {String(e.error).slice(0, 600)}
+                </div>
+              ) : null}
               {/* text net (htmlToText al servidor) — sense dangerouslySetInnerHTML */}
               <pre className="mt-2 text-xs bg-[#faf9f7] rounded-lg p-3 max-h-40 overflow-y-auto pr-scroll whitespace-pre-wrap font-sans">{e.bodyText}</pre>
             </div>
