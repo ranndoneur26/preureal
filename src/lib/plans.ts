@@ -117,3 +117,57 @@ export async function planAllows(plan: PlanId, feature: keyof EffectivePlan["fea
   const s = await getPlanSettings();
   return Boolean(s[plan]?.features[feature]);
 }
+
+const PLAN_RANK: Record<PlanId, number> = { FREE: 0, PREMIUM: 1, PRO: 2 };
+
+// Cau de sincronització per usuari (P1.4): evita martellejar la BD a cada petició
+const planSyncAt = new Map<string, number>();
+const PLAN_SYNC_MS = 60_000;
+
+/**
+ * P1.4 — Sincronitza el pla de l'usuari amb les seves subscripcions VIGENTS:
+ *  1) expira les subscripcions "active" el període de les quals ja ha acabat
+ *     (caducitat automàtica dels 30 dies DEMO o del període Stripe, sense
+ *     dependre del botó de cancel·lar ni de cap cron);
+ *  2) el pla efectiu és el MÉS ALT de les subscripcions encara actives
+ *     (mai queden subscripcions antigues "actives" decidint el pla).
+ *
+ * Auto-curatiu: es crida des de requireUser() dels usuaris de pagament, des
+ * dels webhooks de Stripe i des del flux DEMO. Mai llança: si la BD falla
+ * retorna null i el caller manté el pla actual.
+ */
+export async function syncUserPlan(
+  userId: string,
+  opts?: { force?: boolean }
+): Promise<PlanId | null> {
+  try {
+    if (!opts?.force) {
+      const last = planSyncAt.get(userId);
+      if (last && Date.now() - last < PLAN_SYNC_MS) return null; // sincronitzat fa poc
+    }
+    planSyncAt.set(userId, Date.now());
+
+    const now = new Date();
+    await db.subscription.updateMany({
+      where: { userId, status: "active", currentPeriodEnd: { lt: now } },
+      data: { status: "expired" },
+    });
+    const vigents = await db.subscription.findMany({
+      where: { userId, status: { in: ["active", "trialing"] } },
+      select: { plan: true },
+    });
+    let plan: PlanId = "FREE";
+    for (const s of vigents) {
+      const p = (s.plan === "PREMIUM" || s.plan === "PRO" ? s.plan : "FREE") as PlanId;
+      if (PLAN_RANK[p] > PLAN_RANK[plan]) plan = p;
+    }
+    const user = await db.user.findUnique({ where: { id: userId }, select: { plan: true } });
+    if (user && user.plan !== plan) {
+      await db.user.update({ where: { id: userId }, data: { plan } });
+    }
+    return plan;
+  } catch (e) {
+    console.error("syncUserPlan", e);
+    return null;
+  }
+}

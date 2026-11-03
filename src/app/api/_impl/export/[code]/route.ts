@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 import { planAllows } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
@@ -15,8 +15,11 @@ export async function GET(
 ) {
   let user;
   try {
-    user = await requireUser(); // pla FRESC de la BD, no del JWT (E7 de l'auditoria)
-  } catch {
+    user = await requireVerifiedUser(); // P1.3 + pla FRESC de la BD (E7 de l'auditoria)
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
   const rl = await rateLimit(`export:${user.id}`, 20, 60_000);

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 import { PLANS } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/security";
@@ -19,8 +19,12 @@ import { audit } from "@/lib/security";
 export async function POST(req: Request) {
   let user;
   try {
-    user = await requireUser();
-  } catch {
+    // P1.3: MAI es cobra a un correu sense verificar (ni DEMO ni Stripe real)
+    user = await requireVerifiedUser();
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
   // rate limit PER USUARI (E5 de l'auditoria: abans era una clau global compartida)
@@ -37,6 +41,12 @@ export async function POST(req: Request) {
   const secret = process.env.STRIPE_SECRET_KEY;
   if (!secret) {
     if (process.env.DEMO_CHECKOUT === "true") {
+      // P1.4: una ÚNICA subscripció activa — les anteriors (demo o reals de
+      // proves) queden cancel·lades abans de crear la nova
+      await db.subscription.updateMany({
+        where: { userId: user.id, status: "active" },
+        data: { status: "canceled" },
+      });
       // MODO PRUEBA: activa la suscripción sin Stripe, marcada como demo
       const updated = await db.user.update({
         where: { id: user.id },

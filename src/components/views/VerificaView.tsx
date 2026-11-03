@@ -9,9 +9,10 @@ import { MailCheck, BadgeCheck, MapPin, RefreshCw, LogIn } from "lucide-react";
  * («Verificar correu», Fase 1).
  *
  * El correu (verifyMail) apunta a `<site>/#/verifica?token=<hex>`. Aquesta
- * vista llegeix el token, el valida CONTRA EL SERVIDOR (GET
- * /api/auth/verify?token=...&resposta=json) i mostra el resultat amb estats
- * diferenciats:
+ * vista llegeix el token i fa la CONFIRMACIÓ EXPLÍCITA CONTRA EL SERVIDOR
+ * (POST /api/auth/verify { token } — P1.2: el GET de l'API mai muta dades,
+ * perquè els escàners d'enllaços no puguin consumir el token) i mostra el
+ * resultat amb estats diferenciats:
  *   - ok        → compte activat, confirmació visual + accés al mapa
  *   - ja_usat   → l'enllaç ja s'havia fet servir (error exigit per l'encàrrec)
  *   - caducat   → enllaç caducat (24 h) → botó per demanar-ne un de nou
@@ -34,10 +35,13 @@ export default function VerificaView({ token }: { token?: string }) {
   const comprova = useCallback(
     async (tk: string) => {
       try {
-        const res = await fetch(
-          `/api/auth/verify?token=${encodeURIComponent(tk)}&resposta=json`,
-          { cache: "no-store" }
-        );
+        // P1.2: confirmació explícita via POST — el GET de l'API només consulta
+        const res = await fetch("/api/auth/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: tk }),
+          cache: "no-store",
+        });
         const d = await res.json().catch(() => null);
         const e = (d?.estat as Estat) || "invalid";
         if (e === "ok") await auth.refresh();

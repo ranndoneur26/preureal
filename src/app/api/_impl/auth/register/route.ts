@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { createSessionFor, hashPassword } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
@@ -32,9 +33,20 @@ export async function POST(req: Request) {
   if (exists) return NextResponse.json({ error: "EMAIL_EXISTS" }, { status: 409 });
 
   const passwordHash = await hashPassword(password);
-  const user = await db.user.create({
-    data: { email, passwordHash, name, locale, role: "USER", plan: "FREE" },
-  });
+  // P1.6: cursa entre registres simultanis del mateix correu — la comprovació
+  // prèvia (findUnique) pot passar en dues peticions alhora; la restricció
+  // UNIQUE de la BD decideix i aquí es tradueix a 409, MAI a un 500.
+  let user;
+  try {
+    user = await db.user.create({
+      data: { email, passwordHash, name, locale, role: "USER", plan: "FREE" },
+    });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+      return NextResponse.json({ error: "EMAIL_EXISTS" }, { status: 409 });
+    }
+    throw e;
+  }
 
   await createSessionFor(user);
   await db.event

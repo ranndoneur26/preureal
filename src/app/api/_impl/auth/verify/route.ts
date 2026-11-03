@@ -6,14 +6,30 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { verifyMail, sendMail } from "@/lib/mail";
 
-/** GET /api/auth/verify?token=... — marca el correu com a verificat.
- *  Estats diferenciats (Fase 1): ok | ja_usat | caducat | invalid — la UI mostra
- *  el missatge específic i, en caducat, oferir demanar un token nou.
+/**
+ * P1.2 — La verificació del correu MAI muta dades en un GET.
  *
- *  Dues maneres de resposta:
- *   - ?resposta=json → JSON { estat } (el fa servir la vista /#/verifica de la SPA)
- *   - sense → redirecció a /#/panell?verificacio=... (comportament original)
+ * Els escàners d'enllaços (antispam, previews de missatgeria, antivirus de
+ * correu...) visiten les URL del correu sense cap acció humana: si el GET
+ * consumís el token, l'enllaç podria quedar «devorat» abans que l'usuari hi
+ * hagi clicat de veritat. Per això el flux queda així:
+ *
+ *  GET  /api/auth/verify?token=...&resposta=json
+ *       → NOMÉS CONSULTA l'estat del token i el retorna: pendent | ja_usat |
+ *         caducat | invalid. Cap efecte secundari.
+ *  GET  /api/auth/verify?token=...   (sense resposta=json)
+ *       → redirigeix a la vista /#/verifica?token=... (la SPA fa el POST).
+ *  POST /api/auth/verify { token }
+ *       → CONFIRMACIÓ EXPLÍCITA: l'únic camí que consumeix el token i marca
+ *         emailVerifiedAt. L'initia la pròpia vista quan l'usuari obre la
+ *         pàgina (un escàner fa GET, no executa la SPA ni fa POST).
+ *  POST /api/auth/verify  (sense token)
+ *       → reenviament del correu de verificació (usuari amb sessió).
+ *
+ * Estats (Fase 1): ok | ja_usat | caducat | invalid | pendent — la UI mostra
+ * el missatge específic i, en caducat, ofereix demanar un token nou.
  */
+
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const token = String(url.searchParams.get("token") || "").slice(0, 100);
@@ -22,32 +38,77 @@ export async function GET(req: Request) {
   // pròpia petició — evita redireccions malformades si l'env està mal escrita
   const base = pickBase() || url.origin;
 
+  const estat = await tokenEstat(token); // lectura pura, sense mutacions
+  if (json) return NextResponse.json({ estat });
+  return NextResponse.redirect(`${base}/#/verifica?token=${encodeURIComponent(token)}`);
+}
+
+/** Estat d'un token de verificació — LECTURA PURA (P1.2). */
+async function tokenEstat(token: string): Promise<string> {
+  if (!token) return "invalid";
   const et = await db.emailToken.findUnique({ where: { token } });
-  if (!et) return finish(json, base, "invalid");
-  if (et.used) {
-    // missatge específic quan l'enllaç ja s'ha utilitzat
-    return finish(json, base, "ja_usat");
-  }
-  if (et.expiresAt < new Date()) {
-    // caducat (24 h): es pot demanar un token nou sense tornar-se a registrar
-    return finish(json, base, "caducat");
-  }
-  const user = await db.user.findUnique({ where: { id: et.userId } });
-  if (!user || !user.active) {
-    return finish(json, base, "invalid");
+  if (!et) return "invalid";
+  if (et.used) return "ja_usat";
+  if (et.expiresAt < new Date()) return "caducat";
+  const user = await db.user.findUnique({
+    where: { id: et.userId },
+    select: { active: true },
+  });
+  if (!user || !user.active) return "invalid";
+  return "pendent";
+}
+
+export async function POST(req: Request) {
+  const body = await req.json().catch(() => null);
+  const token = body?.token ? String(body.token).slice(0, 100) : "";
+
+  if (token) {
+    // --- CONFIRMACIÓ EXPLÍCITA (l'únic camí que muta dades) ---
+    const ip = clientIp(req);
+    const rl = await rateLimit(`verify-confirm:${ip}`, 20, 60_000);
+    if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+    const et = await db.emailToken.findUnique({ where: { token } });
+    if (!et) return NextResponse.json({ estat: "invalid" });
+    if (et.used) return NextResponse.json({ estat: "ja_usat" });
+    if (et.expiresAt < new Date()) return NextResponse.json({ estat: "caducat" });
+    const user = await db.user.findUnique({ where: { id: et.userId } });
+    if (!user || !user.active) return NextResponse.json({ estat: "invalid" });
+
+    await db.$transaction([
+      db.emailToken.update({ where: { id: et.id }, data: { used: true } }),
+      // un sol ús lògic: qualsevol altre enllaç pendent del compte queda anul·lat
+      db.emailToken.updateMany({
+        where: { userId: et.userId, used: false, id: { not: et.id } },
+        data: { used: true },
+      }),
+      // si ja estava verificat es conserva la data del PRIMER verificat
+      db.user.update({
+        where: { id: et.userId },
+        data: { emailVerifiedAt: user.emailVerifiedAt ?? new Date() },
+      }),
+    ]);
+    await db.event.create({ data: { type: "EMAIL_VERIFIED", userId: et.userId } }).catch(() => {});
+    return NextResponse.json({ estat: "ok" });
   }
 
-  await db.$transaction([
-    db.emailToken.update({ where: { id: et.id }, data: { used: true } }),
-    // un sol ús lògic: qualsevol altre enllaç pendent del compte queda anul·lat
-    db.emailToken.updateMany({
-      where: { userId: et.userId, used: false, id: { not: et.id } },
-      data: { used: true },
-    }),
-    db.user.update({ where: { id: et.userId }, data: { emailVerifiedAt: new Date() } }),
-  ]);
-  await db.event.create({ data: { type: "EMAIL_VERIFIED", userId: et.userId } }).catch(() => {});
-  return finish(json, base, "ok");
+  // sense token al cos → REENVIAMENT del correu de verificació
+  const ip = clientIp(req);
+  const rl = await rateLimit(`verify:${ip}`, 3, 300_000);
+  if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  if (user.emailVerifiedAt) return NextResponse.json({ ok: true, alreadyVerified: true });
+
+  const newToken = crypto.randomBytes(24).toString("hex");
+  await db.emailToken.create({
+    data: { userId: user.id, token: newToken, expiresAt: new Date(Date.now() + 24 * 3600_000) },
+  });
+  const locale = user.locale === "es" ? "es" : "ca";
+  const mail = verifyMail(newToken, locale);
+  sendMail({ to: user.email, subject: mail.subject, html: mail.html }).catch(() => {});
+  return NextResponse.json({ ok: true });
 }
 
 function pickBase(): string | null {
@@ -60,29 +121,4 @@ function pickBase(): string | null {
     /* env mal escrit: cap a l'origen de la petició */
   }
   return null;
-}
-
-function finish(json: boolean, base: string, estat: string) {
-  if (json) return NextResponse.json({ estat });
-  return NextResponse.redirect(`${base}/#/panell?verificacio=${estat}`);
-}
-
-/** POST /api/auth/verify — reenvia el correu de verificació (usuari amb sessió). */
-export async function POST(req: Request) {
-  const ip = clientIp(req);
-  const rl = await rateLimit(`verify:${ip}`, 3, 300_000);
-  if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
-
-  const user = await getAuthUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
-  if (user.emailVerifiedAt) return NextResponse.json({ ok: true, alreadyVerified: true });
-
-  const token = crypto.randomBytes(24).toString("hex");
-  await db.emailToken.create({
-    data: { userId: user.id, token, expiresAt: new Date(Date.now() + 24 * 3600_000) },
-  });
-  const locale = user.locale === "es" ? "es" : "ca";
-  const mail = verifyMail(token, locale);
-  sendMail({ to: user.email, subject: mail.subject, html: mail.html }).catch(() => {});
-  return NextResponse.json({ ok: true });
 }

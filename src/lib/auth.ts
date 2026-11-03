@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import * as bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { syncUserPlan } from "@/lib/plans";
 import type { User } from "@prisma/client";
 
 /**
@@ -147,6 +148,13 @@ export async function requireUser(): Promise<User> {
   if (!user) throw new Error("UNAUTHENTICATED");
   if (!user.active) throw new Error("INACTIVE");
   if (user.tokenVersion !== s.tv) throw new Error("UNAUTHENTICATED");
+  // P1.4: el pla de pagament mai es confia cegament — es sincronitza amb les
+  // subscripcions vigents (expira DEMO/períodes vençuts sense cap cron).
+  // Cau intern de 60 s per usuari dins de syncUserPlan.
+  if (user.plan !== "FREE") {
+    const fresh = await syncUserPlan(user.id);
+    if (fresh && fresh !== user.plan) user.plan = fresh;
+  }
   return user;
 }
 
@@ -154,6 +162,26 @@ export async function requireAdmin(): Promise<User> {
   const user = await requireUser();
   if (user.role !== "ADMIN") throw new Error("FORBIDDEN");
   return user;
+}
+
+/**
+ * P1.3 — Autorització per a TOTES les accions que exigeixen correu verificat
+ * (consultes detallades, historial, preferits, comparacions, exports, PDF,
+ * pagaments...). La verificació mai depèn del frontend ni d'un únic endpoint.
+ * Els ADMIN n'estan exempts per operativa interna.
+ * Llança "EMAIL_NOT_VERIFIED" (→ 403) o els errors de requireUser (→ 401).
+ */
+export async function requireVerifiedUser(): Promise<User> {
+  const user = await requireUser();
+  if (!user.emailVerifiedAt && user.role !== "ADMIN") {
+    throw new Error("EMAIL_NOT_VERIFIED");
+  }
+  return user;
+}
+
+/** true si l'error capturat en una route és el bloqueig de correu sense verificar. */
+export function isEmailNotVerifiedError(e: unknown): boolean {
+  return e instanceof Error && e.message === "EMAIL_NOT_VERIFIED";
 }
 
 /** Alternativa no-llançadora per a routes que volen resposta controlada. */
