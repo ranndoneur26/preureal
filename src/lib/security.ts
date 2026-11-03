@@ -5,11 +5,37 @@
 import * as crypto from "crypto";
 import { db } from "@/lib/db";
 
-/** IP del client (darrere de proxy/Vercel: primer valor de x-forwarded-for). */
+/**
+ * IP del client (P1.5).
+ *
+ * El client CONTROLA les capçaleres que envia: un atacant pot posar
+ * "x-forwarded-for: 1.2.3.4" per falsificar la seva IP i esquivar el rate
+ * limit per IP. Per això el PRIMER valor de la cadena mai es considera fiable:
+ *  1) `x-real-ip` — la posa l'edge de la plataforma (Vercel) amb la IP real de
+ *     la connexió TCP; no és spoofable.
+ *  2) l'ÚLTIM valor de `x-forwarded-for` — el que afegeix el darrer proxy de
+ *     confiança just davant nostre (Vercel edge / Caddy al self-hosting).
+ *  3) si res no és vàlid → "local" (bucket compartit: el rate limit segueix
+ *     aplicant-se, fail-closed).
+ */
 export function clientIp(req: Request): string {
+  const real = (req.headers.get("x-real-ip") || "").trim();
+  if (isIp(real)) return real;
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0].trim();
-  return req.headers.get("x-real-ip") || "local";
+  if (xff) {
+    const parts = xff.split(",").map((s) => s.trim()).filter(isIp);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return "local";
+}
+
+/** Validació estricta de format IP (v4 o v6) abans de confiar-hi. */
+function isIp(s: string): boolean {
+  if (!s || s.length > 45) return false;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(s)) {
+    return s.split(".").every((n) => Number(n) <= 255);
+  }
+  return /^[0-9a-fA-F:]+$/.test(s) && s.includes(":");
 }
 
 /**

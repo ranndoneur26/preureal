@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 
 /**
  * GET    /api/comparisons — comparacions desades de l'usuari
@@ -10,8 +10,11 @@ import { requireUser } from "@/lib/auth";
 export async function GET() {
   let user;
   try {
-    user = await requireUser();
-  } catch {
+    user = await requireVerifiedUser(); // P1.3: funcionalitat principal
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
   const comps = await db.savedComparison.findMany({
@@ -27,8 +30,11 @@ export async function GET() {
 export async function POST(req: Request) {
   let user;
   try {
-    user = await requireUser();
-  } catch {
+    user = await requireVerifiedUser(); // P1.3: funcionalitat principal
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
   const body = await req.json().catch(() => null);
@@ -54,8 +60,11 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   let user;
   try {
-    user = await requireUser();
-  } catch {
+    user = await requireVerifiedUser(); // P1.3: funcionalitat principal
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
   const id = new URL(req.url).searchParams.get("id");

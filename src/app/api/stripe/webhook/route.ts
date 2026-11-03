@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { receiptMail, sendMail } from "@/lib/mail";
 import { audit } from "@/lib/security";
+import { syncUserPlan } from "@/lib/plans";
 
 /**
  * POST /api/stripe/webhook — endpoint de webhooks de Stripe.
@@ -15,8 +16,12 @@ import { audit } from "@/lib/security";
  *  - invoice.paid → renovacions (actualitza període)
  *  - invoice.payment_failed → marca past_due
  *
- * IDEMPOTÈNCIA: cada event.id es registra a StripeEvent; si ja s'havia
- * processat, es respon 200 sense repetir efectes (Stripe reentrega).
+ * IDEMPOTÈNCIA (P1.1): la fila StripeEvent fa de LOCK. S'insereix ABANS
+ * d'aplicar efectes (claim atòmic per la clau única eventId) i S'ELIMINA si
+ * el processament falla → Stripe reentrega i l'event torna a executar-se.
+ * Abans, la fila es registrava sense rollback: un error posterior deixava
+ * l'event «devorat» (reentregues rebutjades com a duplicat) i la subscripció
+ * podia quedar dessincronitzada per sempre.
  */
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -33,13 +38,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "BAD_SIGNATURE" }, { status: 400 });
   }
 
-  // --- idempotència (V9 de l'auditoria) ---
-  const inserted = await db.stripeEvent
+  // --- idempotència P1.1: claim → processar → alliberar si falla ---
+  const claimed = await db.stripeEvent
     .create({ data: { eventId: event.id, type: event.type } })
     .then(() => true)
     .catch(() => false);
-  if (!inserted) {
-    // ja processat (reentrega): resposta sense efectes
+  if (!claimed) {
+    // ja processat amb ÈXIT (reentrega): resposta sense efectes
     return NextResponse.json({ received: true, duplicate: true });
   }
 
@@ -65,6 +70,12 @@ export async function POST(req: Request) {
             }
           }
           await db.user.update({ where: { id: userId }, data: { plan } });
+          // P1.4: una ÚNICA subscripció activa per usuari — les anteriors
+          // queden tancades (l'upsert de sota reactiva la de subId)
+          await db.subscription.updateMany({
+            where: { userId, status: "active" },
+            data: { status: "canceled" },
+          });
           if (subId) {
             await db.subscription.upsert({
               where: { stripeSubscriptionId: subId },
@@ -117,9 +128,11 @@ export async function POST(req: Request) {
             where: { id: sub.id },
             data: { status, currentPeriodEnd: periodEnd, stripePriceId: priceId },
           });
+          // P1.4: el pla de l'usuari es recalcula SEMPRE a partir de les
+          // subscripcions vigents (mai es confia en un estat intermedi)
+          await syncUserPlan(sub.userId, { force: true });
           const stillPaid = status === "active" || status === "trialing";
           if (!stillPaid) {
-            await db.user.update({ where: { id: sub.userId }, data: { plan: "FREE" } });
             await audit(null, "STRIPE_SUB_DOWNGRADED", String(s.id), { status });
           }
         }
@@ -137,6 +150,7 @@ export async function POST(req: Request) {
               currentPeriodEnd: inv.period_end ? new Date(inv.period_end * 1000) : sub.currentPeriodEnd,
             },
           });
+          await syncUserPlan(sub.userId, { force: true }); // P1.4: reactivació coherent
         }
         break;
       }
@@ -152,7 +166,10 @@ export async function POST(req: Request) {
       }
     }
   } catch (e) {
+    // P1.1: alliberem el lock → Stripe reentregarà i l'event es reprocessarà
+    await db.stripeEvent.delete({ where: { eventId: event.id } }).catch(() => {});
     console.error("stripe webhook", e);
+    return NextResponse.json({ error: "PROCESSING_FAILED" }, { status: 500 });
   }
   return NextResponse.json({ received: true });
 }

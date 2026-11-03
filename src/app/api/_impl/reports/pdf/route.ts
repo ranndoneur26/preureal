@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { Building, Municipality } from "@prisma/client";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 import { planAllows } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -23,8 +23,11 @@ const WHITE = rgb(1, 1, 1);
 export async function GET(req: Request) {
   let user;
   try {
-    user = await requireUser();
-  } catch {
+    user = await requireVerifiedUser(); // P1.3: funcionalitat principal
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
   const rl = await rateLimit(`pdf:${user.id}`, 10, 60_000);

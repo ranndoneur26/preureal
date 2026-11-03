@@ -44,9 +44,22 @@ describe("security: escapament i sanitització", () => {
     expect(a).not.toBe(hashIp("1.2.3.5"));
     expect(a.length).toBe(32);
   });
-  test("clientIp llegeix x-forwarded-for", () => {
+  test("clientIp (P1.5): confia en l'ÚLTIM valor de x-forwarded-for, mai el primer", () => {
+    // el client pot falsificar el primer valor; el darrer el posa el proxy de confiança
     const req = new Request("https://x.cat", { headers: { "x-forwarded-for": "9.9.9.9, 10.0.0.1" } });
-    expect(clientIp(req)).toBe("9.9.9.9");
+    expect(clientIp(req)).toBe("10.0.0.1");
+  });
+  test("clientIp (P1.5): x-real-ip té prioritat (la posa l'edge, no spoofable)", () => {
+    const req = new Request("https://x.cat", {
+      headers: { "x-real-ip": "77.1.2.3", "x-forwarded-for": "9.9.9.9, 10.0.0.1" },
+    });
+    expect(clientIp(req)).toBe("77.1.2.3");
+  });
+  test("clientIp (P1.5): rebutja valors no-IP i cau en 'local' (fail-closed)", () => {
+    const spoof = new Request("https://x.cat", { headers: { "x-forwarded-for": "hack; drop table" } });
+    expect(clientIp(spoof)).toBe("local");
+    const ipv6 = new Request("https://x.cat", { headers: { "x-forwarded-for": "2a01:c800::1" } });
+    expect(clientIp(ipv6)).toBe("2a01:c800::1");
   });
 });
 

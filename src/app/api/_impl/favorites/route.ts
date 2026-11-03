@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { getAuthUser } from "@/lib/auth";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 import { planAllows } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
@@ -12,8 +12,15 @@ import { clientIp } from "@/lib/security";
  * Requereix planAllows(features.preferits) → Premium/Pro (Fase 5/9).
  */
 export async function GET() {
-  const user = await getAuthUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  let user;
+  try {
+    user = await requireVerifiedUser(); // P1.3: funcionalitat principal
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
   const favorites = await db.favorite.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
@@ -23,8 +30,15 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const user = await getAuthUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  let user;
+  try {
+    user = await requireVerifiedUser(); // P1.3: funcionalitat principal
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
   const ip = clientIp(req);
   const rl = await rateLimit(`fav:${user.id}:${ip}`, 30, 60_000);
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
@@ -51,8 +65,15 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const user = await getAuthUser();
-  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  let user;
+  try {
+    user = await requireVerifiedUser(); // P1.3: funcionalitat principal
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
   const key = new URL(req.url).searchParams.get("key");
   if (!key || key.length > 80) return NextResponse.json({ error: "BAD_INPUT" }, { status: 400 });
   await db.favorite.deleteMany({ where: { userId: user.id, entityKey: key } });
