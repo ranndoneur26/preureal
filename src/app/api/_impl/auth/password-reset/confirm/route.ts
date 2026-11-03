@@ -26,6 +26,11 @@ export async function POST(req: Request) {
   const passwordHash = await hashPassword(password);
   await db.user.update({ where: { id: user.id }, data: { passwordHash } });
   await db.passwordToken.update({ where: { id: pt.id }, data: { used: true } });
+  // seguretat: qualsevol ALTRE enllaç de restabliment pendent queda anul·lat
+  await db.passwordToken.updateMany({
+    where: { userId: user.id, used: false, id: { not: pt.id } },
+    data: { used: true },
+  });
   // seguretat: invalida qualsevol sessió oberta amb la contrasenya antiga
   await revokeSessions(user.id);
 

@@ -52,5 +52,9 @@ export async function POST(req: Request) {
   const vmail = verifyMail(token, locale);
   sendMail({ to: email, subject: vmail.subject, html: vmail.html }).catch(() => {});
 
-  return NextResponse.json({ ok: true, user: { id: user.id, email, name, plan: "FREE" } });
+  return NextResponse.json({
+    ok: true,
+    verificationSent: true, // Fase 1: la UI mostra «Revisa el teu correu»
+    user: { id: user.id, email, name, plan: "FREE" },
+  });
 }

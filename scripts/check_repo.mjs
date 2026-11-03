@@ -26,8 +26,8 @@ const AYUDA_GIT = `
   La forma FIABLE de subir el proyecto (son 152 ficheros; la web de GitHub
   falla silenciosamente a partir de ~100 ficheros por arrastre):
 
-    unzip PreuReal-cat-Vercel-v11.zip -d preureal && cd preureal
-    git init && git add -A && git commit -m "PreuReal.cat v11"
+    unzip PreuReal-cat-Vercel-v12.zip -d preureal && cd preureal
+    git init && git add -A && git commit -m "PreuReal.cat v12"
     git branch -M main
     git remote add origin <URL-de-tu-repo>   # si aún no existe
     git push -uf origin main                 # -f sustituye el contenido viejo

@@ -61,6 +61,12 @@ export async function GET(req: Request) {
 
   let user = await db.user.findUnique({ where: { email } });
   if (user) {
+    // Google només entrega correus verificats (email_verified=true s'exigeix
+    // més amunt): si el compte local no constava com a verificat, es queda
+    // verificat ara — mateixa garantia, sense correu de verificació extra.
+    if (!user.emailVerifiedAt) {
+      await db.user.update({ where: { id: user.id }, data: { emailVerifiedAt: new Date() } });
+    }
     await db.event.create({ data: { type: "LOGIN_GOOGLE", userId: user.id } }).catch(() => {});
   } else {
     // contrasenya aleatòria: el compte només es pot obrir amb Google
@@ -74,6 +80,7 @@ export async function GET(req: Request) {
         locale: "ca",
         role: "USER",
         plan: "FREE",
+        emailVerifiedAt: new Date(), // verificat per Google (email_verified=true)
       },
     });
     await db.event.create({ data: { type: "SIGNUP_GOOGLE", userId: user.id } }).catch(() => {});

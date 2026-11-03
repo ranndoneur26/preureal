@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
-import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, AlertTriangle, Home } from "lucide-react";
+import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, AlertTriangle, Home, MailCheck } from "lucide-react";
 
 interface MunLite {
   code: string;
@@ -43,6 +43,7 @@ interface LookupResult {
   quota?: { used: number; limit: number };
   teaser?: { hasRent: boolean; period: string | null; message: string };
   error?: string;
+  email?: string; // EMAIL_NOT_VERIFIED (Fase 1): correu emmascarat del compte
 }
 
 function rentColor(rent: number | null | undefined): string {
@@ -78,7 +79,8 @@ export default function MapView() {
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [buildingsError, setBuildingsError] = useState<string | null>(null);
   const [coverageWarn, setCoverageWarn] = useState<string | null>(null);
-  const [panelState, setPanelState] = useState<"closed" | "loading" | "teaser" | "full" | "paywall">("closed");
+  const [panelState, setPanelState] = useState<"closed" | "loading" | "teaser" | "full" | "paywall" | "verificacio">("closed");
+  const [verifySent, setVerifySent] = useState(false); // reenviament des del panell del mapa
   const [lookup, setLookup] = useState<LookupResult | null>(null);
   const [quota, setQuota] = useState<{ used: number; limit: number } | null>(auth.quota);
   const [demoNotice, setDemoNotice] = useState<string | null>(null);
@@ -243,6 +245,16 @@ export default function MapView() {
         setLookup(d);
         setPanelState("paywall");
         return;
+      }
+      // Fase 1: correu sense verificar → 403 del servidor (bloqueig principal)
+      if (res.status === 403) {
+        const d = await res.json().catch(() => ({}));
+        if (d?.error === "EMAIL_NOT_VERIFIED") {
+          setLookup(d);
+          setPanelState("verificacio");
+          setVerifySent(false);
+          return;
+        }
       }
       const d: LookupResult = await res.json();
       if (seq !== lookupSeqRef.current) return; // resposta obsoleta
@@ -620,6 +632,32 @@ export default function MapView() {
                 </div>
                 <button onClick={() => navigate("/preus")} className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31]">
                   {t.map.paywall.cta}
+                </button>
+              </div>
+            )}
+
+            {/* VERIFICACIÓ DE CORREU (Fase 1: bloqueig fins verificar) */}
+            {panelState === "verificacio" && (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-[#fdeae2] border border-[#f2c4ac] p-4 text-center">
+                  <MailCheck className="w-8 h-8 text-[#b0431c] mx-auto" />
+                  <div className="font-bold mt-2 text-[#b0431c]">{t.map.verify.title}</div>
+                  <p className="text-sm mt-1 text-[#4b5349]">{t.map.verify.desc}</p>
+                  {lookup?.email && <p className="text-sm mt-1 font-semibold text-[#0f2e21]">{lookup.email}</p>}
+                </div>
+                <button
+                  onClick={async () => {
+                    const res = await fetch("/api/auth/verify", { method: "POST" });
+                    if (res.ok) setVerifySent(true);
+                    else navigate("/revisa-correu");
+                  }}
+                  disabled={verifySent}
+                  className="w-full py-3 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#0f2e21] hover:bg-[#faf9f7] transition-colors disabled:opacity-50"
+                >
+                  {verifySent ? t.map.verify.sent : t.map.verify.resend}
+                </button>
+                <button onClick={() => navigate("/panell")} className="w-full py-3 rounded-xl bg-[#0f2e21] text-white font-bold hover:bg-[#16402e]">
+                  {t.map.verify.goToPanel}
                 </button>
               </div>
             )}

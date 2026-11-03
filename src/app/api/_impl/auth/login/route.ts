@@ -30,6 +30,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     ok: true,
+    emailVerified: Boolean(user.emailVerifiedAt), // Fase 1: la UI redirigeix a verificar si cal
     user: {
       id: user.id,
       email: user.email,

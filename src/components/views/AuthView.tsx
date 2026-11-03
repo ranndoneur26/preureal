@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { MapPin } from "lucide-react";
+import { MapPin, ShieldCheck } from "lucide-react";
 
 export default function AuthView({
   mode,
@@ -18,6 +18,7 @@ export default function AuthView({
   const [error, setError] = useState<string | null>(oauthError || null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
   // el botó de Google només es mostra si l'OAuth està configurat al servidor
   const [googleEnabled, setGoogleEnabled] = useState(false);
 
@@ -49,7 +50,9 @@ export default function AuthView({
           return;
         }
         await auth.refresh();
-        navigate("/mapa");
+        // Fase 1: després de registrar-se, pantalla «Revisa el teu correu»
+        // (el correu de verificació ja s'ha enviat automàticament al servidor)
+        navigate("/revisa-correu");
       } else if (mode === "login") {
         const res = await fetch("/api/auth/login", {
           method: "POST",
@@ -62,7 +65,8 @@ export default function AuthView({
           return;
         }
         await auth.refresh();
-        navigate("/mapa");
+        // Fase 1: si el correu no està verificat, abans de res verificar-lo
+        navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
       } else if (mode === "forgot") {
         const res = await fetch("/api/auth/password-reset", {
           method: "POST",
@@ -82,7 +86,9 @@ export default function AuthView({
           return;
         }
         await auth.refresh();
-        navigate("/mapa");
+        // Fase 1: confirmació visual explícita del canvi (el servei ja ha
+        // creat sessió nova i ha tancat les anteriors)
+        setResetDone(true);
       }
     } finally {
       setBusy(false);
@@ -101,6 +107,43 @@ export default function AuthView({
   const errText = error
     ? (t.auth.errors as Record<string, string>)[error] || t.auth.errors.DEFAULT
     : null;
+
+  // confirmació visual després de restablir la contrasenya (Fase 1)
+  if (mode === "reset" && resetDone) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4 py-14">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-[#0f2e21] text-white flex items-center justify-center mx-auto">
+              <ShieldCheck className="w-6 h-6 text-[#7fd6a4]" />
+            </div>
+            <h1 className="mt-4 text-2xl font-extrabold">
+              {locale === "ca" ? "Contrasenya canviada" : "Contraseña cambiada"}
+            </h1>
+          </div>
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4 text-center">
+            <div className="rounded-lg bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm px-3 py-2">
+              {locale === "ca"
+                ? "La teva contrasenya s'ha canviat correctament. Les sessions obertes en altres dispositius s'han tancat per seguretat."
+                : "Tu contraseña se ha cambiado correctamente. Las sesiones abiertas en otros dispositivos se han cerrado por seguridad."}
+            </div>
+            <button
+              onClick={() => navigate("/mapa")}
+              className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors"
+            >
+              {locale === "ca" ? "Continua al mapa" : "Continuar al mapa"}
+            </button>
+            <button
+              onClick={() => navigate("/panell")}
+              className="w-full py-2.5 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#0f2e21] hover:bg-[#faf9f7] transition-colors text-sm"
+            >
+              {locale === "ca" ? "Anar al panell" : "Ir al panel"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 flex items-center justify-center px-4 py-14">
