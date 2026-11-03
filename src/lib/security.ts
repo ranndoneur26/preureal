@@ -81,3 +81,15 @@ export async function audit(
     console.error("audit", e);
   }
 }
+
+/**
+ * Oculta la part local d'un correu per a la UX (respostes API compartides):
+ * "joan.perez@gmail.com" → "jo***@gmail.com". Mai dona error: entrada
+ * inesperada → "***".
+ */
+export function maskEmail(email: string): string {
+  const at = email.indexOf("@");
+  if (at <= 0) return "***";
+  const local = email.slice(0, Math.min(at, 2));
+  return `${local}***${email.slice(at)}`;
+}

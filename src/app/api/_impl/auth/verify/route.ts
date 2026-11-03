@@ -6,20 +6,41 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { verifyMail, sendMail } from "@/lib/mail";
 
-/** GET /api/auth/verify?token=... — marca el correu com a verificat. */
+/** GET /api/auth/verify?token=... — marca el correu com a verificat.
+ *  Estats diferenciats (Fase 1): ja_usat | caducat | invalid — la UI mostra
+ *  el missatge específic i, en caducat, oferir demanar un token nou. */
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const token = String(url.searchParams.get("token") || "").slice(0, 100);
   const base = process.env.NEXT_PUBLIC_SITE_URL || url.origin;
 
   const et = await db.emailToken.findUnique({ where: { token } });
-  if (!et || et.used || et.expiresAt < new Date()) {
+  if (!et) {
     return NextResponse.redirect(`${base}/#/panell?verificacio=invalid`);
   }
+  if (et.used) {
+    // missatge específic quan l'enllaç ja s'ha utilitzat
+    return NextResponse.redirect(`${base}/#/panell?verificacio=ja_usat`);
+  }
+  if (et.expiresAt < new Date()) {
+    // caducat (24 h): es pot demanar un token nou sense tornar-se a registrar
+    return NextResponse.redirect(`${base}/#/panell?verificacio=caducat`);
+  }
+  const user = await db.user.findUnique({ where: { id: et.userId } });
+  if (!user || !user.active) {
+    return NextResponse.redirect(`${base}/#/panell?verificacio=invalid`);
+  }
+
   await db.$transaction([
     db.emailToken.update({ where: { id: et.id }, data: { used: true } }),
+    // un sol ús lògic: qualsevol altre enllaç pendent del compte queda anul·lat
+    db.emailToken.updateMany({
+      where: { userId: et.userId, used: false, id: { not: et.id } },
+      data: { used: true },
+    }),
     db.user.update({ where: { id: et.userId }, data: { emailVerifiedAt: new Date() } }),
   ]);
+  await db.event.create({ data: { type: "EMAIL_VERIFIED", userId: et.userId } }).catch(() => {});
   return NextResponse.redirect(`${base}/#/panell?verificacio=ok`);
 }
 

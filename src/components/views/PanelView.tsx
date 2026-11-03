@@ -30,6 +30,8 @@ export default function PanelView() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [activity, setActivity] = useState<any[] | null>(null);
+  const [lastLoginAt, setLastLoginAt] = useState<string | null>(null);
 
   useEffect(() => {
     auth.refresh();
@@ -70,7 +72,14 @@ export default function PanelView() {
       const d = await j("/api/account/export");
       if (d) setMyReports(d.informesPreu || []);
     }
-  }, [history, favorites, comparisons, billing, myReports]);
+    if (tabId === "seguretat" && activity === null) {
+      const d = await j("/api/account/activity");
+      if (d) {
+        setActivity(d.events || []);
+        setLastLoginAt(d.lastLoginAt || null);
+      } else setActivity([]);
+    }
+  }, [history, favorites, comparisons, billing, myReports, activity]);
 
   useEffect(() => { loadTab(tab); }, [tab, loadTab]);
 
@@ -150,6 +159,25 @@ export default function PanelView() {
     }
   };
 
+  const revokeOtherSessions = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/auth/sessions/revoke-all", { method: "POST" });
+      if (!res.ok) {
+        setMsg(locale === "ca" ? "No s'han pogut tancar les sessions." : "No se han podido cerrar las sesiones.");
+        return;
+      }
+      await auth.refresh();
+      setActivity(null); // recarrega l'activitat la propera vegada
+      setMsg(locale === "ca"
+        ? "S'han tancat les sessions d'altres dispositius. Aquesta sessió continua activa."
+        : "Se han cerrado las sesiones de otros dispositivos. Esta sesión sigue activa.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const cancelDemo = async () => {
     setBusy(true);
     await fetch("/api/stripe/demo", { method: "POST" });
@@ -217,9 +245,27 @@ export default function PanelView() {
 
       {verificacio && (
         <div className={`mt-4 rounded-xl p-4 text-sm ${verificacio === "ok" ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#fdeae2] text-[#b0431c]"}`}>
-          {verificacio === "ok"
-            ? (locale === "ca" ? "Correu verificat correctament. Gràcies!" : "Correo verificado correctamente. ¡Gracias!")
-            : (locale === "ca" ? "L'enllaç de verificació no és vàlid o ha caducat." : "El enlace de verificación no es válido o ha caducado.")}
+          {verificacio === "ok" &&
+            (locale === "ca"
+              ? "Correu verificat correctament. Ja pots fer consultes detallades!"
+              : "¡Correo verificado correctamente. Ya puedes hacer consultas detalladas!")}
+          {verificacio === "ja_usat" &&
+            (locale === "ca"
+              ? "Aquest enllaç de verificació ja s'havia utilitzat. Si el teu correu ja consta com a verificat, no cal fer res més."
+              : "Este enlace de verificación ya se había utilizado. Si tu correo ya consta como verificado, no hace falta nada más.")}
+          {verificacio === "caducat" &&
+            (locale === "ca"
+              ? "L'enllaç ha caducat (vàlid 24 hores). Reenvia'l i prova de nou."
+              : "El enlace ha caducado (válido 24 horas). Reenvíalo e inténtalo de nuevo.")}
+          {verificacio === "invalid" &&
+            (locale === "ca"
+              ? "L'enllaç de verificació no és vàlid."
+              : "El enlace de verificación no es válido.")}
+          {verificacio !== "ok" && (
+            <button onClick={resendVerification} disabled={busy} className="ml-1 underline font-semibold disabled:opacity-50">
+              {locale === "ca" ? "Reenviar correu de verificació" : "Reenviar correo de verificación"}
+            </button>
+          )}
         </div>
       )}
       {msg && (
@@ -485,6 +531,42 @@ export default function PanelView() {
       {tab === "seguretat" && (
         <div className="mt-6 space-y-4">
           <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+            <h3 className="font-bold">{locale === "ca" ? "Sessions" : "Sesiones"}</h3>
+            {lastLoginAt && (
+              <p className="text-sm text-[#6b6f68]">
+                {locale === "ca" ? "Últim inici de sessió:" : "Último inicio de sesión:"}{" "}
+                <b>{new Date(lastLoginAt).toLocaleString()}</b>
+              </p>
+            )}
+            <button onClick={revokeOtherSessions} disabled={busy} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+              {locale === "ca" ? "Tanca les sessions d'altres dispositius" : "Cierra las sesiones de otros dispositivos"}
+            </button>
+            <p className="text-xs text-[#6b6f68]">
+              {locale === "ca"
+                ? "Invalida totes les sessions obertes en altres ordinadors o mòbils. Aquest dispositiu continua amb la sessió iniciada. També es tanquen automàticament en canviar la contrasenya."
+                : "Invalida todas las sesiones abiertas en otros ordenadores o móviles. Este dispositivo sigue con la sesión iniciada. También se cierran automáticamente al cambiar la contraseña."}
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+            <h3 className="font-bold">{locale === "ca" ? "Activitat recent del compte" : "Actividad reciente de la cuenta"}</h3>
+            {activity === null ? (
+              <p className="text-sm text-[#6b6f68]">…</p>
+            ) : activity.length === 0 ? (
+              <p className="text-sm text-[#6b6f68]">
+                {locale === "ca" ? "Encara no hi ha activitat registrada." : "Aún no hay actividad registrada."}
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {activity.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
+                    <b className="text-[#0f2e21]">{activityLabel(e.type, locale)}</b>
+                    <span className="text-xs text-[#6b6f68]">{new Date(e.createdAt).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
             <h3 className="font-bold">{locale === "ca" ? "Canvi de contrasenya" : "Cambio de contraseña"}</h3>
             <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder={locale === "ca" ? "Contrasenya actual" : "Contraseña actual"} className="w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm" />
             <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={locale === "ca" ? "Contrasenya nova (mín. 8)" : "Contraseña nueva (mín. 8)"} className="w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm" />
@@ -514,4 +596,45 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
       <span className={`text-sm ${strong ? "font-bold" : ""}`}>{value}</span>
     </div>
   );
+}
+
+/** Etiqueta llegible per a cada tipus d'esdeveniment del compte (bilingüe). */
+function activityLabel(type: string, locale: "ca" | "es"): string {
+  const ca: Record<string, string> = {
+    SIGNUP: "Registre del compte",
+    SIGNUP_GOOGLE: "Registre amb Google",
+    LOGIN: "Inici de sessió",
+    LOGIN_GOOGLE: "Inici de sessió amb Google",
+    LOGOUT: "Tancament de sessió",
+    EMAIL_VERIFIED: "Correu verificat",
+    EMAIL_NOT_VERIFIED: "Consulta sense correu verificat",
+    PASSWORD_RESET: "Restabliment de contrasenya demanat",
+    SESSIONS_REVOKED: "Sessions d'altres dispositius tancades",
+    PAYWALL_VIEW: "Consulta (quota exhaurida)",
+    MAP_QUERY: "Consulta al mapa",
+    PRICE_REPORT: "Informe de preu enviat",
+    EXPORT: "Exportació de dades",
+    CHECKOUT_START: "Inici de subscripció",
+    CHECKOUT_DEMO: "Subscripció de prova (demo)",
+    SUBSCRIBE_SUCCESS: "Subscripció activada",
+  };
+  const es: Record<string, string> = {
+    SIGNUP: "Registro de la cuenta",
+    SIGNUP_GOOGLE: "Registro con Google",
+    LOGIN: "Inicio de sesión",
+    LOGIN_GOOGLE: "Inicio de sesión con Google",
+    LOGOUT: "Cierre de sesión",
+    EMAIL_VERIFIED: "Correo verificado",
+    EMAIL_NOT_VERIFIED: "Consulta sin correo verificado",
+    PASSWORD_RESET: "Restablecimiento de contraseña solicitado",
+    SESSIONS_REVOKED: "Sesiones de otros dispositivos cerradas",
+    PAYWALL_VIEW: "Consulta (cuota agotada)",
+    MAP_QUERY: "Consulta en el mapa",
+    PRICE_REPORT: "Informe de precio enviado",
+    EXPORT: "Exportación de datos",
+    CHECKOUT_START: "Inicio de suscripción",
+    CHECKOUT_DEMO: "Suscripción de prueba (demo)",
+    SUBSCRIBE_SUCCESS: "Suscripción activada",
+  };
+  return (locale === "es" ? es : ca)[type] || type;
 }

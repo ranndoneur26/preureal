@@ -7,6 +7,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import * as h_account from "../_impl/account/route";
+import * as h_account_activity from "../_impl/account/activity/route";
 import * as h_account_export from "../_impl/account/export/route";
 import * as h_admin_audit from "../_impl/admin/audit/route";
 import * as h_admin_emails from "../_impl/admin/emails/route";
@@ -27,6 +28,7 @@ import * as h_auth_me from "../_impl/auth/me/route";
 import * as h_auth_password_reset from "../_impl/auth/password-reset/route";
 import * as h_auth_password_reset_confirm from "../_impl/auth/password-reset/confirm/route";
 import * as h_auth_register from "../_impl/auth/register/route";
+import * as h_auth_sessions_revoke_all from "../_impl/auth/sessions/revoke-all/route";
 import * as h_auth_verify from "../_impl/auth/verify/route";
 import * as h_billing_history from "../_impl/billing/history/route";
 import * as h_buildings from "../_impl/buildings/route";
@@ -55,6 +57,7 @@ type Handler = (req: NextRequest, ctx: Ctx) => Promise<Response> | Response;
 
 const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["account"], h: h_account },
+  { seg: ["account", "activity"], h: h_account_activity },
   { seg: ["account", "export"], h: h_account_export },
   { seg: ["admin", "audit"], h: h_admin_audit },
   { seg: ["admin", "emails"], h: h_admin_emails },
@@ -75,6 +78,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["auth", "password-reset"], h: h_auth_password_reset },
   { seg: ["auth", "password-reset", "confirm"], h: h_auth_password_reset_confirm },
   { seg: ["auth", "register"], h: h_auth_register },
+  { seg: ["auth", "sessions", "revoke-all"], h: h_auth_sessions_revoke_all },
   { seg: ["auth", "verify"], h: h_auth_verify },
   { seg: ["billing", "history"], h: h_billing_history },
   { seg: ["buildings"], h: h_buildings },

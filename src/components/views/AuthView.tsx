@@ -49,7 +49,9 @@ export default function AuthView({
           return;
         }
         await auth.refresh();
-        navigate("/mapa");
+        // Fase 1: després de registrar-se, pantalla «Revisa el teu correu»
+        // (el correu de verificació ja s'ha enviat automàticament al servidor)
+        navigate("/revisa-correu");
       } else if (mode === "login") {
         const res = await fetch("/api/auth/login", {
           method: "POST",
@@ -62,7 +64,8 @@ export default function AuthView({
           return;
         }
         await auth.refresh();
-        navigate("/mapa");
+        // Fase 1: si el correu no està verificat, abans de res verificar-lo
+        navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
       } else if (mode === "forgot") {
         const res = await fetch("/api/auth/password-reset", {
           method: "POST",

@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { canConsult } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
-import { clientIp, hashIp } from "@/lib/security";
+import { clientIp, hashIp, maskEmail } from "@/lib/security";
 import { fetchParcelAt, resolveMunicipalityCode } from "@/lib/icgc";
 import { getYearBuilt } from "@/lib/catastro";
 
@@ -12,6 +12,8 @@ import { getYearBuilt } from "@/lib/catastro";
  * POST /api/lookup  { lat, lng, buildingId? }
  * CONSULTA DETALLADA: el cor del producte.
  *  - Sense sessió → resposta teaser (protecció de dades + captació).
+ *  - Sessió amb correu SENSE verificar → 403 EMAIL_NOT_VERIFIED (Fase 1:
+ *    bloqueig de les funcions principals fins verificar; validació AL SERVIDOR).
  *  - Pla FREE → quota/mes configurable (PlanSetting); exhaurida → 402 paywall.
  *  - PREMIUM/PRO → il·limitades.
  * Dades retornades: preu mitjà real (fiances Incasòl), contractes de referència,
@@ -67,6 +69,20 @@ export async function POST(req: Request) {
         message: "REGISTRA'T_PER_VEURE",
       },
     });
+  }
+
+  // 3.5) verificació de correu obligatòria per a les funcions principals
+  //      (Fase 1: registre i autenticació). El compte es pot obrir i explorar
+  //      el mapa, però les consultes detallades exigeixen correu verificat.
+  //      Els ADMIN hi tenen accés per operativa interna.
+  if (!session.emailVerifiedAt && session.role !== "ADMIN") {
+    await db.event
+      .create({ data: { type: "EMAIL_NOT_VERIFIED", userId: session.id, meta: JSON.stringify({ mun: mun.code }) } })
+      .catch(() => {});
+    return NextResponse.json(
+      { error: "EMAIL_NOT_VERIFIED", email: maskEmail(session.email) },
+      { status: 403 }
+    );
   }
 
   // 4) quota del pla (configuració efectiva, aplicada AL SERVIDOR)
