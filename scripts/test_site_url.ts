@@ -10,14 +10,14 @@ import { getSiteUrl, getSiteUrlOrigin } from "../src/lib/site-url";
 const CASES: Array<[string | undefined, string]> = [
   // [valor de l'env var, host esperat]
   ["https://preureal.vercel.app", "preureal.vercel.app"], // valor correcte
-  ["https//preureal.vercel.app", "preureal.cat"], // EL CAS REAL DEL BUILD TRENCAT
+  ["https//preureal.vercel.app", "www.preureal.com"], // EL CAS REAL DEL BUILD TRENCAT
   ["preureal.vercel.app", "preureal.vercel.app"], // oblidar l'esquema
-  ["https://preureal.cat/", "preureal.cat"], // amb barra final
+  ["https://www.preureal.com/", "www.preureal.com"], // amb barra final
   ["https://localhost:3000", "localhost:3000"], // desenvolupament local (manté el port)
-  ["", "preureal.cat"], // buida
-  [undefined, "preureal.cat"], // no definida
-  ["   ", "preureal.cat"], // només espais
-  ["https://preureal.cat", "preureal.cat"], // netejant espais laterals
+  ["", "www.preureal.com"], // buida (fallback v20: domini canònic viu)
+  [undefined, "www.preureal.com"], // no definida
+  ["   ", "www.preureal.com"], // només espais
+  ["https://www.preureal.com", "www.preureal.com"], // netejant espais laterals
 ];
 
 let failures = 0;

@@ -39,12 +39,12 @@ DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
 # → credencials admin: admin@preureal.cat / $ADMIN_PASSWORD
 ```
 
-> ⚠️ **v19 en endavant**: cada actualització que porti migracions noves exigeix
-> executar `npx prisma migrate deploy` (pas 2a) **ABANS** de fer `git push` —
-> el codi nou espera les columnes noves a la BD. Per purgar els tokens
-> històrics d'EmailLog (auditoria de correu v19), executa UNA vegada:
-> `DATABASE_URL="postgresql://..." npx tsx scripts/scrub_emaillog_tokens.ts`
-> (idempotent; redacta tokens guardats i esborra tokens pendents/caducats).
+> ✅ **v20 en endavant**: les migracions s'apliquen SOLES — el build de Vercel
+> executa `prisma migrate deploy` abans de compilar (les migracions són
+> idempotents: es poden aplicar dues vegades sense error). Si preferissis
+> aplicar-les a mà, segueix sent possible amb la comanda del pas 2a o
+> enganxant el SQL de `prisma/migrations/<carpeta>/migration.sql` al SQL
+> Editor de Supabase.
 
 
 ## 3. Puja el codi a Vercel
@@ -70,12 +70,13 @@ git push -uf origin main                 # -f substitueix el contingut vell
 El build no necessita cap configuració addicional:
 
 - `postinstall` → `prisma generate` (el client Prisma es genera sempre)
-- `build` → `node scripts/check_repo.mjs && prisma generate && next build`
+- `build` → `node scripts/check_repo.mjs && prisma generate && prisma migrate deploy && next build`
   — el guardia `check_repo.mjs` detecta repos **mezclados**: una carpeta
   `app/` antiga a l'arrel (fallaria amb `Can't resolve './globals.css'`) o
   un `prisma/schema.prisma` antic amb `provider = "sqlite"` (fallaria amb
   el críptic `P1012: Environment variable not found: DATABASE_URL`) —
-  i explica com arreglar-ho
+  i explica com arreglar-ho. **v20**: `prisma migrate deploy` aplica les
+  migracions pendents a la BD abans de compilar (idempotent, segur).
 - Vercel detecta `package-lock.json` i instal·la amb npm
 - API consolidada en **3 Serverless Functions** (límit del pla Hobby:
   12) — vegeu la nota de la secció 5
@@ -85,7 +86,7 @@ El build no necessita cap configuració addicional:
 | Variable                | Valor                                             | Obligatòria |
 |-------------------------|---------------------------------------------------|-------------|
 | `DATABASE_URL`          | `postgresql://...-pooler...neon.tech/preureal?sslmode=require` | ✅ |
-| `NEXT_PUBLIC_SITE_URL`  | `https://el-teu-projecte.vercel.app` o domini     | ✅ |
+| `NEXT_PUBLIC_SITE_URL`  | `https://www.preureal.com` (el domini real que fan servir els usuaris — els enllaços dels correus surten d'aquí) | ✅ |
 | `AUTH_SECRET`           | `openssl rand -hex 32`                            | ✅ |
 | `DEMO_CHECKOUT`         | `true` mentre no hi hagi Stripe real              | Recomanada  |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth (redirect URI: `https://DOMINI/api/auth/google/callback`) | Opcional |

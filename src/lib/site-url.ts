@@ -10,8 +10,17 @@
  * el valor correcte si és usable, o la fallback oficial en cas contrari.
  */
 
-/** URL oficial del projecte, usada quan la variable d'entorn no és usable. */
-const FALLBACK = "https://preureal.cat";
+/**
+ * URL oficial del projecte, usada quan la variable d'entorn no és usable.
+ *
+ * v20: el domini CANÒNIC en producció és https://www.preureal.com (comprat
+ * a Vercel, DNS automàtic; l'apex redirigeix 308 a www). El domini
+ * `preureal.cat` està REGISTRAT però SENSE registres DNS (NXDOMAIN
+ * verificat el 2026-11-04): mentre no es configuri, cap enllaç ha de
+ * senyalar-hi — un correu de verificació amb enllaç mort deixa l'usuari
+ * encerclat al bloqueig «Verifica tu correo».
+ */
+const FALLBACK = "https://www.preureal.com";
 
 /** Hosts locals vàlids sense punt (entorn de desenvolupament). */
 const LOCAL_HOSTS = /^(localhost|127\.0\.0\.1|\[::1\]|::1)$/;

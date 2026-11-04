@@ -2,6 +2,52 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v20 — 2026-11-04 · Correcció: la migració v19 mai s'havia aplicat a la BD + domini mort
+
+### Diagnòstic (verificat EN VIVO contra producció)
+- Síntoma de l'usuari: «he fet un registre nou i no ha arribat a la base de
+  dades» (mirava EmailLog a Supabase, la taula que calia vigilar després de
+  la correcció v18).
+- Probes de producció (`www.preureal.com`):
+  - `POST /api/auth/register` → `{"ok":true,...}` — **el registre SÍ crea la
+    fila a `User`** (provat amb un usuari de diagnòstic). L'app i la BD són
+    sanes (`/api/health` → `database.ok`).
+  - `GET /api/cron/emails` (ruta que només existeix a v19) → **HTTP 500 buit**:
+    la primera consulta amb columnes noves (`attempts`, `nextRetryAt`, `type`)
+    revienta → **la migració `20261104120000_emaillog_telemetry` NO estava
+    aplicada a Supabase**. Conseqüència: `sendMail` no pot escriure l'outbox
+    a EmailLog → **cap correu surt i cap fila nova apareix** (el fallo
+    s'empassa en silenci dins de `after()`), i per això «no arribava res».
+  - DNS públic: **`preureal.cat` = NXDOMAIN** (registrat però sense registres
+    A). El fallback de `site-url.ts` i els exemples d'env apuntaven allí:
+    tot enllaç de verificació hauria estat un enllaç mort.
+- `preureal.com` (comprat a Vercel) SÍ funciona: apex → 308 →
+  `https://www.preureal.com` — domini canònic des d'ara.
+
+### Correccions
+- **Migracions idempotents** (`IF NOT EXISTS` a taules/índexs/columnes i
+  `DO $$ EXCEPTION WHEN duplicate_object` a les FK): es poden aplicar dues
+  vegades o sobre una BD creada amb `db push`/SQL a mà sense error.
+- **El build aplica les migracions automàticament**:
+  `build = check_repo && prisma generate && prisma migrate deploy && next build`
+  — mai més un desplegament sortirà amb la BD desactualitzada.
+- **`site-url.ts`**: fallback `https://preureal.cat` → **`https://www.preureal.com`**
+  (els enllaços dels correus mai més no senyalaran a un domini mort).
+- `.env.production.example` + `VERCEL.md`: `NEXT_PUBLIC_SITE_URL=https://www.preureal.com`,
+  `MAIL_FROM` amb domini verificable a Resend (`hola@preureal.com`) i notes
+  NXDOMAIN de `preureal.cat`.
+- `scripts/make_migrations_idempotent.py`: eina que va generar el canvi
+  (idempotent, es pot re-executar).
+
+### Pendents de l'usuari (panel Vercel/Supabase, sense codi)
+1. Aplicar la migració ja (SQL Editor de Supabase) o simplement desplegar v20
+   (el build ho fa sol). Sense això, **cap correu sortirà**.
+2. `NEXT_PUBLIC_SITE_URL=https://www.preureal.com` a Vercel.
+3. Definir `CRON_SECRET` (el cron va respondre 500 sense Bearer: no definit).
+4. Verificar `preureal.com` a Resend + `MAIL_FROM` — amb
+   `onboarding@resend.dev`, Resend només deixa escriure a l'adreça pròpia del
+   compte (HTTP 403 per a la resta).
+
 ## v19 — 2026-11-04 · Sistema de correu robust (P0/P1/P2 de l'auditoria)
 
 ### P0 — Seguretat

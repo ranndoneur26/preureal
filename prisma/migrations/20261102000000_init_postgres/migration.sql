@@ -2,7 +2,7 @@
 CREATE SCHEMA IF NOT EXISTS "public";
 
 -- CreateTable
-CREATE TABLE "User" (
+CREATE TABLE IF NOT EXISTS "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE "User" (
 );
 
 -- CreateTable
-CREATE TABLE "Subscription" (
+CREATE TABLE IF NOT EXISTS "Subscription" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "stripeCustomerId" TEXT,
@@ -38,7 +38,7 @@ CREATE TABLE "Subscription" (
 );
 
 -- CreateTable
-CREATE TABLE "PasswordToken" (
+CREATE TABLE IF NOT EXISTS "PasswordToken" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "token" TEXT NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE "PasswordToken" (
 );
 
 -- CreateTable
-CREATE TABLE "EmailToken" (
+CREATE TABLE IF NOT EXISTS "EmailToken" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "token" TEXT NOT NULL,
@@ -62,7 +62,7 @@ CREATE TABLE "EmailToken" (
 );
 
 -- CreateTable
-CREATE TABLE "Municipality" (
+CREATE TABLE IF NOT EXISTS "Municipality" (
     "code" TEXT NOT NULL,
     "ineCode" TEXT,
     "name" TEXT NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE "Municipality" (
 );
 
 -- CreateTable
-CREATE TABLE "Building" (
+CREATE TABLE IF NOT EXISTS "Building" (
     "id" TEXT NOT NULL,
     "externalId" TEXT NOT NULL,
     "source" TEXT NOT NULL DEFAULT 'ICGC_RTT',
@@ -109,7 +109,7 @@ CREATE TABLE "Building" (
 );
 
 -- CreateTable
-CREATE TABLE "SearchLog" (
+CREATE TABLE IF NOT EXISTS "SearchLog" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "buildingId" TEXT,
@@ -122,7 +122,7 @@ CREATE TABLE "SearchLog" (
 );
 
 -- CreateTable
-CREATE TABLE "Event" (
+CREATE TABLE IF NOT EXISTS "Event" (
     "id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "userId" TEXT,
@@ -133,7 +133,7 @@ CREATE TABLE "Event" (
 );
 
 -- CreateTable
-CREATE TABLE "PriceReport" (
+CREATE TABLE IF NOT EXISTS "PriceReport" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "municipalityCode" TEXT,
@@ -154,7 +154,7 @@ CREATE TABLE "PriceReport" (
 );
 
 -- CreateTable
-CREATE TABLE "EmailLog" (
+CREATE TABLE IF NOT EXISTS "EmailLog" (
     "id" TEXT NOT NULL,
     "to" TEXT NOT NULL,
     "subject" TEXT NOT NULL,
@@ -168,7 +168,7 @@ CREATE TABLE "EmailLog" (
 );
 
 -- CreateTable
-CREATE TABLE "RateLimit" (
+CREATE TABLE IF NOT EXISTS "RateLimit" (
     "key" TEXT NOT NULL,
     "count" INTEGER NOT NULL DEFAULT 0,
     "resetAt" TIMESTAMP(3) NOT NULL,
@@ -178,7 +178,7 @@ CREATE TABLE "RateLimit" (
 );
 
 -- CreateTable
-CREATE TABLE "StripeEvent" (
+CREATE TABLE IF NOT EXISTS "StripeEvent" (
     "eventId" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "processedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -187,7 +187,7 @@ CREATE TABLE "StripeEvent" (
 );
 
 -- CreateTable
-CREATE TABLE "AuditLog" (
+CREATE TABLE IF NOT EXISTS "AuditLog" (
     "id" TEXT NOT NULL,
     "actorId" TEXT,
     "action" TEXT NOT NULL,
@@ -199,7 +199,7 @@ CREATE TABLE "AuditLog" (
 );
 
 -- CreateTable
-CREATE TABLE "ImportRun" (
+CREATE TABLE IF NOT EXISTS "ImportRun" (
     "id" TEXT NOT NULL,
     "source" TEXT NOT NULL,
     "status" TEXT NOT NULL,
@@ -215,7 +215,7 @@ CREATE TABLE "ImportRun" (
 );
 
 -- CreateTable
-CREATE TABLE "PlanSetting" (
+CREATE TABLE IF NOT EXISTS "PlanSetting" (
     "plan" TEXT NOT NULL,
     "quotaMonth" INTEGER NOT NULL,
     "priceEur" DOUBLE PRECISION NOT NULL,
@@ -226,7 +226,7 @@ CREATE TABLE "PlanSetting" (
 );
 
 -- CreateTable
-CREATE TABLE "Favorite" (
+CREATE TABLE IF NOT EXISTS "Favorite" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "entityKey" TEXT NOT NULL,
@@ -239,7 +239,7 @@ CREATE TABLE "Favorite" (
 );
 
 -- CreateTable
-CREATE TABLE "SavedComparison" (
+CREATE TABLE IF NOT EXISTS "SavedComparison" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -250,98 +250,133 @@ CREATE TABLE "SavedComparison" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE INDEX "User_role_idx" ON "User"("role");
+CREATE INDEX IF NOT EXISTS "User_role_idx" ON "User"("role");
 
 -- CreateIndex
-CREATE INDEX "User_plan_idx" ON "User"("plan");
+CREATE INDEX IF NOT EXISTS "User_plan_idx" ON "User"("plan");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Subscription_stripeSubscriptionId_key" ON "Subscription"("stripeSubscriptionId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Subscription_stripeSubscriptionId_key" ON "Subscription"("stripeSubscriptionId");
 
 -- CreateIndex
-CREATE INDEX "Subscription_userId_idx" ON "Subscription"("userId");
+CREATE INDEX IF NOT EXISTS "Subscription_userId_idx" ON "Subscription"("userId");
 
 -- CreateIndex
-CREATE INDEX "Subscription_status_idx" ON "Subscription"("status");
+CREATE INDEX IF NOT EXISTS "Subscription_status_idx" ON "Subscription"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PasswordToken_token_key" ON "PasswordToken"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "PasswordToken_token_key" ON "PasswordToken"("token");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "EmailToken_token_key" ON "EmailToken"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "EmailToken_token_key" ON "EmailToken"("token");
 
 -- CreateIndex
-CREATE INDEX "Municipality_name_idx" ON "Municipality"("name");
+CREATE INDEX IF NOT EXISTS "Municipality_name_idx" ON "Municipality"("name");
 
 -- CreateIndex
-CREATE INDEX "Municipality_isTense_idx" ON "Municipality"("isTense");
+CREATE INDEX IF NOT EXISTS "Municipality_isTense_idx" ON "Municipality"("isTense");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Building_externalId_key" ON "Building"("externalId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Building_externalId_key" ON "Building"("externalId");
 
 -- CreateIndex
-CREATE INDEX "Building_municipalityCode_idx" ON "Building"("municipalityCode");
+CREATE INDEX IF NOT EXISTS "Building_municipalityCode_idx" ON "Building"("municipalityCode");
 
 -- CreateIndex
-CREATE INDEX "Building_centroidLat_centroidLng_idx" ON "Building"("centroidLat", "centroidLng");
+CREATE INDEX IF NOT EXISTS "Building_centroidLat_centroidLng_idx" ON "Building"("centroidLat", "centroidLng");
 
 -- CreateIndex
-CREATE INDEX "SearchLog_userId_createdAt_idx" ON "SearchLog"("userId", "createdAt");
+CREATE INDEX IF NOT EXISTS "SearchLog_userId_createdAt_idx" ON "SearchLog"("userId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "SearchLog_municipalityCode_idx" ON "SearchLog"("municipalityCode");
+CREATE INDEX IF NOT EXISTS "SearchLog_municipalityCode_idx" ON "SearchLog"("municipalityCode");
 
 -- CreateIndex
-CREATE INDEX "Event_type_createdAt_idx" ON "Event"("type", "createdAt");
+CREATE INDEX IF NOT EXISTS "Event_type_createdAt_idx" ON "Event"("type", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "PriceReport_status_idx" ON "PriceReport"("status");
+CREATE INDEX IF NOT EXISTS "PriceReport_status_idx" ON "PriceReport"("status");
 
 -- CreateIndex
-CREATE INDEX "PriceReport_municipalityCode_createdAt_idx" ON "PriceReport"("municipalityCode", "createdAt");
+CREATE INDEX IF NOT EXISTS "PriceReport_municipalityCode_createdAt_idx" ON "PriceReport"("municipalityCode", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "RateLimit_resetAt_idx" ON "RateLimit"("resetAt");
+CREATE INDEX IF NOT EXISTS "RateLimit_resetAt_idx" ON "RateLimit"("resetAt");
 
 -- CreateIndex
-CREATE INDEX "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
+CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_idx" ON "AuditLog"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "AuditLog_action_idx" ON "AuditLog"("action");
+CREATE INDEX IF NOT EXISTS "AuditLog_action_idx" ON "AuditLog"("action");
 
 -- CreateIndex
-CREATE INDEX "ImportRun_createdAt_idx" ON "ImportRun"("createdAt");
+CREATE INDEX IF NOT EXISTS "ImportRun_createdAt_idx" ON "ImportRun"("createdAt");
 
 -- CreateIndex
-CREATE INDEX "Favorite_userId_idx" ON "Favorite"("userId");
+CREATE INDEX IF NOT EXISTS "Favorite_userId_idx" ON "Favorite"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Favorite_userId_entityKey_key" ON "Favorite"("userId", "entityKey");
+CREATE UNIQUE INDEX IF NOT EXISTS "Favorite_userId_entityKey_key" ON "Favorite"("userId", "entityKey");
 
 -- CreateIndex
-CREATE INDEX "SavedComparison_userId_idx" ON "SavedComparison"("userId");
+CREATE INDEX IF NOT EXISTS "SavedComparison_userId_idx" ON "SavedComparison"("userId");
 
 -- AddForeignKey
-ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "PasswordToken" ADD CONSTRAINT "PasswordToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "PasswordToken" ADD CONSTRAINT "PasswordToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "EmailToken" ADD CONSTRAINT "EmailToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "EmailToken" ADD CONSTRAINT "EmailToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "SearchLog" ADD CONSTRAINT "SearchLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "SearchLog" ADD CONSTRAINT "SearchLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "PriceReport" ADD CONSTRAINT "PriceReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "PriceReport" ADD CONSTRAINT "PriceReport_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "Favorite" ADD CONSTRAINT "Favorite_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "SavedComparison" ADD CONSTRAINT "SavedComparison_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$
+BEGIN
+  ALTER TABLE "SavedComparison" ADD CONSTRAINT "SavedComparison_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
