@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000",
     "postinstall": "prisma generate",
-    "build": "node scripts/check_repo.mjs && prisma generate && next build",
+    "build": "node scripts/check_repo.mjs && prisma generate && prisma migrate deploy && next build",
     "build:selfhost": "node scripts/check_repo.mjs && prisma generate && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production node .next/standalone/server.js",
     "lint": "eslint .",
