@@ -31,6 +31,8 @@ VERCEL_FILES = [
     "eslint.config.mjs",
     # repo + entorn
     ".gitignore", ".env.production.example",
+    # config Vercel (cron de manteniment del correu — v19)
+    "vercel.json",
     # documentació de desplegament
     "VERCEL.md", "README.md", "CORRECCIONS_P1.md",
     # dades de seed (municipis amb lloguer Incasòl real)
@@ -38,6 +40,8 @@ VERCEL_FILES = [
     # scripts d'operació referenciats per VERCEL.md / README.md
     "scripts/seed.ts", "scripts/update_all.sh", "scripts/prepare_data.py",
     "scripts/gen_api_dispatcher.py", "scripts/check_repo.mjs",
+    # P0 auditoria correu v19: purga de tokens històrics a EmailLog
+    "scripts/scrub_emaillog_tokens.ts",
 ]
 VERCEL_MUST_HAVE = VERCEL_FILES + [
     "src/instrumentation.ts", "src/lib/db.ts", "src/app/page.tsx",

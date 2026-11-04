@@ -2,6 +2,50 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v19 — 2026-11-04 · Sistema de correu robust (P0/P1/P2 de l'auditoria)
+
+### P0 — Seguretat
+- **EmailLog ja no guarda tokens**: el cos es persisteix REDACTAT
+  (`?token=...` → `?token=***`). El HTML real només viatja cap a Resend.
+- **Purga històrica**: `scripts/scrub_emaillog_tokens.ts` (idempotent) redacta
+  els cossos antics i esborra tokens pendents/caducats; el cron també fa de
+  xarxa de seguretat cada dia.
+- **Hash de tokens**: `EmailToken`/`PasswordToken` guarden el SHA-256 del token
+  (`src/lib/token-hash.ts`); una filtració de BD no dona enllaços vius.
+  Els tokens pendents anteriors al desplegament queden invalidats (es demanen
+  enllaços nous — el scrub els esborra).
+- **Consum atòmic de tokens**: verify confirm i password-reset confirm
+  reclamen el token amb `updateMany` condicionat (`used: false → true`);
+  només UNA petició concurrent guanya (abans hi havia finestra de carrera).
+
+### P1 — Fiabilitat
+- **Outbox durables**: EmailLog crea la fila ABANS d'enviar (status `pending`);
+  si l'execució mor, el cron la recupera. Reintents inline amb backoff
+  (3 intents: 0/800ms/3.2s) + reposició diària fins a 5 intents totals
+  (només tipus no sensibles: WELCOME/RECEIPT/GENERIC; VERIFY/RESET → l'usuari
+  demana enllaç nou).
+- **Idempotència**: `idempotencyKey` únic — els rebots Stripe
+  (`stripe-receipt:<id>`) mai es dupliquen en re-entregues del webhook.
+- **Telemetría real**: `providerMessageId` (id de Resend), `sentAt` (quan
+  Resend va ACCEPTAR), `attempts`. `status:"sent"` = acceptat pel proveïdor
+  (la entrega en bandeja requeriria events de Resend — futur).
+
+### P2 — Operació
+- **Cron `/api/cron/emails`** (Vercel Cron diari via `vercel.json`, protegit
+  amb `CRON_SECRET`): reintenta l'outbox, purga tokens caducats > 7 dies,
+  aplica retenció d'EmailLog (`EMAILLOG_RETENTION_DAYS`, 90 per defecte) i
+  redacta cossos llegats amb tokens.
+- **Panell admin (Correus)**: mostra tipus, intents i id de Resend.
+- **Un sol enllaç viu per compte**: en reenviar verificació o demanar reset,
+  els tokens pendents anteriors s'anul·len en la mateixa transacció.
+- **Rate limits per compte** a més dels per-IP: reenviament verificació
+  3/5min per usuari; reset de contrasenya 3/h per correu.
+- **Copys**: els enllaços s'anuncien «d'un sol ús» i la UI ja no promet
+  l'enviament com a garantit («si no arriba, pots demanar un altre»).
+- `receiptMail`: planName i amount escapats (defensa en profunditat).
+- **Migració nova (ADITIVA)**: `20261104120000_emaillog_telemetry` — aplicar
+  amb `npx prisma migrate deploy` ABANS del push.
+
 ## v18 — 2026-11-04 · Correcció CRÍTICA: els correus no sortien a producció
 
 - **Causa (vista a Supabase → EmailLog com a «fetch: TimeoutError [23]»)**: tots

@@ -9,6 +9,8 @@
  *   npx tsx scripts/e2e_auth_fase1.ts
  */
 import { PrismaClient } from "@prisma/client";
+import * as crypto from "crypto";
+import { hashToken } from "../src/lib/token-hash";
 
 const db = new PrismaClient();
 const BASE = process.env.E2E_BASE || "http://127.0.0.1:3100";
@@ -102,17 +104,27 @@ async function main() {
     where: { user: { email: EMAIL } },
     orderBy: { createdAt: "desc" },
   });
-  ok("token de verificació existeix amb caducitat 24h", !!et && et.expiresAt.getTime() - Date.now() > 23 * 3600_000);
-  const v1 = await f(`${BASE}/api/auth/verify?token=${et!.token}`, { redirect: "manual" });
+  ok("token de verificació enregistrat pel registre", !!et);
+  // v19: a la BD es guarda el HASH — creem un token propi (hash del cru) per
+  // provar el flux complet, perquè el cru generat pel registre no és recuperable
+  const uRow = await db.user.findUnique({ where: { email: EMAIL } });
+  ok("usuari registrat existeix", !!uRow);
+  const rawVerify = crypto.randomBytes(24).toString("hex");
+  await db.emailToken.deleteMany({ where: { userId: uRow!.id } });
+  const etOwn = await db.emailToken.create({
+    data: { userId: uRow!.id, token: hashToken(rawVerify), expiresAt: new Date(Date.now() + 24 * 3600_000) },
+  });
+  ok("token de verificació existeix amb caducitat 24h", etOwn.expiresAt.getTime() - Date.now() > 23 * 3600_000);
+  const v1 = await f(`${BASE}/api/auth/verify?token=${rawVerify}`, { redirect: "manual" });
   ok("verificació → redirect verificacio=ok", v1.status >= 300 && v1.status < 400 && (v1.headers.get("location") || "").includes("verificacio=ok"), v1.headers.get("location") || "");
   // reutilització del mateix enllaç → ja_usat (missatge específic)
-  const v2 = await f(`${BASE}/api/auth/verify?token=${et!.token}`, { redirect: "manual" });
+  const v2 = await f(`${BASE}/api/auth/verify?token=${rawVerify}`, { redirect: "manual" });
   ok("reús de l'enllaç → verificacio=ja_usat", (v2.headers.get("location") || "").includes("verificacio=ja_usat"));
   // token caducat → caducat
   const expired = await db.emailToken.create({
-    data: { userId: et!.userId, token: "e2e-expired-token", expiresAt: new Date(Date.now() - 3600_000) },
+    data: { userId: uRow!.id, token: hashToken("e2e-expired-token"), expiresAt: new Date(Date.now() - 3600_000) },
   });
-  const v3 = await f(`${BASE}/api/auth/verify?token=${expired.token}`, { redirect: "manual" });
+  const v3 = await f(`${BASE}/api/auth/verify?token=e2e-expired-token`, { redirect: "manual" });
   ok("enllaç caducat → verificacio=caducat", (v3.headers.get("location") || "").includes("verificacio=caducat"));
 
   // ── 4. login: ara emailVerified=true ──
@@ -173,18 +185,24 @@ async function main() {
   ok("password-reset ok:true (sense revelar existència)", pr.status === 200 && (await pr.json()).ok === true);
   const pt = await db.passwordToken.findFirst({ where: { user: { email: EMAIL } }, orderBy: { createdAt: "desc" } });
   ok("PasswordToken creat amb caducitat 1h", !!pt && pt.expiresAt.getTime() - Date.now() > 55 * 60_000);
+  // v19: el guardat és el HASH — per provar el confirm creem un token propi
+  await db.passwordToken.deleteMany({ where: { user: { email: EMAIL } } });
+  const rawReset = crypto.randomBytes(24).toString("hex");
+  await db.passwordToken.create({
+    data: { userId: uRow!.id, token: hashToken(rawReset), expiresAt: new Date(Date.now() + 3600_000) },
+  });
   // enllaç de verificació també reenviat? (el correu ja estava verificat → no cal)
   const pc = await f(`${BASE}/api/auth/password-reset/confirm`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: pt!.token, password: PW2 }),
+    body: JSON.stringify({ token: rawReset, password: PW2 }),
   });
   ok("confirm canvia contrasenya ok:true", pc.status === 200 && (await pc.json()).ok === true);
   // el token usat no es pot reutilitzar
   const pc2 = await f(`${BASE}/api/auth/password-reset/confirm`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ token: pt!.token, password: PW1 }),
+    body: JSON.stringify({ token: rawReset, password: PW1 }),
   });
   ok("token de reset usat → TOKEN_INVALID", pc2.status === 400);
   const login2 = await f(`${BASE}/api/auth/login`, {

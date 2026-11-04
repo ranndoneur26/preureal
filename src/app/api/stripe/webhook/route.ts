@@ -115,7 +115,16 @@ export async function POST(req: Request) {
             const amount = plan === "PRO" ? "19,99 €" : "7,99 €";
             const mail = receiptMail(plan === "PRO" ? "Pro" : "Premium", amount, locale);
             after(async () => {
-              await sendMail({ to: u.email, subject: mail.subject, html: mail.html });
+              await sendMail({
+                to: u.email,
+                subject: mail.subject,
+                html: mail.html,
+                type: "RECEIPT",
+                userId: u.id,
+                // P1 v19 — idempotència: re-entregues del webhook o reprocessos
+                // mai generen un segon rebut per la mateixa checkout session
+                idempotencyKey: `stripe-receipt:${subId || cs.id}`,
+              });
             });
           }
         }

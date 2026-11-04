@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { hashPassword, createSessionFor, revokeSessions } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
+import { hashToken } from "@/lib/token-hash";
 
 /** Confirmació de restabliment amb token. Revoca TOTES les sessions anteriors. */
 export async function POST(req: Request) {
@@ -16,7 +17,8 @@ export async function POST(req: Request) {
   if (password.length < 8)
     return NextResponse.json({ error: "PASSWORD_SHORT" }, { status: 400 });
 
-  const pt = await db.passwordToken.findUnique({ where: { token } });
+  // P0 v19: a la BD el token està HASHAT — una filtració de BD no dona enllaços vius
+  const pt = await db.passwordToken.findUnique({ where: { token: hashToken(token) } });
   if (!pt || pt.used || pt.expiresAt < new Date())
     return NextResponse.json({ error: "TOKEN_INVALID" }, { status: 400 });
 
@@ -24,13 +26,27 @@ export async function POST(req: Request) {
   if (!user || !user.active) return NextResponse.json({ error: "TOKEN_INVALID" }, { status: 400 });
 
   const passwordHash = await hashPassword(password);
-  await db.user.update({ where: { id: user.id }, data: { passwordHash } });
-  await db.passwordToken.update({ where: { id: pt.id }, data: { used: true } });
-  // seguretat: qualsevol ALTRE enllaç de restabliment pendent queda anul·lat
-  await db.passwordToken.updateMany({
-    where: { userId: user.id, used: false, id: { not: pt.id } },
-    data: { used: true },
-  });
+
+  // P0 v19 — CONSUM ATÒMIC del token: només UNA de les peticions concurrents
+  // pot fer used false→true (updateMany condicionat dins transacció); la resta
+  // surten amb TOKEN_INVALID. Abans hi havia una finestra de carrera.
+  const claim = await db.$transaction([
+    db.passwordToken.updateMany({
+      where: { id: pt.id, used: false, expiresAt: { gt: new Date() } },
+      data: { used: true },
+    }),
+  ]);
+  if (claim[0].count === 0)
+    return NextResponse.json({ error: "TOKEN_INVALID" }, { status: 400 });
+
+  await db.$transaction([
+    db.user.update({ where: { id: user.id }, data: { passwordHash } }),
+    // seguretat: qualsevol ALTRE enllaç de restabliment pendent queda anul·lat
+    db.passwordToken.updateMany({
+      where: { userId: user.id, used: false, id: { not: pt.id } },
+      data: { used: true },
+    }),
+  ]);
   // seguretat: invalida qualsevol sessió oberta amb la contrasenya antiga
   await revokeSessions(user.id);
 

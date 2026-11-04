@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { resetMail, verifyMail, sendMail } from "@/lib/mail";
+import { hashToken } from "@/lib/token-hash";
 import { normalizeEmail } from "@/lib/email";
 
 // Els correus s'envien EN BACKGROUND amb after() (ignorat fora de Vercel).
@@ -22,10 +23,20 @@ export async function POST(req: Request) {
 
   // resposta sempre ok (no revelem si el correu existeix)
   if (user && user.active) {
+    // P1 v19: límit addicional PER COMPTE (3/h) — el límit per IP no protegeix
+    // una compte concret contra abús dirigit
+    const rlMail = await rateLimit(`pwreset:mail:${email}`, 3, 3600_000);
+    if (!rlMail.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
     const token = crypto.randomBytes(24).toString("hex");
-    await db.passwordToken.create({
-      data: { userId: user.id, token, expiresAt: new Date(Date.now() + 3600_000) },
-    });
+    // P1 v19: UN SOL enllaç de restobliment viu — els pendents anteriors
+    // s'anul·len en la mateixa transacció en què es crea el nou
+    await db.$transaction([
+      db.passwordToken.updateMany({ where: { userId: user.id, used: false }, data: { used: true } }),
+      db.passwordToken.create({
+        data: { userId: user.id, token: hashToken(token), expiresAt: new Date(Date.now() + 3600_000) },
+      }),
+    ]);
     await db.event.create({ data: { type: "PASSWORD_RESET", userId: user.id } }).catch(() => {});
     const locale = user.locale === "es" ? "es" : "ca";
     const mail = resetMail(token, locale);
@@ -35,7 +46,7 @@ export async function POST(req: Request) {
     if (!user.emailVerifiedAt) {
       const vt = crypto.randomBytes(24).toString("hex");
       await db.emailToken.create({
-        data: { userId: user.id, token: vt, expiresAt: new Date(Date.now() + 24 * 3600_000) },
+        data: { userId: user.id, token: hashToken(vt), expiresAt: new Date(Date.now() + 24 * 3600_000) },
       });
       vmail = verifyMail(vt, locale);
     }
@@ -44,8 +55,8 @@ export async function POST(req: Request) {
     // Vercel congela la funció en respondre i els fetch moren amb TimeoutError
     // sense haver enviat res.
     after(async () => {
-      await sendMail({ to: email, subject: mail.subject, html: mail.html });
-      if (vmail) await sendMail({ to: email, subject: vmail.subject, html: vmail.html });
+      await sendMail({ to: email, subject: mail.subject, html: mail.html, type: "RESET", userId: user.id });
+      if (vmail) await sendMail({ to: email, subject: vmail.subject, html: vmail.html, type: "VERIFY", userId: user.id });
     });
   }
   return NextResponse.json({ ok: true });

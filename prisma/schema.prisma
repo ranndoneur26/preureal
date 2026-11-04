@@ -178,16 +178,35 @@ model PriceReport {
   @@index([municipalityCode, createdAt])
 }
 
-// Correos automáticos (log del modo sandbox o resultado de Resend)
+// Correos automáticos (log del modo sandbox o resultado de Resend).
+// v19 (auditoría de correo):
+//  - `body` guarda el HTML REDACTADO: los tokens de verificación/restablecimiento
+//    se sustituyen por *** antes de persistir (nunca en claro en la BD).
+//  - Telemetría de entrega: type, userId, providerMessageId, attempts, sentAt.
+//  - Outbox duradero: status "pending" + nextRetryAt → /api/cron/emails reintenta
+//    con backoff los tipos no sensibles (WELCOME/RECEIPT/GENERIC).
+//  - idempotencyKey: un correo lógico = un envío (recibos Stripe, re-entregas).
 model EmailLog {
-  id        String   @id @default(cuid())
-  to        String
-  subject   String
-  body      String
-  provider  String   @default("sandbox") // sandbox | resend
-  status    String   @default("logged") // logged | sent | error
-  error     String?
-  createdAt DateTime @default(now())
+  id                String    @id @default(cuid())
+  to                String
+  subject           String
+  body              String
+  provider          String    @default("sandbox") // sandbox | resend
+  status            String    @default("logged") // logged | pending | sent | error
+  error             String?
+  type              String    @default("GENERIC") // WELCOME | VERIFY | RESET | RECEIPT | GENERIC
+  userId            String?
+  providerMessageId String? // id que devuelve Resend al aceptar el envío
+  attempts          Int       @default(0)
+  sentAt            DateTime? // cuando Resend ACEPTÓ el correo (≠ entrega en bandeja)
+  nextRetryAt       DateTime? // outbox: cuándo el cron debe reintentarlo
+  idempotencyKey    String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@index([userId])
 }
 
 // --- Taules noves (BLOC A/B/C de l'encàrrec) --------------------------------

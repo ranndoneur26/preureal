@@ -5,6 +5,7 @@ import { createSessionFor, hashPassword } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp, sanitizeName } from "@/lib/security";
 import { welcomeMail, verifyMail, sendMail } from "@/lib/mail";
+import { hashToken } from "@/lib/token-hash";
 import { normalizeEmail } from "@/lib/email";
 import * as crypto from "crypto";
 
@@ -58,9 +59,10 @@ export async function POST(req: Request) {
     .catch(() => {});
 
   // correu de verificació (Fase 6) — no bloqueja l'ús del compte
+  // P0 v19: a la BD només el HASH del token; el token cru només viatja al correu
   const token = crypto.randomBytes(24).toString("hex");
   await db.emailToken.create({
-    data: { userId: user.id, token, expiresAt: new Date(Date.now() + 24 * 3600_000) },
+    data: { userId: user.id, token: hashToken(token), expiresAt: new Date(Date.now() + 24 * 3600_000) },
   });
 
   // BENVINGUDA + VERIFICACIÓ van EN BACKGROUND amb after(): Vercel manté la
@@ -70,9 +72,9 @@ export async function POST(req: Request) {
   // l'usuari quedava encerclat al bloqueig «Verifica tu correo» del mapa).
   after(async () => {
     const mail = welcomeMail(name, locale);
-    await sendMail({ to: email, subject: mail.subject, html: mail.html });
+    await sendMail({ to: email, subject: mail.subject, html: mail.html, type: "WELCOME", userId: user.id });
     const vmail = verifyMail(token, locale);
-    await sendMail({ to: email, subject: vmail.subject, html: vmail.html });
+    await sendMail({ to: email, subject: vmail.subject, html: vmail.html, type: "VERIFY", userId: user.id });
   });
 
   return NextResponse.json({
