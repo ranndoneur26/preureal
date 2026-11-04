@@ -352,7 +352,12 @@ export default function AdminView() {
               <div className="flex justify-between gap-2 flex-wrap">
                 <div className="font-semibold text-sm">{e.subject}</div>
                 <div className="text-xs text-[#6b6f68]">
-                  {e.provider} · {e.status} · {new Date(e.createdAt).toLocaleString()}
+                  {e.provider} · {e.status}
+                  {e.type && e.type !== "GENERIC" ? ` · ${e.type}` : ""}
+                  {e.attempts > 1 ? ` · ${e.attempts} intents` : ""}
+                  {e.providerMessageId ? ` · msg ${String(e.providerMessageId).slice(0, 8)}` : ""}
+                  {" · "}
+                  {new Date(e.createdAt).toLocaleString()}
                 </div>
               </div>
               <div className="text-xs text-[#6b6f68] mt-1">→ {e.to}</div>

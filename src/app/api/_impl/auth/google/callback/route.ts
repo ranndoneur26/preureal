@@ -88,10 +88,12 @@ export async function GET(req: Request) {
     });
     await db.event.create({ data: { type: "SIGNUP_GOOGLE", userId: user.id } }).catch(() => {});
     const mail = welcomeMail(user.name, user.locale === "es" ? "es" : "ca");
+    // const per al closure (TS: un `let` capturat pot ser null dins la callback)
+    const created = user;
     // after(): sense això la promesa flotant es congela en respondre (i a més
     // era una promesa sense catch: rejoecció no gestionada).
     after(async () => {
-      await sendMail({ to: email, subject: mail.subject, html: mail.html });
+      await sendMail({ to: email, subject: mail.subject, html: mail.html, type: "WELCOME", userId: created.id });
     });
   }
 

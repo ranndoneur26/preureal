@@ -27,7 +27,8 @@ reinicis i cold starts, i usuaris/subscripcions són reals.
 ## 2. Aplica l'esquema i les dades
 
 ```bash
-# 2a. Esquema (18 taules, migració versionada):
+# 2a. Esquema (migracions versionades — aplica TOTES les pendents, p. ex. la
+#     telemetria EmailLog de v19):
 DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
   npx prisma migrate deploy
 
@@ -37,6 +38,13 @@ DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require" \
   ADMIN_PASSWORD="una-contrasenya-forta" npm run db:seed
 # → credencials admin: admin@preureal.cat / $ADMIN_PASSWORD
 ```
+
+> ⚠️ **v19 en endavant**: cada actualització que porti migracions noves exigeix
+> executar `npx prisma migrate deploy` (pas 2a) **ABANS** de fer `git push` —
+> el codi nou espera les columnes noves a la BD. Per purgar els tokens
+> històrics d'EmailLog (auditoria de correu v19), executa UNA vegada:
+> `DATABASE_URL="postgresql://..." npx tsx scripts/scrub_emaillog_tokens.ts`
+> (idempotent; redacta tokens guardats i esborra tokens pendents/caducats).
 
 
 ## 3. Puja el codi a Vercel
@@ -83,6 +91,8 @@ El build no necessita cap configuració addicional:
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth (redirect URI: `https://DOMINI/api/auth/google/callback`) | Opcional |
 | `GOOGLE_REDIRECT_URI` | només si cal sobreescriure la redirect URI de Google | Opcional |
 | `RESEND_API_KEY` / `MAIL_FROM` | correus reals (sense: sandbox a EmailLog)  | Opcional    |
+| `CRON_SECRET`            | protegeix `/api/cron/emails` (manteniment diari de correu: reintent outbox + neteja tokens + retenció EmailLog) | Recomanada |
+| `EMAILLOG_RETENTION_DAYS` | dies de retenció del log de correus (90 per defecte) | Opcional |
 | `STRIPE_*`              | activació de pagaments reals                      | Opcional    |
 | `FRAME_ANCESTORS`       | per defecte `'self'` en producció (anti-clickjacking); només canviar si s'incrusta el mapa com a widget en un altre domini | Opcional |
 

@@ -5,6 +5,7 @@ import { getAuthUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { verifyMail, sendMail } from "@/lib/mail";
+import { hashToken } from "@/lib/token-hash";
 
 // El reenviament del correu va EN BACKGROUND amb after(): Vercel manté la
 // funció viva fins que acaba l'enviament (ignorat fora de Vercel).
@@ -59,7 +60,8 @@ export async function GET(req: Request) {
  */
 async function tokenEstat(token: string): Promise<{ estat: string; verified: boolean | null }> {
   if (!token) return { estat: "invalid", verified: null };
-  const et = await db.emailToken.findUnique({ where: { token } });
+  // P0 v19: a la BD el token està HASHAT; es consulta pel hash de l'entrada
+  const et = await db.emailToken.findUnique({ where: { token: hashToken(token) } });
   if (!et) return { estat: "invalid", verified: null };
   const user = await db.user.findUnique({
     where: { id: et.userId },
@@ -82,7 +84,8 @@ export async function POST(req: Request) {
     const rl = await rateLimit(`verify-confirm:${ip}`, 20, 60_000);
     if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
 
-    const et = await db.emailToken.findUnique({ where: { token } });
+    // P0 v19: a la BD el token està HASHAT; es busca pel hash de l'entrada
+    const et = await db.emailToken.findUnique({ where: { token: hashToken(token) } });
     if (!et) return NextResponse.json({ estat: "invalid" });
     if (et.used) {
       // enllaç ja consumit: informem del estat REAL del compte (vegeu tokenEstat)
@@ -96,8 +99,18 @@ export async function POST(req: Request) {
     const user = await db.user.findUnique({ where: { id: et.userId } });
     if (!user || !user.active) return NextResponse.json({ estat: "invalid" });
 
+    // P0 v19 — reclamació ATÒMICA del token: només UNA petició concurrent pot
+    // passar used false→true (updateMany condicionat; count=0 → un altre ho acaba de fer)
+    const claim = await db.emailToken.updateMany({
+      where: { id: et.id, used: false },
+      data: { used: true },
+    });
+    if (claim.count === 0) {
+      const u = await db.user.findUnique({ where: { id: et.userId }, select: { emailVerifiedAt: true } });
+      return NextResponse.json({ estat: "ja_usat", verified: Boolean(u?.emailVerifiedAt) });
+    }
+
     await db.$transaction([
-      db.emailToken.update({ where: { id: et.id }, data: { used: true } }),
       // un sol ús lògic: qualsevol altre enllaç pendent del compte queda anul·lat
       db.emailToken.updateMany({
         where: { userId: et.userId, used: false, id: { not: et.id } },
@@ -122,16 +135,25 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   if (user.emailVerifiedAt) return NextResponse.json({ ok: true, alreadyVerified: true });
 
+  // P1 v19: límit addicional PER COMPTE — el límit per IP no protegeix un compte concret
+  const rlUser = await rateLimit(`verify:user:${user.id}`, 3, 300_000);
+  if (!rlUser.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
   const newToken = crypto.randomBytes(24).toString("hex");
-  await db.emailToken.create({
-    data: { userId: user.id, token: newToken, expiresAt: new Date(Date.now() + 24 * 3600_000) },
-  });
+  // P1 v19: UN SOL ENLLAÇ VIU — en crear el nou, els pendents anteriors queden
+  // anul·lats dins la mateixa transacció (abans coexistien diversos vàlids)
+  await db.$transaction([
+    db.emailToken.updateMany({ where: { userId: user.id, used: false }, data: { used: true } }),
+    db.emailToken.create({
+      data: { userId: user.id, token: hashToken(newToken), expiresAt: new Date(Date.now() + 24 * 3600_000) },
+    }),
+  ]);
   const locale = user.locale === "es" ? "es" : "ca";
   const mail = verifyMail(newToken, locale);
   // after(): sense això Vercel congela la funció en respondre, el fetch mor
   // amb TimeoutError i el correu de verificació no arriba mai (bucle v17).
   after(async () => {
-    await sendMail({ to: user.email, subject: mail.subject, html: mail.html });
+    await sendMail({ to: user.email, subject: mail.subject, html: mail.html, type: "VERIFY", userId: user.id });
   });
   return NextResponse.json({ ok: true });
 }

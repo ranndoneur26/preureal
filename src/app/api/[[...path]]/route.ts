@@ -34,6 +34,7 @@ import * as h_billing_history from "../_impl/billing/history/route";
 import * as h_buildings from "../_impl/buildings/route";
 import * as h_comparator from "../_impl/comparator/route";
 import * as h_comparisons from "../_impl/comparisons/route";
+import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_events from "../_impl/events/route";
 import * as h_favorites from "../_impl/favorites/route";
 import * as h_geocode from "../_impl/geocode/route";
@@ -84,6 +85,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["buildings"], h: h_buildings },
   { seg: ["comparator"], h: h_comparator },
   { seg: ["comparisons"], h: h_comparisons },
+  { seg: ["cron", "emails"], h: h_cron_emails },
   { seg: ["events"], h: h_events },
   { seg: ["favorites"], h: h_favorites },
   { seg: ["geocode"], h: h_geocode },

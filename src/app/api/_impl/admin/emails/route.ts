@@ -27,6 +27,11 @@ export async function GET() {
       error: true,
       createdAt: true,
       body: true,
+      // telemetría v19
+      type: true,
+      attempts: true,
+      providerMessageId: true,
+      sentAt: true,
     },
   });
   // SEGURETAT (V1): mai es retorna el HTML cru; només el text net

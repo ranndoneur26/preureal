@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { escapeHtml } from "@/lib/security";
 import { getSiteUrlOrigin } from "@/lib/site-url";
@@ -19,19 +20,69 @@ import { getSiteUrlOrigin } from "@/lib/site-url";
  * → en EmailLog aparece «fetch: TimeoutError [23] ...» sin que el correo
  * haya salido (caso real v17: el correo de verificación no llegaba y el
  * usuario quedaba encerrado en el bloqueo «Verifica tu correo» del mapa).
+ *
+ * v19 (auditoría del sistema de correo):
+ *  - P0 SEGURIDAD: el cuerpo guardado en EmailLog va SIEMPRE REDACTADO — el
+ *    token de verificación/restablecimiento se sustituye por *** antes de
+ *    persistir. La BD nunca contiene enlaces vivos.
+ *  - P1 FIABILIDAD: la fila se crea ANTES de enviar (outbox duradero, status
+ *    "pending"); reintentos con backoff (800ms/3.2s) dentro de la invocación
+ *    y, si sigue fallando, el cron /api/cron/emails lo recupera más tarde
+ *    (tipos no sensibles). status "sent" = Resend ACEPTÓ el correo (con su
+ *    providerMessageId); la entrega real en bandeja requeriría los eventos
+ *    de Resend (futuro).
+ *  - P1 IDEMPOTENCIA: idempotencyKey (p. ej. recibos Stripe) garantiza un
+ *    correo lógico = un envío, aunque el webhook se reentregue.
  */
 
 export function mailProvider(): "resend" | "sandbox" {
   return process.env.RESEND_API_KEY ? "resend" : "sandbox";
 }
 
+/** Tipo de correo (telemetría EmailLog). */
+export type MailType = "WELCOME" | "VERIFY" | "RESET" | "RECEIPT" | "GENERIC";
+
+/**
+ * P0: los correos de verificación/restablecimiento llevan el token en la URL
+ * (?token=...). Antes de guardar el cuerpo en EmailLog se redacta el valor.
+ * El HTML REAL (con el token) solo viaja hacia Resend, nunca a la BD.
+ */
+export function redactSecrets(html: string): string {
+  return html.replace(/([?&]token=)[^&"'<>\s]+/gi, "$1***");
+}
+
 interface MailInput {
   to: string;
   subject: string;
   html: string;
+  /** tipo lógico del correo (telemetría) */
+  type?: MailType;
+  /** usuario relacionado (telemetría) */
+  userId?: string | null;
+  /** clave de idempotencia: si ya existe una fila "sent" con esta clave, no se reenvía */
+  idempotencyKey?: string;
 }
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
+/** guardián por intento: si Resend no responde en 15s, abortamos y reintentamos */
+const PER_ATTEMPT_TIMEOUT_MS = 15_000;
+/** intentos dentro de la MISMA invocación (con backoff entre ellos) */
+const INLINE_ATTEMPTS = 3;
+const INLINE_BACKOFF_MS = [800, 3_200];
+/** límite TOTAL de intentos por correo (invocación + cron); después, error final */
+export const MAX_TOTAL_ATTEMPTS = 5;
+/**
+ * El cron solo puede reenviar correos cuyo cuerpo guardado es completo y sin
+ * secrets (WELCOME/RECEIPT/GENERIC — no llevan tokens). VERIFY/RESET no se
+ * reenvían desde el log (el cuerpo va redactado y el enlace es de un solo
+ * uso): el usuario pide un enlace nuevo, que es la UX existente.
+ */
+const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC"];
+
+function retryDelayMs(totalAttempts: number): number {
+  const hours = Math.min(2 ** Math.max(0, totalAttempts - 2), 24);
+  return hours * 3600_000;
+}
 
 /**
  * Descripció tècnica COMPLETA d'un error, recorrent la cadena `cause`.
@@ -58,67 +109,170 @@ function describeError(e: unknown): string {
   return parts.join("  <-  ") || "unknown";
 }
 
-export async function sendMail({ to, subject, html }: MailInput) {
-  const provider = mailProvider();
-  try {
-    if (provider === "resend") {
-      const payload = JSON.stringify({
-        from: process.env.MAIL_FROM || "PreuReal.cat <onboarding@resend.dev>",
-        to: [to],
-        subject,
-        html,
-      });
-      const headers = {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      };
+export interface DeliverResult {
+  ok: boolean;
+  /** id que Resend devuelve al aceptar el envío (trazabilidad) */
+  messageId?: string;
+  error?: string;
+  attempts: number;
+  /** true si el fallo es transitorio (red/5xx) y tiene sentido reintentar */
+  retryable: boolean;
+}
 
-      let ok = false;
-      let err: string | null = null;
-      // 2 intents: en serverless les connexions reutilitzades del pool moren
-      // entre invocacions (l'entorn es congela) i el fetch següent mor amb
-      // "fetch failed" encara que Resend funcioni. Un segon intent amb
-      // connexió nova ho resolta. Els 4xx NO es reintenten (són deterministes).
-      for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
-        const t0 = Date.now();
-        try {
-          const res = await fetch(RESEND_ENDPOINT, {
-            method: "POST",
-            headers,
-            body: payload,
-            // guardià per intent: si Resend no respon en 20s abortem i
-            // reintentem amb connexió nova (mai quedar penjat indefinidament)
-            signal: AbortSignal.timeout(20_000),
-          });
-          if (res.ok) {
-            ok = true;
-            err = null;
-          } else {
-            // inclou el codi HTTP i la durada: 401 clau invàlida, 403 domini
-            // sense verificar / destinatari de prova, 422 validació, 429 quota
-            err = `HTTP ${res.status} [intento ${attempt}, ${Date.now() - t0}ms]: ${await res.text()}`;
-            if (res.status < 500) break;
-          }
-        } catch (netErr) {
-          // la durada diagnosica sola: ~20000ms → guardià d'abort (connexió
-          // congelada/penjada); pocs ms → error real de DNS/socket/TLS
-          err = `fetch [intento ${attempt}, ${Date.now() - t0}ms]: ${describeError(netErr)}`;
-          if (attempt < 2) await new Promise((r) => setTimeout(r, 400));
-        }
-      }
-      await db.emailLog.create({
-        data: { to, subject, body: html, provider, status: ok ? "sent" : "error", error: err },
+/**
+ * Enviament CRU a Resend amb reintent + backoff.
+ * L'usen sendMail (3 intents inline) i el cron /api/cron/emails (2 per passada).
+ * Els 4xx NO es reintenten (són deterministes: clau invàlida, domini sense
+ * verificar, 422 de validació...). Els errors de xarxa i els 5xx sí.
+ */
+export async function deliverWithResend(
+  mail: { to: string; subject: string; html: string },
+  maxAttempts: number
+): Promise<DeliverResult> {
+  const payload = JSON.stringify({
+    from: process.env.MAIL_FROM || "PreuReal.cat <onboarding@resend.dev>",
+    to: [mail.to],
+    subject: mail.subject,
+    html: mail.html,
+  });
+  const headers = {
+    Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+    "Content-Type": "application/json",
+  };
+
+  let lastErr: string | null = null;
+  let lastRetryable = true;
+  let used = 0;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    used = attempt;
+    const t0 = Date.now();
+    try {
+      const res = await fetch(RESEND_ENDPOINT, {
+        method: "POST",
+        headers,
+        body: payload,
+        // evita quedar penjat indefinidament si la connexió queda col·gada
+        signal: AbortSignal.timeout(PER_ATTEMPT_TIMEOUT_MS),
       });
-      return ok;
+      if (res.ok) {
+        let messageId: string | undefined;
+        try {
+          const j: any = await res.json();
+          if (j && typeof j.id === "string") messageId = j.id;
+        } catch {
+          /* resposta sense JSON: l'enviament igualment ha estat acceptat */
+        }
+        return { ok: true, messageId, attempts: attempt, retryable: false };
+      }
+      // inclou el codi HTTP i la durada: 401 clau invàlida, 403 domini sense
+      // verificar / destinatari de prova, 422 validació, 429 quota
+      lastErr = `HTTP ${res.status} [intento ${attempt}, ${Date.now() - t0}ms]: ${await res.text()}`;
+      lastRetryable = res.status >= 500;
+      if (!lastRetryable) break; // 4xx determinista: reintentar no ajuda
+    } catch (netErr) {
+      // la durada diagnostica sola: ~15000ms → guardià d'abort (connexió
+      // congelada/penjada); pocs ms → error real de DNS/socket/TLS
+      lastErr = `fetch [intento ${attempt}, ${Date.now() - t0}ms]: ${describeError(netErr)}`;
+      lastRetryable = true;
     }
-    await db.emailLog.create({
-      data: { to, subject, body: html, provider: "sandbox", status: "logged" },
+    if (attempt < maxAttempts) {
+      await new Promise((r) =>
+        setTimeout(r, INLINE_BACKOFF_MS[Math.min(attempt - 1, INLINE_BACKOFF_MS.length - 1)])
+      );
+    }
+  }
+  return { ok: false, error: lastErr ?? "unknown", attempts: used, retryable: lastRetryable };
+}
+
+export async function sendMail({
+  to,
+  subject,
+  html,
+  type = "GENERIC",
+  userId = null,
+  idempotencyKey,
+}: MailInput): Promise<boolean> {
+  const provider = mailProvider();
+  // P0: el cos a la BD mai conté tokens (el real només surt cap a Resend)
+  const safeBody = redactSecrets(html);
+
+  try {
+    if (provider !== "resend") {
+      await db.emailLog.create({
+        data: { to, subject, body: safeBody, provider: "sandbox", status: "logged", type, userId },
+      });
+      return true;
+    }
+
+    // ── Idempotència: si aquest correu lògic ja va sortir, no es repeteix ──
+    if (idempotencyKey) {
+      const dup = await db.emailLog.findUnique({ where: { idempotencyKey } }).catch(() => null);
+      if (dup) return dup.status === "sent";
+    }
+
+    // ── OUTBOX: la fila durables es crea ABANS d'enviar ──
+    // Si l'execució mor a mitges (deploy, timeout d'infraestructura, kill),
+    // la fila queda "pending" amb nextRetryAt i el cron la recupera després.
+    let row;
+    try {
+      row = await db.emailLog.create({
+        data: {
+          to,
+          subject,
+          body: safeBody,
+          provider,
+          status: "pending",
+          type,
+          userId,
+          idempotencyKey,
+          attempts: 0,
+        },
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        // clau d'idempotència duplicada: una altra invocació ja ha registrat
+        // aquest correu (o se n'ocupa) — mai dos enviaments pel mateix esdeveniment
+        return false;
+      }
+      throw e;
+    }
+
+    // ── enviament amb reintent + backoff ──
+    const out = await deliverWithResend({ to, subject, html }, INLINE_ATTEMPTS);
+
+    if (out.ok) {
+      await db.emailLog.update({
+        where: { id: row.id },
+        data: {
+          status: "sent",
+          error: null,
+          providerMessageId: out.messageId ?? null,
+          sentAt: new Date(),
+          attempts: out.attempts,
+        },
+      });
+      return true;
+    }
+
+    // ── fallo: estat durables + programar reposició (outbox) si té sentit ──
+    const total = row.attempts + out.attempts;
+    const scheduleRetry =
+      out.retryable && total < MAX_TOTAL_ATTEMPTS && RETRYABLE_TYPES.includes(type);
+    await db.emailLog.update({
+      where: { id: row.id },
+      data: {
+        status: "error",
+        error: out.error ?? "unknown",
+        attempts: total,
+        nextRetryAt: scheduleRetry ? new Date(Date.now() + retryDelayMs(total)) : null,
+      },
     });
-    return true;
+    return false;
   } catch (e: any) {
     try {
       await db.emailLog.create({
-        data: { to, subject, body: html, provider, status: "error", error: describeError(e) },
+        data: { to, subject, body: safeBody, provider, status: "error", error: describeError(e), type, userId },
       });
     } catch {}
     return false;
@@ -163,11 +317,15 @@ export function welcomeMail(name: string | null, locale: "ca" | "es") {
 }
 
 export function receiptMail(planName: string, amount: string, locale: "ca" | "es") {
+  // el nom del pla i l'import venen del servidor, però s'escapen per defensa en
+  // profunditat (cap dada dinàmica entra sense escapar al HTML — auditoria v19)
+  const safePlan = escapeHtml(planName);
+  const safeAmount = escapeHtml(amount);
   const title = locale === "ca" ? "Subscripció activada" : "Suscripción activada";
   const body =
     locale === "ca"
-      ? `<p>El teu pla <b>${planName}</b> ja està actiu (${amount}/mes). Gràcies per donar suport a un projecte independent!</p><p>Ja tens consultes il·limitades al mapa.</p>`
-      : `<p>Tu plan <b>${planName}</b> ya está activo (${amount}/mes). ¡Gracias por apoyar un proyecto independiente!</p><p>Ya tienes consultas ilimitadas en el mapa.</p>`;
+      ? `<p>El teu pla <b>${safePlan}</b> ja està actiu (${safeAmount}/mes). Gràcies per donar suport a un projecte independent!</p><p>Ja tens consultes il·limitades al mapa.</p>`
+      : `<p>Tu plan <b>${safePlan}</b> ya está activo (${safeAmount}/mes). ¡Gracias por apoyar un proyecto independiente!</p><p>Ya tienes consultas ilimitadas en el mapa.</p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
 
@@ -177,8 +335,8 @@ export function verifyMail(token: string, locale: "ca" | "es") {
   const title = locale === "ca" ? "Verifica el teu correu" : "Verifica tu correo";
   const body =
     locale === "ca"
-      ? `<p>Confirma la teva adreça electrònica clicant aquest enllaç (vàlid 24 hores):</p><p><a href="${url}">${url}</a></p>`
-      : `<p>Confirma tu dirección de correo electrónico abriendo este enlace (válido 24 horas):</p><p><a href="${url}">${url}</a></p>`;
+      ? `<p>Confirma la teva adreça electrònica clicant aquest enllaç (vàlid 24 hores, d'un sol ús):</p><p><a href="${url}">${url}</a></p>`
+      : `<p>Confirma tu dirección de correo electrónico abriendo este enlace (válido 24 horas, de un solo uso):</p><p><a href="${url}">${url}</a></p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
 
@@ -188,7 +346,7 @@ export function resetMail(token: string, locale: "ca" | "es") {
   const title = locale === "ca" ? "Restableix la contrasenya" : "Restablece la contraseña";
   const body =
     locale === "ca"
-      ? `<p>Has demanat restablir la contrasenya. Obre aquest enllaç (vàlid 1 hora):</p><p><a href="${url}">${url}</a></p>`
-      : `<p>Has solicitado restablecer la contraseña. Abre este enlace (válido 1 hora):</p><p><a href="${url}">${url}</a></p>`;
+      ? `<p>Has demanat restablir la contrasenya. Obre aquest enllaç (vàlid 1 hora, d'un sol ús):</p><p><a href="${url}">${url}</a></p>`
+      : `<p>Has solicitado restablecer la contraseña. Abre este enlace (válido 1 hora, de un solo uso):</p><p><a href="${url}">${url}</a></p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
