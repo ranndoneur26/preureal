@@ -11,6 +11,14 @@ import { getSiteUrlOrigin } from "@/lib/site-url";
  *    autorizado y conectado su cuenta).
  *  - Si no → modo sandbox: guarda el email en EmailLog (visible en el panel
  *    de administración) sin enviar nada.
+ *
+ * CRÍTICO (serverless/Vercel): sendMail SIEMPRE dentro de `after()` de
+ * next/server (o con await antes de responder). Una promesa flotante se
+ * congela cuando la función devuelve la respuesta: el fetch a Resend queda
+ * a medias y, al descongelarse la función, el guardián de timeout lo mata
+ * → en EmailLog aparece «fetch: TimeoutError [23] ...» sin que el correo
+ * haya salido (caso real v17: el correo de verificación no llegaba y el
+ * usuario quedaba encerrado en el bloqueo «Verifica tu correo» del mapa).
  */
 
 export function mailProvider(): "resend" | "sandbox" {
@@ -72,25 +80,29 @@ export async function sendMail({ to, subject, html }: MailInput) {
       // "fetch failed" encara que Resend funcioni. Un segon intent amb
       // connexió nova ho resolta. Els 4xx NO es reintenten (són deterministes).
       for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
+        const t0 = Date.now();
         try {
           const res = await fetch(RESEND_ENDPOINT, {
             method: "POST",
             headers,
             body: payload,
-            // evita quedar penjat 60s si la connexió queda col·gada
-            signal: AbortSignal.timeout(15_000),
+            // guardià per intent: si Resend no respon en 20s abortem i
+            // reintentem amb connexió nova (mai quedar penjat indefinidament)
+            signal: AbortSignal.timeout(20_000),
           });
           if (res.ok) {
             ok = true;
             err = null;
           } else {
-            // inclou el codi HTTP: 401 clau invàlida, 403 domini sense
-            // verificar / destinatari de prova, 422 validació, 429 quota...
-            err = `HTTP ${res.status}: ${await res.text()}`;
+            // inclou el codi HTTP i la durada: 401 clau invàlida, 403 domini
+            // sense verificar / destinatari de prova, 422 validació, 429 quota
+            err = `HTTP ${res.status} [intento ${attempt}, ${Date.now() - t0}ms]: ${await res.text()}`;
             if (res.status < 500) break;
           }
         } catch (netErr) {
-          err = `fetch: ${describeError(netErr)}`;
+          // la durada diagnosica sola: ~20000ms → guardià d'abort (connexió
+          // congelada/penjada); pocs ms → error real de DNS/socket/TLS
+          err = `fetch [intento ${attempt}, ${Date.now() - t0}ms]: ${describeError(netErr)}`;
           if (attempt < 2) await new Promise((r) => setTimeout(r, 400));
         }
       }

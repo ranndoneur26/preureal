@@ -215,6 +215,9 @@ export default function MapView() {
   }, []);
 
   const lookupSeqRef = useRef(0);
+  // recorda l'últim clic al mapa per poder repetir la consulta des del bloqueig
+  // de verificació («Ja l'he verificat: comprova-ho») sense haver de reclicar
+  const lastClickRef = useRef<{ b: any; lat: number; lng: number; poly: any } | null>(null);
 
   const onSelectBuilding = useCallback(async (b: any, lat: number, lng: number, poly: any) => {
     const L = LRef.current;
@@ -228,6 +231,7 @@ export default function MapView() {
     }
     // invalida respuestas de consultas anteriores (evita carreras fuera de orden)
     const seq = ++lookupSeqRef.current;
+    lastClickRef.current = { b, lat, lng, poly };
     setPanelState("loading");
     setLookup(null);
     setDemoNotice(null);
@@ -644,7 +648,19 @@ export default function MapView() {
                   <div className="font-bold mt-2 text-[#b0431c]">{t.map.verify.title}</div>
                   <p className="text-sm mt-1 text-[#4b5349]">{t.map.verify.desc}</p>
                   {lookup?.email && <p className="text-sm mt-1 font-semibold text-[#0f2e21]">{lookup.email}</p>}
+                  <p className="text-xs mt-2 text-[#8a6d1a]">{t.map.verify.note}</p>
                 </div>
+                {/* si l'usuari ja ha verificat (potser en una altra pestanya), un clic
+                    torna a llançar la MATEIXA consulta i desbloqueja el panell */}
+                <button
+                  onClick={() => {
+                    const q = lastClickRef.current;
+                    if (q) onSelectBuilding(q.b, q.lat, q.lng, q.poly);
+                  }}
+                  className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors"
+                >
+                  {t.map.verify.recheck}
+                </button>
                 <button
                   onClick={async () => {
                     const res = await fetch("/api/auth/verify", { method: "POST" });

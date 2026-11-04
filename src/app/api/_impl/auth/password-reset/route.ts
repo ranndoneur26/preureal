@@ -1,10 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import * as crypto from "crypto";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { resetMail, verifyMail, sendMail } from "@/lib/mail";
 import { normalizeEmail } from "@/lib/email";
+
+// Els correus s'envien EN BACKGROUND amb after() (ignorat fora de Vercel).
+export const maxDuration = 60;
 
 /** Demana un enllaç de restabliment de contrasenya (i de verificació si cal). */
 export async function POST(req: Request) {
@@ -26,17 +29,24 @@ export async function POST(req: Request) {
     await db.event.create({ data: { type: "PASSWORD_RESET", userId: user.id } }).catch(() => {});
     const locale = user.locale === "es" ? "es" : "ca";
     const mail = resetMail(token, locale);
-    sendMail({ to: email, subject: mail.subject, html: mail.html }).catch(() => {});
 
     // si el correu no està verificat, aprofitem per reenviar la verificació
+    let vmail: ReturnType<typeof verifyMail> | null = null;
     if (!user.emailVerifiedAt) {
       const vt = crypto.randomBytes(24).toString("hex");
       await db.emailToken.create({
         data: { userId: user.id, token: vt, expiresAt: new Date(Date.now() + 24 * 3600_000) },
       });
-      const vmail = verifyMail(vt, locale);
-      sendMail({ to: email, subject: vmail.subject, html: vmail.html }).catch(() => {});
+      vmail = verifyMail(vt, locale);
     }
+
+    // Enviaments EN BACKGROUND amb after() (vegeu register): sense after(),
+    // Vercel congela la funció en respondre i els fetch moren amb TimeoutError
+    // sense haver enviat res.
+    after(async () => {
+      await sendMail({ to: email, subject: mail.subject, html: mail.html });
+      if (vmail) await sendMail({ to: email, subject: vmail.subject, html: vmail.html });
+    });
   }
   return NextResponse.json({ ok: true });
 }

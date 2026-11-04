@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import * as crypto from "crypto";
 import { db } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { verifyMail, sendMail } from "@/lib/mail";
+
+// El reenviament del correu va EN BACKGROUND amb after(): Vercel manté la
+// funció viva fins que acaba l'enviament (ignorat fora de Vercel).
+export const maxDuration = 60;
 
 /**
  * P1.2 — La verificació del correu MAI muta dades en un GET.
@@ -38,24 +42,34 @@ export async function GET(req: Request) {
   // pròpia petició — evita redireccions malformades si l'env està mal escrita
   const base = pickBase() || url.origin;
 
-  const estat = await tokenEstat(token); // lectura pura, sense mutacions
-  if (json) return NextResponse.json({ estat });
+  const te = await tokenEstat(token); // lectura pura, sense mutacions
+  if (json) return NextResponse.json(te);
   return NextResponse.redirect(`${base}/#/verifica?token=${encodeURIComponent(token)}`);
 }
 
-/** Estat d'un token de verificació — LECTURA PURA (P1.2). */
-async function tokenEstat(token: string): Promise<string> {
-  if (!token) return "invalid";
+/**
+ * Estat d'un token de verificació + estat REAL del compte — LECTURA PURA (P1.2).
+ *
+ * `used: true` pot significar DUES coses: (a) verificació completada amb aquest
+ * token o (b) enllaç ANUL·LAT perquè després es va demanar un de nou (la
+ * confirmació correcta marca tots els altres tokens pendents com a usats).
+ * Sense el flag `verified`, la UI no pot distingir (a) de (b) i pot dir a
+ * l'usuari «ja està verificat, no cal fer res més» quan en realitat NO ho està
+ * — i l'usuari queda encerclat al bloqueig del mapa (cas real vist en producció).
+ */
+async function tokenEstat(token: string): Promise<{ estat: string; verified: boolean | null }> {
+  if (!token) return { estat: "invalid", verified: null };
   const et = await db.emailToken.findUnique({ where: { token } });
-  if (!et) return "invalid";
-  if (et.used) return "ja_usat";
-  if (et.expiresAt < new Date()) return "caducat";
+  if (!et) return { estat: "invalid", verified: null };
   const user = await db.user.findUnique({
     where: { id: et.userId },
-    select: { active: true },
+    select: { active: true, emailVerifiedAt: true },
   });
-  if (!user || !user.active) return "invalid";
-  return "pendent";
+  const verified = Boolean(user?.emailVerifiedAt);
+  if (et.used) return { estat: "ja_usat", verified };
+  if (et.expiresAt < new Date()) return { estat: "caducat", verified };
+  if (!user || !user.active) return { estat: "invalid", verified: user ? verified : null };
+  return { estat: "pendent", verified };
 }
 
 export async function POST(req: Request) {
@@ -70,8 +84,15 @@ export async function POST(req: Request) {
 
     const et = await db.emailToken.findUnique({ where: { token } });
     if (!et) return NextResponse.json({ estat: "invalid" });
-    if (et.used) return NextResponse.json({ estat: "ja_usat" });
-    if (et.expiresAt < new Date()) return NextResponse.json({ estat: "caducat" });
+    if (et.used) {
+      // enllaç ja consumit: informem del estat REAL del compte (vegeu tokenEstat)
+      const u = await db.user.findUnique({ where: { id: et.userId }, select: { emailVerifiedAt: true } });
+      return NextResponse.json({ estat: "ja_usat", verified: Boolean(u?.emailVerifiedAt) });
+    }
+    if (et.expiresAt < new Date()) {
+      const u = await db.user.findUnique({ where: { id: et.userId }, select: { emailVerifiedAt: true } });
+      return NextResponse.json({ estat: "caducat", verified: Boolean(u?.emailVerifiedAt) });
+    }
     const user = await db.user.findUnique({ where: { id: et.userId } });
     if (!user || !user.active) return NextResponse.json({ estat: "invalid" });
 
@@ -89,7 +110,7 @@ export async function POST(req: Request) {
       }),
     ]);
     await db.event.create({ data: { type: "EMAIL_VERIFIED", userId: et.userId } }).catch(() => {});
-    return NextResponse.json({ estat: "ok" });
+    return NextResponse.json({ estat: "ok", verified: true });
   }
 
   // sense token al cos → REENVIAMENT del correu de verificació
@@ -107,7 +128,11 @@ export async function POST(req: Request) {
   });
   const locale = user.locale === "es" ? "es" : "ca";
   const mail = verifyMail(newToken, locale);
-  sendMail({ to: user.email, subject: mail.subject, html: mail.html }).catch(() => {});
+  // after(): sense això Vercel congela la funció en respondre, el fetch mor
+  // amb TimeoutError i el correu de verificació no arriba mai (bucle v17).
+  after(async () => {
+    await sendMail({ to: user.email, subject: mail.subject, html: mail.html });
+  });
   return NextResponse.json({ ok: true });
 }
 
