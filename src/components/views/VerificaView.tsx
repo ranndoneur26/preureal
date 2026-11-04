@@ -30,6 +30,10 @@ export default function VerificaView({ token }: { token?: string }) {
   const [estat, setEstat] = useState<Estat>(token ? "comprovant" : "sense_token");
   const [resendOk, setResendOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  // estat REAL del compte segons el servidor (null = encara no el sabem):
+  // permet distingir «enllaç ja usat perquè ja s'havia verificat» de
+  // «enllaç anul·lat per un reenviament i el compte ENCARA no està verificat»
+  const [verified, setVerified] = useState<boolean | null>(null);
   const demanat = useRef(false);
 
   const comprova = useCallback(
@@ -44,7 +48,11 @@ export default function VerificaView({ token }: { token?: string }) {
         });
         const d = await res.json().catch(() => null);
         const e = (d?.estat as Estat) || "invalid";
-        if (e === "ok") await auth.refresh();
+        if (typeof d?.verified === "boolean") setVerified(d.verified);
+        if (e === "ok") {
+          setVerified(true);
+          await auth.refresh();
+        }
         setEstat(e);
       } catch {
         setEstat("invalid");
@@ -67,6 +75,7 @@ export default function VerificaView({ token }: { token?: string }) {
         const d = await res.json().catch(() => ({}));
         if (d?.alreadyVerified) {
           await auth.refresh();
+          setVerified(true);
           setEstat("ok");
           return;
         }
@@ -130,7 +139,59 @@ export default function VerificaView({ token }: { token?: string }) {
             </>
           )}
 
-          {estat === "ja_usat" && (
+          {estat === "ja_usat" && verified === true && (
+            <>
+              <div className="rounded-lg bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm px-3 py-2">
+                {ca(
+                  "Aquest enllaç ja s'havia utilitzat, però el teu compte JA consta verificat. Pots entrar al mapa.",
+                  "Este enlace ya se había utilizado, pero tu cuenta YA consta verificada. Puedes entrar al mapa."
+                )}
+              </div>
+              <button
+                onClick={() => navigate("/mapa")}
+                className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors flex items-center justify-center gap-2"
+              >
+                <MapPin className="w-4 h-4" />
+                {ca("Anar al mapa", "Ir al mapa")}
+              </button>
+              <button
+                onClick={() => navigate("/panell")}
+                className="w-full py-2.5 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#0f2e21] hover:bg-[#faf9f7] transition-colors text-sm"
+              >
+                {ca("Anar al panell", "Ir al panel")}
+              </button>
+            </>
+          )}
+
+          {estat === "ja_usat" && verified === false && (
+            <>
+              <div className="rounded-lg bg-[#fff7e0] border border-[#efd88f] text-[#8a6d1a] text-sm px-3 py-2">
+                {ca(
+                  "Aquest enllaç va quedar anul·lat (es va demanar un de nou) i el compte ENCARA no està verificat. Obre l'ÚLTIM correu de verificació rebut o demana'n un de nou aquí sota.",
+                  "Este enlace quedó anulado (se pidió uno nuevo) y la cuenta AÚN no está verificada. Abre el ÚLTIMO correo de verificación recibido o pide uno nuevo abajo."
+                )}
+              </div>
+              {auth.user ? (
+                <button
+                  onClick={resend}
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors disabled:opacity-60"
+                >
+                  {busy ? "..." : ca("Reenviar el correu de verificació", "Reenviar el correo de verificación")}
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/entrada")}
+                  className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors flex items-center justify-center gap-2"
+                >
+                  <LogIn className="w-4 h-4" />
+                  {ca("Entrar", "Entrar")}
+                </button>
+              )}
+            </>
+          )}
+
+          {estat === "ja_usat" && verified === null && (
             <>
               <div className="rounded-lg bg-[#fff7e0] border border-[#efd88f] text-[#8a6d1a] text-sm px-3 py-2">
                 {ca(
@@ -157,7 +218,25 @@ export default function VerificaView({ token }: { token?: string }) {
             </>
           )}
 
-          {estat === "caducat" && (
+          {estat === "caducat" && verified === true && (
+            <>
+              <div className="rounded-lg bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm px-3 py-2">
+                {ca(
+                  "L'enllaç ha caducat, però el teu compte JA consta verificat. Pots entrar al mapa.",
+                  "El enlace ha caducado, pero tu cuenta YA consta verificada. Puedes entrar al mapa."
+                )}
+              </div>
+              <button
+                onClick={() => navigate("/mapa")}
+                className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors flex items-center justify-center gap-2"
+              >
+                <MapPin className="w-4 h-4" />
+                {ca("Anar al mapa", "Ir al mapa")}
+              </button>
+            </>
+          )}
+
+          {estat === "caducat" && verified !== true && (
             <>
               <div className="rounded-lg bg-[#fdeae2] border border-[#f2c4ac] text-[#b0431c] text-sm px-3 py-2">
                 {ca(
@@ -190,7 +269,25 @@ export default function VerificaView({ token }: { token?: string }) {
             </>
           )}
 
-          {estat === "invalid" && (
+          {estat === "invalid" && verified === true && (
+            <>
+              <div className="rounded-lg bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm px-3 py-2">
+                {ca(
+                  "El teu compte ja consta verificat. Pots entrar al mapa.",
+                  "Tu cuenta ya consta verificada. Puedes entrar al mapa."
+                )}
+              </div>
+              <button
+                onClick={() => navigate("/mapa")}
+                className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors flex items-center justify-center gap-2"
+              >
+                <MapPin className="w-4 h-4" />
+                {ca("Anar al mapa", "Ir al mapa")}
+              </button>
+            </>
+          )}
+
+          {estat === "invalid" && verified !== true && (
             <>
               <div className="rounded-lg bg-[#fdeae2] border border-[#f2c4ac] text-[#b0431c] text-sm px-3 py-2">
                 {ca(

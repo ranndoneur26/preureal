@@ -102,6 +102,8 @@ export const STRINGS = {
         resend: "Reenvia el correu de verificació",
         sent: "Correu reenviat! Revisa també el correu no desitjat.",
         goToPanel: "Anar al meu compte",
+        recheck: "Ja l'he verificat: comprova-ho",
+        note: "Cada enllaç nou anul·la els anteriors: fes servir sempre l'últim correu rebut.",
       },
     },
     auth: {
@@ -295,6 +297,8 @@ export const STRINGS = {
         resend: "Reenviar el correo de verificación",
         sent: "¡Correo reenviado! Revisa también el correo no deseado.",
         goToPanel: "Ir a mi cuenta",
+        recheck: "Ya lo he verificado: comprobarlo",
+        note: "Cada enlace nuevo anula los anteriores: usa siempre el último correo recibido.",
       },
     },
     auth: {
