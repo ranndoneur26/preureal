@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { cookies } from "next/headers";
 import * as crypto from "crypto";
 import { db } from "@/lib/db";
@@ -13,6 +13,9 @@ import {
   GOOGLE_STATE_COOKIE,
   publicOrigin,
 } from "@/lib/google";
+
+// El correu de benvinguda va EN BACKGROUND amb after() (ignorat fora de Vercel).
+export const maxDuration = 60;
 
 /**
  * GET /api/auth/google/callback — finalitza el flux OAuth de Google.
@@ -85,7 +88,11 @@ export async function GET(req: Request) {
     });
     await db.event.create({ data: { type: "SIGNUP_GOOGLE", userId: user.id } }).catch(() => {});
     const mail = welcomeMail(user.name, user.locale === "es" ? "es" : "ca");
-    sendMail({ to: email, subject: mail.subject, html: mail.html });
+    // after(): sense això la promesa flotant es congela en respondre (i a més
+    // era una promesa sense catch: rejoecció no gestionada).
+    after(async () => {
+      await sendMail({ to: email, subject: mail.subject, html: mail.html });
+    });
   }
 
   await createSession({

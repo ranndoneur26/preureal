@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { receiptMail, sendMail } from "@/lib/mail";
 import { audit } from "@/lib/security";
 import { syncUserPlan } from "@/lib/plans";
+
+// El rebut per correu va EN BACKGROUND amb after(): Vercel manté la funció
+// viva fins que acaba l'enviament (ignorat fora de Vercel).
+export const maxDuration = 60;
 
 /**
  * POST /api/stripe/webhook — endpoint de webhooks de Stripe.
@@ -110,7 +114,9 @@ export async function POST(req: Request) {
             const locale = u.locale === "es" ? "es" : "ca";
             const amount = plan === "PRO" ? "19,99 €" : "7,99 €";
             const mail = receiptMail(plan === "PRO" ? "Pro" : "Premium", amount, locale);
-            sendMail({ to: u.email, subject: mail.subject, html: mail.html }).catch(() => {});
+            after(async () => {
+              await sendMail({ to: u.email, subject: mail.subject, html: mail.html });
+            });
           }
         }
         break;

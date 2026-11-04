@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import * as crypto from "crypto";
 import { db } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { verifyMail, sendMail } from "@/lib/mail";
+
+// El reenviament del correu va EN BACKGROUND amb after(): Vercel manté la
+// funció viva fins que acaba l'enviament (ignorat fora de Vercel).
+export const maxDuration = 60;
 
 /**
  * P1.2 — La verificació del correu MAI muta dades en un GET.
@@ -124,7 +128,11 @@ export async function POST(req: Request) {
   });
   const locale = user.locale === "es" ? "es" : "ca";
   const mail = verifyMail(newToken, locale);
-  sendMail({ to: user.email, subject: mail.subject, html: mail.html }).catch(() => {});
+  // after(): sense això Vercel congela la funció en respondre, el fetch mor
+  // amb TimeoutError i el correu de verificació no arriba mai (bucle v17).
+  after(async () => {
+    await sendMail({ to: user.email, subject: mail.subject, html: mail.html });
+  });
   return NextResponse.json({ ok: true });
 }
 

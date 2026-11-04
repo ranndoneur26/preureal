@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { createSessionFor, hashPassword } from "@/lib/auth";
@@ -7,6 +7,10 @@ import { clientIp, sanitizeName } from "@/lib/security";
 import { welcomeMail, verifyMail, sendMail } from "@/lib/mail";
 import { normalizeEmail } from "@/lib/email";
 import * as crypto from "crypto";
+
+// Els correus s'envien EN BACKGROUND amb after(): Vercel reserva aquest temps
+// total per a la invocació (resposta + treball en segon pla). Ignorat fora de Vercel.
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   const ip = clientIp(req);
@@ -53,16 +57,23 @@ export async function POST(req: Request) {
     .create({ data: { type: "SIGNUP", userId: user.id, meta: JSON.stringify({ locale }) } })
     .catch(() => {});
 
-  const mail = welcomeMail(name, locale);
-  sendMail({ to: email, subject: mail.subject, html: mail.html }).catch(() => {});
-
   // correu de verificació (Fase 6) — no bloqueja l'ús del compte
   const token = crypto.randomBytes(24).toString("hex");
   await db.emailToken.create({
     data: { userId: user.id, token, expiresAt: new Date(Date.now() + 24 * 3600_000) },
   });
-  const vmail = verifyMail(token, locale);
-  sendMail({ to: email, subject: vmail.subject, html: vmail.html }).catch(() => {});
+
+  // BENVINGUDA + VERIFICACIÓ van EN BACKGROUND amb after(): Vercel manté la
+  // funció viva fins que els enviaments acaben. Sense after(), la promesa
+  // flotant es congela en tornar la resposta, el fetch mor amb
+  // «TimeoutError [23]» i el correu de verificació MAI arriba (cas real v17:
+  // l'usuari quedava encerclat al bloqueig «Verifica tu correo» del mapa).
+  after(async () => {
+    const mail = welcomeMail(name, locale);
+    await sendMail({ to: email, subject: mail.subject, html: mail.html });
+    const vmail = verifyMail(token, locale);
+    await sendMail({ to: email, subject: vmail.subject, html: vmail.html });
+  });
 
   return NextResponse.json({
     ok: true,
