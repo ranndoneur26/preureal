@@ -126,7 +126,7 @@ function layout(title: string, body: string, locale: "ca" | "es") {
     <div style="padding:28px">
       <h2 style="margin:0 0 12px;font-size:18px;color:#0f2e21">${title}</h2>
       <div style="font-size:14px;line-height:1.6;color:#333">${body}</div>
-      <a href="{{SITE_URL}}" style="display:inline-block;margin-top:20px;background:#e8673c;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">${cta}</a>
+      <a href="${getSiteUrlOrigin()}" style="display:inline-block;margin-top:20px;background:#e8673c;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">${cta}</a>
     </div>
     <div style="padding:16px 28px;background:#f5f4f1;font-size:12px;color:#777">
       ${locale === "ca" ? "Reps aquest correu perquè t'has registrat a PreuReal.cat." : "Recibes este correo porque te has registrado en PreuReal.cat."}
