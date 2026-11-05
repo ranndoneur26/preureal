@@ -2,6 +2,56 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v21 — 2026-11-05 · Auditoria completa: diagnòstic del correu EN VIVO + neteja del repo
+
+### Diagnòstic (probes reals contra producció, www.preureal.com)
+- `/api/health` → **200, `database.ok:true`** i `email: "resend"` → **les variables
+  d'entorn NO són la causa**: la BD connecta des del runtime de Vercel i Resend
+  està configurat.
+- `GET /api/cron/emails` → **500 amb cos buit**: la primera consulta amb les
+  columnes noves (`attempts`, `nextRetryAt`, `type`) rebenta → **la migració
+  `20261104120000_emaillog_telemetry` SEGUEIX sense aplicar a Supabase** (el
+  deploy v20 va quedar penjat i mai la va aplicar).
+- `POST /api/auth/register` → **200 amb usuari creat**: el registre SÍ escriu a
+  `User`. El que falla és el correu: `sendMail` no pot crear la fila outbox a
+  `EmailLog` (columnes inexistents) → **cap correu surt** i per això no apareix
+  cap fila nova (l'error s'empassa dins de `after()`).
+- DNS: `db.tkbjifmflpxqszaozqlw.supabase.co` resol **NOMÉS IPv6**. Si el
+  `DATABASE_URL` de Vercel usa el host directe, el **BUILD** de Vercel (sense
+  IPv6 sortint) es queda penjat a `prisma migrate deploy` — explica el «deploy
+  infinit». Recomanació: Session Pooler d'Supabase (IPv4) i/o aplicar el SQL a
+  mà; afegir `connect_timeout=15` a la URL perquè un fallo sigui ràpid i clar.
+- Catastro `Consulta_DNPPC` → **404 des de producció**: la integració de
+  l'any de construcció està degradada (compte: `yearBuilt=null` amb
+  degradació encallada; el mapa continua funcionant amb ICGC, que és OK).
+  PENDENT P2: revisar el servei (pot haver canviat l'endpoint).
+
+### Correccions i neteja (sense tocar funcionalitat existent)
+- **register**: WELCOME + VERIFY ara s'envien EN PARAL·LEL (`Promise.allSettled`)
+  dins de `after()` — si el primer espatlla el temps reservat (maxDuration 60),
+  el segon ja no surt perjudicat.
+- **Neteja del repo** (arxius morts de millors èpoques, res que afecti el ZIP
+  de Vercel): eliminats AUDIT.md, DEPLOY.md, INFORME_FINAL.md, TASKS.md,
+  PROJECT_CONTEXT.md, MIGRATION_ZAI.md, COM_APPLICAR_ELS_CANVIS.md,
+  AUDITORIA_FASE1_REGISTRE.md, CORRECCIONS_P1.md, Caddyfile, examples/,
+  mini-services/; i des-trackejada la infraestructura local del sandbox
+  (`.localpg/` 184 MB, `skills/`, `download/`, `upload/`, `tool-results/`,
+  `.zscripts/`) via .gitignore.
+- `make_zip.py`: whitelist Vercel sense CORRECCIONS_P1.md; mode --full sense
+  els docs eliminats.
+
+### Pendents de l'usuari (panells, sense codi) — ORDRE CRÍTIC
+1. **Supabase → SQL Editor**: enganxar i executar el SQL de
+   `prisma/migrations/20261104120000_emaillog_telemetry/migration.sql`
+   (idempotent). **Sense això no surt CAP correu** — és el problema real.
+2. Vercel → Deployments: **Cancel**·lar el deploy penjat i **Redeploy**.
+3. Si el build torna a penjar-se a `prisma migrate deploy`: canviar
+   `DATABASE_URL` al **Session Pooler** d'Supabase (IPv4, port 5432) i
+   afegir `&connect_timeout=15` (o `?connect_timeout=15` si és el primer
+   paràmetre) a la URL.
+4. Definir `NEXT_PUBLIC_SITE_URL=https://www.preureal.com`, `CRON_SECRET`,
+   verificar el domini a Resend i posar `MAIL_FROM=hola@preureal.com`.
+
 ## v20 — 2026-11-04 · Correcció: la migració v19 mai s'havia aplicat a la BD + domini mort
 
 ### Diagnòstic (verificat EN VIVO contra producció)

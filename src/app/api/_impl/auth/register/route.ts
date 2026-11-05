@@ -70,11 +70,15 @@ export async function POST(req: Request) {
   // flotant es congela en tornar la resposta, el fetch mor amb
   // «TimeoutError [23]» i el correu de verificació MAI arriba (cas real v17:
   // l'usuari quedava encerclat al bloqueig «Verifica tu correo» del mapa).
+  // v21: EN PARAL·LEL (Promise.allSettled) — abans anaven en sèrie i si el
+  // primer consumia el temps reservat (maxDuration 60), el segon no sortia.
   after(async () => {
     const mail = welcomeMail(name, locale);
-    await sendMail({ to: email, subject: mail.subject, html: mail.html, type: "WELCOME", userId: user.id });
     const vmail = verifyMail(token, locale);
-    await sendMail({ to: email, subject: vmail.subject, html: vmail.html, type: "VERIFY", userId: user.id });
+    await Promise.allSettled([
+      sendMail({ to: email, subject: mail.subject, html: mail.html, type: "WELCOME", userId: user.id }),
+      sendMail({ to: email, subject: vmail.subject, html: vmail.html, type: "VERIFY", userId: user.id }),
+    ]);
   });
 
   return NextResponse.json({

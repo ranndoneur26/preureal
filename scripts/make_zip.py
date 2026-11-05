@@ -33,8 +33,8 @@ VERCEL_FILES = [
     ".gitignore", ".env.production.example",
     # config Vercel (cron de manteniment del correu — v19)
     "vercel.json",
-    # documentació de desplegament
-    "VERCEL.md", "README.md", "CORRECCIONS_P1.md",
+    # documentació de desplegament (v21: fora CORRECCIONS_P1.md, doc obsoleta v1)
+    "VERCEL.md", "README.md",
     # dades de seed (municipis amb lloguer Incasòl real)
     "data/municipalities.json",
     # scripts d'operació referenciats per VERCEL.md / README.md
@@ -82,7 +82,7 @@ FULL_MUST_HAVE = [
     "prisma/schema.prisma", "prisma/migrations/20261102000000_init_postgres/migration.sql",
     "scripts/pg_local.sh", "scripts/dev_keepalive.sh", "scripts/migrate_sqlite_to_pg.py",
     "db/custom.db", "deploy/Caddyfile.prod", "docker-compose.yml", "Dockerfile",
-    "VERCEL.md", "DEPLOY.md", "AUDIT.md", "INFORME_FINAL.md",
+    "VERCEL.md",  # v21: AUDIT/DEPLOY/INFORME_FINAL eliminats (docs obsoletes)
     ".gitignore", ".env.production.example", "tests/e2e.sh",
     "public/robots.txt", "public/sitemap.xml",
 ]

@@ -47,3 +47,12 @@ next-env.d.ts
 
 # autoallotjament (volum docker a l'host)
 /dbdata/
+
+# infraestructura local del sandbox — MAI al repo de l'usuari (v21)
+/.localpg/
+/skills/
+/.zscripts/
+/tool-results/
+/download/
+/upload/
+/agent-ctx/
