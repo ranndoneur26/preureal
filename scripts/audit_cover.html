@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;700;900&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    @page { size: 794px 1123px; margin: 0; }
+    :root {
+      --c-bg: #0a1628;      /* Template 07: fondo azul noche fijo */
+      --c-accent: #4da8da;  /* azul luminoso */
+      --c-text: #e8f0f8;    /* blanco frío */
+      --c-muted: #7a9bb8;   /* azul grisáceo */
+      --c-glow: #2d7ab3;    /* azul medio */
+    }
+    html, body {
+      margin: 0; padding: 0;
+      width: 794px; height: 1123px;
+      background: var(--c-bg);
+      color: var(--c-text);
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    }
+    @media screen {
+      html { height: auto; display: flex; justify-content: center; min-height: 100vh; background: var(--c-bg); }
+      body { transform-origin: top center; scale: min(1, calc(100vw / 794), calc(100vh / 1123)); margin: 0 auto; box-shadow: 0 0 60px rgba(0,0,0,0.4); }
+    }
+    .cover { width: 794px; height: 1123px; position: relative; box-sizing: border-box; border: none; outline: none; box-shadow: none; }
+
+    /* Layer 1 — fondo (glow sutil, recortado) */
+    .layer-bg {
+      position: absolute; inset: 0; overflow: hidden; z-index: 1;
+    }
+    .glow-a {
+      position: absolute; top: 40px; left: 40px;
+      width: 420px; height: 420px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(45,122,179,0.10) 0%, rgba(45,122,179,0.0) 70%);
+    }
+    .glow-b {
+      position: absolute; bottom: 60px; right: 50px;
+      width: 480px; height: 480px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(77,168,218,0.08) 0%, rgba(77,168,218,0.0) 70%);
+    }
+
+    /* Layer 2 — estructura: marco rectangular luminoso */
+    .layer-frame { position: absolute; inset: 0; z-index: 2; }
+    .frame {
+      position: absolute;
+      top: 80px; bottom: 80px; left: 60px; right: 60px;
+      border: 2px solid var(--c-accent);
+    }
+
+    /* Layer 3 — contenido */
+    .layer-content { position: absolute; inset: 0; z-index: 3; }
+    .kicker {
+      position: absolute; left: 105px; top: 135px;
+      font-size: 11pt; font-weight: 300;
+      color: var(--c-accent);
+      letter-spacing: 5px; text-transform: uppercase;
+    }
+    .hero {
+      position: absolute; left: 105px; top: 236px;
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-size: 54pt; font-weight: 900; line-height: 1.15;
+      color: var(--c-text);
+      text-shadow: 0 0 24px rgba(77,168,218,0.25);
+      max-width: 560px;
+    }
+    .hero .ver { display: block; font-size: 20pt; font-weight: 400; color: var(--c-accent); margin-top: 18px; letter-spacing: 2px; }
+    .summary {
+      position: absolute; left: 105px; top: 505px;
+      font-size: 15pt; font-weight: 300; line-height: 1.7;
+      color: var(--c-muted);
+      max-width: 520px;
+    }
+    .org {
+      position: absolute; left: 105px; top: 760px;
+      font-size: 18pt; font-weight: 400; color: var(--c-text);
+    }
+    .org small { display: block; font-size: 11pt; color: var(--c-muted); margin-top: 10px; font-weight: 300; }
+    .footer {
+      position: absolute; left: 105px; right: 105px; top: 985px;
+      display: flex; justify-content: space-between;
+      font-size: 10pt; color: var(--c-muted);
+      letter-spacing: 3px; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="layer-bg">
+      <div class="glow-a"></div>
+      <div class="glow-b"></div>
+    </div>
+    <div class="layer-frame">
+      <div class="frame"></div>
+    </div>
+    <div class="layer-content">
+      <div class="kicker">Auditoría técnica · Sistema de correo y plataforma</div>
+      <div class="hero">PreuReal.cat<span class="ver">Informe de auditoría — v21</span></div>
+      <div class="summary">
+        Diagnóstico en vivo contra producción, dictamen sobre la base de datos y
+        las variables de entorno, auditoría completa del sistema de envío de
+        correos, limpieza del repositorio y plan de resolución paso a paso.
+      </div>
+      <div class="org">
+        Informe técnico para el equipo de producto
+        <small>Elaborado a partir de probes reales sobre www.preureal.com y del código fuente v21</small>
+      </div>
+      <div class="footer">
+        <span>www.preureal.com</span>
+        <span>05 · 11 · 2026</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
