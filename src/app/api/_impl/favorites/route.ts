@@ -21,6 +21,12 @@ export async function GET() {
     }
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
+  // v23 — el docblock ja deia "Requereix planAllows(preferits)" però GET no el
+  // comprovava (només POST): un usuari FREE podia LLEGIR preferits via API.
+  const plan = (user.plan as "FREE" | "PREMIUM" | "PRO") || "FREE";
+  if (!(await planAllows(plan, "preferits"))) {
+    return NextResponse.json({ error: "PLAN_REQUIRED", plan: "PREMIUM" }, { status: 403 });
+  }
   const favorites = await db.favorite.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },

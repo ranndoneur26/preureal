@@ -39,6 +39,35 @@ export async function POST(req: Request) {
   const plan = PLANS[planId as "PREMIUM" | "PRO"];
 
   const secret = process.env.STRIPE_SECRET_KEY;
+
+  // v23 — anti-cobros duplicados: si el usuario ya tiene una suscripción REAL
+  // de Stripe activa, NO se permite un segundo checkout (dos suscripciones
+  // activas = doble cargo). El cambio de plan se hace desde el Portal de
+  // Cliente de Stripe (prorrateo correcto por Stripe). Las DEMO no bloquean.
+  if (secret) {
+    const existing = await db.subscription.findFirst({
+      where: {
+        userId: user.id,
+        status: { in: ["active", "trialing"] },
+        demo: false,
+        stripeSubscriptionId: { not: null },
+      },
+    });
+    if (existing && existing.stripeSubscriptionId && !existing.stripeSubscriptionId.startsWith("session_")) {
+      await db.event
+        .create({ data: { type: "CHECKOUT_BLOCKED", userId: user.id, meta: JSON.stringify({ plan: planId, reason: "already_subscribed" }) } })
+        .catch(() => {});
+      return NextResponse.json(
+        {
+          error: "ALREADY_SUBSCRIBED",
+          message:
+            "Ya tienes una suscripción activa. Para cambiar de plan (Premium ⇄ Pro), gestiónalo desde el Portal de facturación de Stripe en tu panel: así Stripe aplica el prorrateo y nunca se te cobra dos veces.",
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   if (!secret) {
     if (process.env.DEMO_CHECKOUT === "true") {
       // P1.4: una ÚNICA subscripció activa — les anteriors (demo o reals de

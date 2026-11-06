@@ -2,6 +2,85 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v23 — 2026-11-06 · Auditoria de seguretat i cobraments de la Fase 1 (correccions + tests)
+
+### Correccions de seguretat i de diners (prioritat de l'auditoria)
+1. **Eliminació de compte (RGPD)** — `account/route.ts`: ABANS de borrar cap
+   dada es cancel·len a Stripe les subscripcions REALS actives
+   (`stripe.subscriptions.cancel`, sense factura final). Si Stripe falla → 502
+   i NO es borra res (mai es deixa un cobrament orfe sobre un compte esborrat).
+   Les DEMO no toquen Stripe.
+2. **Anti suscripcions duplicades** — `stripe/checkout/route.ts`: amb Stripe
+   configurat, un segon checkout amb subscripció REAL activa retorna **409
+   ALREADY_SUBSCRIBED** (el canvi Premium⇄Pro es fa pel Portal de Stripe, amb
+   prorrateig). Al webhook, si igualment arriba un checkout d'un usuari amb una
+   altra sub real activa, l'antiga es cancel·la TAMBÉ a Stripe
+   (`STRIPE_SUB_SUPERSEDED`). Les DEMO no bloquegen el checkout real.
+3. **Idempotència del webhook (duplicat ≠ error de BD)** — `stripe/webhook/route.ts`:
+   el claim de StripeEvent ara distingeix la violació d'unicitat (P2002/23505 →
+   200 `duplicate:true`) d'un error de connexió/BD (→ 500; Stripe reentrega).
+   Abans, un error de BD es tractava com a duplicat i l'event es PERDIA per sempre.
+4. **Mai Premium sense pagament verificat** — `checkout.session.completed` exigeix
+   `payment_status` paid/no_payment_required (mètodes asíncrons com SEPA queden
+   fora); si no es pot llegir l'estat real de la subscripció a Stripe, la fila es
+   crea com `incomplete` (mai `active` a cegues); el plan de l'usuari es deriva
+   SEMPRE de les subscripcions vigents via `syncUserPlan` (mai escriptura directa
+   des de la sessió de checkout).
+5. **Accés a funcionalitats Premium via API** — `favorites GET` exigeix
+   `planAllows(preferits)` (el docblock ho deia però no es comprovava). El
+   DELETE continua obert a qualsevol sessió (higiene de dades d'un usuari
+   degradat, no és funcionalitat Premium).
+6. **Cuota mensual ATÒMICA i unificada** — `subscription.ts::consumeDetailQuery`:
+   un únic `INSERT ... ON CONFLICT DO UPDATE ... WHERE usageCount < límit` amb
+   `RETURNING` (les peticions paral·leles es serialitzen amb el lock de fila;
+   el `count()` previ permetia passar dues peticions simultànies). `SubscriptionUsage`
+   és l'ÚNICA font de la quota; SearchLog queda per a historial/auditoria
+   (backfill del mes corrent en la primera inserció). `lookup/route.ts` l'usa.
+7. **Expiració de subscripcions** — `plans.ts::syncUserPlan` expira també
+   `trialing` (abans una prova vençuda sense conversió es quedava activa per
+   sempre) i `past_due` amb període vençut.
+8. **Gràcia de pagaments fallits (política coherent)** — `VIGENT_STATUSES =
+   active | trialing | past_due`: l'usuari manté l'accés mentre Stripe reintenta
+   el cobrament; es retira quan Stripe marca unpaid/canceled (webhook) o quan
+   el període venç (sincronització local). Documentat a subscription.ts.
+9. **Unificació de preus** — el rebut per correu mostra l'IMPORT REAL facturat
+   (`cs.amount_total`, via `formatEurFromCents`) i el nom nominal del pla
+   (`planName`, "Pro (agents)"); l'MRR d'admin usa `getPlanSettings()` (mai
+   constants); el correu de benvinguda i el frontend (`/api/plans` nou públic +
+   PricingView) usen la mateixa configuració efectiva; `.env.production.example`
+   corregit (Session Pooler 5432, el 6543 penja `migrate deploy`).
+10. **Canvis de pla des del Portal de Stripe** — el webhook dedueix el pla del
+    PRICE de la subscripció (`planFromPriceId`, noms canònics v22 + antics com
+    fallback) quan arriba `customer.subscription.created/updated` (el Portal no
+    envia metadata). Sense price reconeixible, es conserva el plan existent.
+11. **Panel** — el missatge d'error del servidor (p. ex. STRIPE_CANCEL_FAILED,
+    ALREADY_SUBSCRIBED) es mostra a l'usuari (abans només el codi d'error).
+
+### Tests (bun test — 47 tests, 0 fallos)
+`tests/audit_v23.test.ts` (36 nous): checkout (503 sense Stripe, DEMO marcada
+demo:true amb període de 30 dies, 409 anti-duplicat, BAD_PLAN), webhook
+(duplicat P2002 → 200 sense efectes, error de BD → 500, checkout unpaid → cap
+pla, checkout pagat → upsert amb estat real + rebu amb import real,
+subscripció antiga cancel·lada a Stripe, canvi de pla via Portal deduït del
+price), cancelació/reactivació (401, DEMO només estat local, REAL via Stripe,
+404 res a reactivar), eliminació de compte (400 sense confirmar, cancel·la a
+Stripe ABANS de borrar — ordre verificat, 502 i NO es borra si Stripe falla),
+cuota atòmica (teaser sense sessió, consulta vàlida, 402 exhaurida), accés
+(401 sense sessió, favorites 403 en FREE, /api/plans públic) i funcions pures
+(isUniqueViolation, planFromPriceId, formatEurFromCents, highestVigentPlan,
+subscriptionLocalData, coherència de preus PLANS↔i18n↔rebuts).
+
+### Verificació executada
+- `bun test tests/` → **47 pass, 0 fail** (inclou la suite prèvia unit.test.ts).
+- `next build` → compila, TypeScript sense errors, 3 Serverless Functions.
+- `npm run lint` → 14 avisos `react-hooks` PREEXISTENTS de la línia base v22
+  (carousel/MapView/PanelView/use-user-plan — regles noves de Next 16);
+  v23 no en introdueix cap (verificat amb git stash). Es revisaran fora
+  d'aquesta auditoria per no tocar UI en funcionament.
+- **NO validat**: la integració REAL amb Stripe (cal Test Mode amb claus
+  STRIPE_* reals i un webhook configurat). Els tests simulen respostes de
+  Stripe; això no substitueix la prova end-to-end en Test Mode.
+
 ## v22 — 2026-11-05 · Fase 1 de subscripcions (user_subscriptions + subscription_usage + RLS) sense tocar el correu
 
 ### Encàrrec i adaptació d'arquitectura (sense reconstruir res)

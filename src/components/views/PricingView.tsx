@@ -9,6 +9,10 @@ export default function PricingView() {
   const [demoMode, setDemoMode] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  // v23 — unificació de preus: els preus efectius venen del servidor
+  // (/api/plans = mateixa font que checkout, rebuts i MRR d'admin). Si no
+  // carrega, es mostren els textos i18n per defecte (mai pàgina trencada).
+  const [cfg, setCfg] = useState<Record<"FREE" | "PREMIUM" | "PRO", { priceEur: number } | null> | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
@@ -17,7 +21,22 @@ export default function PricingView() {
         if (d.integrations?.stripe?.demoCheckout && !d.integrations?.stripe?.configured) setDemoMode(true);
       })
       .catch(() => {});
+    fetch("/api/plans")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.plans) {
+          const map: Record<string, { priceEur: number }> = {};
+          for (const p of d.plans) map[p.id] = p;
+          setCfg(map as Record<"FREE" | "PREMIUM" | "PRO", { priceEur: number } | null>);
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const fmtEur = (eur: number) => `${eur.toFixed(2).replace(".", ",")} €`;
+  const priceFree = cfg?.FREE ? fmtEur(cfg.FREE.priceEur) : t.plans.free.price;
+  const pricePremium = cfg?.PREMIUM ? fmtEur(cfg.PREMIUM.priceEur) : t.plans.premium.price;
+  const pricePro = cfg?.PRO ? fmtEur(cfg.PRO.priceEur) : t.plans.pro.price;
 
   const checkout = async (plan: "PREMIUM" | "PRO") => {
     if (!auth.user) {
@@ -73,7 +92,7 @@ export default function PricingView() {
         {/* FREE */}
         <PlanCard
           name={t.plans.free.name}
-          price={t.plans.free.price}
+          price={priceFree}
           per={t.plans.free.per}
           cta={currentPlan === "FREE" ? (locale === "ca" ? "Pla actual" : "Plan actual") : t.plans.free.cta}
           onCta={currentPlan === "FREE" ? undefined : () => navigate("/mapa")}
@@ -84,7 +103,7 @@ export default function PricingView() {
           highlight
           popular={t.plans.premium.popular}
           name={t.plans.premium.name}
-          price={t.plans.premium.price}
+          price={pricePremium}
           per={t.plans.premium.per}
           cta={currentPlan === "PREMIUM" ? (locale === "ca" ? "Pla actual" : "Plan actual") : t.plans.premium.cta}
           onCta={currentPlan === "PREMIUM" ? undefined : () => checkout("PREMIUM")}
@@ -94,7 +113,7 @@ export default function PricingView() {
         {/* PRO */}
         <PlanCard
           name={t.plans.pro.name}
-          price={t.plans.pro.price}
+          price={pricePro}
           per={t.plans.pro.per}
           cta={currentPlan === "PRO" ? (locale === "ca" ? "Pla actual" : "Plan actual") : t.plans.pro.cta}
           onCta={currentPlan === "PRO" ? undefined : () => checkout("PRO")}

@@ -300,7 +300,14 @@ function layout(title: string, body: string, locale: "ca" | "es") {
   </div></body></html>`;
 }
 
-export function welcomeMail(name: string | null, locale: "ca" | "es") {
+export function welcomeMail(
+  name: string | null,
+  locale: "ca" | "es",
+  // v23 — preu eficaç de la configuració de plans (mai hardcodejat): si l'admin
+  // canvia el preu de Premium, els correus de benvinguda el reflecteixen.
+  premiumPriceEur: number = 7.99
+) {
+  const premiumPrice = `${premiumPriceEur.toFixed(2).replace(".", ",")} €`;
   // el nom ve de l'usuari: SEMPRE escapam (V2 de l'auditoria — injecció HTML)
   const safeName = name ? escapeHtml(name) : "";
   const title =
@@ -310,9 +317,9 @@ export function welcomeMail(name: string | null, locale: "ca" | "es") {
   const body =
     locale === "ca"
       ? `<p>Ja pots consultar el <b>preu mitjà real de lloguer registrat oficialment</b> (fiances Incasòl) als municipis de Catalunya, juntament amb l'estat d'àrea de mercat residencial tensat.</p>
-         <p>Tens <b>3 consultes detallades gratuïtes cada mes</b>. Quan s'acabin, pots activar el pla Premium (7,99 €/mes) per a consultes il·limitades.</p>`
+         <p>Tens <b>3 consultes detallades gratuïtes cada mes</b>. Quan s'acabin, pots activar el pla Premium (${premiumPrice}/mes) per a consultes il·limitades.</p>`
       : `<p>Ya puedes consultar el <b>precio medio real de alquiler registrado oficialmente</b> (fianzas Incasòl) en los municipios de Cataluña, junto con el estado de área de mercado residencial tensionado.</p>
-         <p>Tienes <b>3 consultas detalladas gratuitas cada mes</b>. Cuando se acaben, puedes activar el plan Premium (7,99 €/mes) para consultas ilimitadas.</p>`;
+         <p>Tienes <b>3 consultas detalladas gratuitas cada mes</b>. Cuando se acaben, puedes activar el plan Premium (${premiumPrice}/mes) para consultas ilimitadas.</p>`;
   return { subject: title, html: layout(title, body, locale) };
 }
 

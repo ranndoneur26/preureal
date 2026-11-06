@@ -1,5 +1,6 @@
 /** Definición de planes de PreuReal.cat (Fase 5: límits configurables des de l'admin). */
 import { db } from "@/lib/db";
+import { VIGENT_STATUSES } from "@/lib/subscription";
 
 export type PlanId = "FREE" | "PREMIUM" | "PRO";
 
@@ -148,12 +149,21 @@ export async function syncUserPlan(
     planSyncAt.set(userId, Date.now());
 
     const now = new Date();
+    // v23: expira TAMBIÉ "trialing" (abans es quedava actiu per sempre quan el
+    // període de prova vençia sense conversió) i "past_due" amb el període
+    // vençut (la gràcia només dura mentre el període pagat/pendent estigui viu).
     await db.subscription.updateMany({
-      where: { userId, status: "active", currentPeriodEnd: { lt: now } },
+      where: {
+        userId,
+        status: { in: ["active", "trialing", "past_due"] },
+        currentPeriodEnd: { lt: now },
+      },
       data: { status: "expired" },
     });
+    // v23: "past_due" = gràcia de pagament (l'usuari manté l'accés mentre
+    // Stripe reintenta el cobrament; vegeu VIGENT_STATUSES a subscription.ts)
     const vigents = await db.subscription.findMany({
-      where: { userId, status: { in: ["active", "trialing"] } },
+      where: { userId, status: { in: [...VIGENT_STATUSES] } },
       select: { plan: true },
     });
     let plan: PlanId = "FREE";

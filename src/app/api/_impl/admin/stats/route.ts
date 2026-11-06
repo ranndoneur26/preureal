@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
+import { getPlanSettings } from "@/lib/plans";
+import type { PlanId } from "@/lib/plans";
 
 /** GET /api/admin/stats — KPIs del negocio (solo admin). MRR REAL (Fase 12). */
 export async function GET() {
@@ -22,8 +24,13 @@ export async function GET() {
   let mrr = 0;
   let demoMrr = 0;
   let mrrPastDue = 0;
+  // v23 — unificació de preus: l'MRR usa la CONFIGURACIÓ EFECTIVA dels plans
+  // (PlanSetting/PLANS), mai constants hardcodejades: si l'admin canvia el
+  // preu, les mètriques i les factures continuen sent coherents.
+  const settings = await getPlanSettings();
   for (const s of subs) {
-    const price = s.plan === "PRO" ? 19.99 : s.plan === "PREMIUM" ? 7.99 : 0;
+    const p = (s.plan === "PRO" || s.plan === "PREMIUM" ? s.plan : "FREE") as PlanId;
+    const price = settings[p].priceEur;
     if (s.demo) {
       demoMrr += price;
       continue;
