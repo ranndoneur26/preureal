@@ -48,6 +48,7 @@ export async function DELETE(req: Request) {
     db.passwordToken.deleteMany({ where: { userId: user.id } }),
     db.emailToken.deleteMany({ where: { userId: user.id } }),
     db.subscription.deleteMany({ where: { userId: user.id } }),
+    db.subscriptionUsage.deleteMany({ where: { userId: user.id } }), // v22
     db.priceReport.deleteMany({ where: { userId: user.id } }),
     // pseudonimització d'ús històric (mètriques agregades sense PII)
     db.searchLog.updateMany({ where: { userId: user.id }, data: { userId: null } }),

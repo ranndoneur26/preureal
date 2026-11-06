@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
+import { useUserPlan } from "@/hooks/use-user-plan";
 import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search } from "lucide-react";
 
 interface BillingData {
@@ -23,6 +24,8 @@ export default function PanelView() {
   const [favorites, setFavorites] = useState<any[] | null>(null);
   const [comparisons, setComparisons] = useState<any[] | null>(null);
   const [billing, setBilling] = useState<BillingData | null>(null);
+  // v22: estat de la suscripció des del SERVIDOR (mai del client) — encàrrec punt 6
+  const plan = useUserPlan();
   const [reports, setReports] = useState<any[] | null>(null);
   const [myReports, setMyReports] = useState<any[] | null>(null);
 
@@ -192,6 +195,50 @@ export default function PanelView() {
       const d = await res.json();
       if (d.url) window.location.href = d.url;
       else setMsg(d.message || d.error || "Error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // v22: cancel·lació programada a final de període (manté l'accés fins llavors)
+  const cancelSubscription = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/subscription/cancel", { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(d.message || d.error || "Error");
+        return;
+      }
+      await Promise.all([plan.refresh(), auth.refresh()]);
+      setBilling(null);
+      loadTab("facturacio");
+      setMsg(locale === "ca"
+        ? "Cancel·lació programada: mantindràs l'accés fins al final del període."
+        : "Cancelación programada: mantendrás el acceso hasta el final del período.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // v22: desfer una cancel·lació programada
+  const reactivateSubscription = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/subscription/reactivate", { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(d.message || d.error || "Error");
+        return;
+      }
+      await Promise.all([plan.refresh(), auth.refresh()]);
+      setBilling(null);
+      loadTab("facturacio");
+      setMsg(locale === "ca"
+        ? "Subscripció reactivada: seguirà renovant-se normalment."
+        : "Suscripción reactivada: seguirá renovándose normalmente.");
     } finally {
       setBusy(false);
     }
@@ -391,6 +438,47 @@ export default function PanelView() {
               )}
             </div>
           </div>
+          {/* v22: estat de la subscripció vigent (dades del servidor via useUserPlan) */}
+          {(plan.subscriptionStatus === "active" || plan.subscriptionStatus === "trialing") && (
+            <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">
+              <h3 className="font-bold mb-3">{locale === "ca" ? "Subscripció vigent" : "Suscripción vigente"}</h3>
+              <div className="space-y-2 text-sm">
+                <Row
+                  label={locale === "ca" ? "Estat" : "Estado"}
+                  value={plan.cancelAtPeriodEnd
+                    ? (locale === "ca" ? "Activa — es cancel·la al final del període" : "Activa — se cancela al final del período")
+                    : plan.subscriptionStatus}
+                  strong={!plan.cancelAtPeriodEnd}
+                />
+                {plan.currentPeriodEnd && (
+                  <Row
+                    label={locale === "ca" ? "Renovació / fi del període" : "Renovación / fin del período"}
+                    value={new Date(plan.currentPeriodEnd).toLocaleDateString()}
+                  />
+                )}
+                <Row
+                  label={locale === "ca" ? "Consultes detallades aquest mes" : "Consultas detalladas este mes"}
+                  value={String(plan.monthlyDetailedQueriesUsed)}
+                />
+              </div>
+              <div className="mt-4 flex gap-3 items-center flex-wrap">
+                {!plan.cancelAtPeriodEnd ? (
+                  <button onClick={cancelSubscription} disabled={busy} className="text-sm text-[#b0431c] underline disabled:opacity-50">
+                    {locale === "ca" ? "Cancel·lar (al final del període)" : "Cancelar (al final del período)"}
+                  </button>
+                ) : (
+                  <button onClick={reactivateSubscription} disabled={busy} className="text-sm text-[#1e7a41] underline disabled:opacity-50">
+                    {locale === "ca" ? "Reactivar la subscripció" : "Reactivar la suscripción"}
+                  </button>
+                )}
+                <span className="text-xs text-[#6b6f68]">
+                  {plan.stripeConfigured
+                    ? (locale === "ca" ? "Gestionada amb Stripe." : "Gestionada con Stripe.")
+                    : (locale === "ca" ? "Mode proves (sense Stripe)." : "Modo pruebas (sin Stripe).")}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">
             <h3 className="font-bold mb-3">{locale === "ca" ? "Historial de pagaments i factures" : "Historial de pagos y facturas"}</h3>
             {billing?.invoices.length ? (

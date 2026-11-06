@@ -83,7 +83,11 @@ export async function POST(req: Request) {
   }
 
   // Stripe real (requiere precios creados en el panel de Stripe)
-  const priceId = process.env[plan.stripePriceEnv!];
+  // v22: noms canònics del encàrrec (STRIPE_PREMIUM_PRICE_ID /
+  // STRIPE_PRO_AGENTS_PRICE_ID) amb retrocompatibilitat dels antics.
+  const priceId =
+    process.env[plan.stripePriceEnv!] ||
+    process.env[planId === "PRO" ? "STRIPE_PRICE_PRO" : "STRIPE_PRICE_PREMIUM"];
   if (!priceId) {
     return NextResponse.json(
       {

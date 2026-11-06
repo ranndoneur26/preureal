@@ -9,7 +9,7 @@ export const PLANS: Record<
   {
     quotaMonth: number; // -1 = il·limitades
     priceEur: number;
-    stripePriceEnv?: "STRIPE_PRICE_PREMIUM" | "STRIPE_PRICE_PRO";
+    stripePriceEnv?: "STRIPE_PREMIUM_PRICE_ID" | "STRIPE_PRO_AGENTS_PRICE_ID";
     features: {
       comparador: boolean;
       exportCsv: boolean;
@@ -28,13 +28,13 @@ export const PLANS: Record<
   PREMIUM: {
     quotaMonth: -1,
     priceEur: 7.99,
-    stripePriceEnv: "STRIPE_PRICE_PREMIUM",
+    stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
     features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false },
   },
   PRO: {
     quotaMonth: -1,
     priceEur: 19.99,
-    stripePriceEnv: "STRIPE_PRICE_PRO",
+    stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
     features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true },
   },
 };
