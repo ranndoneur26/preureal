@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import type { Building } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
-import { canConsult } from "@/lib/plans";
+import { getPlanSettings } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp, hashIp, maskEmail } from "@/lib/security";
 import { fetchParcelAt, resolveMunicipalityCode } from "@/lib/icgc";
 import { getYearBuilt } from "@/lib/catastro";
-import { recordUsage, USAGE_TYPES } from "@/lib/subscription";
+import { consumeDetailQuery } from "@/lib/subscription";
 
 /**
  * POST /api/lookup  { lat, lng, buildingId? }
@@ -86,9 +86,13 @@ export async function POST(req: Request) {
     );
   }
 
-  // 4) quota del pla (configuració efectiva, aplicada AL SERVIDOR)
+  // 4) quota del pla — v23: ATÒMICA en PostgreSQL (un únic INSERT ... ON
+  //    CONFLICT DO UPDATE ... WHERE) i UNIFICADA: SubscriptionUsage és l'única
+  //    font del comptador (SearchLog queda per a historial/auditoria). Amb el
+  //    count() previ, dues peticions paral·leles podien passar totes dues.
   const plan = (session.plan as "FREE" | "PREMIUM" | "PRO") || "FREE";
-  const quota = await canConsult(session.id, plan);
+  const limit = (await getPlanSettings())[plan].quotaMonth;
+  const quota = await consumeDetailQuery(session.id, limit);
   if (!quota.ok) {
     await db.event
       .create({ data: { type: "PAYWALL_VIEW", userId: session.id, meta: JSON.stringify({ plan, mun: mun.code }) } })
@@ -128,9 +132,8 @@ export async function POST(req: Request) {
   await db.event
     .create({ data: { type: "MAP_QUERY", userId: session.id, meta: JSON.stringify({ kind: "detail", mun: mun.code }) } })
     .catch(() => {});
-  // v22: comptador d'ús mensual (subscription_usage del encàrrec) — telemetria
-  // per al hook useUserPlan; mai bloqueja la consulta.
-  await recordUsage(session.id, USAGE_TYPES.DETAIL_QUERY);
+  // v23: el comptador d'ús ja s'ha incrementat de forma atòmica dins de
+  // consumeDetailQuery (abans es feia aquí amb un segon upsert).
 
   return NextResponse.json({
     kind: "full",
@@ -160,6 +163,6 @@ export async function POST(req: Request) {
       isTense: mun.isTense,
       tenseList: mun.tenseList,
     },
-    quota: { used: quota.used + 1, limit: quota.limit },
+    quota: { used: quota.used, limit: quota.limit },
   });
 }

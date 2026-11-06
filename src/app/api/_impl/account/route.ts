@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { requireUser, revokeSessions } from "@/lib/auth";
 import { sanitizeName, audit } from "@/lib/security";
@@ -39,6 +40,56 @@ export async function DELETE(req: Request) {
   const body = await req.json().catch(() => null);
   if (body?.confirm !== "ESBORRA") {
     return NextResponse.json({ error: "CONFIRM_REQUIRED" }, { status: 400 });
+  }
+
+  // v23 — RGPD + anti-cobros fantasma: antes de borrar NINGÚN dato, se
+  // cancelan en Stripe las suscripciones REALES activas del usuario. Si no,
+  // Stripe seguiría cobrando a una cuenta que ya no existe (el webhook
+  // invoice.paid ya no encontraría al usuario). Las DEMO no tocan Stripe.
+  // Si Stripe falla, NO se borra nada: el usuario conserva su cuenta y puede
+  // reintentar (protege su dinero; el borrado es reversible hasta este punto).
+  const activeSubs = await db.subscription.findMany({
+    where: { userId: user.id, status: { in: ["active", "trialing", "past_due"] } },
+  });
+  const stripeSecret = process.env.STRIPE_SECRET_KEY;
+  const realStripeSubs = activeSubs.filter(
+    (s) =>
+      !s.demo &&
+      Boolean(s.stripeSubscriptionId) &&
+      !String(s.stripeSubscriptionId).startsWith("session_")
+  );
+  if (stripeSecret && realStripeSubs.length > 0) {
+    const stripe = new Stripe(stripeSecret);
+    const failed: string[] = [];
+    for (const s of realStripeSubs) {
+      try {
+        // cancelación INMEDIATA (el usuario deja de existir; no debe seguir
+        // pagando): sin factura final (invoice_now=false por defecto)
+        await stripe.subscriptions.cancel(String(s.stripeSubscriptionId));
+        await audit(user.id, "STRIPE_SUB_CANCELLED_ON_DELETE", String(s.stripeSubscriptionId), {
+          plan: s.plan,
+        }).catch(() => {});
+      } catch (e: unknown) {
+        // ya cancelada en Stripe → equivalente a cancelada
+        const msg = String((e as { message?: string })?.message || e);
+        if (!msg.includes("already")) failed.push(String(s.stripeSubscriptionId));
+        else
+          await audit(user.id, "STRIPE_SUB_CANCELLED_ON_DELETE", String(s.stripeSubscriptionId), {
+            already: true,
+          }).catch(() => {});
+      }
+    }
+    if (failed.length > 0) {
+      console.error("account DELETE: no se pudieron cancelar subs Stripe", failed);
+      return NextResponse.json(
+        {
+          error: "STRIPE_CANCEL_FAILED",
+          message:
+            "No se ha podido cancelar tu suscripción de Stripe. Inténtalo de nuevo en unos minutos o gestiona la cancelación desde el Portal de facturación de Stripe antes de borrar la cuenta.",
+        },
+        { status: 502 }
+      );
+    }
   }
 
   await db.$transaction([

@@ -3,8 +3,13 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { receiptMail, sendMail } from "@/lib/mail";
 import { audit } from "@/lib/security";
-import { syncUserPlan } from "@/lib/plans";
-import { subscriptionLocalData } from "@/lib/subscription";
+import { planName, syncUserPlan } from "@/lib/plans";
+import {
+  formatEurFromCents,
+  isUniqueViolation,
+  planFromPriceId,
+  subscriptionLocalData,
+} from "@/lib/subscription";
 
 // El rebut per correu va EN BACKGROUND amb after(): Vercel manté la funció
 // viva fins que acaba l'enviament (ignorat fora de Vercel).
@@ -21,12 +26,12 @@ export const maxDuration = 60;
  *  - invoice.paid → renovacions (actualitza període)
  *  - invoice.payment_failed → marca past_due
  *
- * IDEMPOTÈNCIA (P1.1): la fila StripeEvent fa de LOCK. S'insereix ABANS
+ * IDEMPOTÈNCIA (P1.1 + v23): la fila StripeEvent fa de LOCK. S'insereix ABANS
  * d'aplicar efectes (claim atòmic per la clau única eventId) i S'ELIMINA si
  * el processament falla → Stripe reentrega i l'event torna a executar-se.
- * Abans, la fila es registrava sense rollback: un error posterior deixava
- * l'event «devorat» (reentregues rebutjades com a duplicat) i la subscripció
- * podia quedar dessincronitzada per sempre.
+ * v23: es DISTINGUEIX un duplicat real (violació d'unicitat → 200 sense
+ * efectes) d'un error de BD (→ 500 perquè Stripe reentregui; abans un error
+ * de connexió es tractava com a duplicat i l'event es perdia per sempre).
  */
 export async function POST(req: Request) {
   const secret = process.env.STRIPE_SECRET_KEY;
@@ -44,13 +49,22 @@ export async function POST(req: Request) {
   }
 
   // --- idempotència P1.1: claim → processar → alliberar si falla ---
-  const claimed = await db.stripeEvent
+  const claim = await db.stripeEvent
     .create({ data: { eventId: event.id, type: event.type } })
-    .then(() => true)
-    .catch(() => false);
-  if (!claimed) {
+    .then(() => "claimed" as const)
+    .catch((e: unknown) => {
+      if (isUniqueViolation(e)) return "duplicate" as const;
+      // error de BD (connexió, timeout...): NO és un duplicat → 500 i Stripe
+      // reentregarà. Respondre 200 aquí PERDRIA l'event per sempre.
+      console.error("stripe webhook: claim fallat (error de BD)", e);
+      return "db_error" as const;
+    });
+  if (claim === "duplicate") {
     // ja processat amb ÈXIT (reentrega): resposta sense efectes
     return NextResponse.json({ received: true, duplicate: true });
+  }
+  if (claim === "db_error") {
+    return NextResponse.json({ error: "DB_UNAVAILABLE" }, { status: 500 });
   }
 
   try {
@@ -60,6 +74,20 @@ export async function POST(req: Request) {
         const userId = cs.metadata?.userId;
         const plan = cs.metadata?.plan === "PRO" ? "PRO" : "PREMIUM";
         if (userId) {
+          // v23 — MAI es concedeix el pla sense verificar el pagament real:
+          // amb mètodes de pagament asíncrons (SEPA, transferències) la sessió
+          // es completa amb payment_status "unpaid". El pla arribarà quan el
+          // pagament es confirmi (customer.subscription.created/updated +
+          // invoice.paid). Sense això, algú podria activar Premium sense pagar.
+          const paid =
+            cs.payment_status === "paid" || cs.payment_status === "no_payment_required";
+          if (!paid) {
+            await audit(userId, "STRIPE_CHECKOUT_UNPAID", String(cs.id), {
+              payment_status: cs.payment_status ?? null,
+              plan,
+            });
+            break;
+          }
           // mode subscription: l'estat real ve de la subscription de Stripe
           let subId = typeof cs.subscription === "string" ? cs.subscription : cs.subscription?.id || null;
           // v22: sincronitza TOTS els camps del encàrrec (període, interval,
@@ -70,10 +98,11 @@ export async function POST(req: Request) {
               const sub = await stripe.subscriptions.retrieve(subId);
               stripeData = subscriptionLocalData(sub);
             } catch {
-              // si no es pot llegir, el següent subscription.updated ho corregirà
+              // v23: si NO es pot llegir l'estat real de Stripe, NO es concedeix
+              // el pla "a cegues" (status "incomplete"); el següent
+              // subscription.created/updated el corregirà i activarà el pla.
             }
           }
-          await db.user.update({ where: { id: userId }, data: { plan } });
           // P1.4: una ÚNICA subscripció activa per usuari — les anteriors
           // queden tancades (l'upsert de sota reactiva la de subId)
           await db.subscription.updateMany({
@@ -89,7 +118,7 @@ export async function POST(req: Request) {
                 stripeSubscriptionId: subId,
                 plan,
                 ...(stripeData ?? {
-                  status: "active",
+                  status: "incomplete",
                   currentPeriodStart: null,
                   currentPeriodEnd: null,
                   cancelAtPeriodEnd: false,
@@ -111,15 +140,51 @@ export async function POST(req: Request) {
               },
             });
           }
+          // v23 — anti-cobros duplicats: si l'usuari tenia UNA altra subscripció
+          // REAL de Stripe encara activa (p. ex. checkout des de dues pestanyes),
+          // es cancel·la TAMBÉ a Stripe (la BD ja la tanca amb l'updateMany).
+          const others = await db.subscription.findMany({
+            where: {
+              userId,
+              status: { in: ["active", "trialing"] },
+              stripeSubscriptionId: subId ? { not: subId } : undefined,
+              AND: [{ demo: false }, { stripeSubscriptionId: { not: null } }],
+            },
+          });
+          for (const o of others) {
+            if (!o.stripeSubscriptionId || o.stripeSubscriptionId.startsWith("session_")) continue;
+            try {
+              await stripe.subscriptions.cancel(o.stripeSubscriptionId);
+              await db.subscription.update({
+                where: { id: o.id },
+                data: { status: "canceled" },
+              });
+              await audit(userId, "STRIPE_SUB_SUPERSEDED", o.stripeSubscriptionId, {
+                replacedBy: subId || cs.id,
+              });
+            } catch (e) {
+              // no bloquegem l'activació nova; el webhook deleted/updated de la
+              // antiga acabarà de netejar (i syncUserPlan és auto-curatiu)
+              console.error("stripe webhook: cancel·lant sub antiga", e);
+            }
+          }
+          // v23 — P1.4 estricte: el pla es DERIVA de les subscripcions vigents
+          // (mai s'escriu directament des de la sessió de checkout)
+          await syncUserPlan(userId, { force: true });
           await db.event
             .create({ data: { type: "SUBSCRIBE_SUCCESS", userId, meta: JSON.stringify({ plan, mode: "stripe" }) } })
             .catch(() => {});
-          await audit(userId, "STRIPE_SUBSCRIBE", subId || cs.id, { plan, status: stripeData?.status ?? "active" });
+          await audit(userId, "STRIPE_SUBSCRIBE", subId || cs.id, {
+            plan,
+            status: stripeData?.status ?? "incomplete",
+          });
           const u = await db.user.findUnique({ where: { id: userId } });
           if (u) {
             const locale = u.locale === "es" ? "es" : "ca";
-            const amount = plan === "PRO" ? "19,99 €" : "7,99 €";
-            const mail = receiptMail(plan === "PRO" ? "Pro" : "Premium", amount, locale);
+            // v23 — rebut amb l'IMPORT REAL facturat per Stripe (mai un preu
+            // memoritzat) i el nom nominal del pla ("Pro (agents)")
+            const amount = formatEurFromCents(cs.amount_total) ?? "—";
+            const mail = receiptMail(planName(plan, locale), amount, locale);
             after(async () => {
               await sendMail({
                 to: u.email,
@@ -143,6 +208,11 @@ export async function POST(req: Request) {
       case "customer.subscription.updated": {
         const s = event.data.object as Stripe.Subscription;
         const data = subscriptionLocalData(s);
+        // v23 — canvis de pla fets des del Portal de Client de Stripe: allí no
+        // hi ha metadata (userId/plan); l'únic senyal és el PRICE de la
+        // subscripció. Si el price no és cap dels nostres (p. ex. preu esborrat
+        // al panel), es conserva el plan existent de la fila.
+        const derivedPlan = planFromPriceId(s.items.data[0]?.price?.id);
         let row = await db.subscription.findUnique({ where: { stripeSubscriptionId: String(s.id) } });
         if (!row && event.type === "customer.subscription.created") {
           const prior = await db.subscription.findFirst({
@@ -155,14 +225,17 @@ export async function POST(req: Request) {
                 userId: prior.userId,
                 stripeCustomerId: String(s.customer || ""),
                 stripeSubscriptionId: String(s.id),
-                plan: prior.plan === "PRO" ? "PRO" : "PREMIUM",
+                plan: derivedPlan ?? (prior.plan === "PRO" ? "PRO" : "PREMIUM"),
                 ...data,
               },
             });
           }
         }
         if (row) {
-          await db.subscription.update({ where: { id: row.id }, data });
+          await db.subscription.update({
+            where: { id: row.id },
+            data: { ...data, ...(derivedPlan ? { plan: derivedPlan } : {}) },
+          });
           // P1.4: el pla de l'usuari es recalcula SEMPRE a partir de les
           // subscripcions vigents (mai es confia en un estat intermedi)
           await syncUserPlan(row.userId, { force: true });

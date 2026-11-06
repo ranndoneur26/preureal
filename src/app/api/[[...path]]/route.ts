@@ -42,6 +42,7 @@ import * as h_history from "../_impl/history/route";
 import * as h_lookup from "../_impl/lookup/route";
 import * as h_lookup_refcat from "../_impl/lookup-refcat/route";
 import * as h_municipalities from "../_impl/municipalities/route";
+import * as h_plans from "../_impl/plans/route";
 import * as h_provenance from "../_impl/provenance/route";
 import * as h_reports from "../_impl/reports/route";
 import * as h_reports_pdf from "../_impl/reports/pdf/route";
@@ -96,6 +97,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["lookup"], h: h_lookup },
   { seg: ["lookup-refcat"], h: h_lookup_refcat },
   { seg: ["municipalities"], h: h_municipalities },
+  { seg: ["plans"], h: h_plans },
   { seg: ["provenance"], h: h_provenance },
   { seg: ["reports"], h: h_reports },
   { seg: ["reports", "pdf"], h: h_reports_pdf },

@@ -5,6 +5,7 @@ import { createSessionFor, hashPassword } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp, sanitizeName } from "@/lib/security";
 import { welcomeMail, verifyMail, sendMail } from "@/lib/mail";
+import { getPlanSettings } from "@/lib/plans";
 import { hashToken } from "@/lib/token-hash";
 import { normalizeEmail } from "@/lib/email";
 import * as crypto from "crypto";
@@ -73,7 +74,9 @@ export async function POST(req: Request) {
   // v21: EN PARAL·LEL (Promise.allSettled) — abans anaven en sèrie i si el
   // primer consumia el temps reservat (maxDuration 60), el segon no sortia.
   after(async () => {
-    const mail = welcomeMail(name, locale);
+    // v23 — preu eficaç de la configuració de plans (mai hardcodejat)
+    const planSettings = await getPlanSettings();
+    const mail = welcomeMail(name, locale, planSettings.PREMIUM.priceEur);
     const vmail = verifyMail(token, locale);
     await Promise.allSettled([
       sendMail({ to: email, subject: mail.subject, html: mail.html, type: "WELCOME", userId: user.id }),

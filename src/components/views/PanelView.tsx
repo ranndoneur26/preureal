@@ -258,7 +258,7 @@ export default function PanelView() {
       });
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setMsg(d.error || "Error");
+        setMsg(d.message || d.error || "Error"); // v23: mostra el missatge del servidor (p. ex. STRIPE_CANCEL_FAILED)
         return;
       }
       navigate("/");
