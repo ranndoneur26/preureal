@@ -70,8 +70,16 @@ CREATE UNIQUE INDEX IF NOT EXISTS "Subscription_one_active_per_user_key"
 -- pública) NO tenen cap política → DENY total. Així ningú es pot auto-pujar a
 -- Premium tocant la BD des del navegador: l'únic camí són les rutes de l'API
 -- autenticades i els webhooks de Stripe signats.
+--
+-- IMPORTANT (fix supabase): només es blinden les taules PROPIETAT de l'usuari
+-- postgres. "spatial_ref_sys" (taula tècnica de l'extensió PostGIS, propietat
+-- del rol "extensions") NO es toca: no és nostra i no cal blindar-la. Així el
+-- bucle mai xoca amb el 42501 "must be owner of table".
 DO $$ DECLARE t text; BEGIN
-  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
-    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+  FOR t IN SELECT tablename FROM pg_tables
+           WHERE schemaname = 'public' AND tableowner = current_user LOOP
+    BEGIN
+      EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+    EXCEPTION WHEN insufficient_privilege THEN NULL; END;
   END LOOP;
 END $$;
