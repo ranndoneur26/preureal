@@ -35,6 +35,7 @@ model User {
   emailTokens     EmailToken[]
   favorites       Favorite[]
   savedComparisons SavedComparison[]
+  subscriptionUsages SubscriptionUsage[]
 
   @@index([role])
   @@index([plan])
@@ -48,14 +49,36 @@ model Subscription {
   stripeSubscriptionId String?  @unique
   stripePriceId        String?
   plan                 String   // PREMIUM | PRO
-  status               String   // active | trialing | past_due | canceled | incomplete | incomplete_expired
+  status               String   // active | trialing | past_due | canceled | expired | superseded | incomplete | incomplete_expired
+  currentPeriodStart   DateTime? // v22: inici del període de facturació vigent
   currentPeriodEnd     DateTime?
+  billingInterval      String?   // v22: month | year (recurrent del preu de Stripe)
+  cancelAtPeriodEnd    Boolean   @default(false) // v22: cancelació programada a final de període
   demo                 Boolean  @default(false) // suscripción creada en modo prueba (sin Stripe)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
   @@index([userId])
   @@index([status])
+}
+
+// v22 (Fase 1 subscripcions): comptadors d'ús agregats per usuari, tipus i mes
+// ("YYYY-MM" UTC). Font: accions reals registrades al servidor (lookup, exports,
+// PDF...). Mai s'escriu des del client — només les rutes de l'API (equivalent
+// funcional de les policies RLS en una arquitectura on l'ÚNIC client de
+// Postgres és el backend via Prisma).
+model SubscriptionUsage {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  usageType  String   // DETAIL_QUERY | EXPORT_CSV | PDF_REPORT | ...
+  usageMonth String   // "2026-11"
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, usageType, usageMonth])
+  @@index([userId, usageMonth])
 }
 
 model PasswordToken {

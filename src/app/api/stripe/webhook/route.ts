@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { receiptMail, sendMail } from "@/lib/mail";
 import { audit } from "@/lib/security";
 import { syncUserPlan } from "@/lib/plans";
+import { subscriptionLocalData } from "@/lib/subscription";
 
 // El rebut per correu va EN BACKGROUND amb after(): Vercel manté la funció
 // viva fins que acaba l'enviament (ignorat fora de Vercel).
@@ -61,14 +62,13 @@ export async function POST(req: Request) {
         if (userId) {
           // mode subscription: l'estat real ve de la subscription de Stripe
           let subId = typeof cs.subscription === "string" ? cs.subscription : cs.subscription?.id || null;
-          let status = "active";
-          let periodEnd: Date | null = null;
+          // v22: sincronitza TOTS els camps del encàrrec (període, interval,
+          // cancelAtPeriodEnd, price) directament des de la font de veritat
+          let stripeData: ReturnType<typeof subscriptionLocalData> | null = null;
           if (subId) {
             try {
               const sub = await stripe.subscriptions.retrieve(subId);
-              status = sub.status;
-              const item = sub.items.data[0];
-              if (item?.current_period_end) periodEnd = new Date(item.current_period_end * 1000);
+              stripeData = subscriptionLocalData(sub);
             } catch {
               // si no es pot llegir, el següent subscription.updated ho corregirà
             }
@@ -88,10 +88,16 @@ export async function POST(req: Request) {
                 stripeCustomerId: String(cs.customer || ""),
                 stripeSubscriptionId: subId,
                 plan,
-                status,
-                currentPeriodEnd: periodEnd,
+                ...(stripeData ?? {
+                  status: "active",
+                  currentPeriodStart: null,
+                  currentPeriodEnd: null,
+                  cancelAtPeriodEnd: false,
+                  billingInterval: null,
+                  stripePriceId: null,
+                }),
               },
-              update: { status, plan, currentPeriodEnd: periodEnd },
+              update: { plan, ...(stripeData ?? {}) },
             });
           } else {
             await db.subscription.create({
@@ -100,15 +106,15 @@ export async function POST(req: Request) {
                 stripeCustomerId: String(cs.customer || ""),
                 stripeSubscriptionId: `session_${cs.id}`,
                 plan,
-                status,
-                currentPeriodEnd: periodEnd,
+                status: "active",
+                currentPeriodEnd: null,
               },
             });
           }
           await db.event
             .create({ data: { type: "SUBSCRIBE_SUCCESS", userId, meta: JSON.stringify({ plan, mode: "stripe" }) } })
             .catch(() => {});
-          await audit(userId, "STRIPE_SUBSCRIBE", subId || cs.id, { plan, status });
+          await audit(userId, "STRIPE_SUBSCRIBE", subId || cs.id, { plan, status: stripeData?.status ?? "active" });
           const u = await db.user.findUnique({ where: { id: userId } });
           if (u) {
             const locale = u.locale === "es" ? "es" : "ca";
@@ -130,26 +136,55 @@ export async function POST(req: Request) {
         }
         break;
       }
-      case "customer.subscription.updated":
+      // v22: `created` també es gestiona — una subscripció creada fora del
+      // checkout (p. ex. des del Portal de Stripe) queda sincronitzada; l'usuari
+      // es dedueix del customer a partir de subscripcions anteriors.
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const s = event.data.object as Stripe.Subscription;
+        const data = subscriptionLocalData(s);
+        let row = await db.subscription.findUnique({ where: { stripeSubscriptionId: String(s.id) } });
+        if (!row && event.type === "customer.subscription.created") {
+          const prior = await db.subscription.findFirst({
+            where: { stripeCustomerId: String(s.customer || "") },
+            orderBy: { createdAt: "desc" },
+          });
+          if (prior) {
+            row = await db.subscription.create({
+              data: {
+                userId: prior.userId,
+                stripeCustomerId: String(s.customer || ""),
+                stripeSubscriptionId: String(s.id),
+                plan: prior.plan === "PRO" ? "PRO" : "PREMIUM",
+                ...data,
+              },
+            });
+          }
+        }
+        if (row) {
+          await db.subscription.update({ where: { id: row.id }, data });
+          // P1.4: el pla de l'usuari es recalcula SEMPRE a partir de les
+          // subscripcions vigents (mai es confia en un estat intermedi)
+          await syncUserPlan(row.userId, { force: true });
+          const stillPaid = data.status === "active" || data.status === "trialing";
+          if (!stillPaid) {
+            await audit(null, "STRIPE_SUB_DOWNGRADED", String(s.id), { status: data.status });
+          }
+        }
+        break;
+      }
       case "customer.subscription.deleted": {
         const s = event.data.object as Stripe.Subscription;
-        const status = event.type === "customer.subscription.deleted" ? "canceled" : s.status;
-        const item = s.items.data[0];
-        const periodEnd = item?.current_period_end ? new Date(item.current_period_end * 1000) : null;
-        const priceId = item?.price?.id || null;
         const sub = await db.subscription.findUnique({ where: { stripeSubscriptionId: String(s.id) } });
         if (sub) {
           await db.subscription.update({
             where: { id: sub.id },
-            data: { status, currentPeriodEnd: periodEnd, stripePriceId: priceId },
+            data: { status: "canceled", cancelAtPeriodEnd: false },
           });
           // P1.4: el pla de l'usuari es recalcula SEMPRE a partir de les
           // subscripcions vigents (mai es confia en un estat intermedi)
           await syncUserPlan(sub.userId, { force: true });
-          const stillPaid = status === "active" || status === "trialing";
-          if (!stillPaid) {
-            await audit(null, "STRIPE_SUB_DOWNGRADED", String(s.id), { status });
-          }
+          await audit(null, "STRIPE_SUB_DOWNGRADED", String(s.id), { status: "canceled" });
         }
         break;
       }

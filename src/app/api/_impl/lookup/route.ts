@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clientIp, hashIp, maskEmail } from "@/lib/security";
 import { fetchParcelAt, resolveMunicipalityCode } from "@/lib/icgc";
 import { getYearBuilt } from "@/lib/catastro";
+import { recordUsage, USAGE_TYPES } from "@/lib/subscription";
 
 /**
  * POST /api/lookup  { lat, lng, buildingId? }
@@ -127,6 +128,9 @@ export async function POST(req: Request) {
   await db.event
     .create({ data: { type: "MAP_QUERY", userId: session.id, meta: JSON.stringify({ kind: "detail", mun: mun.code }) } })
     .catch(() => {});
+  // v22: comptador d'ús mensual (subscription_usage del encàrrec) — telemetria
+  // per al hook useUserPlan; mai bloqueja la consulta.
+  await recordUsage(session.id, USAGE_TYPES.DETAIL_QUERY);
 
   return NextResponse.json({
     kind: "full",

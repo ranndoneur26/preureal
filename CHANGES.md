@@ -2,6 +2,87 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v22 — 2026-11-05 · Fase 1 de subscripcions (user_subscriptions + subscription_usage + RLS) sense tocar el correu
+
+### Encàrrec i adaptació d'arquitectura (sense reconstruir res)
+L'encàrrec demanava Vite + Supabase Auth + Edge Functions + RLS policies, però
+amb la regla explícita «conserva el projecte i el seu disseny, no el
+reconstrueixis». S'ha implementat LA MATEIXA GARANTIA sobre el stack real del
+projecte (Next.js serverless + auth JWT pròpia + Prisma sobre PostgreSQL de
+Supabase). Firebase: **cap referència** (verificat amb grep sobre tot el repo).
+
+### Equivalències implementades
+- `supabase.auth.getUser()` ↔ `requireUser()` (auth.ts): JWT httpOnly signat
+  (HS256) + verificació a la BD en CADA petició (usuari existent, actiu,
+  tokenVersion vigent) + pla/rol FRESCOS. L'usuari mai es confia des del client.
+- Edge Functions ↔ rutes de servidor (`/api/subscription/*`, `/api/stripe/*`)
+  amb la mateixa frontera de confiança (Vercel serverless en comptes de Deno).
+- RLS ↔ doble capa: (1) la migració v22 habilita `ROW LEVEL SECURITY` a TOTES
+  les taules de `public` — el rol anon/authenticated de Supabase (la clau anon
+  és pública) queda sense cap política → DENY total via PostgREST; l'app
+  connecta com a propietari i no pateix res; (2) NO existeix cap ruta que
+  accepti plan/status/stripe_* del client (verificat per auditoria de grep:
+  els únics escriptors són el webhook signat, el flux DEMO env-gated i
+  cancel/reactivate, que mai eleven).
+- Stripe com a font de veritat ✓ (ja existia, ampliat), mai premium per URL ✓.
+
+### Nou a l'esquema (migració `20261105150000_subscriptions_fase1`, ADDITIVA i idempotent)
+- `Subscription` (+3 columnes): `currentPeriodStart`, `billingInterval`
+  (month|year), `cancelAtPeriodEnd`. L'equivalent `user_subscriptions` és la
+  taula `Subscription` existent (ampliada, NO duplicada — una sola font de veritat).
+- Taula nova `SubscriptionUsage` (equivalent `subscription_usage`):
+  userId + usageType (DETAIL_QUERY|EXPORT_CSV|PDF_REPORT|...) + usageMonth
+  ("YYYY-MM" UTC) + usageCount, clau única (userId, type, month), CHECK de format.
+- **UNA única subscripció vigent per compte**: deduplicació segura a SQL (les
+  actives sobrants passen a `superseded`, historial mai esborrat) + índex
+  ÚNIC PARCIAL `("userId") WHERE status IN ('active','trialing')` — cap
+  carrera (demo ni webhooks) hi pot escapar.
+- `EmailLog` / sistema de correu: **ZERO canvis** (requisit explícit).
+
+### Nou al backend
+- `src/lib/subscription.ts`: estat de suscripció per al hook, `recordUsage`
+  (upsert atòmic, mai llança), `subscriptionLocalData` (mapa Stripe→BD),
+  mapping free|premium|pro_agents ↔ FREE|PREMIUM|PRO.
+- `GET /api/subscription` — estat complet (401 sense sessió).
+- `POST /api/subscription/cancel` — cancel·lació PROGRAMADA a final de període
+  (manté l'accés fins `currentPeriodEnd`); amb Stripe real crida l'API de
+  Stripe i sincronitza; amb DEMO només estat local. 5/min per usuari.
+- `POST /api/subscription/reactivate` — desfés la cancel·lació programada.
+- Webhook Stripe: nou cas `customer.subscription.created` (sincronitza subs
+  creades fora del checkout, dedueix l'usuari del customer) i els casos
+  updated/deleted ara sincronitzen període, interval, price i
+  cancelAtPeriodEnd. Idempotència StripeEvent intacta.
+- `/api/lookup`: registra `recordUsage(DETAIL_QUERY)` (mai bloqueja la consulta).
+- `/api/account` DELETE (RGPD): també purga `SubscriptionUsage`.
+- checkout: preus amb els noms canònics del encàrrec
+  (`STRIPE_PREMIUM_PRICE_ID`, `STRIPE_PRO_AGENTS_PRICE_ID`) amb fallback als
+  antics (`STRIPE_PRICE_PREMIUM/PRO`).
+
+### Nou al frontend (disseny intacte, tot additiu)
+- `src/hooks/use-user-plan.ts` — `useUserPlan()` amb EXACTAMENT els camps del
+  encàrrec: planType, subscriptionStatus, isFree, isPremium, isProAgents,
+  hasPremiumAccess, hasProAgentsAccess, currentPeriodEnd, cancelAtPeriodEnd,
+  subscriptionCount, monthlyDetailedQueriesUsed, loading (+refresh()).
+- Panell → Facturació: tarjeta «Subscripció vigent» (estat, fi de període,
+  consultes del mes) amb accions Cancel·lar (a final de període) / Reactivar.
+  Sense Stripe configurat mostra clarament «Mode proves».
+
+### Verificació
+- `npx prisma validate` ✓ · `next build` ✓ (Next 16.4.3 + Turbopack; 3
+  Serverless Functions: catch-all + health + webhook — límit Hobby intacte).
+- Auditoria d'escriptors de plan: cap ruta de client pot pujar de pla.
+- Dispatcher regenerat: 49 rutes (+3 noves).
+
+### Per connectar Stripe més endavant (sense tocar codi)
+1. `STRIPE_SECRET_KEY` (clau secreta, NUNCA al frontend ni amb prefix VITE_).
+2. `STRIPE_WEBHOOK_SECRET` del endpoint
+   `https://www.preureal.com/api/stripe/webhook` (els 6 events del encàrrec ja
+   estan gestionats).
+3. `STRIPE_PREMIUM_PRICE_ID` + `STRIPE_PRO_AGENTS_PRICE_ID` (prices recurrents
+   al panell de Stripe).
+4. Activar el Customer Portal a Stripe (Settings → Billing → Customer portal).
+5. `DEMO_CHECKOUT=false` (i mai true en producció real).
+
 ## v21 — 2026-11-05 · Auditoria completa: diagnòstic del correu EN VIVO + neteja del repo
 
 ### Diagnòstic (probes reals contra producció, www.preureal.com)
