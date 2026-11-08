@@ -1,0 +1,260 @@
+            <tr><td><b>La base de dades</b> (Supabase)</td><td class="sp"></td><td>Guarda usuaris, municipis, preus, subscripcions i favorits.</td><td class="sp"></td><td>Al núvol, amb PostgreSQL</td></tr>
+            <tr><td><b>El repositori</b> (GitHub)</td><td class="sp"></td><td>La còpia de seguretat compartida i ordenada del codi.</td><td class="sp"></td><td>github.com/ranndoneur26/preureal</td></tr>
+            <tr><td><b>El servidor públic</b> (Vercel)</td><td class="sp"></td><td>Serveix la web a qualsevol persona, ràpid i des de moltes ciutats.</td><td class="sp"></td><td>Vercel, compte digitalformacio</td></tr>
+            <tr><td><b>El teu Mac</b></td><td class="sp"></td><td>El taller on es cuina tot abans de publicar.</td><td class="sp"></td><td>Feines 2025-26 / preureal</td></tr>
+        </tbody>
+    </table>
+    <p>El fluxe de treball és sempre el mateix: treballes al Mac, guardest una «foto» del progrés a GitHub, i quan el codi és a punt el publiques amb Vercel perquè el món el vegi. Quan les tres còpies —el taller, l'àlbum i el món— apunten al mateix codi, el sistema és en equilibri. Avui, després de la V23, ho estan: és exactament el que es va verificar a la darrera etapa.</p>
+
+    <!-- CH 03 -->
+    <div class="chapter-header">
+        <div class="section-tag">ETAPA 1</div>
+        <div class="section-title">Preparar el terreny al Mac</div>
+        <div class="divider"></div>
+    </div>
+    <p>Tot projecte comença amb una carpeta. La teva viu a l'escriptori del Mac, dins de <strong>«Feines 2025-26»</strong>, i es diu <strong>preureal</strong>. Dins hi ha el codi de l'aplicació organitzat en famílies: una carpeta amb les pàgines, una altra amb les peces reutilitzables de la interfície, una altra amb la configuració de la base de dades i una altra amb les proves automàtiques. Cada cosa al seu lloc, com en un taller ben ordenat.</p>
+    <p>L'eina reina d'aquesta història és la <strong>Terminal</strong>: l'aplicació del Mac que et permet parlar amb l'ordinador escrivint ordres en lloc de fer clics. Sembla d'una altra època, però és el mitjà més directe i fiable per dir-li a l'ordinador què ha de fer. De fet, gairebé tot el que es veu en aquest dossier es pot fer enganxant una ordre i prement Retorn.</p>
+    <div class="callout">
+        <div class="callout-title">ANALOGIA</div>
+        <p>Pensa en la Terminal com l'intercomunicador amb la cuina d'un restaurant: en lloc d'entrar a buscar tu el cuiner, crides l'ordre per l'aparell i algú de dins de la cuina l'executa i et torna el plat.</p>
+    </div>
+    <p>Una peça especial i delicada és el fitxer <strong>.env</strong>: el clauer del projecte. Hi viuen les claus secretes que connecten l'aplicació amb la base de dades i amb el servei de correu. És tan important que està configurat per no viatjar mai cap a GitHub: les claus no són cosa de públic, i el sistema de còpies està fet per respectar-ho automàticament.</p>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>cd "/Users/marcxicola/Desktop/Feines 2025-26/preureal"</code>
+        <div class="cmd-note">Entra a la carpeta del projecte. És la primera ordre de gairebé qualsevol sessió de treball: «situa't aquí abans de fer res».</div>
+    </div>
+    <p>El motor de l'aplicació és <strong>Next.js</strong>, una eina molt estesa que s'encarrega de construir les pàgines i de servir-les. Al Mac conviu amb tota la seva maquinària (les anomenades <em>dependències</em>) instal·lada dins de la carpeta, de manera que el projecte és autosuficient: el pots obrir, treballar-hi i compilar-lo sense necessitat de res més.</p>
+
+    <!-- CH 04 -->
+    <div class="chapter-header">
+        <div class="section-tag">ETAPA 2</div>
+        <div class="section-title">La memòria del sistema: Supabase</div>
+        <div class="divider"></div>
+    </div>
+    <p>Una aplicació sense memòria és una pàgina de paper: es veu, però no recorda res. PreuReal necessita recordar moltes coses: qui s'ha registrat, quins municipis ha guardat als favorits, quin pla té cadascú i quantes consultes ha fet aquest mes. Tota aquesta informació viu en una base de dades <strong>PostgreSQL</strong>, allotjada al servei <strong>Supabase</strong>, que a més de guardar-la l'administra i la protegeix.</p>
+    <div class="callout">
+        <div class="callout-title">ANALOGIA</div>
+        <p>Una base de dades és com un full de càlcul gegant i molt estricta: cada tipus d'informació té la seva graella (usuaris, favorits, subscripcions...), i ningú no hi pot escriure res que no compleixi les regles de la graella.</p>
+    </div>
+    <p>Per parlar amb aquesta graella, el codi no escriu ordres a mà: fa servir <strong>Prisma</strong>, una capa de traducció que converteix les accions del programa en operacions segures de base de dades. Quan l'estructura canvia, es regenera el traductor amb una ordre — seria com «tornar a imprimir el diccionari» quan afegeixes paraules noves.</p>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>npx prisma generate</code>
+        <div class="cmd-note">Regenera el traductor entre el codi i la base de dades. A la V23 es va executar amb la versió fixada 6.19.3 perquè tots els ordinadors fessin servir exactament la mateixa.</div>
+    </div>
+    <p>Pel camí va aparèixer un enemic amb nom de robot: l'error <strong>P3005</strong> de Prisma. El seu significat, en català clar: el traductor volia posar ordre en una base de dades que ja tenia taules creades, i va demanar garanties abans de tocar res. Es va resoldre alineant el que ja hi havia amb el que el projecte esperava, i des d'aleshores la memòria i el codi parlen exactament el mateix idioma.</p>
+
+    <!-- CH 05 -->
+    <div class="chapter-header">
+        <div class="section-tag">ETAPA 3</div>
+        <div class="section-title">L'àlbum de fotos del codi: GitHub</div>
+        <div class="divider"></div>
+    </div>
+    <p>Imagina que estàs reformant casa i cada dia en fas una foto: si alguna cosa surt malament, sempre pots mirar com era el dia abans. Això és <strong>git</strong>: el sistema que registra «fotos» (<em>commits</em>) del codi, cada una amb un missatge que explica què va canviar. L'àlbum sencer viu a <strong>GitHub</strong>, la plataforma que fa de calaix de seguretat compartit i accessible des de qualsevol lloc.</p>
+    <p>El teu àlbum és <strong>github.com/ranndoneur26/preureal</strong>, i el camí principal es diu <strong>main</strong>. El ritme de treball és sempre el mateix: mires en quin estat estàs (<em>status</em>), fas la foto (<em>commit</em>) i puges les fotos noves a l'àlbum (<em>push</em>). Quan la V23 es va instal·lar, es va crear el commit «v23: correccions de seguretat i cobraments (Stripe, cuota atòmica, RGPD, preus) + 47 tests», i després un <em>push</em> va deixar GitHub perfectament al dia.</p>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>git status -sb</code>
+        <div class="cmd-note">Et diu on ets: quins fitxers han canviat i si el teu àlbum va avançat o endarrerit respecte al de GitHub.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>git add -A && git commit -m "aquí el missatge de la foto"</code>
+        <div class="cmd-note">Fa la foto: registra tots els canvis pendents amb un missatge que expliqui què s'ha fet i per què.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>git push</code>
+        <div class="cmd-note">Puja les fotos noves a l'àlbum compartit de GitHub. Després d'un push, el Mac i GitHub tenen exactament el mateix codi.</div>
+    </div>
+    <p>Un detall fi i valuós: abans de canvis grans, git pot guardar el treball en curs en un calaix (<em>stash</em>) per si de cas. Quan es va instal·lar la V23 al Mac, es va crear automàticament un calaix de seguretat anomenat <strong>«v23-bloc1-parcial (recuperable)»</strong>. Com que tot va anar bé, el calaix simplement espera allà, per si mai el necessites: és el botó vermell de «desfés-ho tot» de la instal·lació.</p>
+
+    <!-- CH 06 -->
+    <div class="chapter-header">
+        <div class="section-tag">ETAPA 4</div>
+        <div class="section-title">Publicar al món: Vercel</div>
+        <div class="divider"></div>
+    </div>
+    <p>Una web al tallador no serveix de res: cal obrir-la al públic. Aquesta és la feina de <strong>Vercel</strong>: una plataforma que agafa el teu projecte, el compila en versió de gala i el serveix des de moltes ciutats del món, de manera que qualsevol visitant el carregui ràpid, sigui des de Girona o des de Buenos Aires. El compte és de l'equip <strong>digitalformacio</strong>, i el projecte s'hi diu <strong>preureal</strong>.</p>
+    <p>La web té dues adreces. La tècnica és <strong>preureal.vercel.app</strong>, la que Vercel dona per defecte. I l'amable, la que pots dir en veu alta, és <strong>www.preureal.com</strong>: el domini propi, connectat perquè qualsevol persona que l'escrigui acabi a la teva aplicació. Les dues porten al mateix lloc; una és pensada per a màquines i l'altra per a persones.</p>
+    <p>Publicar és una ordre: <strong>npx vercel --prod</strong>. Amb ella, Vercel agafa la carpeta del Mac, la munta i en uns segons la té en línia. Quan la V23 es va publicar, el procés va trigar <strong>42 segons</strong> i va acabar amb un «Ready» i l'alias al domini propi. Des de llavors, cada visita a www.preureal.com xoca amb la V23.</p>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>cd "/Users/marcxicola/Desktop/Feines 2025-26/preureal" && npx vercel --prod</code>
+        <div class="cmd-note">Publica la versió actual al món. Normalment triga entre 30 i 60 segons i acaba amb un «Ready» i l'adreça de producció.</div>
+    </div>
+
+    <!-- CH 07 -->
+    <div class="chapter-header">
+        <div class="section-tag">ETAPA 5</div>
+        <div class="section-title">El camí fins aquí: de la v1 a la v22</div>
+        <div class="divider"></div>
+    </div>
+    <p>Cap aplicació seriosa neix acabada: es cria. PreuReal ha passat per moltes versions, cadascuna amb millores i correccions, fins a arribar a la <strong>v22</strong>, l'estat immediatament anterior a l'actual. Algunes versions van afegir funcions —el mapa, les fitxes, els plans, l'autenticació pròpia— i d'altres van arreglar errors que anaven apareixent quan el món real es trobava amb el codi. És el ritme natural de qualsevol projecte viu.</p>
+    <p>Alguns d'aquests moments són memorables. Hi ha l'error P3005 de la base de dades, que ja coneixes; hi ha els desplegaments que calia repetir fins que sortien bé (els famosos «redeploy»); i hi ha un detall que va marcar el mètode de treball: el panell de descàrregues de l'entorn d'assistència es va congelar en un moment donat, i això va obligar a inventar una via alternativa per portar fitxers al Mac. Aquella via alternativa — els <strong>blocs de Terminal</strong> — va acabar sent el mètode oficial, i a l'Etapa 7 la veuràs en acció.</p>
+    <p>I queda una petita llista de neteja pendent que no afecta el funcionament: <strong>14 avisos de «lint»</strong> heretats de la v22. El lint és l'inspector de qualitat del codi: no treballa, però senyala detalls de neteja i d'estil. Són més aviat un parell de rajols desalineats que no un barranc: apuntats per a una sessió tranquil·la de manteniment.</p>
+
+    <!-- CH 08 -->
+    <div class="chapter-header">
+        <div class="section-tag">ETAPA 6</div>
+        <div class="section-title">La gran neteja: què corregeix la V23</div>
+        <div class="divider"></div>
+    </div>
+    <p>La V23 no afegeix funcions espectaculars: fa que tot el que ja hi havia funcioni bé de veritat, sobretot en dues àrees delicades — els <strong>cobraments</strong> i les <strong>dades personals</strong>. És el tipus de feina que no es veu en una captura de pantalla, però que separa un projecte seriós d'un prototip. Aquestes són les correccions principals, explicades sense tecnicismes.</p>
+    <div class="fix">
+        <div class="fix-title"><span class="fix-n">1.</span> Quotes que es compten bé de veritat</div>
+        <p>El pla gratuït permet un nombre petit de consultes al mes. Abans, dos clics gairebé al mateix instant podien colar-se per la mateixa porta. Ara la comprovació és <strong>atòmica</strong>: o passa un, o passa l'altre, però mai els dos. Com un torn d'estadi que deixa passar exactament una persona per tiquet.</p>
+    </div>
+    <div class="fix">
+        <div class="fix-title"><span class="fix-n">2.</span> Un pagament que parla clar</div>
+        <p>Si algú que ja té una subscripció intenta subscriure's de nou, ara rep un missatge amable («ja ets subscriptor») en lloc d'un error tècnic. I si canvia de pla, l'antic es cancel·la automàticament a Stripe: no queda cap cobrament fantasma repetit per accident.</p>
+    </div>
+    <div class="fix">
+        <div class="fix-title"><span class="fix-n">3.</span> RGPD de veritat</div>
+        <p>En esborrar un compte, l'aplicació ara <strong>cancel·la primer la subscripció a Stripe</strong> i després esborra les dades personals. El «dret a ser oblidat» es compleix sencer: ningú no queda cobrat per un compte que ja no existeix.</p>
+    </div>
+    <div class="fix">
+        <div class="fix-title"><span class="fix-n">4.</span> Preus i accés alineats</div>
+        <p>Els preus viuen ara en un sol lloc i s'ensenyen amb el mateix format a tota l'aplicació. Els favorits són exclusius dels plans de pagament, i la llista de plans es pot consultar sense sessió iniciada: per això la pàgina de preus és tan oberta com la porta d'una botiga.</p>
+    </div>
+    <table class="t">
+        <thead><tr><th style="width:19%">Pla</th><th class="sp"></th><th style="width:21%">Preu</th><th class="sp"></th><th style="width:23%">Consultes al mes</th><th class="sp"></th><th style="width:25%">Pensat per a</th></tr></thead>
+        <tbody>
+            <tr><td><b>Gratuït</b></td><td class="sp"></td><td>0 €</td><td class="sp"></td><td>3</td><td class="sp"></td><td>Provar el servei sense compromís</td></tr>
+            <tr><td><b>Premium</b></td><td class="sp"></td><td>7,99 € / mes</td><td class="sp"></td><td>Il·limitades</td><td class="sp"></td><td>Particulars que busquen o llogen pis</td></tr>
+            <tr><td><b>Pro (agents)</b></td><td class="sp"></td><td>19,99 € / mes</td><td class="sp"></td><td>Il·limitades</td><td class="sp"></td><td>Professionals del sector immobiliari</td></tr>
+        </tbody>
+    </table>
+    <p>I perquè res d'això sigui paraula buida, la V23 porta el seu propi examen: <strong>47 proves automàtiques</strong> que simulen usuaris, cobraments i errors, i que passen totes (47 sobre 47). A més, l'aplicació sencera es compila sense errors i queda llesta per a producció amb <strong>cinc rutes</strong> (pàgines principals) actives. El pal de paller és aquest: si les proves passen, el canvi entra; si fallen, no entra res.</p>
+
+    <!-- CH 09 -->
+    <div class="chapter-header">
+        <div class="section-tag">ETAPA 7</div>
+        <div class="section-title">La V23 arriba al Mac i al món</div>
+        <div class="divider"></div>
+    </div>
+    <p>Aquí la història es fa inventiva. Com que el panell de descàrregues no funcionava, la V23 va viatjar al Mac per una via artesanal: <strong>sis blocs de text</strong> que es copien i s'enganxen a la Terminal. Quatre blocs portaven la mercaderia comprimida i codificada — com un paquet embalat per triplicar — i dos blocs eren els «desembaladors»: petits programes que obrien el paquet, comprovaven que res no hagués arribat trencat i deixaven cada fitxer al seu lloc exacte.</p>
+    <p>La fiabilitat d'aquest mètode ve de les <strong>empremtes digitals</strong>: cada fitxer té una firma única (sha256), i el desembalador la compara abans de donar-ho per bo. Resultat: <strong>13 fitxers</strong> a la primera etapa i <strong>5 fitxers</strong> a la segona, tots amb empremta verificada. Cap byte perdut pel camí, cap fitxer substituït a cegues. I si alguna cosa hagués fallat, el calaix de seguretat (el stash que ja coneixes) permetia tornar enrere sense perdre res.</p>
+    <p>L'últim desembalador va fer la cerimònia completa: va regenerar el traductor de la base de dades, va compilar l'aplicació (sense errors, cinc rutes), va passar l'examen de les 47 proves (47/47) i va fer la foto final amb el commit «v23: correccions de seguretat i cobraments (Stripe, cuota atòmica, RGPD, preus) + 47 tests». Després van arribar dues ordres breus — i el resultat va ser el tancament perfecte:</p>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>cd "/Users/marcxicola/Desktop/Feines 2025-26/preureal" && git push</code>
+        <div class="cmd-note">Sincronitza l'àlbum de GitHub amb el que hi ha al Mac: la V23 ja és a github.com/ranndoneur26/preureal.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">ORDRE · COPIA I ENGANXA</div>
+        <code>cd "/Users/marcxicola/Desktop/Feines 2025-26/preureal" && npx vercel --prod</code>
+        <div class="cmd-note">Publica la V23 al món. Va acabar amb «Ready in 42 s» i l'alias al domini propi: www.preureal.com servint la nova versió.</div>
+    </div>
+    <p>I per tancar, la prova del nou: la pàgina principal carrega amb el mapa i els 947 municipis, i el mostrador públic de plans respon amb la llista correcta (Gratuït, Premium 7,99 €, Pro 19,99 €). Amb això es van verificar les tres còpies — el Mac, l'àlbum de GitHub i el món de Vercel — i el sistema va quedar en equilibri.</p>
+
+    <!-- CH 10 -->
+    <div class="chapter-header">
+        <div class="section-tag">10 · ESTAT ACTUAL</div>
+        <div class="section-title">On som avui</div>
+        <div class="divider"></div>
+    </div>
+    <p>Aquest és l'estat del sistema ara mateix, després de la V23: una web viva i verificada, un codi ordenat i protegit, i una única gran fita pendent — connectar els cobraments reals amb Stripe, que sempre cal fer primer en <strong>mode test</strong>, amb targetes de prova i cap euro real de per mig.</p>
+    <table class="t">
+        <thead><tr><th style="width:26%">Lloc</th><th class="sp"></th><th style="width:40%">Què hi ha ara mateix</th><th class="sp"></th><th style="width:28%">Com s'hi arriba</th></tr></thead>
+        <tbody>
+            <tr><td><b>El Mac</b> (el taller)</td><td class="sp"></td><td>La V23 completa, amb el commit final fet i verificat.</td><td class="sp"></td><td>Carpeta Feines 2025-26 / preureal</td></tr>
+            <tr><td><b>GitHub</b> (l'àlbum)</td><td class="sp"></td><td>Exactament el mateix codi, pujat amb git push.</td><td class="sp"></td><td>github.com/ranndoneur26/preureal</td></tr>
+            <tr><td><b>Vercel</b> (el món)</td><td class="sp"></td><td>La V23 servint visites amb el domini propi.</td><td class="sp"></td><td>www.preureal.com</td></tr>
+        </tbody>
+    </table>
+    <div class="card">
+        <div class="callout-title">PENDENTS, EN ORDRE RECOMANAT</div>
+        <div class="state-row"><div class="state-dot"></div><div><div class="state-t">Connectar Stripe (primer en mode test)</div><div class="state-d">Provar el pagament amb targetes de prova de Stripe, sense euros reals. Quan tot confirmi, activar els cobraments reals amb confiança.</div></div></div>
+        <div class="state-row"><div class="state-dot"></div><div><div class="state-t">Neteja de lint (cosmètica)</div><div class="state-d">Les 14 advertències heretades de la v22. No afecten el funcionament; ideal per a una sessió de manteniment tranquil·la.</div></div></div>
+    </div>
+
+    <!-- ANNEX A -->
+    <div class="chapter-header">
+        <div class="section-tag">ANNEX A</div>
+        <div class="section-title">Glossari per a no programadors</div>
+        <div class="divider"></div>
+    </div>
+    <p>Tots els termes que han aparegut en aquest dossier, ordenats i explicats amb una analogia. Si algun dia algú et parla d'això, ja tens la traducció a mà.</p>
+    <div class="term"><span class="term-name">Terminal.</span> L'aplicació del Mac on s'escriuen ordres directes a l'ordinador. És l'intercomunicador amb la cuina: tu crides l'ordre, l'ordinador l'executa i et respon amb text.</div>
+    <div class="term"><span class="term-name">Next.js.</span> El motor que construeix i serveix les pàgines de PreuReal. És el marc de treball: defineix com es dibuixa cada pàgina i com respon el servidor.</div>
+    <div class="term"><span class="term-name">Node.js, npm i npx.</span> Node és el motor que executa JavaScript fora del navegador; npm és la botiga de peces on es compren (s'instal·len) les llibreries; npx és l'encarregat que executa una eina concreta sense instal·lar-la de manera permanent.</div>
+    <div class="term"><span class="term-name">Supabase.</span> El servei al núvol que guarda i administra la memòria del projecte: usuaris, preus, favorits. Com un magatzem amb recepcionista inclòs.</div>
+    <div class="term"><span class="term-name">PostgreSQL.</span> El tipus de base de dades que fa servir Supabase: una graella gegant, estricta i molt fiable, on cada informació té el seu lloc i les seves regles.</div>
+    <div class="term"><span class="term-name">Prisma.</span> El traductor entre el codi i la base de dades. Converteix les accions del programa en operacions segures, sense escriure ordres a mà.</div>
+    <div class="term"><span class="term-name">GitHub i git.</span> git és la màquina del temps del codi (fa «fotos» amb missatge); GitHub és l'àlbum compartit on viuen totes les fotos, accessible des de qualsevol lloc.</div>
+    <div class="term"><span class="term-name">Commit.</span> Una «foto» de l'estat del projecte en un moment concret, amb un missatge que explica què va canviar. L'última entrada del teu àlbum comença amb «v23».</div>
+    <div class="term"><span class="term-name">Push.</span> Pujar les fotos noves del Mac a l'àlbum de GitHub. El seu invers és el pull: baixar a l'Mac el que hi ha a l'àlbum.</div>
+    <div class="term"><span class="term-name">Stash.</span> El calaix de seguretat de git: guarda temporalment el treball en curs per si cal tornar enrere. El teu es diu «v23-bloc1-parcial (recuperable)».</div>
+    <div class="term"><span class="term-name">Build.</span> Muntar la versió de gala de l'aplicació: compilar tot el codi i comprovar que no hi ha res trencat abans d'obrir al públic. La V23 va compilar amb cinc rutes actives.</div>
+    <div class="term"><span class="term-name">Tests.</span> Proves automàtiques: petits robots que simulen usuaris i errors per comprovar que tot respon com cal. La V23 en passa 47 de 47.</div>
+    <div class="term"><span class="term-name">Lint.</span> L'inspector de neteja del codi: no arregla res, però senyala detalls d'estil i bones pràctiques. El teu projecte en té 14 avisos pendents, tots cosmètics.</div>
+    <div class="term"><span class="term-name">sha256.</span> L'empremta digital d'un fitxer: una cadena única que canvia si el fitxer canvia ni que sigui un byte. Va servir per garantir que la V23 va arribar al Mac intacta.</div>
+    <div class="term"><span class="term-name">Blocs de Terminal.</span> El mètode d'entrega que va substituir el panell de descàrregues: text que es copia i s'enganxa a la Terminal i s'auto-desembala amb ordres internes (base64, un codi d'embalatge; heredoc, la forma d'escriure fitxers sencers).</div>
+    <div class="term"><span class="term-name">API.</span> El mostrador on les aplicacions demanen dades entre elles. «/api/plans» és el mostrador públic de PreuReal on qualsevol pot preguntar quins plans hi ha i a quin preu.</div>
+    <div class="term"><span class="term-name">Domini.</span> L'adreça postal d'una web. PreuReal en té dues: la tècnica de Vercel (preureal.vercel.app) i la pròpia i amable (www.preureal.com).</div>
+    <div class="term"><span class="term-name">Desplegar / producció.</span> «Desplegar» és obrir la botiga al públic; «producció» és la botiga real, la que veuen les persones (a diferència del taller, on es treballa).</div>
+    <div class="term"><span class="term-name">Stripe.</span> La caixa registradora digital: el servei que processa pagaments i subscripcions. PreuReal el té preparat però encara no connectat; es connectarà primer en mode test.</div>
+    <div class="term"><span class="term-name">RGPD.</span> La llei europea de protecció de dades personals. Inclou el «dret a ser oblidat»: si demanes esborrar el teu compte, s'ha d'esborrar tot — i ara es fa en l'ordre correcte.</div>
+    <div class="term"><span class="term-name">.env.</span> El clauer secret del projecte: el fitxer on viuen les claus que connecten amb Supabase, el correu i Stripe. Mai no surt de l'Mac ni puja a GitHub.</div>
+
+    <!-- ANNEX B -->
+    <div class="chapter-header">
+        <div class="section-tag">ANNEX B</div>
+        <div class="section-title">La caixa d'eines: comandes reutilitzables</div>
+        <div class="divider"></div>
+    </div>
+    <p>Sis ordres que cobreixen el 95% del dia a dia del projecte. Totes es poden copiar i enganxar tal com estan, i cap no trencarà res: les quatre primeres només miren, les dues últimes activen.</p>
+    <div class="cmd">
+        <div class="cmd-label">1 · ANAR AL PROJECTE</div>
+        <code>cd "/Users/marcxicola/Desktop/Feines 2025-26/preureal"</code>
+        <div class="cmd-note">Situa't a la carpeta del projecte. Comença quasi qualsevol sessió.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">2 · VEURE L'ESTAT</div>
+        <code>git status -sb</code>
+        <div class="cmd-note">Què ha canviat i si vas avançat o endarrerit respecte a GitHub.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">3 · FER LA FOTO</div>
+        <code>git add -A && git commit -m "missatge que expliqui el canvi"</code>
+        <div class="cmd-note">Registra tots els canvis pendents com una entrada de l'àlbum.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">4 · COMPROVAR EL REGISTRE</div>
+        <code>git log --oneline -3</code>
+        <div class="cmd-note">Mostra les tres últimes fotos amb el seu missatge. Ideal per confirmar que el commit de la V23 hi és.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">5 · SINCRONITZAR GITHUB</div>
+        <code>git push</code>
+        <div class="cmd-note">Puja les fotos noves a l'àlbum compartit. Mac i GitHub queden iguals.</div>
+    </div>
+    <div class="cmd">
+        <div class="cmd-label">6 · PUBLICAR AL MÓN</div>
+        <code>npx vercel --prod</code>
+        <div class="cmd-note">Publica la versió actual a producció (www.preureal.com). Acaba amb un «Ready» i l'adreça del desplegament.</div>
+    </div>
+
+</div>
+
+<!-- ============ ENDING ============ -->
+<div class="ending">
+    <div class="end-c1"></div>
+    <div class="end-card">
+        <div class="end-tag">TANCAMENT DEL DOSSIER</div>
+        <div class="end-title">La web ja és al món.</div>
+        <div class="end-line"></div>
+        <div class="end-stats">
+            947 municipis amb preus oficials &nbsp;·&nbsp; dades d'Incasòl, ICGC i Cadastre<br>
+            3 plans de subscripció &nbsp;·&nbsp; 47/47 proves automàtiques &nbsp;·&nbsp; versió V23
+        </div>
+        <div class="end-urls">www.preureal.com &nbsp;&nbsp;·&nbsp;&nbsp; preureal.vercel.app</div>
+        <div class="end-note">El següent gran pas és connectar Stripe — sempre primer en mode test, amb targetes de prova i cap euro real de per mig. Fins a aquest punt, tot és fet i verificat: el Mac, GitHub i Vercel apunten al mateix codi.</div>
+    </div>
+    <div class="end-foot">PreuReal.cat &nbsp;·&nbsp; dossier de projecte &nbsp;·&nbsp; novembre 2026</div>
+</div>
+
+</body>
+</html>
