@@ -7,7 +7,7 @@ import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info
 interface Entity {
   type: "MUNI" | "BUILDING";
   code: string;
-  name: string;
+  name?: string; // opcional: les comparacions desades es resolen en carregar
 }
 
 interface ComparatorResult {
@@ -44,6 +44,43 @@ export default function ComparadorView() {
   const [busy, setBusy] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [loadedMsg, setLoadedMsg] = useState<string | null>(null);
+
+  // v24 — enllaç des del panell (/#/comparador?id=...): carrega una comparació
+  // desada i resol els noms de les entitats (el comparador només guarda tipus+codi)
+  useEffect(() => {
+    try {
+      const hq = window.location.hash.split("?")[1] || "";
+      const id = new URLSearchParams(hq).get("id");
+      if (!id) return;
+      (async () => {
+        const res = await fetch("/api/comparisons");
+        if (!res.ok) return;
+        const d = await res.json();
+        const c = (d.comparisons || []).find((x: any) => x.id === id);
+        if (!c || !Array.isArray(c.entities) || c.entities.length < 2) return;
+        const resolved: Entity[] = await Promise.all(
+          c.entities.map(async (e: any) => {
+            const type: "MUNI" | "BUILDING" = e?.type === "BUILDING" ? "BUILDING" : "MUNI";
+            const code = String(e?.code || "");
+            let name = code;
+            try {
+              const r = type === "MUNI"
+                ? await fetch(`/api/municipalities?code=${encodeURIComponent(code)}`)
+                : await fetch(`/api/buildings/${encodeURIComponent(code)}`);
+              const j = await r.json();
+              name = type === "MUNI" ? j?.municipalities?.[0]?.name || code : j?.building?.nom || j?.building?.refcat || code;
+            } catch {}
+            return { type, code, name };
+          })
+        );
+        setEntities(resolved.filter((e) => e.code));
+        setLoadedMsg(
+          ca ? `Comparació «${c.name}» carregada del teu panell.` : `Comparación «${c.name}» cargada de tu panel.`
+        );
+      })().catch(() => {});
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const q = query.trim();
@@ -133,7 +170,7 @@ export default function ComparadorView() {
         <div className="mt-3 flex gap-2 flex-wrap">
           {entities.map((e) => (
             <span key={e.code} className="px-3 py-1.5 rounded-full bg-[#0f2e21] text-white text-xs font-semibold flex items-center gap-1.5">
-              {e.name}
+              {e.name || e.code}
               <button onClick={() => setEntities(entities.filter((x) => x.code !== e.code))}><X className="w-3 h-3" /></button>
             </span>
           ))}
@@ -143,6 +180,9 @@ export default function ComparadorView() {
         </div>
       </div>
 
+      {loadedMsg && (
+        <p className="mt-4 text-sm text-[#1e7a41] bg-[#e6f4ea] border border-[#bfe3cc] rounded-xl px-4 py-3">{loadedMsg}</p>
+      )}
       {busy && <p className="mt-4 text-sm text-[#6b6f68]">…</p>}
 
       {/* resultats */}

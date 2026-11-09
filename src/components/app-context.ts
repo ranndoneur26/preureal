@@ -10,6 +10,7 @@ export interface AuthUser {
   role: "USER" | "ADMIN";
   plan: "FREE" | "PREMIUM" | "PRO";
   locale?: string;
+  alertsEnabled?: boolean; // v24: resum mensual de preferits (opt-in)
   emailVerified?: boolean;
 }
 

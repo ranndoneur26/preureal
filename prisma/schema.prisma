@@ -26,6 +26,9 @@ model User {
   emailVerifiedAt DateTime?     // verificació de correu (Fase 6)
   tokenVersion    Int           @default(0) // +1 invalida totes les sessions actives
   lastLoginAt     DateTime?
+  // v24 — resum mensual per correu dels municipis/edificis preferits (opt-in
+  // explícit a "Panell → Preferits": mai actiu per defecte, RGPD-friendly)
+  alertsEnabled   Boolean       @default(false)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   subscriptions   Subscription[]

@@ -2,6 +2,51 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v24 — 2026-11-09 · Panell Premium útil: accions, comparacions carregables i resum mensual de preferits
+
+### 1. Panell accionable (mai més llistes morts)
+- **Historial**: cada consulta té el botó «Al mapa» (`/#/mapa?mun=CODI` — i
+  `&edifici=ID` si la consulta incloïa un edifici): reobre la consulta exacta
+  al mapa (límit municipal + panell de detall).
+- **Preferits**: cada fila (municipi o edifici) té «Al mapa». Els edificis usen
+  el nou `GET /api/buildings/[id]` (centroid + nom): el mapa hi vola, espera el
+  carregament de la vista i reobri la consulta del polígon.
+- **Comparacions desades**: cada fila té «Obrir» → `/#/comparador?id=...`; el
+  comparador carrega les entitats desades, resol els noms (municipis via
+  `?code=`, edificis via `/api/buildings/[id]`) i executa la comparació.
+- Estats buits amb CTA («Explora el mapa» / «Obrir comparador»).
+- Els paràmetres de deep-link es consumeixen UNA vegada (`history.replaceState`):
+  tornar al mapa des del menú no re-aplica l'últim enllaç.
+
+### 2. Resum mensual de preferits per correu (v24, OPT-IN explícit)
+- **`User.alertsEnabled`** (migració `20261109100000_user_alerts_enabled`,
+  additiva amb `DEFAULT false`): mai actiu per defecte (RGPD). Toggle al
+  **Panell → Preferits** (només Premium/Pro) via `PATCH /api/account
+  { alertsEnabled }` — només booleans estrictes. `/api/auth/me` el retorna.
+- **Cron `/api/cron/emails` (feina 0)**: els dies 1–3 de cada mes encola un
+  correu `DIGEST` per usuari verificat + `alertsEnabled` + pla de pagament amb
+  ≥1 preferit. **Idempotència**: `idempotencyKey = favs-digest:<userId>:<YYYY-MM>`
+  (reexecucions/dies 2–3 no dupliquen). En mode Resend la fila entra
+  «pending» i la mateixa passada la lliura l'outbox (≤20/passada; la resta,
+  els dies següents). En sandbox queda «logged» visible al panell admin.
+- **Contingut**: preu mitjà vigent (Incasòl) de cada preferit + variació vs
+  any anterior (municipis) + enllaç directe «obre al mapa». Màxim 10 files +
+  nota «+ N més». Mai s'inventa cap xifra (municipis sense dada → "sense
+  dades oficials aquest període").
+- **`mail.ts`**: nou tipus `DIGEST` (reintegable al outbox, sense secrets) i
+  plantilla `favoritesDigestMail()` (labels escapats, URLs amb codis validats
+  en origen).
+
+### Fitxers nous
+- `prisma/migrations/20261109100000_user_alerts_enabled/migration.sql`
+- `src/app/api/_impl/buildings/[id]/route.ts` (regenerat el dispatcher:
+  `/api/buildings/:id` al catch-all)
+
+### Verificació
+- `npx next build` ✓ (Next 16 + Turbopack + TypeScript)
+- Migració additiva: l'aplica automàticament el build de Vercel
+  (`prisma migrate deploy`); també es pot enganxar el SQL al SQL Editor de Supabase.
+
 ## v23 — 2026-11-06 · Auditoria de seguretat i cobraments de la Fase 1 (correccions + tests)
 
 ### Correccions de seguretat i de diners (prioritat de l'auditoria)

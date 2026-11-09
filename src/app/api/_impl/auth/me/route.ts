@@ -16,6 +16,7 @@ export async function GET() {
       role: user.role,
       plan: user.plan,
       locale: user.locale,
+      alertsEnabled: user.alertsEnabled, // v24: resum mensual de preferits (opt-in)
       emailVerified: Boolean(user.emailVerifiedAt),
     },
     quota: { used: quota.used, limit: quota.limit },

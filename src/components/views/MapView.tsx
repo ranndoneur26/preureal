@@ -69,6 +69,11 @@ export default function MapView() {
   const layerRef = useRef<any>(null);
   const boundaryRef = useRef<any>(null);
   const selectedRef = useRef<any>(null);
+  // v24 — enllaços "obre al mapa" des del panell: llistat d'edificis dibuixats
+  // i el seu polígon per id, per poder seleccionar un edifici concret després
+  // de volar al seu centroid (deep link /#/mapa?edifici=...)
+  const lastBuildingsRef = useRef<any[]>([]);
+  const polyByIdRef = useRef<Record<string, any>>({});
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MunLite[]>([]);
@@ -114,6 +119,61 @@ export default function MapView() {
       const onMove = () => loadBuildingsInView();
       map.on("moveend", onMove);
       loadBuildingsInView();
+      // v24 — deep links des del panell (/#/mapa?mun=... / ?edifici=...):
+      // es consumeixen UNA vegada (es netegen de la URL per no re-aplicar-los
+      // en cada visita al mapa des del menú)
+      try {
+        const hq = window.location.hash.split("?")[1] || "";
+        const p = new URLSearchParams(hq);
+        const edificiId = p.get("edifici");
+        const munCode = p.get("mun");
+        if (edificiId || munCode) {
+          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#/mapa`);
+          if (edificiId) {
+            // edifici preferit/consultat: vola al centroid i reobri la consulta
+            fetch(`/api/buildings/${encodeURIComponent(edificiId)}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => {
+                const b0 = d?.building;
+                if (!b0 || !mapRef.current) return;
+                mapRef.current.flyTo([b0.lat, b0.lng], 18, { duration: 0.8 });
+                // els edificis arriben amb el moveend de flyTo; re-intenta fins
+                // que el polígon sigui clicable (màx ~4 s)
+                const trySelect = (attempt: number) => {
+                  const b = lastBuildingsRef.current.find((x: any) => x.id === edificiId);
+                  const poly = polyByIdRef.current[edificiId];
+                  if (b && poly) {
+                    onSelectBuilding(b, b0.lat, b0.lng, poly);
+                    return;
+                  }
+                  if (attempt < 10) setTimeout(() => trySelect(attempt + 1), 400);
+                };
+                setTimeout(() => trySelect(0), 900);
+              })
+              .catch(() => {});
+          } else if (munCode) {
+            // municipi preferit/consultat: mateixa UX que cercar-lo i clicar-lo
+            fetch(`/api/municipalities/${encodeURIComponent(munCode)}`)
+              .then((r) => (r.ok ? r.json() : null))
+              .then((d) => {
+                const m = d?.municipality;
+                if (!m) return;
+                selectMunicipality({
+                  code: m.code,
+                  name: m.name,
+                  comarca: m.comarca,
+                  lat: m.lat,
+                  lng: m.lng,
+                  rentLatest: m.rentLatest,
+                  rentPeriod: m.rentPeriod,
+                  isTense: m.isTense,
+                  tenseList: m.tenseList,
+                });
+              })
+              .catch(() => {});
+          }
+        }
+      } catch {}
     })();
     return () => {
       cancelled = true;
@@ -194,6 +254,8 @@ export default function MapView() {
     const layer = layerRef.current;
     if (!L || !layer) return;
     layer.clearLayers();
+    polyByIdRef.current = {}; // v24: el lot nou substitueix l'anterior
+    lastBuildingsRef.current = buildings;
     for (const b of buildings) {
       let color = "#9aa5a0";
       // si l'edifici té dada pròpia importada, el color ve d'aquesta dada real
@@ -210,6 +272,7 @@ export default function MapView() {
         onSelectBuilding(b, e.latlng.lat, e.latlng.lng, poly);
       });
       poly.addTo(layer);
+      if (b.id) polyByIdRef.current[b.id] = poly;
     }
      
   }, []);

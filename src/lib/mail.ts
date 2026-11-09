@@ -40,7 +40,7 @@ export function mailProvider(): "resend" | "sandbox" {
 }
 
 /** Tipo de correo (telemetría EmailLog). */
-export type MailType = "WELCOME" | "VERIFY" | "RESET" | "RECEIPT" | "GENERIC";
+export type MailType = "WELCOME" | "VERIFY" | "RESET" | "RECEIPT" | "GENERIC" | "DIGEST";
 
 /**
  * P0: los correos de verificación/restablecimiento llevan el token en la URL
@@ -77,7 +77,7 @@ export const MAX_TOTAL_ATTEMPTS = 5;
  * reenvían desde el log (el cuerpo va redactado y el enlace es de un solo
  * uso): el usuario pide un enlace nuevo, que es la UX existente.
  */
-const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC"];
+const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC", "DIGEST"];
 
 function retryDelayMs(totalAttempts: number): number {
   const hours = Math.min(2 ** Math.max(0, totalAttempts - 2), 24);
@@ -355,5 +355,46 @@ export function resetMail(token: string, locale: "ca" | "es") {
     locale === "ca"
       ? `<p>Has demanat restablir la contrasenya. Obre aquest enllaç (vàlid 1 hora, d'un sol ús):</p><p><a href="${url}">${url}</a></p>`
       : `<p>Has solicitado restablecer la contraseña. Abre este enlace (válido 1 hora, de un solo uso):</p><p><a href="${url}">${url}</a></p>`;
+  return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
+}
+
+// ── v24: resum mensual de preferits ─────────────────────────────────────────
+
+export interface DigestItem {
+  label: string;
+  rentLatest: number | null;
+  rentPeriod: string | null;
+  /** % de variació vs l'any anterior (null si no hi ha dades per calcular-la) */
+  trendPct: number | null;
+  /** enllaç directe "obre-ho al mapa" (/#/mapa?mun=... o ?edifici=...) */
+  url: string;
+}
+
+/**
+ * Resum mensual dels preferits (v24, opt-in): el preu mitjà vigent de cada
+ * municipi/edifici desat amb el seu enllaç directe al mapa. Totes les dades
+ * dinàmiques venen de la BD (noms oficials Incasòl) i s'escapen; els enllaços
+ * es construeixen amb codis validats en origen (municipalityCode / buildingId).
+ */
+export function favoritesDigestMail(items: DigestItem[], locale: "ca" | "es") {
+  const ca = locale === "ca";
+  const title = ca ? "Els teus preferits aquest mes" : "Tus favoritos este mes";
+  const rows = items
+    .map((it) => {
+      const rent =
+        it.rentLatest != null
+          ? `<b>${it.rentLatest.toFixed(0)} €/mes</b>${it.rentPeriod ? ` <span style="color:#777">(${escapeHtml(it.rentPeriod)})</span>` : ""}`
+          : ca ? "sense dades oficials aquest període" : "sin datos oficiales este período";
+      const trend =
+        it.trendPct != null
+          ? ` · <span style="color:${it.trendPct > 0 ? "#b0431c" : "#1e7a41"}">${it.trendPct > 0 ? "+" : ""}${it.trendPct.toFixed(1)}% vs any anterior</span>`
+          : "";
+      return `<tr><td style="padding:6px 0;border-bottom:1px solid #eee"><a href="${getSiteUrlOrigin()}${it.url}" style="color:#0f2e21;font-weight:600;text-decoration:none">${escapeHtml(it.label)}</a><br>${rent}${trend}</td></tr>`;
+    })
+    .join("");
+  const body =
+    ca
+      ? `<p>Preu mitjà de lloguer (fiances Incasòl) dels municipis i edificis que tens desats als preferits:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Pots desactivar aquest avís al panell → Preferits.</p>`
+      : `<p>Precio medio de alquiler (fianzas Incasòl) de los municipios y edificios que tienes guardados en favoritos:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Puedes desactivar este aviso en el panel → Favoritos.</p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }

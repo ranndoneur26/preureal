@@ -28,6 +28,8 @@ export default function PanelView() {
   const plan = useUserPlan();
   const [reports, setReports] = useState<any[] | null>(null);
   const [myReports, setMyReports] = useState<any[] | null>(null);
+  // v24 — opt-in del resum mensual de preferits (null = encara sense saber)
+  const [alertsOn, setAlertsOn] = useState<boolean | null>(null);
 
   // seguretat
   const [currentPassword, setCurrentPassword] = useState("");
@@ -47,7 +49,10 @@ export default function PanelView() {
   }, []);
 
   useEffect(() => {
-    if (auth.user) setName(auth.user.name || "");
+    if (auth.user) {
+      setName(auth.user.name || "");
+      setAlertsOn(Boolean(auth.user.alertsEnabled)); // v24
+    }
   }, [auth.user]);
 
   const loadTab = useCallback(async (tabId: string) => {
@@ -274,6 +279,38 @@ export default function PanelView() {
     setHistory(null);
     loadTab("historial");
   };
+
+  // v24 — opt-in/opt-out del resum mensual de preferits (correu)
+  const toggleAlerts = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/account", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertsEnabled: !alertsOn }),
+      });
+      if (!res.ok) {
+        setMsg(locale === "ca" ? "No s'ha pogut desar la preferència." : "No se pudo guardar la preferencia.");
+        return;
+      }
+      setAlertsOn(!alertsOn);
+      await auth.refresh();
+      setMsg(locale === "ca"
+        ? (!alertsOn
+            ? "Avisos mensuals dels preferits ACTIVATS: el primer resum t'arribarà a principi de mes."
+            : "Avisos mensuals dels preferits desactivats.")
+        : (!alertsOn
+            ? "Avisos mensuales de favoritos ACTIVADOS: el primer resumen te llegará a principio de mes."
+            : "Avisos mensuales de favoritos desactivados."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // v24 — enllaç "obre al mapa" per un preferit (edifici o municipi)
+  const favoriteMapHref = (f: any) =>
+    f.buildingId ? `/mapa?edifici=${encodeURIComponent(f.buildingId)}` : `/mapa?mun=${encodeURIComponent(f.municipalityCode || "")}`;
 
   const tabs = [
     ["resum", t.panel.title, User],
@@ -516,7 +553,12 @@ export default function PanelView() {
           {history === null ? (
             <p className="text-sm text-[#6b6f68]">…</p>
           ) : history.length === 0 ? (
-            <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Cap consulta registrada (el pla gratuït no desa historial)." : "Ninguna consulta registrada (el plan gratuito no guarda historial)."}</p>
+            <div className="text-center py-4">
+              <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Cap consulta registrada (el pla gratuït no desa historial)." : "Ninguna consulta registrada (el plan gratuito no guarda historial)."}</p>
+              <button onClick={() => navigate("/mapa")} className="mt-3 px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-xs font-bold">
+                {locale === "ca" ? "Explora el mapa" : "Explora el mapa"}
+              </button>
+            </div>
           ) : (
             <div className="space-y-2">
               {history.map((h) => (
@@ -526,7 +568,19 @@ export default function PanelView() {
                     {h.rentLatest != null && <span className="text-[#6b6f68]"> · {h.rentLatest.toFixed(0)} €/mes ({h.rentPeriod})</span>}
                     <span className="block text-xs text-[#6b6f68]">{new Date(h.createdAt).toLocaleString()}</span>
                   </span>
-                  <button onClick={() => deleteHistory(h.id)} className="text-xs text-[#6b6f68] underline">{locale === "ca" ? "Esborra" : "Borra"}</button>
+                  <span className="flex items-center gap-2 shrink-0">
+                    {h.municipalityCode && (
+                      <button
+                        onClick={() => navigate(`/mapa?mun=${encodeURIComponent(h.municipalityCode)}${h.buildingId ? `&edifici=${encodeURIComponent(h.buildingId)}` : ""}`)}
+                        className="text-xs text-[#0f2e21] underline flex items-center gap-1"
+                        title={locale === "ca" ? "Torna a obrir aquesta consulta al mapa" : "Vuelve a abrir esta consulta en el mapa"}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        {locale === "ca" ? "Al mapa" : "Al mapa"}
+                      </button>
+                    )}
+                    <button onClick={() => deleteHistory(h.id)} className="text-xs text-[#6b6f68] underline">{locale === "ca" ? "Esborra" : "Borra"}</button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -541,7 +595,12 @@ export default function PanelView() {
           {favorites === null ? (
             <p className="text-sm text-[#6b6f68]">…</p>
           ) : favorites.length === 0 ? (
-            <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Encara no n'has desat cap. Desa'ls amb l'estrella del panell del mapa." : "Aún no has guardado ninguno. Guárdalos con la estrella del panel del mapa."}</p>
+            <div className="text-center py-4">
+              <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Encara no n'has desat cap. Desa'ls amb l'estrella del panell del mapa." : "Aún no has guardado ninguno. Guárdalos con la estrella del panel del mapa."}</p>
+              <button onClick={() => navigate("/mapa")} className="mt-3 px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-xs font-bold">
+                {locale === "ca" ? "Explora el mapa" : "Explora el mapa"}
+              </button>
+            </div>
           ) : (
             <div className="space-y-2">
               {favorites.map((f) => (
@@ -551,14 +610,46 @@ export default function PanelView() {
                     <b>{f.label || f.entityKey}</b>
                     <span className="text-xs text-[#6b6f68]">{f.buildingId ? "edifici" : "municipi"}</span>
                   </span>
-                  <button
-                    onClick={async () => { await fetch(`/api/favorites?key=${encodeURIComponent(f.entityKey)}`, { method: "DELETE" }); setFavorites(null); loadTab("preferits"); }}
-                    className="text-xs text-[#6b6f68] underline"
-                  >
-                    {locale === "ca" ? "Esborra" : "Borra"}
-                  </button>
+                  <span className="flex items-center gap-2 shrink-0">
+                    {(f.buildingId || f.municipalityCode) && (
+                      <button
+                        onClick={() => navigate(favoriteMapHref(f))}
+                        className="text-xs text-[#0f2e21] underline flex items-center gap-1"
+                        title={locale === "ca" ? "Obre al mapa" : "Abre en el mapa"}
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        {locale === "ca" ? "Al mapa" : "Al mapa"}
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => { await fetch(`/api/favorites?key=${encodeURIComponent(f.entityKey)}`, { method: "DELETE" }); setFavorites(null); loadTab("preferits"); }}
+                      className="text-xs text-[#6b6f68] underline"
+                    >
+                      {locale === "ca" ? "Esborra" : "Borra"}
+                    </button>
+                  </span>
                 </div>
               ))}
+            </div>
+          )}
+          {/* v24 — resum mensual de preferits per correu (opt-in, només plans de pagament) */}
+          {(u.plan === "PREMIUM" || u.plan === "PRO") && (
+            <div className="mt-4 pt-4 border-t border-[#f0ede8] space-y-2">
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                <input
+                  type="checkbox"
+                  checked={alertsOn === true}
+                  onChange={toggleAlerts}
+                  disabled={busy || alertsOn === null}
+                  className="w-4 h-4 accent-[#e8673c]"
+                />
+                {locale === "ca" ? "Avisa'm per correu cada mes dels meus preferits" : "Avísame por correo cada mes de mis favoritos"}
+              </label>
+              <p className="text-xs text-[#6b6f68] leading-relaxed">
+                {locale === "ca"
+                  ? "Un resum mensual amb el preu mitjà vigent de cada municipi o edifici desat i l'enllaç directe per obrir-lo al mapa. Pots desactivar-ho quan vulguis."
+                  : "Un resumen mensual con el precio medio vigente de cada municipio o edificio guardado y el enlace directo para abrirlo en el mapa. Puedes desactivarlo cuando quieras."}
+              </p>
             </div>
           )}
         </div>
@@ -580,12 +671,22 @@ export default function PanelView() {
               {comparisons.map((c) => (
                 <div key={c.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
                   <span><b>{c.name}</b> <span className="text-xs text-[#6b6f68]">· {c.entities.length} entitats · {new Date(c.createdAt).toLocaleDateString()}</span></span>
-                  <button
-                    onClick={async () => { await fetch(`/api/comparisons?id=${c.id}`, { method: "DELETE" }); setComparisons(null); loadTab("comparacions"); }}
-                    className="text-xs text-[#6b6f68] underline"
-                  >
-                    {locale === "ca" ? "Esborra" : "Borra"}
-                  </button>
+                  <span className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => navigate(`/comparador?id=${encodeURIComponent(c.id)}`)}
+                      className="text-xs text-[#0f2e21] underline flex items-center gap-1"
+                      title={locale === "ca" ? "Carrega aquesta comparació al comparador" : "Carga esta comparación en el comparador"}
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      {locale === "ca" ? "Obrir" : "Abrir"}
+                    </button>
+                    <button
+                      onClick={async () => { await fetch(`/api/comparisons?id=${c.id}`, { method: "DELETE" }); setComparisons(null); loadTab("comparacions"); }}
+                      className="text-xs text-[#6b6f68] underline"
+                    >
+                      {locale === "ca" ? "Esborra" : "Borra"}
+                    </button>
+                  </span>
                 </div>
               ))}
             </div>

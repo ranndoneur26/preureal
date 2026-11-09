@@ -5,7 +5,7 @@ import { requireUser, revokeSessions } from "@/lib/auth";
 import { sanitizeName, audit } from "@/lib/security";
 
 /**
- * PATCH /api/account  { name?, locale? }        — edita el perfil (Fase 6)
+ * PATCH /api/account  { name?, locale?, alertsEnabled? } — edita el perfil (Fase 6)
  * DELETE /api/account { confirm: "ESBORRA" }    — eliminació del compte (RGPD)
  *
  * L'eliminació esborra dades personals (nom, correu, hash) i anonimitza els
@@ -20,13 +20,21 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
   }
   const body = await req.json().catch(() => null);
-  const data: { name?: string | null; locale?: string } = {};
+  const data: { name?: string | null; locale?: string; alertsEnabled?: boolean } = {};
   if (body?.name !== undefined) data.name = body.name === null ? null : sanitizeName(String(body.name));
   if (body?.locale === "es" || body?.locale === "ca") data.locale = body.locale;
+  // v24 — opt-in del resum mensual de preferits: només booleans estrictes
+  if (typeof body?.alertsEnabled === "boolean") data.alertsEnabled = body.alertsEnabled;
   const updated = await db.user.update({ where: { id: user.id }, data });
   return NextResponse.json({
     ok: true,
-    user: { id: updated.id, email: updated.email, name: updated.name, locale: updated.locale },
+    user: {
+      id: updated.id,
+      email: updated.email,
+      name: updated.name,
+      locale: updated.locale,
+      alertsEnabled: updated.alertsEnabled,
+    },
   });
 }
 

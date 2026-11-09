@@ -5,8 +5,10 @@ import { rateLimit } from "@/lib/rate-limit";
 import {
   MAX_TOTAL_ATTEMPTS,
   deliverWithResend,
+  favoritesDigestMail,
   mailProvider,
   redactSecrets,
+  type DigestItem,
   type MailType,
 } from "@/lib/mail";
 
@@ -19,19 +21,30 @@ import {
  * idempotents i limitades) — RECOMANAT definir CRON_SECRET a Vercel.
  *
  * Feines:
+ *  0. v24 RESUM MENSUAL DE PREFERITS (opt-in): els dies 1–3 de cada mes
+ *     encola un correu DIGEST per a cada usuari verificat amb
+ *     alertsEnabled=true i almenys un preferit. La fila entra a l'outbox
+ *     (status "pending", idempotencyKey única per usuari i mes) i la mateixa
+ *     passada la lliura via la secció 1 (fins a 20/passada); si n'hi ha més,
+ *     els dies següents continuen. En mode sandbox queda "logged" i visible
+ *     al panell admin sense enviar res.
  *  1. OUTBOX durables: reintent amb backoff dels enviaments "pending"/"error"
  *     de tipus NO sensible (WELCOME/RECEIPT/GENERIC) amb nextRetryAt vençut i
  *     intents < MAX_TOTAL_ATTEMPTS. Els VERIFY/RESET no es reenvien des del
  *     log (el cos guardat va redactat i l'enllaç és d'un sol ús): l'usuari
- *     demana un enllaç nou, que és la UX existent.
+ *     demana un enllaç nou, que és la UX existent. DIGEST sí (sense secrets).
  *  2. Neteja: tokens de verificació/restabliment caducats fa més de 7 dies.
  *  3. Retenció: EmailLog més vell que EMAILLOG_RETENTION_DAYS (90 per defecte).
  *  4. Xarxa de seguretat P0: redactar cossos llegats que encara continguin
  *     tokens (les files anteriors a v19).
  */
 
-const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC"];
+const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC", "DIGEST"];
 const DAY = 86_400_000;
+/** v24: màxim de favorits llistats al resum mensual (la resta es resum en una nota) */
+const DIGEST_MAX_ITEMS = 10;
+/** v24: els primers 3 dies de cada mes s'intenta enviar el resum mensual */
+const DIGEST_SEND_DAYS = [1, 2, 3];
 
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -47,12 +60,114 @@ export async function GET(req: Request) {
 
   const summary = {
     provider: mailProvider(),
+    digestsQueued: 0,
     retried: 0,
     sent: 0,
     tokensPurged: 0,
     logsPurged: 0,
     scrubbed: 0,
   };
+
+  // ── 0. v24: resum mensual de preferits (encolat, OPT-IN) ──
+  // El cron corre diari (0 4 * * *). Els correus s'encolen amb idempotència
+  // per usuari+mes: reexecucions i dies 2–3 (si el dia 1 va fallar) no dupliquen.
+  try {
+    const now = new Date();
+    if (DIGEST_SEND_DAYS.includes(now.getUTCDate())) {
+      const monthKey = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+      const users = await db.user.findMany({
+        where: { active: true, alertsEnabled: true, emailVerifiedAt: { not: null }, plan: { in: ["PREMIUM", "PRO"] } },
+        select: { id: true, email: true, locale: true },
+      });
+      for (const u of users) {
+        // només usuaris amb almenys un preferit (evita correus buits)
+        const favs = await db.favorite.findMany({
+          where: { userId: u.id },
+          orderBy: { createdAt: "asc" },
+          take: DIGEST_MAX_ITEMS + 1,
+        });
+        if (favs.length === 0) continue;
+        const shown = favs.slice(0, DIGEST_MAX_ITEMS);
+        // dades vigents per als favorits tipus municipi i edifici (una consulta
+        // per taula; mai s'inventa cap xifra)
+        const muniCodes = shown.map((f) => f.municipalityCode).filter(Boolean) as string[];
+        const buildingIds = shown.map((f) => f.buildingId).filter(Boolean) as string[];
+        const muns = muniCodes.length
+          ? await db.municipality.findMany({
+              where: { code: { in: muniCodes } },
+              select: { code: true, name: true, rentLatest: true, rentPeriod: true, rentPrevYear: true },
+            })
+          : [];
+        const munMap = new Map(muns.map((m) => [m.code, m]));
+        const blds = buildingIds.length
+          ? await db.building.findMany({
+              where: { id: { in: buildingIds } },
+              select: { id: true, nom: true, refcat: true, avgRentEurMonth: true, municipalityCode: true },
+            })
+          : [];
+        const bldMap = new Map(blds.map((b) => [b.id, b]));
+        const items: DigestItem[] = [];
+        for (const f of shown) {
+          if (f.buildingId) {
+            const b = bldMap.get(f.buildingId);
+            items.push({
+              label: f.label || b?.nom || b?.refcat || "Edifici",
+              rentLatest: b?.avgRentEurMonth ?? null,
+              rentPeriod: null,
+              trendPct: null,
+              url: `/#/mapa?edifici=${encodeURIComponent(f.buildingId)}`,
+            });
+          } else if (f.municipalityCode) {
+            const m = munMap.get(f.municipalityCode);
+            const trend =
+              m?.rentLatest && m?.rentPrevYear
+                ? ((m.rentLatest - m.rentPrevYear) / m.rentPrevYear) * 100
+                : null;
+            items.push({
+              label: f.label || m?.name || f.municipalityCode,
+              rentLatest: m?.rentLatest ?? null,
+              rentPeriod: m?.rentPeriod ?? null,
+              trendPct: trend,
+              url: `/#/mapa?mun=${encodeURIComponent(f.municipalityCode)}`,
+            });
+          }
+        }
+        if (items.length === 0) continue;
+        const extra = favs.length - shown.length;
+        const mail = favoritesDigestMail(items, u.locale === "es" ? "es" : "ca");
+        // nota (si n'hi ha més de DIGEST_MAX_ITEMS) afegida just abans del peu
+        const html = extra > 0
+          ? mail.html.replace(
+              "</table>",
+              `<tr><td style="padding:6px 0;font-size:12px;color:#777">${u.locale === "es" ? `+ ${extra} favoritos más en tu panel` : `+ ${extra} preferits més al teu panell`}</td></tr></table>`
+            )
+          : mail.html;
+        // En mode Resend: fila "pending" → la secció 1 la lliura AQUESTA mateixa
+        // passada (o els dies següents). En sandbox: "logged", visible al admin.
+        try {
+          await db.emailLog.create({
+            data: {
+              to: u.email,
+              subject: mail.subject,
+              body: redactSecrets(html),
+              provider: summary.provider,
+              status: summary.provider === "resend" ? "pending" : "logged",
+              type: "DIGEST",
+              userId: u.id,
+              attempts: 0,
+              nextRetryAt: summary.provider === "resend" ? new Date() : null,
+              idempotencyKey: `favs-digest:${u.id}:${monthKey}`,
+            },
+          });
+          summary.digestsQueued++;
+        } catch {
+          // P2002 (clau d'idempotència) o qualsevol altre: no bloqueja els altres
+        }
+      }
+    }
+  } catch (e) {
+    console.error("cron emails: digest de preferits fallat", e);
+  }
 
   // ── 1. OUTBOX: reposar enviaments encallats (només tipus no sensibles) ──
   if (summary.provider === "resend") {
