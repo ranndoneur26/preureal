@@ -1,7 +1,0 @@
-cat "$HOME/preureal_guia/p3_c1.b64" "$HOME/preureal_guia/p3_c2.b64" | openssl base64 -d | gunzip > "$HOME/preureal_guia/guia_p3.html"
-GOT="$(shasum -a 256 "$HOME/preureal_guia/guia_p3.html" | awk '{print $1}')"
-if [ "$GOT" = "02c6db66de9ae2deb2f7b6c27bc5c7ec6c97d6ecbf99697f92b7a8356abd3294" ]; then
-  echo "✅ p3 reconstruida — ahora ejecuta:  bash ~/preureal_guia.sh"
-else
-  echo "❌ no cuadra ($GOT) — cópiame esta salida"
-fi
