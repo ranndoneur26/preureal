@@ -162,7 +162,9 @@ function Header({ route }: { route: string }) {
                 {link("/guia", locale === "ca" ? "Guia" : "Guía")}
                 {link("/preus", t.nav.preus)}
                 {link("/faq", t.nav.faq)}
-                {auth.user?.role === "ADMIN" && link("/admin", t.nav.admin)}
+                {/* botó final del header, sempre visible: la pàgina #/admin
+                    demana sessió admin si cal (acces protegit per l'API) */}
+                {link("/admin", t.nav.admin)}
               </nav>
               <div className="flex items-center gap-2">
                 <button
@@ -230,10 +232,10 @@ function Header({ route }: { route: string }) {
               {link("/guia", locale === "ca" ? "Guia" : "Guía")}
               {link("/preus", t.nav.preus)}
               {link("/faq", t.nav.faq)}
+              {link("/admin", t.nav.admin)}
               {auth.user ? (
                 <>
                   {link("/panell", t.nav.panel)}
-                  {auth.user.role === "ADMIN" && link("/admin", t.nav.admin)}
                   <button
                     onClick={async () => {
                       await fetch("/api/auth/logout", { method: "POST" });

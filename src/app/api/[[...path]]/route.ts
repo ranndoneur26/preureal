@@ -10,6 +10,7 @@ import * as h_account from "../_impl/account/route";
 import * as h_account_activity from "../_impl/account/activity/route";
 import * as h_account_export from "../_impl/account/export/route";
 import * as h_admin_audit from "../_impl/admin/audit/route";
+import * as h_admin_bootstrap from "../_impl/admin/bootstrap/route";
 import * as h_admin_emails from "../_impl/admin/emails/route";
 import * as h_admin_export_csv from "../_impl/admin/export-csv/route";
 import * as h_admin_import from "../_impl/admin/import/route";
@@ -73,6 +74,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["account", "activity"], h: h_account_activity },
   { seg: ["account", "export"], h: h_account_export },
   { seg: ["admin", "audit"], h: h_admin_audit },
+  { seg: ["admin", "bootstrap"], h: h_admin_bootstrap },
   { seg: ["admin", "emails"], h: h_admin_emails },
   { seg: ["admin", "export-csv"], h: h_admin_export_csv },
   { seg: ["admin", "import"], h: h_admin_import },

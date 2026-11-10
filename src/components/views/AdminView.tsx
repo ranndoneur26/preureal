@@ -610,12 +610,93 @@ function IntRow({ name, ok, detail }: { name: string; ok: boolean; detail?: stri
 }
 
 function LoginRequired() {
-  const { t, navigate } = useApp();
+  const { t, navigate, locale } = useApp();
+  const ca = locale === "ca";
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Recuperació "break-glass" del accés admin (Fase 4): requereix el codi
+  // ADMIN_BOOTSTRAP_CODE definit pel propietari a Vercel. Sense la variable
+  // definida, l'endpoint respon BOOTSTRAP_DISABLED i el formulari no fa res.
+  const recover = async () => {
+    setMsg(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/admin/bootstrap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, code }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg(
+          ca
+            ? "Accés restablert. Ara prem 'Entrar' i inicia sessió amb aquest email i la contrasenya nova."
+            : "Acceso restablecido. Ahora pulsa 'Entrar' e inicia sesión con ese email y la contraseña nueva.",
+        );
+      } else if (d.error === "BOOTSTRAP_DISABLED") {
+        setMsg(d.message || (ca ? "Recuperació desactivada: falta ADMIN_BOOTSTRAP_CODE a Vercel." : "Recuperación desactivada: falta ADMIN_BOOTSTRAP_CODE en Vercel."));
+      } else if (d.error === "BAD_CODE") {
+        setMsg(ca ? "Codi incorrecte." : "Código incorrecto.");
+      } else {
+        setMsg(ca ? "Dades invàlides: revisa l'email i la contrasenya (mínim 8 caràcters)." : "Datos inválidos: revisa el email y la contraseña (mínimo 8 caracteres).");
+      }
+    } catch (e: any) {
+      setMsg("Error: " + (e?.message || e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <div className="flex-1 flex items-center justify-center px-4">
-      <button onClick={() => navigate("/entrada")} className="px-5 py-2.5 rounded-xl bg-[#e8673c] text-white font-bold">
-        {t.nav.entrada}
-      </button>
+    <div className="flex-1 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md space-y-4">
+        <div className="flex justify-center">
+          <button onClick={() => navigate("/entrada")} className="px-5 py-2.5 rounded-xl bg-[#e8673c] text-white font-bold">
+            {t.nav.entrada}
+          </button>
+        </div>
+        <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+          <h3 className="font-bold">{ca ? "Recupera l'accés d'administració" : "Recupera el acceso de administración"}</h3>
+          <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+            {ca
+              ? "Només per al propietari: defineix ADMIN_BOOTSTRAP_CODE a Vercel (Settings → Environment Variables, després Redeploy) i introdueix aquí el codi amb el teu email i una contrasenya nova (mínim 8 caràcters). Si ja tens compte, se't dona el rol admin; si no, es crea."
+              : "Solo para el propietario: define ADMIN_BOOTSTRAP_CODE en Vercel (Settings → Environment Variables, después Redeploy) e introduce aquí el código con tu email y una contraseña nueva (mínimo 8 caracteres). Si ya tienes cuenta, se te da el rol admin; si no, se crea."}
+          </p>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder={ca ? "El teu email" : "Tu email"}
+            className="mt-3 w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+          />
+          <input
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            placeholder={ca ? "Contrasenya nova (mín. 8)" : "Contraseña nueva (mín. 8)"}
+            className="mt-2 w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+          />
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder={ca ? "Codi de recuperació (ADMIN_BOOTSTRAP_CODE)" : "Código de recuperación (ADMIN_BOOTSTRAP_CODE)"}
+            className="mt-2 w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+          />
+          <div className="mt-3 flex items-center gap-3 flex-wrap">
+            <button
+              onClick={recover}
+              disabled={busy}
+              className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+            >
+              {busy ? (ca ? "Recuperant…" : "Recuperando…") : ca ? "Recupera l'accés" : "Recuperar el acceso"}
+            </button>
+            {msg && <span className="text-sm text-[#4b5349] flex-1 min-w-[12rem]">{msg}</span>}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
