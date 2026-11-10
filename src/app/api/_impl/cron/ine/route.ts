@@ -57,7 +57,8 @@ export async function GET(req: Request) {
   let stoppedEarly = false;
 
   // 1) IPVA (petit) — només si no hi ha importació completa recent
-  if (!done.has(INE_IPVA)) {
+  const ipvaFull = done.has(`${INE_IPVA}:FULL`);
+  if (!ipvaFull) {
     for (const scope of ["NAC_CCAA", "PROV", "MUNI"] as IpvaScope[]) {
       const key = `${INE_IPVA}:${scope}`;
       if (done.has(key)) continue;
@@ -71,9 +72,10 @@ export async function GET(req: Request) {
   }
 
   // 2) Atlas — àmbits pendents, el 08 al final
+  const atlasFull = done.has(`${INE_ATLAS_RENTA}:FULL`);
   for (const scope of ATLAS_SCOPES) {
     const key = `${INE_ATLAS_RENTA}:${scope}`;
-    if (done.has(key) || done.has(INE_ATLAS_RENTA)) continue;
+    if (done.has(key) || atlasFull) continue;
     if (Date.now() - started > BUDGET_MS) {
       stoppedEarly = true;
       break;

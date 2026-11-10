@@ -200,7 +200,7 @@ export async function importIneIpva(
   const sourceId = await ensureDataSource(IPVA_SOURCE);
   // ImportRun.source lleva el ámbito para que el cron pueda saltar los
   // ámbitos ya importados («INE_IPVA», «INE_IPVA:NAC_CCAA», …)
-  const runSource = scope ? `${INE_IPVA}:${scope}` : INE_IPVA;
+  const runSource = `${INE_IPVA}:${scope ?? "FULL"}`;
   const run = await openRun(runSource, createdBy);
   let created = 0;
   let skipped = 0;
@@ -295,7 +295,7 @@ export async function importIneAtlasRenta(
   const scopes: AtlasScope[] = scope ? [scope] : [...ATLAS_SCOPES];
   const sourceId = await ensureDataSource(ATLAS_SOURCE);
   // ImportRun.source lleva el ámbito («INE_ATLAS_RENTA», «INE_ATLAS_RENTA:08», …)
-  const runSource = scope ? `${INE_ATLAS_RENTA}:${scope}` : INE_ATLAS_RENTA;
+  const runSource = `${INE_ATLAS_RENTA}:${scope ?? "FULL"}`;
   const run = await openRun(runSource, createdBy);
   let created = 0;
   let skipped = 0;
