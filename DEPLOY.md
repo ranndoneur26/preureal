@@ -1,5 +1,10 @@
 # PreuReal.cat — Guía de despliegue a producción
 
+> **DOMINI (2026-11-11):** el domini connectat i canònic és **`https://www.preureal.com`**
+> (Vercel, DNS automàtic). El `.cat` NO està registrat. Aquest document descriu el pla
+> original Docker/VPS (alternatiu); si configures serveis externs (webhook de Stripe,
+> Google OAuth, Resend), usa sempre `www.preureal.com` — mai `preureal.cat`.
+
 > **ACTUALITZACIÓ (2026-11):** la base de dades ara és **PostgreSQL** (servei inclòs
 > a docker-compose.yml amb volum persistent i healthcheck). El volum ./dbdata i la
 > SQLite ja no s'usen al desplegament Docker. Per migrar l'arxiu SQLite original:

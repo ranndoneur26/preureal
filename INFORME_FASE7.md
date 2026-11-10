@@ -85,7 +85,7 @@ Cap endpoint supera els 2 s de mediana. El mosaic fred d'edificis (consulta ICGC
 ## 7. Accions pendents del PROPIETARI (cap és de codi)
 
 1. **Catàleg d'ajudes incomplet a producció:** apareixen 2 de les 4 ajudes del seed (falten `AJUTS_LLOGUER_GENCAT` i `SERVEI_MEDIACIO_GENCAT`). Solució: entrar a `#/admin` → tab Dades → botó **«Sincronitza el catàleg»** (idempotent, carrega les 4 amb font i data).
-2. **Domini `preureal.cat` no resolt (DNS):** si es vol la marca .cat, connectar el domini a Vercel (Settings → Domains) i afegir els registres DNS al registrador.
+2. **Domini — ACLARIT (2026-11-11):** el propietari confirma que el domini connectat és **`preureal.com`** (canònic `www.preureal.com`, actiu a Vercel i usat a totes les sondes d'aquest informe). El `.cat` NO està registrat; si més endavant es vol la marca .cat: registrar-lo i afegir-lo a Vercel (Settings → Domains) com a domini addicional amb redirecció al `.com` (~5 min). En **v36** s'han netejat les URLs residuals que encara apuntaven a `preureal.cat` (robots.txt, sitemap.xml, UA dels importadors INE/ICGC, peu de l'avís legal del PDF) — cap enllaç funcional ja apunta a un domini mort.
 3. **Stripe real** abans de cobrar: crear preus reals, webhook amb secret, `DEMO_CHECKOUT=false`, i provar renovació + pagament fallit.
 4. **Resend:** verificar el domini d'enviament i `MAIL_FROM`.
 5. **Google OAuth:** redirect URI de producció si es vol activar.

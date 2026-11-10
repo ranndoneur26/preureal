@@ -9,7 +9,7 @@ Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 - [x] Smoke test navegador: 7 rutes, 0 errors de consola, canvi CA/ES correcte
 - [x] Correccions de text ca (tagline «illa a illa» + subtítol landing) — v35
 - [ ] **Propietari**: prémer «Sincronitza el catàleg» a `#/admin` (falten 2 de 4 ajudes a producció)
-- [ ] **Propietari**: connectar domini `preureal.cat` a Vercel si es vol la marca .cat (ara no resol DNS)
+- [x] **Propietari** (2026-11-11): domini connectat = `preureal.com` (canònic `www.preureal.com`, ja actiu a Vercel). El `.cat` NO està registrat; si més endavant es vol, registrar-lo i afegir-lo a Vercel (Settings → Domains) com a domini addicional amb redirecció. URLs residuals del `.cat` netejades en v36
 - [ ] **Propietari**: Stripe real (`DEMO_CHECKOUT=false` + preus + webhook), Resend amb domini verificat, textos legals, `ADMIN_BOOTSTRAP_CODE`
 - [ ] P2 futur: netejar els 13 avisos ESLint (react-compiler) a MapView/ComparadorView/PanelView/use-user-plan (preexistents, no bloquegen)
 

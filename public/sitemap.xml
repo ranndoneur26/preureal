@@ -2,24 +2,24 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://preureal.cat/</loc>
-    <xhtml:link rel="alternate" hreflang="ca" href="https://preureal.cat/"/>
-    <xhtml:link rel="alternate" hreflang="es" href="https://preureal.cat/"/>
+    <loc>https://www.preureal.com/</loc>
+    <xhtml:link rel="alternate" hreflang="ca" href="https://www.preureal.com/"/>
+    <xhtml:link rel="alternate" hreflang="es" href="https://www.preureal.com/"/>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://preureal.cat/#/mapa</loc>
+    <loc>https://www.preureal.com/#/mapa</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://preureal.cat/#/preus</loc>
+    <loc>https://www.preureal.com/#/preus</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://preureal.cat/#/faq</loc>
+    <loc>https://www.preureal.com/#/faq</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>

@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/admin
 Disallow: /api/export
 
-Sitemap: https://preureal.cat/sitemap.xml
+Sitemap: https://www.preureal.com/sitemap.xml

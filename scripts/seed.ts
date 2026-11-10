@@ -15,7 +15,7 @@ import * as bcrypt from "bcryptjs";
 const db = new PrismaClient();
 
 const ICGC_BASE = "https://api.icgc.cat/territorial";
-const UA = "PreuReal.cat/1.0 (dades obertes; +https://preureal.cat)";
+const UA = "PreuReal.cat/1.0 (dades obertes; +https://www.preureal.com)";
 
 async function icgcGet(url: string) {
   const res = await fetch(url, { headers: { "User-Agent": UA } });

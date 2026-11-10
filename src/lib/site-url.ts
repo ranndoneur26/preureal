@@ -15,10 +15,10 @@
  *
  * v20: el domini CANÒNIC en producció és https://www.preureal.com (comprat
  * a Vercel, DNS automàtic; l'apex redirigeix 308 a www). El domini
- * `preureal.cat` està REGISTRAT però SENSE registres DNS (NXDOMAIN
- * verificat el 2026-11-04): mentre no es configuri, cap enllaç ha de
- * senyalar-hi — un correu de verificació amb enllaç mort deixa l'usuari
- * encerclat al bloqueig «Verifica tu correo».
+ * `preureal.cat` NO està registrat (confirmació del propietari el
+ * 2026-11-11: potser es registrarà més endavant): mentre no existeixi,
+ * cap enllaç funcional hi ha de senyalar — un correu de verificació amb
+ * enllaç mort deixa l'usuari encerclat al bloqueig «Verifica tu correo».
  */
 const FALLBACK = "https://www.preureal.com";
 

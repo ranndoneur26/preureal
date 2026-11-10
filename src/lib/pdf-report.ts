@@ -422,7 +422,7 @@ export async function buildReportPdf(input: ReportInput): Promise<Uint8Array> {
   });
   y -= 6;
   section("Avís legal");
-  line("Informe generat automàticament per PreuReal.cat amb dades oficials públiques. Ús exclusivament informatiu: no constitueix valoració immobiliària formal, assessorament financer ni jurídic. Les fonts citades són els propietaris de les seves dades. Consulta l'avís legal i la política de privacitat a preureal.cat.", 9);
+  line("Informe generat automàticament per PreuReal.cat amb dades oficials públiques. Ús exclusivament informatiu: no constitueix valoració immobiliària formal, assessorament financer ni jurídic. Les fonts citades són els propietaris de les seves dades. Consulta l'avís legal i la política de privacitat a www.preureal.com.", 9);
   y -= 10;
   text(`Informe v34 (Fase 6) · generat el ${input.genDate} · subscrit: ${input.subscriberMasked} · pla ${input.planLabel}`, 8.5, GRAY);
   footer();
