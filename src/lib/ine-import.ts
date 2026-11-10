@@ -198,7 +198,10 @@ export async function importIneIpva(
   const t0 = Date.now();
   const scopes: IpvaScope[] = scope ? [scope] : [...IPVA_SCOPES];
   const sourceId = await ensureDataSource(IPVA_SOURCE);
-  const run = await openRun(INE_IPVA, createdBy);
+  // ImportRun.source lleva el ámbito para que el cron pueda saltar los
+  // ámbitos ya importados («INE_IPVA», «INE_IPVA:NAC_CCAA», …)
+  const runSource = scope ? `${INE_IPVA}:${scope}` : INE_IPVA;
+  const run = await openRun(runSource, createdBy);
   let created = 0;
   let skipped = 0;
   let secreto = 0;
@@ -244,7 +247,7 @@ export async function importIneIpva(
       skipped,
     });
     await auditSystem("IMPORT_RUN", run.id, {
-      source: INE_IPVA,
+      source: runSource,
       scopes,
       created,
       skipped,
@@ -265,7 +268,7 @@ export async function importIneIpva(
   } catch (e) {
     const msg = String(e instanceof Error ? e.message : e).slice(0, 500);
     await closeRun(run.id, { status: "ERROR", rowsTotal: 0, created, skipped, error: msg });
-    await auditSystem("IMPORT_RUN", run.id, { source: INE_IPVA, scopes, status: "ERROR", error: msg });
+    await auditSystem("IMPORT_RUN", run.id, { source: runSource, scopes, status: "ERROR", error: msg });
     return {
       ok: false,
       source: INE_IPVA,
@@ -291,7 +294,9 @@ export async function importIneAtlasRenta(
   const t0 = Date.now();
   const scopes: AtlasScope[] = scope ? [scope] : [...ATLAS_SCOPES];
   const sourceId = await ensureDataSource(ATLAS_SOURCE);
-  const run = await openRun(INE_ATLAS_RENTA, createdBy);
+  // ImportRun.source lleva el ámbito («INE_ATLAS_RENTA», «INE_ATLAS_RENTA:08», …)
+  const runSource = scope ? `${INE_ATLAS_RENTA}:${scope}` : INE_ATLAS_RENTA;
+  const run = await openRun(runSource, createdBy);
   let created = 0;
   let skipped = 0;
   let secreto = 0;
@@ -343,7 +348,7 @@ export async function importIneAtlasRenta(
     created = await chunksInsert(sourceId, run.id, all);
     await closeRun(run.id, { status: "OK", rowsTotal: all.length, created, skipped });
     await auditSystem("IMPORT_RUN", run.id, {
-      source: INE_ATLAS_RENTA,
+      source: runSource,
       scopes,
       created,
       skipped,
@@ -364,7 +369,7 @@ export async function importIneAtlasRenta(
   } catch (e) {
     const msg = String(e instanceof Error ? e.message : e).slice(0, 500);
     await closeRun(run.id, { status: "ERROR", rowsTotal: 0, created, skipped, error: msg });
-    await auditSystem("IMPORT_RUN", run.id, { source: INE_ATLAS_RENTA, scopes, status: "ERROR", error: msg });
+    await auditSystem("IMPORT_RUN", run.id, { source: runSource, scopes, status: "ERROR", error: msg });
     return {
       ok: false,
       source: INE_ATLAS_RENTA,
