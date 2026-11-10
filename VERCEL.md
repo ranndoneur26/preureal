@@ -6,10 +6,10 @@ reinicis i cold starts, i usuaris/subscripcions són reals.
 
 ## 1. Crea la base de dades PostgreSQL
 
-**Supabase (projecte ja creat):** `https://tkbjifmflpxqszaozqlw.supabase.co`
+**Supabase (projecte ja creat):** entra al teu projecte a supabase.com`
 1. Dashboard → **Project Settings → Database → Connection string → URI**.
 2. Per al **runtime** (Vercel): usa el **Connection pooler** (port `6543`,
-   transacció) — `postgresql://postgres.tkbjifmflpxqszaozqlw:[DB-PASSWORD]@aws-0-<regio>.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require`
+   transacció) — `postgresql://postgres.<PROJECT-REF>:[DB-PASSWORD]@aws-0-<regio>.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require`
 3. Per fer el **migrate deploy** una vegada: usa el mode **session** (port
    `5432` del pooler) o la connexió directa — Prisma necessita una sessió
    real per crear l'esquema (pgBouncer en mode transacció no ho permet).
@@ -92,7 +92,7 @@ El build no necessita cap configuració addicional:
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth (redirect URI: `https://DOMINI/api/auth/google/callback`) | Opcional |
 | `GOOGLE_REDIRECT_URI` | només si cal sobreescriure la redirect URI de Google | Opcional |
 | `RESEND_API_KEY` / `MAIL_FROM` | correus reals (sense: sandbox a EmailLog)  | Opcional    |
-| `CRON_SECRET`            | protegeix `/api/cron/emails` (manteniment diari de correu: reintent outbox + neteja tokens + retenció EmailLog) | Recomanada |
+| `CRON_SECRET`            | protegeix els cron de Vercel: `/api/cron/emails` (manteniment diari de correu) i `/api/cron/ine` (refresc trimestral INE) | Recomanada |
 | `EMAILLOG_RETENTION_DAYS` | dies de retenció del log de correus (90 per defecte) | Opcional |
 | `STRIPE_*`              | activació de pagaments reals                      | Opcional    |
 | `FRAME_ANCESTORS`       | per defecte `'self'` en producció (anti-clickjacking); només canviar si s'incrusta el mapa com a widget en un altre domini | Opcional |

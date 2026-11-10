@@ -77,7 +77,8 @@ export const MAX_TOTAL_ATTEMPTS = 5;
  * reenvían desde el log (el cuerpo va redactado y el enlace es de un solo
  * uso): el usuario pide un enlace nuevo, que es la UX existente.
  */
-const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC", "DIGEST"];
+/** v31: única definición (el cron de reintentos la importa — antes había 2 copias que podían divergir). */
+export const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC", "DIGEST"];
 
 function retryDelayMs(totalAttempts: number): number {
   const hours = Math.min(2 ** Math.max(0, totalAttempts - 2), 24);

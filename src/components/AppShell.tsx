@@ -158,7 +158,7 @@ function Header({ route }: { route: string }) {
               </button>
               <nav className="hidden md:flex items-center gap-1">
                 {link("/mapa", t.nav.mapa)}
-                {link("/comparador", locale === "ca" ? "Comparador" : "Comparador")}
+                {link("/comparador", "Comparador")}
                 {link("/guia", locale === "ca" ? "Guia" : "Guía")}
                 {link("/preus", t.nav.preus)}
                 {link("/faq", t.nav.faq)}
@@ -228,7 +228,7 @@ function Header({ route }: { route: string }) {
             </div>
             <div id="mobile-nav" className="hidden md:hidden border-t border-[#e5e1da] bg-[#faf9f7] px-4 py-3 flex-col gap-1">
               {link("/mapa", t.nav.mapa)}
-              {link("/comparador", locale === "ca" ? "Comparador" : "Comparador")}
+              {link("/comparador", "Comparador")}
               {link("/guia", locale === "ca" ? "Guia" : "Guía")}
               {link("/preus", t.nav.preus)}
               {link("/faq", t.nav.faq)}

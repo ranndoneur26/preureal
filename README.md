@@ -16,7 +16,7 @@ comparador de municipis, històric de consultes, informes PDF i subscripcions
 
 ## Stack
 
-- **Next.js 16** (App Router) + React 19 + TypeScript + Tailwind 4 + shadcn/ui + Leaflet
+- **Next.js 16** (App Router) + React 19 + TypeScript + Tailwind 4 + Leaflet
 - **Prisma + PostgreSQL** (Neon/Supabase en producció)
 - Auth pròpia (JWT en cookie httpOnly), Stripe, Resend (opcional), Google OAuth (opcional)
 - API consolidada en **3 Serverless Functions** per complir el límit del pla
@@ -61,7 +61,7 @@ src/app/api/_impl/**               handlers reals de cada endpoint
 src/components/AppShell.tsx        shell + routing per hash (/#/mapa, /#/preus…)
 src/components/views/              vistes (Landing, Map, Comparador, Panel, Admin…)
 src/lib/                           auth, plans, db, i18n, icgc, catastro, mail…
-prisma/                            esquema + migració versionada
+prisma/                            esquema + migraciones versionadas (6)
 scripts/seed.ts                    dades reals (municipis, edificis, admin)
 scripts/update_all.sh              refresc trimestral de dades oficials
 ```

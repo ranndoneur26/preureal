@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { useUserPlan } from "@/hooks/use-user-plan";
-import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen } from "lucide-react";
+import { diffPlanKeys, labelForDiffKey, dataNote, type PlanIdLite, type PlanShapeLite } from "@/lib/plan-change";
+import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen, Check, X as XIcon, AlertCircle } from "lucide-react";
 
 interface BillingData {
   subscriptions: Array<{ id: string; plan: string; status: string; demo: boolean; currentPeriodEnd: string | null; createdAt: string }>;
@@ -26,10 +27,13 @@ export default function PanelView() {
   const [billing, setBilling] = useState<BillingData | null>(null);
   // v22: estat de la suscripció des del SERVIDOR (mai del client) — encàrrec punt 6
   const plan = useUserPlan();
-  const [reports, setReports] = useState<any[] | null>(null);
   const [myReports, setMyReports] = useState<any[] | null>(null);
   // v24 — opt-in del resum mensual de preferits (null = encara sense saber)
   const [alertsOn, setAlertsOn] = useState<boolean | null>(null);
+  // v31 — cambio de plan self-service (avisos con diff de lo que se gana/pierde)
+  const [plansCfg, setPlansCfg] = useState<Array<PlanShapeLite & { id: string; priceEur: number }> | null>(null);
+  const [changeTarget, setChangeTarget] = useState<PlanIdLite | null>(null);
+  const [changeMsg, setChangeMsg] = useState<string | null>(null);
 
   // seguretat
   const [currentPassword, setCurrentPassword] = useState("");
@@ -72,9 +76,14 @@ export default function PanelView() {
       if (d) setComparisons(d.comparisons);
       else setComparisons([]);
     }
-    if (tabId === "facturacio" && billing === null) {
-      const d = await j("/api/billing/history");
-      if (d) setBilling(d);
+    if (tabId === "facturacio") {
+      if (billing === null) {
+        const d = await j("/api/billing/history");
+        if (d) setBilling(d);
+      }
+      // v31: config efectiva de planes para los avisos del cambio (misma fuente que el backend)
+      const p = await j("/api/plans");
+      if (p?.plans) setPlansCfg(p.plans);
     }
     if (tabId === "informes" && myReports === null) {
       const d = await j("/api/account/export");
@@ -244,6 +253,49 @@ export default function PanelView() {
       setMsg(locale === "ca"
         ? "Subscripció reactivada: seguirà renovant-se normalment."
         : "Suscripción reactivada: seguirá renovándose normalmente.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // v31 — cambio de plan self-service: aviso (gana/pierde) → confirmación → POST → refresh
+  const priceLabel = (id: "PREMIUM" | "PRO") => {
+    const p = plansCfg?.find((x) => x.id === id);
+    return p ? ` (${p.priceEur.toFixed(2).replace(".", ",")} €/mes)` : "";
+  };
+
+  const changePlan = async (target: PlanIdLite) => {
+    setBusy(true);
+    setChangeMsg(null);
+    try {
+      const res = await fetch("/api/subscription/change", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetPlan: target }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setChangeMsg(d.message || d.error || "Error");
+        return;
+      }
+      setChangeTarget(null);
+      await Promise.all([plan.refresh(), auth.refresh()]);
+      setBilling(null);
+      loadTab("facturacio");
+      const ca = locale === "ca";
+      if (d.mode === "STRIPE_PRORATED") {
+        setChangeMsg(ca ? "Canvi aplicat: Stripe imputarà el prorrateig a la pròxima factura." : "Cambio aplicado: Stripe imputará el prorrateo en la próxima factura.");
+      } else if (d.mode === "DOWNGRADE_SCHEDULED") {
+        setChangeMsg(ca
+          ? `Baixa programada: mantindràs l'accés pagat fins al ${d.effectiveAt ? new Date(d.effectiveAt).toLocaleDateString() : "final del període"}.`
+          : `Baja programada: mantendrás el acceso pagado hasta el ${d.effectiveAt ? new Date(d.effectiveAt).toLocaleDateString() : "final del período"}.`);
+      } else if (d.mode === "DOWNGRADE_NOW" || d.mode === "ALREADY_FREE") {
+        setChangeMsg(ca ? "Baixa aplicada: ara ets al pla gratuït." : "Baja aplicada: ahora estás en el plan gratuito.");
+      } else {
+        setChangeMsg(ca ? "Canvi de pla aplicat immediatament." : "Cambio de plan aplicado inmediatamente.");
+      }
+    } catch {
+      setChangeMsg(locale === "ca" ? "Error de xarxa: torna-ho a provar." : "Error de red: inténtalo de nuevo.");
     } finally {
       setBusy(false);
     }
@@ -487,6 +539,95 @@ export default function PanelView() {
               )}
             </div>
           </div>
+
+          {/* v31 — CANVI DE PLA self-service amb avís de què es guanya/perd */}
+          {(u.plan === "PREMIUM" || u.plan === "PRO") && plansCfg && (
+            <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">
+              <h3 className="font-bold mb-1">{locale === "ca" ? "Canviar de pla" : "Cambiar de plan"}</h3>
+              <p className="text-sm text-[#4b5349]">
+                {locale === "ca"
+                  ? "Canvia de pla quan vulguis des d'aquí. Abans de confirmar veuràs exactament què guanyes i què perds: les teves dades mai s'esborren."
+                  : "Cambia de plan cuando quieras desde aquí. Antes de confirmar verás exactamente qué ganas y qué pierdes: tus datos nunca se borran."}
+              </p>
+              <div className="mt-3 flex gap-2 flex-wrap">
+                {u.plan === "PREMIUM" && (
+                  <button onClick={() => setChangeTarget("PRO")} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold hover:bg-[#16402e] disabled:opacity-50">
+                    {locale === "ca" ? "Pasar a Pro·Agents" : "Pasar a Pro·Agentes"}{priceLabel("PRO")}
+                  </button>
+                )}
+                {u.plan === "PRO" && (
+                  <button onClick={() => setChangeTarget("PREMIUM")} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold hover:bg-[#16402e] disabled:opacity-50">
+                    {locale === "ca" ? "Pasar a Premium" : "Pasar a Premium"}{priceLabel("PREMIUM")}
+                  </button>
+                )}
+                <button onClick={() => setChangeTarget("FREE")} disabled={busy} className="px-4 py-2 rounded-lg border border-[#b0431c] text-[#b0431c] text-sm font-semibold hover:bg-[#fdeae2] disabled:opacity-50">
+                  {locale === "ca" ? "Pasar al pla gratuït" : "Pasar al plan gratuito"}
+                </button>
+              </div>
+
+              {changeTarget && (() => {
+                const fromPlan = (u.plan === "PRO" ? "PRO" : "PREMIUM") as PlanIdLite;
+                const byId: Record<string, PlanShapeLite> = {};
+                for (const p of plansCfg) byId[p.id] = p;
+                const d = diffPlanKeys(fromPlan, changeTarget, byId);
+                const isFreeTarget = changeTarget === "FREE";
+                const isStripeReal = Boolean(billing?.stripeConfigured) && !billing?.subscriptions.some((s) => s.demo);
+                const targetName = isFreeTarget
+                  ? (locale === "ca" ? "el pla gratuït" : "el plan gratuito")
+                  : changeTarget === "PRO" ? "Pro·Agents" : "Premium";
+                return (
+                  <div className="mt-4 rounded-xl border border-[#e8b27c] bg-[#fdf6ec] p-4">
+                    <p className="text-sm font-bold flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4 text-[#b0431c]" />
+                      {locale === "ca" ? `Confirmes el canvi a ${targetName}?` : `¿Confirmas el cambio a ${targetName}?`}
+                    </p>
+                    {d.gained.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-bold text-[#1e7a41] uppercase">{locale === "ca" ? "Guanyaràs" : "Ganarás"}</p>
+                        <ul className="mt-1 space-y-0.5">
+                          {d.gained.map((k) => (
+                            <li key={k} className="text-sm text-[#1e7a41] flex items-start gap-1.5"><Check className="w-3.5 h-3.5 mt-0.5 shrink-0" />{labelForDiffKey(k, locale)}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {d.lost.length > 0 && (
+                      <div className="mt-2">
+                        <p className="text-xs font-bold text-[#b0431c] uppercase">{locale === "ca" ? "Perdràs accés a" : "Perderás acceso a"}</p>
+                        <ul className="mt-1 space-y-0.5">
+                          {d.lost.map((k) => (
+                            <li key={k} className="text-sm text-[#b0431c] flex items-start gap-1.5"><XIcon className="w-3.5 h-3.5 mt-0.5 shrink-0" />{labelForDiffKey(k, locale)}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <p className="mt-2 text-xs text-[#6b6f68]">{dataNote(locale)}</p>
+                    <p className="mt-1 text-xs text-[#6b6f68]">
+                      {isFreeTarget
+                        ? (isStripeReal
+                            ? (locale === "ca" ? "La baixa s'aplica al FINAL del període pagat: mantens l'accés fins llavors." : "La baja se aplica al FINAL del período pagado: mantienes el acceso hasta entonces.")
+                            : (locale === "ca" ? "La baixa és immediata (mode proves o concessió d'admin)." : "La baja es inmediata (modo pruebas o concesión de admin)."))
+                        : (isStripeReal
+                            ? (locale === "ca" ? "Stripe aplica el prorrateig: pagues la diferència proporcional en el moment del canvi." : "Stripe aplica el prorrateo: pagas la diferencia proporcional en el momento del cambio.")
+                            : (locale === "ca" ? "El canvi és immediat (mode proves)." : "El cambio es inmediato (modo pruebas)."))}
+                      {plan.cancelAtPeriodEnd && !isFreeTarget
+                        ? (locale === "ca" ? " També s'anul·la la cancel·lació programada." : " También se anula la cancelación programada.")
+                        : ""}
+                    </p>
+                    <div className="mt-3 flex gap-2 flex-wrap">
+                      <button onClick={() => changePlan(changeTarget)} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50">
+                        {busy ? "…" : (locale === "ca" ? "Sí, confirma el canvi" : "Sí, confirmar el cambio")}
+                      </button>
+                      <button onClick={() => setChangeTarget(null)} disabled={busy} className="px-4 py-2 rounded-lg border border-[#e5e1da] text-sm font-semibold hover:bg-[#f0ede8] disabled:opacity-50">
+                        {locale === "ca" ? "Tornar" : "Volver"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })()}
+              {changeMsg && <p className="mt-3 text-sm font-semibold text-[#0f2e21]">{changeMsg}</p>}
+            </div>
+          )}
           {/* v22: estat de la subscripció vigent (dades del servidor via useUserPlan) */}
           {(plan.subscriptionStatus === "active" || plan.subscriptionStatus === "trialing") && (
             <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">

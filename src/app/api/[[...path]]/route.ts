@@ -60,6 +60,7 @@ import * as h_stripe_portal from "../_impl/stripe/portal/route";
 import * as h_stripe_return from "../_impl/stripe/return/route";
 import * as h_subscription from "../_impl/subscription/route";
 import * as h_subscription_cancel from "../_impl/subscription/cancel/route";
+import * as h_subscription_change from "../_impl/subscription/change/route";
 import * as h_subscription_reactivate from "../_impl/subscription/reactivate/route";
 import * as h_buildings_id from "../_impl/buildings/[id]/route";
 import * as h_export_code from "../_impl/export/[code]/route";
@@ -124,6 +125,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["stripe", "return"], h: h_stripe_return },
   { seg: ["subscription"], h: h_subscription },
   { seg: ["subscription", "cancel"], h: h_subscription_cancel },
+  { seg: ["subscription", "change"], h: h_subscription_change },
   { seg: ["subscription", "reactivate"], h: h_subscription_reactivate },
   { seg: ["buildings", ":id"], h: h_buildings_id },
   { seg: ["export", ":code"], h: h_export_code },

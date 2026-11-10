@@ -114,4 +114,39 @@ ${AYUDA_GIT}`);
   }
 }
 
-console.log("✓ check_repo: estructura del repositorio correcta (src/app/, Prisma PostgreSQL).");
+// ── 5. Rutas API duplicadas fuera del dispatcher (v31) ──────────────
+// La arquitectura es UNA sola serverless function para toda la API:
+// src/app/api/[[...path]]/route.ts (generado) + /api/health + /api/stripe/webhook.
+// Los checkpoints de la plataforma han vuelto a restaurar rutas top-level
+// antiguas (v30): Next.js prioriza la ruta estática sobre el catch-all, así
+// que producción habría servido código VIEJO (sin gating de plan, sin
+// verificación de email, sin cuota atómica) aunque el repo dijera otra cosa.
+const API = "src/app/api";
+const rutasPermitidas = new Set([
+  join(API, "health", "route.ts"),
+  join(API, "stripe", "webhook", "route.ts"),
+  join(API, "[[...path]]", "route.ts"),
+]);
+const rutasSobrantes = [];
+function escanearRutas(dir) {
+  for (const n of readdirSync(dir)) {
+    const p = join(dir, n);
+    if (statSync(p).isDirectory()) {
+      if (n === "_impl") continue; // implementaciones: correcto
+      escanearRutas(p);
+    } else if (n === "route.ts" && !rutasPermitidas.has(p)) {
+      rutasSobrantes.push(p);
+    }
+  }
+}
+if (existsSync(API)) escanearRutas(API);
+if (rutasSobrantes.length > 0) {
+  fallo(`✗ Hay ${rutasSobrantes.length} rutas API FUERA del dispatcher (deben vivir solo en src/app/api/_impl/):
+  ${rutasSobrantes.slice(0, 8).join("\n  ")}${rutasSobrantes.length > 8 ? `\n  … y ${rutasSobrantes.length - 8} más` : ""}
+  Next.js prioriza estas rutas estáticas sobre /api/[[...path]] y serviría
+  código antiguo; además multiplican las serverless functions en Vercel.
+  Solución: borra esos ficheros y regenera el dispatcher:
+    python3 scripts/gen_api_dispatcher.py`);
+}
+
+console.log("✓ check_repo: estructura del repositorio correcta (src/app/, Prisma PostgreSQL, API consolidada).");

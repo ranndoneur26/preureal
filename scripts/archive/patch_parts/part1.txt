@@ -1,0 +1,923 @@
+bash << 'PREUREAL_P1_FI'
+set -e
+cd "/Users/marcxicola/Desktop/Feines 2025-26/preureal" || { echo "ERROR: no trobo la carpeta del projecte (/Users/marcxicola/Desktop/Feines 2025-26/preureal)"; exit 1; }
+BACKUP="$HOME/Downloads/backup_pre_v22_$(date +%Y%m%d_%H%M%S).tgz"
+tar --exclude=node_modules --exclude=.next --exclude=.git -czf "$BACKUP" . || echo "(avis: backup ha fallat, continuo)"
+echo "== Copia de seguretat previa: $BACKUP =="
+echo "== PreuReal v22 · PART 1/3: schema + migracio SQL + llibreries (plans, subscription) + dispatcher API ==" 
+check() { s=$(wc -c < "$1" | tr -d ' '); if [ "$s" = "$2" ]; then echo "  OK $1 ($s bytes)"; else echo "  !! ATENCIO: $1 te $s bytes (esperava $2) - copia tot aixo al xat"; fi; }
+mkdir -p "prisma"
+cat > "prisma/schema.prisma" << 'PREUREAL_V22_EOF'
+// PreuReal.cat — Esquema de base de datos (PostgreSQL)
+// Datos reales: municipios (Idescat/Gencat), lloguer fiances Incasòl (Gencat),
+// àrees tensades (Resolucions TER/3739/2026 + TER/3740/2026), edificis ICGC (RTT).
+//
+// Backend: PostgreSQL gestionat (Neon/Supabase) — compatible Vercel serverless.
+// Migració versionada: prisma/migrations/ (aplicar amb `npx prisma migrate deploy`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String        @id @default(cuid())
+  email           String        @unique
+  passwordHash    String
+  name            String?
+  locale          String        @default("ca")
+  role            String        @default("USER") // USER | ADMIN
+  plan            String        @default("FREE") // FREE | PREMIUM | PRO
+  active          Boolean       @default(true) // desactivació per admin (RGPD/bans)
+  emailVerifiedAt DateTime?     // verificació de correu (Fase 6)
+  tokenVersion    Int           @default(0) // +1 invalida totes les sessions actives
+  lastLoginAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  subscriptions   Subscription[]
+  searchLogs      SearchLog[]
+  priceReports    PriceReport[]
+  passwordTokens  PasswordToken[]
+  emailTokens     EmailToken[]
+  favorites       Favorite[]
+  savedComparisons SavedComparison[]
+  subscriptionUsages SubscriptionUsage[]
+
+  @@index([role])
+  @@index([plan])
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  user                 User     @relation(fields: [userId], references: [id])
+  stripeCustomerId     String?
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  plan                 String   // PREMIUM | PRO
+  status               String   // active | trialing | past_due | canceled | expired | superseded | incomplete | incomplete_expired
+  currentPeriodStart   DateTime? // v22: inici del període de facturació vigent
+  currentPeriodEnd     DateTime?
+  billingInterval      String?   // v22: month | year (recurrent del preu de Stripe)
+  cancelAtPeriodEnd    Boolean   @default(false) // v22: cancelació programada a final de període
+  demo                 Boolean  @default(false) // suscripción creada en modo prueba (sin Stripe)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// v22 (Fase 1 subscripcions): comptadors d'ús agregats per usuari, tipus i mes
+// ("YYYY-MM" UTC). Font: accions reals registrades al servidor (lookup, exports,
+// PDF...). Mai s'escriu des del client — només les rutes de l'API (equivalent
+// funcional de les policies RLS en una arquitectura on l'ÚNIC client de
+// Postgres és el backend via Prisma).
+model SubscriptionUsage {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  usageType  String   // DETAIL_QUERY | EXPORT_CSV | PDF_REPORT | ...
+  usageMonth String   // "2026-11"
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, usageType, usageMonth])
+  @@index([userId, usageMonth])
+}
+
+model PasswordToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Tokens de verificació de correu (Fase 6)
+model EmailToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// Municipios de Cataluña (código INE de 5 dígitos) con datos reales de lloguer
+model Municipality {
+  code            String  @id // "080193" (6 dígitos formato Gencat/ICGC)
+  ineCode         String? // "08019" (5 dígitos)
+  name            String
+  comarca         String?
+  province        String?
+  lat             Float
+  lng             Float
+  rentLatest      Float?  // €/mes — fiances Incasòl, último período disponible
+  rentPeriod      String? // "2025" o "2026 I trim."
+  rentPrevYear    Float?  // año anterior para tendencia
+  rentPrevPeriod  String?
+  rentHistory     String? // JSON {"2005": 550.2, ...}
+  contractsLatest Int?    // nº contratos con fianza depositada (muestra)
+  isTense         Boolean @default(false)
+  tenseList       String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
+  boundary        String? // GeoJSON del límite municipal (cache ICGC)
+  boundaryFetchedAt DateTime?
+  updatedAt       DateTime @updatedAt
+
+  @@index([name])
+  @@index([isTense])
+}
+
+// Edificios reales (ICGC RTT construccions) cacheados por la app
+model Building {
+  id               String   @id @default(cuid())
+  externalId       String   @unique // id RTT o refcat catastral
+  source           String   @default("ICGC_RTT")
+  municipalityCode String?
+  tipus            String?  // edi (edifici) | ill (illa) | ...
+  estat            String?
+  altura           Int?
+  nom              String?
+  polygonJson      String   // [[ [lng,lat], ... ]]
+  centroidLat      Float
+  centroidLng      Float
+  refcat           String?  // referencia catastral (si se conoce)
+  yearBuilt        Int?     // año de construcción (Catastro, cuando esté disponible)
+  yearSource       String?  // "CADASTRE_DNP" | "IMPORT"
+  // Dades de lloguer a nivell edifici/illa (importació Incasòl — Fase 9.1)
+  avgRentEurMonth  Float?   // preu mitjà real de l'illa/edifici (font importada)
+  sampleSize       Int?     // mostres (contractes) de les quals surt la mitjana
+  cachedAt         DateTime @default(now())
+
+  @@index([municipalityCode])
+  @@index([centroidLat, centroidLng])
+}
+
+// Registro de consultas (cuota + analítica + historial d'usuari)
+model SearchLog {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  buildingId       String?
+  municipalityCode String?
+  ipHash           String?
+  kind             String   @default("DETAIL") // DETAIL | TEASER
+  createdAt        DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([municipalityCode])
+}
+
+// Eventos de conversión (embudo de ventas)
+model Event {
+  id        String   @id @default(cuid())
+  type      String // SIGNUP | LOGIN | MAP_QUERY | PAYWALL_VIEW | CHECKOUT_START | CHECKOUT_DEMO | SUBSCRIBE_SUCCESS | PRICE_REPORT | EXPORT | PASSWORD_RESET
+  userId    String?
+  meta      String?
+  createdAt DateTime @default(now())
+
+  @@index([type, createdAt])
+}
+
+// Informes de precio enviados por usuarios (crowdsourcing, amb moderació — Fase 10)
+model PriceReport {
+  id               String   @id @default(cuid())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  municipalityCode String?
+  buildingId       String?
+  offerEurMonth    Float?
+  offerEurM2       Float?
+  surfaceM2        Float?
+  rooms            Int?
+  contractType     String?  // HABITATGE | HABITATGE_COMPARTIT | LOCAL | ALTRE
+  reportedAt       DateTime? // data de l'operació declarada per l'usuari
+  note             String?
+  status           String   @default("PENDING") // PENDING | ACCEPTED | REJECTED
+  reviewedAt       DateTime?
+  reviewNote       String?
+  createdAt        DateTime @default(now())
+
+  @@index([status])
+  @@index([municipalityCode, createdAt])
+}
+
+// Correos automáticos (log del modo sandbox o resultado de Resend).
+// v19 (auditoría de correo):
+//  - `body` guarda el HTML REDACTADO: los tokens de verificación/restablecimiento
+//    se sustituyen por *** antes de persistir (nunca en claro en la BD).
+//  - Telemetría de entrega: type, userId, providerMessageId, attempts, sentAt.
+//  - Outbox duradero: status "pending" + nextRetryAt → /api/cron/emails reintenta
+//    con backoff los tipos no sensibles (WELCOME/RECEIPT/GENERIC).
+//  - idempotencyKey: un correo lógico = un envío (recibos Stripe, re-entregas).
+model EmailLog {
+  id                String    @id @default(cuid())
+  to                String
+  subject           String
+  body              String
+  provider          String    @default("sandbox") // sandbox | resend
+  status            String    @default("logged") // logged | pending | sent | error
+  error             String?
+  type              String    @default("GENERIC") // WELCOME | VERIFY | RESET | RECEIPT | GENERIC
+  userId            String?
+  providerMessageId String? // id que devuelve Resend al aceptar el envío
+  attempts          Int       @default(0)
+  sentAt            DateTime? // cuando Resend ACEPTÓ el correo (≠ entrega en bandeja)
+  nextRetryAt       DateTime? // outbox: cuándo el cron debe reintentarlo
+  idempotencyKey    String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([status, nextRetryAt])
+  @@index([createdAt])
+  @@index([userId])
+}
+
+// --- Taules noves (BLOC A/B/C de l'encàrrec) --------------------------------
+
+// Rate limiting COMPARTIT entre instàncies (serverless) — V3 de l'auditoria
+model RateLimit {
+  key     String   @id // "login:1.2.3.4" | "lookup:userId" ...
+  count   Int      @default(0)
+  resetAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([resetAt])
+}
+
+// Idempotència de webhooks Stripe — V9 de l'auditoria
+model StripeEvent {
+  eventId     String   @id // event.id de Stripe
+  type        String
+  processedAt DateTime @default(now())
+}
+
+// Historial d'auditoria d'accions administratives — Fase 12
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?  // usuari admin que fa l'acció
+  action    String   // USER_PLAN_CHANGE | USER_ROLE_CHANGE | USER_DEACTIVATE | IMPORT_RUN | REPORT_MODERATE | ...
+  target    String?  // identificador de l'objecte (userId, codi municipi...)
+  meta      String?  // JSON amb detalls (abans→després)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([action])
+}
+
+// Execucions d'importació de dades — Fase 9.2
+model ImportRun {
+  id        String   @id @default(cuid())
+  source    String   // INCASOL_EDIFICIS | INCASOL_MUNICIPIS | ...
+  status    String   // OK | PARTIAL | ERROR
+  rowsTotal Int      @default(0)
+  created   Int      @default(0)
+  updated   Int      @default(0)
+  skipped   Int      @default(0)
+  error     String?
+  createdBy String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+// Límits i preus dels plans — configurables des de l'admin (Fase 5)
+model PlanSetting {
+  plan       String   @id // FREE | PREMIUM | PRO
+  quotaMonth Int      // consultes detallades/mes (-1 = il·limitades)
+  priceEur   Float
+  features   String?  // JSON {exportCsv: bool, historial: bool, ...}
+  updatedAt  DateTime @updatedAt
+}
+
+// Edificis i municipis preferits de l'usuari — Fase 9
+model Favorite {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  entityKey        String   // "BUILDING:<id>" | "MUNI:<code>"
+  buildingId       String?
+  municipalityCode String?
+  label            String?  // nom per mostrar (nom municipi / refcat)
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, entityKey])
+  @@index([userId])
+}
+
+// Comparacions desades — Fase 8
+model SavedComparison {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  entities  String   // JSON [{type:"MUNI"|"BUILDING", code:"..."}]
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+PREUREAL_V22_EOF
+check "prisma/schema.prisma" 11952
+mkdir -p "prisma/migrations/20261105150000_subscriptions_fase1"
+cat > "prisma/migrations/20261105150000_subscriptions_fase1/migration.sql" << 'PREUREAL_V22_EOF'
+-- v22 (Fase 1 subscripcions: user_subscriptions + subscription_usage + RLS)
+-- Encàrrec: única suscripción vigente per compte, historial mai esborrat,
+-- comptadors d'ús mensuals, i blindatge del esquema contra accés directe des
+-- del navegador (equivalent RLS per a una BD gestionada per Supabase on l'ÚNIC
+-- client de Postgres és el backend via Prisma).
+--
+-- TOT ÉS ADDITIU: no es borra ni es renombra cap columna (el sistema de correu
+-- d'EmailLog NO es toca). IDEMPOTENT: es pot aplicar vàries vegades.
+
+-- ── 1) Nous camps de "Subscription" (l'equivalent user_subscriptions) ──────
+ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "currentPeriodStart" TIMESTAMP(3);
+ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "billingInterval" TEXT;
+ALTER TABLE "Subscription" ADD COLUMN IF NOT EXISTS "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false;
+
+-- ── 2) "SubscriptionUsage" (l'equivalent subscription_usage) ───────────────
+CREATE TABLE IF NOT EXISTS "SubscriptionUsage" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "usageType" TEXT NOT NULL,
+    "usageMonth" TEXT NOT NULL,
+    "usageCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "SubscriptionUsage_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "SubscriptionUsage_userId_usageType_usageMonth_key"
+  ON "SubscriptionUsage"("userId", "usageType", "usageMonth");
+CREATE INDEX IF NOT EXISTS "SubscriptionUsage_userId_usageMonth_idx"
+  ON "SubscriptionUsage"("userId", "usageMonth");
+CREATE INDEX IF NOT EXISTS "SubscriptionUsage_usageMonth_idx"
+  ON "SubscriptionUsage"("usageMonth");
+
+DO $$ BEGIN
+  ALTER TABLE "SubscriptionUsage" ADD CONSTRAINT "SubscriptionUsage_userId_fkey"
+    FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- Mes amb format "YYYY-MM" (defensa en profunditat; el codi ja el genera bé)
+DO $$ BEGIN
+  ALTER TABLE "SubscriptionUsage" ADD CONSTRAINT "SubscriptionUsage_usageMonth_check"
+    CHECK ("usageMonth" ~ '^[0-9]{4}-[0-9]{2}$');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ── 3) UNA única subscripció vigent per usuari ─────────────────────────────
+-- 3a) Tanca les subscripcions actives duplicades conservant la millor (plan més
+--     alt) i la més recent; les altres passen a "superseded" (historial intacte,
+--     mai DELETE). Si es reexecuta, no troba duplicats i no fa res.
+UPDATE "Subscription" s SET "status" = 'superseded'
+WHERE s."status" IN ('active', 'trialing')
+  AND s."id" <> (
+    SELECT s2."id" FROM "Subscription" s2
+    WHERE s2."userId" = s."userId" AND s2."status" IN ('active', 'trialing')
+    ORDER BY CASE s2."plan" WHEN 'PRO' THEN 2 WHEN 'PREMIUM' THEN 1 ELSE 0 END DESC,
+             s2."createdAt" DESC,
+             s2."id" ASC
+    LIMIT 1
+  );
+
+-- 3b) Índex ÚNIC parcial: mai més de UNA subscripció active/trialing per usuari,
+--     garantit a nivell de BD (ni demo, ni carrera de webhooks hi pot escapar).
+CREATE UNIQUE INDEX IF NOT EXISTS "Subscription_one_active_per_user_key"
+  ON "Subscription"("userId") WHERE "status" IN ('active', 'trialing');
+
+-- ── 4) RLS: bloqueja l'accés directe des de Supabase (PostgREST/anon) ──────
+-- L'app connecta com a rol propietari (postgres via pooler) → PostgreSQL
+-- estàndard: el PROPIETARI no està subjecte a RLS (sense FORCE) → l'aplicació
+-- no canvia res. Els rols anon/authenticated de Supabase (la clau anon és
+-- pública) NO tenen cap política → DENY total. Així ningú es pot auto-pujar a
+-- Premium tocant la BD des del navegador: l'únic camí són les rutes de l'API
+-- autenticades i els webhooks de Stripe signats.
+DO $$ DECLARE t text; BEGIN
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public' LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+  END LOOP;
+END $$;
+PREUREAL_V22_EOF
+check "prisma/migrations/20261105150000_subscriptions_fase1/migration.sql" 4115
+mkdir -p "src/lib"
+cat > "src/lib/subscription.ts" << 'PREUREAL_V22_EOF'
+import type Stripe from "stripe";
+import { db } from "@/lib/db";
+import type { PlanId } from "@/lib/plans";
+
+/**
+ * v22 — Fase 1 de subscripcions (encàrrec user_subscriptions / subscription_usage).
+ *
+ * Equivalències amb l'arquitectura demanada (Supabase Auth + RLS + Edge
+ * Functions) sobre el stack REAL del projecte (Next.js serverless + Prisma):
+ *  - `supabase.auth.getUser()`  ↔  requireUser() de src/lib/auth.ts: l'usuari
+ *    s'identifica SEMPRE al servidor (JWT httpOnly + verificació a la BD +
+ *    tokenVersion). Mai es confia en cap ID enviat des del frontend.
+ *  - RLS policies              ↔  (1) migració v22: RLS habilitat a totes les
+ *    taules (el rol anon de Supabase queda sense accés) + (2) totes les
+ *    escriptures de plan/status/stripe_* passen per rutes de servidor o per
+ *    webhooks signats — no existeix cap ruta que accepti aquests camps del client.
+ *  - Edge Functions            ↔  rutes API de servidor (mateixa frontera de
+ *    confiança; correuen a Vercel serverless, no a Deno).
+ *
+ * REGLA: Stripe és la font de veritat del estat de pagament. Sense credencials
+ * STRIPE_* res no es simula com a pagament real (el mode DEMO queda marcat amb
+ * `demo: true` i clarament separat).
+ */
+
+export type PlanType = "free" | "premium" | "pro_agents";
+
+const PLAN_RANK: Record<PlanId, number> = { FREE: 0, PREMIUM: 1, PRO: 2 };
+
+export const USAGE_TYPES = {
+  DETAIL_QUERY: "DETAIL_QUERY",
+  EXPORT_CSV: "EXPORT_CSV",
+  PDF_REPORT: "PDF_REPORT",
+} as const;
+export type UsageType = (typeof USAGE_TYPES)[keyof typeof USAGE_TYPES];
+
+/** Clau de mes UTC: "2026-11". */
+export function monthKey(d: Date = new Date()): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+export function planIdToType(plan: PlanId): PlanType {
+  return plan === "PRO" ? "pro_agents" : plan === "PREMIUM" ? "premium" : "free";
+}
+
+/** Tradueix el planType del encàrrec (free|premium|pro_agents) al PlanId intern. */
+export function typeToPlanId(t: string): "PREMIUM" | "PRO" | null {
+  const v = String(t || "").toLowerCase();
+  if (v === "premium") return "PREMIUM";
+  if (v === "pro_agents" || v === "pro") return "PRO";
+  return null;
+}
+
+/**
+ * Comptador d'ús mensual (upsert atòmic per la clau única userId+type+month).
+ * MAI llança: un fallo de telemetria no pot trencar mai l'acció de l'usuari.
+ */
+export async function recordUsage(userId: string, type: UsageType, n: number = 1): Promise<number | null> {
+  try {
+    const row = await db.subscriptionUsage.upsert({
+      where: {
+        userId_usageType_usageMonth: { userId, usageType: type, usageMonth: monthKey() },
+      },
+      create: { userId, usageType: type, usageMonth: monthKey(), usageCount: n },
+      update: { usageCount: { increment: n } },
+    });
+    return row.usageCount;
+  } catch (e) {
+    console.error("recordUsage", type, e);
+    return null;
+  }
+}
+
+/** Dades locals que es deriven d'una subscripció de Stripe (font de veritat). */
+export function subscriptionLocalData(s: Stripe.Subscription) {
+  const item = s.items.data[0];
+  const interval = item?.price?.recurring?.interval;
+  return {
+    status: s.status,
+    currentPeriodStart: item?.current_period_start ? new Date(item.current_period_start * 1000) : null,
+    currentPeriodEnd: item?.current_period_end ? new Date(item.current_period_end * 1000) : null,
+    cancelAtPeriodEnd: Boolean(s.cancel_at_period_end),
+    billingInterval: interval === "month" || interval === "year" ? interval : null,
+    stripePriceId: item?.price?.id ?? null,
+  };
+}
+
+/** El pla més alt de les subscripcions vigents (defensiu; requireUser ja sincronitza). */
+export function highestVigentPlan(
+  subs: Array<{ status: string; plan: string }>
+): PlanId {
+  let plan: PlanId = "FREE";
+  for (const s of subs) {
+    if (s.status !== "active" && s.status !== "trialing") continue;
+    const p = (s.plan === "PREMIUM" || s.plan === "PRO" ? s.plan : "FREE") as PlanId;
+    if (PLAN_RANK[p] > PLAN_RANK[plan]) plan = p;
+  }
+  return plan;
+}
+
+export interface SubscriptionState {
+  planType: PlanType;
+  subscriptionStatus: string;
+  isFree: boolean;
+  isPremium: boolean;
+  isProAgents: boolean;
+  hasPremiumAccess: boolean;
+  hasProAgentsAccess: boolean;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  subscriptionCount: number;
+  monthlyDetailedQueriesUsed: number;
+  stripeConfigured: boolean;
+  demoCheckout: boolean;
+}
+
+/**
+ * Estat complet per al hook useUserPlan(). `user` ve de requireUser() (pla
+ * fresc, ja sincronitzat amb les subscripcions vigents i períodes vençuts).
+ */
+export async function getSubscriptionState(user: {
+  id: string;
+  plan: string;
+}): Promise<SubscriptionState> {
+  const [subs, usage] = await Promise.all([
+    db.subscription.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }),
+    db.subscriptionUsage.findUnique({
+      where: {
+        userId_usageType_usageMonth: {
+          userId: user.id,
+          usageType: USAGE_TYPES.DETAIL_QUERY,
+          usageMonth: monthKey(),
+        },
+      },
+    }),
+  ]);
+
+  const plan = (user.plan === "PREMIUM" || user.plan === "PRO" ? user.plan : "FREE") as PlanId;
+  const vigent =
+    subs.find((s) => s.status === "active" || s.status === "trialing") ?? null;
+
+  return {
+    planType: planIdToType(plan),
+    subscriptionStatus: vigent?.status ?? "free",
+    isFree: plan === "FREE",
+    isPremium: plan === "PREMIUM",
+    isProAgents: plan === "PRO",
+    hasPremiumAccess: PLAN_RANK[plan] >= PLAN_RANK.PREMIUM,
+    hasProAgentsAccess: PLAN_RANK[plan] >= PLAN_RANK.PRO,
+    currentPeriodStart: vigent?.currentPeriodStart?.toISOString() ?? null,
+    currentPeriodEnd: vigent?.currentPeriodEnd?.toISOString() ?? null,
+    cancelAtPeriodEnd: vigent?.cancelAtPeriodEnd ?? false,
+    subscriptionCount: subs.length,
+    monthlyDetailedQueriesUsed: usage?.usageCount ?? 0,
+    stripeConfigured: Boolean(process.env.STRIPE_SECRET_KEY),
+    demoCheckout: process.env.DEMO_CHECKOUT === "true",
+  };
+}
+PREUREAL_V22_EOF
+check "src/lib/subscription.ts" 6058
+mkdir -p "src/lib"
+cat > "src/lib/plans.ts" << 'PREUREAL_V22_EOF'
+/** Definición de planes de PreuReal.cat (Fase 5: límits configurables des de l'admin). */
+import { db } from "@/lib/db";
+
+export type PlanId = "FREE" | "PREMIUM" | "PRO";
+
+/** Valors per defecte (font de veritat si la BD no té cap fila a PlanSetting). */
+export const PLANS: Record<
+  PlanId,
+  {
+    quotaMonth: number; // -1 = il·limitades
+    priceEur: number;
+    stripePriceEnv?: "STRIPE_PREMIUM_PRICE_ID" | "STRIPE_PRO_AGENTS_PRICE_ID";
+    features: {
+      comparador: boolean;
+      exportCsv: boolean;
+      historial: boolean;
+      preferits: boolean;
+      pdfMunicipi: boolean;
+      pdfEdifici: boolean;
+    };
+  }
+> = {
+  FREE: {
+    quotaMonth: 3,
+    priceEur: 0,
+    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false },
+  },
+  PREMIUM: {
+    quotaMonth: -1,
+    priceEur: 7.99,
+    stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
+    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false },
+  },
+  PRO: {
+    quotaMonth: -1,
+    priceEur: 19.99,
+    stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
+    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true },
+  },
+};
+
+export type EffectivePlan = {
+  quotaMonth: number;
+  priceEur: number;
+  features: (typeof PLANS)["FREE"]["features"];
+};
+
+type Cache = { at: number; data: Record<PlanId, EffectivePlan> };
+let settingsCache: Cache | null = null;
+const CACHE_MS = 30_000; // l'admin veu els canvis com a molt tard en 30 s
+
+/** Configuració efectiva dels plans: BD (PlanSetting) amb fallback als defaults. */
+export async function getPlanSettings(): Promise<Record<PlanId, EffectivePlan>> {
+  if (settingsCache && Date.now() - settingsCache.at < CACHE_MS) return settingsCache.data;
+  const out: Record<PlanId, EffectivePlan> = {
+    FREE: { ...PLANS.FREE, features: { ...PLANS.FREE.features } },
+    PREMIUM: { ...PLANS.PREMIUM, features: { ...PLANS.PREMIUM.features } },
+    PRO: { ...PLANS.PRO, features: { ...PLANS.PRO.features } },
+  };
+  try {
+    const rows = await db.planSetting.findMany();
+    for (const row of rows) {
+      if (row.plan in out) {
+        const id = row.plan as PlanId;
+        out[id].quotaMonth = row.quotaMonth;
+        out[id].priceEur = row.priceEur;
+        if (row.features) {
+          try {
+            out[id].features = { ...out[id].features, ...JSON.parse(row.features) };
+          } catch {}
+        }
+      }
+    }
+    settingsCache = { at: Date.now(), data: out };
+  } catch (e) {
+    console.error("getPlanSettings: BD no disponible, s'usen els defaults", e);
+  }
+  return out;
+}
+
+export function invalidatePlanCache() {
+  settingsCache = null;
+}
+
+export function planName(plan: PlanId, locale: "ca" | "es"): string {
+  const names: Record<PlanId, [string, string]> = {
+    FREE: ["Gratuït", "Gratuito"],
+    PREMIUM: ["Premium", "Premium"],
+    PRO: ["Pro (agents)", "Pro (agentes)"],
+  };
+  return names[plan][locale === "es" ? 1 : 0];
+}
+
+/** Quota del pla segons la configuració efectiva. */
+export async function quotaForPlan(plan: PlanId): Promise<number> {
+  return (await getPlanSettings())[plan].quotaMonth;
+}
+
+/** true si el usuario tiene la consulta gratuita disponible este mes */
+export async function canConsult(
+  userId: string,
+  plan: PlanId
+): Promise<{ ok: boolean; used: number; limit: number }> {
+  const limit = (await getPlanSettings())[plan].quotaMonth;
+  if (limit < 0) return { ok: true, used: 0, limit: -1 };
+  const start = new Date();
+  start.setUTCDate(1);
+  start.setUTCHours(0, 0, 0, 0);
+  const used = await db.searchLog.count({
+    where: { userId, kind: "DETAIL", createdAt: { gte: start } },
+  });
+  return { ok: used < limit, used, limit };
+}
+
+/** Comprova una feature del pla contra la configuració efectiva. */
+export async function planAllows(plan: PlanId, feature: keyof EffectivePlan["features"]): Promise<boolean> {
+  const s = await getPlanSettings();
+  return Boolean(s[plan]?.features[feature]);
+}
+
+const PLAN_RANK: Record<PlanId, number> = { FREE: 0, PREMIUM: 1, PRO: 2 };
+
+// Cau de sincronització per usuari (P1.4): evita martellejar la BD a cada petició
+const planSyncAt = new Map<string, number>();
+const PLAN_SYNC_MS = 60_000;
+
+/**
+ * P1.4 — Sincronitza el pla de l'usuari amb les seves subscripcions VIGENTS:
+ *  1) expira les subscripcions "active" el període de les quals ja ha acabat
+ *     (caducitat automàtica dels 30 dies DEMO o del període Stripe, sense
+ *     dependre del botó de cancel·lar ni de cap cron);
+ *  2) el pla efectiu és el MÉS ALT de les subscripcions encara actives
+ *     (mai queden subscripcions antigues "actives" decidint el pla).
+ *
+ * Auto-curatiu: es crida des de requireUser() dels usuaris de pagament, des
+ * dels webhooks de Stripe i des del flux DEMO. Mai llança: si la BD falla
+ * retorna null i el caller manté el pla actual.
+ */
+export async function syncUserPlan(
+  userId: string,
+  opts?: { force?: boolean }
+): Promise<PlanId | null> {
+  try {
+    if (!opts?.force) {
+      const last = planSyncAt.get(userId);
+      if (last && Date.now() - last < PLAN_SYNC_MS) return null; // sincronitzat fa poc
+    }
+    planSyncAt.set(userId, Date.now());
+
+    const now = new Date();
+    await db.subscription.updateMany({
+      where: { userId, status: "active", currentPeriodEnd: { lt: now } },
+      data: { status: "expired" },
+    });
+    const vigents = await db.subscription.findMany({
+      where: { userId, status: { in: ["active", "trialing"] } },
+      select: { plan: true },
+    });
+    let plan: PlanId = "FREE";
+    for (const s of vigents) {
+      const p = (s.plan === "PREMIUM" || s.plan === "PRO" ? s.plan : "FREE") as PlanId;
+      if (PLAN_RANK[p] > PLAN_RANK[plan]) plan = p;
+    }
+    const user = await db.user.findUnique({ where: { id: userId }, select: { plan: true } });
+    if (user && user.plan !== plan) {
+      await db.user.update({ where: { id: userId }, data: { plan } });
+    }
+    return plan;
+  } catch (e) {
+    console.error("syncUserPlan", e);
+    return null;
+  }
+}
+PREUREAL_V22_EOF
+check "src/lib/plans.ts" 6122
+mkdir -p "src/app/api/[[...path]]"
+cat > "src/app/api/[[...path]]/route.ts" << 'PREUREAL_V22_EOF'
+// Autogenerat per scripts/gen_api_dispatcher.py — NO editar a mà.
+//
+// Un ÚNIC serverless function (catch-all) enruta totes les rutes de l'API
+// (limit de 12 functions del pla Hobby de Vercel; l'app en té ~45).
+// Els handlers reals viuen a src/app/api/_impl/**/route.ts sense canvis;
+// /api/health i /api/stripe/webhook segueixen sent funcions pròpies.
+import { NextResponse, type NextRequest } from "next/server";
+
+import * as h_account from "../_impl/account/route";
+import * as h_account_activity from "../_impl/account/activity/route";
+import * as h_account_export from "../_impl/account/export/route";
+import * as h_admin_audit from "../_impl/admin/audit/route";
+import * as h_admin_emails from "../_impl/admin/emails/route";
+import * as h_admin_export_csv from "../_impl/admin/export-csv/route";
+import * as h_admin_import from "../_impl/admin/import/route";
+import * as h_admin_imports from "../_impl/admin/imports/route";
+import * as h_admin_plan_settings from "../_impl/admin/plan-settings/route";
+import * as h_admin_reports from "../_impl/admin/reports/route";
+import * as h_admin_stats from "../_impl/admin/stats/route";
+import * as h_admin_users from "../_impl/admin/users/route";
+import * as h_auth_change_password from "../_impl/auth/change-password/route";
+import * as h_auth_google from "../_impl/auth/google/route";
+import * as h_auth_google_callback from "../_impl/auth/google/callback/route";
+import * as h_auth_google_status from "../_impl/auth/google/status/route";
+import * as h_auth_login from "../_impl/auth/login/route";
+import * as h_auth_logout from "../_impl/auth/logout/route";
+import * as h_auth_me from "../_impl/auth/me/route";
+import * as h_auth_password_reset from "../_impl/auth/password-reset/route";
+import * as h_auth_password_reset_confirm from "../_impl/auth/password-reset/confirm/route";
+import * as h_auth_register from "../_impl/auth/register/route";
+import * as h_auth_sessions_revoke_all from "../_impl/auth/sessions/revoke-all/route";
+import * as h_auth_verify from "../_impl/auth/verify/route";
+import * as h_billing_history from "../_impl/billing/history/route";
+import * as h_buildings from "../_impl/buildings/route";
+import * as h_comparator from "../_impl/comparator/route";
+import * as h_comparisons from "../_impl/comparisons/route";
+import * as h_cron_emails from "../_impl/cron/emails/route";
+import * as h_events from "../_impl/events/route";
+import * as h_favorites from "../_impl/favorites/route";
+import * as h_geocode from "../_impl/geocode/route";
+import * as h_history from "../_impl/history/route";
+import * as h_lookup from "../_impl/lookup/route";
+import * as h_lookup_refcat from "../_impl/lookup-refcat/route";
+import * as h_municipalities from "../_impl/municipalities/route";
+import * as h_provenance from "../_impl/provenance/route";
+import * as h_reports from "../_impl/reports/route";
+import * as h_reports_pdf from "../_impl/reports/pdf/route";
+import * as h_root from "../_impl/root/route";
+import * as h_stripe_checkout from "../_impl/stripe/checkout/route";
+import * as h_stripe_demo from "../_impl/stripe/demo/route";
+import * as h_stripe_portal from "../_impl/stripe/portal/route";
+import * as h_stripe_return from "../_impl/stripe/return/route";
+import * as h_subscription from "../_impl/subscription/route";
+import * as h_subscription_cancel from "../_impl/subscription/cancel/route";
+import * as h_subscription_reactivate from "../_impl/subscription/reactivate/route";
+import * as h_export_code from "../_impl/export/[code]/route";
+import * as h_municipalities_code from "../_impl/municipalities/[code]/route";
+
+type Ctx = { params: Promise<Record<string, string>> };
+type Handler = (req: NextRequest, ctx: Ctx) => Promise<Response> | Response;
+
+const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
+  { seg: ["account"], h: h_account },
+  { seg: ["account", "activity"], h: h_account_activity },
+  { seg: ["account", "export"], h: h_account_export },
+  { seg: ["admin", "audit"], h: h_admin_audit },
+  { seg: ["admin", "emails"], h: h_admin_emails },
+  { seg: ["admin", "export-csv"], h: h_admin_export_csv },
+  { seg: ["admin", "import"], h: h_admin_import },
+  { seg: ["admin", "imports"], h: h_admin_imports },
+  { seg: ["admin", "plan-settings"], h: h_admin_plan_settings },
+  { seg: ["admin", "reports"], h: h_admin_reports },
+  { seg: ["admin", "stats"], h: h_admin_stats },
+  { seg: ["admin", "users"], h: h_admin_users },
+  { seg: ["auth", "change-password"], h: h_auth_change_password },
+  { seg: ["auth", "google"], h: h_auth_google },
+  { seg: ["auth", "google", "callback"], h: h_auth_google_callback },
+  { seg: ["auth", "google", "status"], h: h_auth_google_status },
+  { seg: ["auth", "login"], h: h_auth_login },
+  { seg: ["auth", "logout"], h: h_auth_logout },
+  { seg: ["auth", "me"], h: h_auth_me },
+  { seg: ["auth", "password-reset"], h: h_auth_password_reset },
+  { seg: ["auth", "password-reset", "confirm"], h: h_auth_password_reset_confirm },
+  { seg: ["auth", "register"], h: h_auth_register },
+  { seg: ["auth", "sessions", "revoke-all"], h: h_auth_sessions_revoke_all },
+  { seg: ["auth", "verify"], h: h_auth_verify },
+  { seg: ["billing", "history"], h: h_billing_history },
+  { seg: ["buildings"], h: h_buildings },
+  { seg: ["comparator"], h: h_comparator },
+  { seg: ["comparisons"], h: h_comparisons },
+  { seg: ["cron", "emails"], h: h_cron_emails },
+  { seg: ["events"], h: h_events },
+  { seg: ["favorites"], h: h_favorites },
+  { seg: ["geocode"], h: h_geocode },
+  { seg: ["history"], h: h_history },
+  { seg: ["lookup"], h: h_lookup },
+  { seg: ["lookup-refcat"], h: h_lookup_refcat },
+  { seg: ["municipalities"], h: h_municipalities },
+  { seg: ["provenance"], h: h_provenance },
+  { seg: ["reports"], h: h_reports },
+  { seg: ["reports", "pdf"], h: h_reports_pdf },
+  { seg: ["root"], h: h_root },
+  { seg: ["stripe", "checkout"], h: h_stripe_checkout },
+  { seg: ["stripe", "demo"], h: h_stripe_demo },
+  { seg: ["stripe", "portal"], h: h_stripe_portal },
+  { seg: ["stripe", "return"], h: h_stripe_return },
+  { seg: ["subscription"], h: h_subscription },
+  { seg: ["subscription", "cancel"], h: h_subscription_cancel },
+  { seg: ["subscription", "reactivate"], h: h_subscription_reactivate },
+  { seg: ["export", ":code"], h: h_export_code },
+  { seg: ["municipalities", ":code"], h: h_municipalities_code },
+];
+
+const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+type Method = (typeof METHODS)[number];
+
+function safeDecode(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
+async function dispatch(req: NextRequest, method: Method, parts: string[]): Promise<Response> {
+  for (const r of TABLE) {
+    if (r.seg.length !== parts.length) continue;
+    const params: Record<string, string> = {};
+    let ok = true;
+    for (let i = 0; i < r.seg.length; i++) {
+      const s = r.seg[i];
+      const got = safeDecode(parts[i]);
+      if (s.startsWith(":")) {
+        params[s.slice(1)] = got;
+      } else if (s !== got) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+    const fn = r.h[method] as Handler | undefined;
+    if (!fn) {
+      return NextResponse.json({ error: "method_not_allowed" }, { status: 405 });
+    }
+    return fn(req, { params: Promise.resolve(params) });
+  }
+  return NextResponse.json({ error: "not_found" }, { status: 404 });
+}
+
+async function handle(
+  req: NextRequest,
+  method: Method,
+  ctx: { params: Promise<{ path?: string[] }> }
+): Promise<Response> {
+  const { path } = await ctx.params;
+  return dispatch(req, method, path ?? []);
+}
+
+export const GET = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
+  handle(req, "GET", ctx);
+export const POST = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
+  handle(req, "POST", ctx);
+export const PUT = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
+  handle(req, "PUT", ctx);
+export const PATCH = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
+  handle(req, "PATCH", ctx);
+export const DELETE = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
+  handle(req, "DELETE", ctx);
+PREUREAL_V22_EOF
+check "src/app/api/[[...path]]/route.ts" 8212
+echo "== PART 1/3 completada. Torna al xat i escriu: continua =="
+PREUREAL_P1_FI

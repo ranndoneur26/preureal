@@ -10,7 +10,7 @@
 #   docker compose run --rm dbinit bash scripts/update_all.sh
 #
 # Migrar el archivo SQLite original a este PostgreSQL:
-#   docker compose run --rm dbinit python3 scripts/migrate_sqlite_to_pg.py
+#   (histórico SQLite→PG: ya aplicado; script en scripts/archive/migrate_sqlite_to_pg.py)
 #
 # Requisito: .env junto a este archivo (copia .env.production.example → .env).
 # DATABASE_URL ya no hace falta en el .env para VPS: se compone abajo.

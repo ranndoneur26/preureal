@@ -303,7 +303,6 @@ export default function MapView() {
   const [results, setResults] = useState<MunLite[]>([]);
   const [addresses, setAddresses] = useState<AddressResult[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [selectedMun, setSelectedMun] = useState<MunLite | null>(null);
   const [zoomHint, setZoomHint] = useState(false);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [buildingsError, setBuildingsError] = useState<string | null>(null);
@@ -612,7 +611,6 @@ export default function MapView() {
   const selectMunicipality = useCallback(async (mun: MunLite) => {
     setShowResults(false);
     setQuery(mun.name);
-    setSelectedMun(mun);
     const map = mapRef.current;
     if (!map) return;
     // límit municipal real (ICGC amb cau) + fit
@@ -644,7 +642,6 @@ export default function MapView() {
     if (!map || !L) return;
     setShowResults(false);
     setQuery(a.label);
-    setSelectedMun(null);
     boundaryRef.current?.clearLayers();
     map.flyTo([a.lat, a.lng], 18, { duration: 0.8 });
     setTimeout(() => loadBuildingsInView(), 900);
@@ -754,7 +751,7 @@ export default function MapView() {
                 aria-label={t.map.searchPlaceholder}
               />
               {query && (
-                <button onClick={() => { setQuery(""); setSelectedMun(null); setAddresses([]); boundaryRef.current?.clearLayers(); }}>
+                <button onClick={() => { setQuery(""); setAddresses([]); boundaryRef.current?.clearLayers(); }}>
                   <X className="w-4 h-4 text-[#6b6f68]" />
                 </button>
               )}

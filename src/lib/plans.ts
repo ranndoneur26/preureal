@@ -1,6 +1,6 @@
 /** Definición de planes de PreuReal.cat (Fase 5: límits configurables des de l'admin). */
 import { db } from "@/lib/db";
-import { VIGENT_STATUSES } from "@/lib/subscription";
+import { VIGENT_STATUSES, PLAN_RANK, monthKey } from "@/lib/subscription";
 
 export type PlanId = "FREE" | "PREMIUM" | "PRO";
 
@@ -111,18 +111,20 @@ export async function quotaForPlan(plan: PlanId): Promise<number> {
   return (await getPlanSettings())[plan].quotaMonth;
 }
 
-/** true si el usuario tiene la consulta gratuita disponible este mes */
+/** true si el usuario tiene la consulta gratuita disponible este mes.
+ *  v31: cuenta SubscriptionUsage DETAIL_QUERY — la MISMA fuente atómica que
+ *  consumeDetailQuery() aplica en /api/lookup — para que la cifra mostrada
+ *  en /api/auth/me (PanelView, MapView) coincida SIEMPRE con la aplicación
+ *  real. Antes contaba SearchLog: borrando historial la quota "se reiniciaba"
+ *  en pantalla pero no en la aplicación (y viceversa). */
 export async function canConsult(
   userId: string,
   plan: PlanId
 ): Promise<{ ok: boolean; used: number; limit: number }> {
   const limit = (await getPlanSettings())[plan].quotaMonth;
   if (limit < 0) return { ok: true, used: 0, limit: -1 };
-  const start = new Date();
-  start.setUTCDate(1);
-  start.setUTCHours(0, 0, 0, 0);
-  const used = await db.searchLog.count({
-    where: { userId, kind: "DETAIL", createdAt: { gte: start } },
+  const used = await db.subscriptionUsage.count({
+    where: { userId, usageType: "DETAIL_QUERY", usageMonth: monthKey() },
   });
   return { ok: used < limit, used, limit };
 }
@@ -133,7 +135,7 @@ export async function planAllows(plan: PlanId, feature: keyof EffectivePlan["fea
   return Boolean(s[plan]?.features[feature]);
 }
 
-const PLAN_RANK: Record<PlanId, number> = { FREE: 0, PREMIUM: 1, PRO: 2 };
+// v31: PLAN_RANK vive en subscription.ts (fuente única importada aquí arriba)
 
 // Cau de sincronització per usuari (P1.4): evita martellejar la BD a cada petició
 const planSyncAt = new Map<string, number>();

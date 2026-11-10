@@ -1,0 +1,185 @@
+cat > "$HOME/preureal_guia.sh" << 'FIN_REC'
+#!/bin/bash
+# PreuReal · Guia V23 — recuperador v2 · hogar estable: ~/preureal_guia
+DIR="$HOME/preureal_guia"
+PDF="$HOME/Desktop/PreuReal_Guia_V23.pdf"
+mkdir -p "$DIR"
+sha() {
+  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | awk '{print $1}'
+  else sha256sum "$1" | awk '{print $1}'; fi
+}
+
+echo "⏳ Reconstruyendo p1 y p2 (van dentro de este script)…"
+openssl base64 -d << 'B64_P1' | gunzip > "$DIR/guia_p1.html"
+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
+TZckJDQOWW+0LD/w4F1c/RsAMUXCKhYAAA==
+B64_P1
+openssl base64 -d << 'B64_P2' | gunzip > "$DIR/guia_p2.html"
+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
+B64_P2
+
+echo "⏳ Rescatando la p3 de su ubicación anterior (si sigue ahí)…"
+if [ ! -f "$DIR/guia_p3.html" ] || [ "$(sha "$DIR/guia_p3.html")" != "02c6db66de9ae2deb2f7b6c27bc5c7ec6c97d6ecbf99697f92b7a8356abd3294" ]; then
+  for c in "$HOME/guia_p3.html" "/tmp/guia_p3.html"; do
+    if [ -f "$c" ] && [ "$(sha "$c")" = "02c6db66de9ae2deb2f7b6c27bc5c7ec6c97d6ecbf99697f92b7a8356abd3294" ]; then
+      cp "$c" "$DIR/guia_p3.html"
+      echo "✅ p3 rescatada de $c"
+      break
+    fi
+  done
+fi
+
+ok=1
+if [ -f "$DIR/guia_p1.html" ] && [ "$(sha "$DIR/guia_p1.html")" = "287bf21a1284a7a5baf8ff1b0f11bea3437927fd5eb927f6a7bf104e25f26255" ]; then
+  echo "✅ p1 OK (5674 bytes)"
+else echo "❌ p1 no cuadra"; ok=0; fi
+if [ -f "$DIR/guia_p2.html" ] && [ "$(sha "$DIR/guia_p2.html")" = "2bd202a0c2dc9b4942c76147fd58fc626760841165cf30a0b30f802021302a5b" ]; then
+  echo "✅ p2 OK (9777 bytes)"
+else echo "❌ p2 no cuadra"; ok=0; fi
+if [ -f "$DIR/guia_p3.html" ] && [ "$(sha "$DIR/guia_p3.html")" = "02c6db66de9ae2deb2f7b6c27bc5c7ec6c97d6ecbf99697f92b7a8356abd3294" ]; then
+  echo "✅ p3 OK (28197 bytes)"
+else echo "❌ FALTA LA PARTE 3"; ok=0; fi
+
+if [ "$ok" != "1" ]; then
+  echo
+  echo "→ Si arriba pone «FALTA LA PARTE 3», dime «manda la p3» y te paso su bloque blindado;"
+  echo "  lo pegas (crea ~/preureal_guia/guia_p3.html) y repites: bash ~/preureal_guia.sh"
+  exit 1
+fi
+
+echo "⏳ Ensamblando el HTML…"
+cat "$DIR/guia_p1.html" "$DIR/guia_p2.html" "$DIR/guia_p3.html" > "$DIR/guia.html"
+GOT="$(sha "$DIR/guia.html")"
+if [ "$GOT" != "488d77f141d79c5108c632de2bf1ae31b866192c9e045b9fe96ac5cefa3401f8" ]; then
+  echo "❌ El conjunto no cuadra (sha: $GOT) — cópiame esta salida."
+  exit 1
+fi
+echo "✅ HTML completo verificado byte a byte"
+
+CHROME=""
+for c in "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+         "/Applications/Chromium.app/Contents/MacOS/Chromium" \
+         "$(command -v google-chrome 2>/dev/null)" \
+         "$(command -v chromium 2>/dev/null)"; do
+  if [ -n "$c" ] && [ -x "$c" ]; then CHROME="$c"; break; fi
+done
+
+if [ -n "$CHROME" ]; then
+  echo "⏳ Generando el PDF con Chrome (unos segundos)…"
+  "$CHROME" --headless=new --disable-gpu --user-data-dir="$DIR/.chrome-tmp" \
+    --no-pdf-header-footer --print-to-pdf-no-header \
+    --print-to-pdf="$PDF" "file://$DIR/guia.html" >/dev/null 2>&1
+  if [ ! -f "$PDF" ]; then
+    "$CHROME" --headless --disable-gpu --user-data-dir="$DIR/.chrome-tmp" \
+      --print-to-pdf="$PDF" "file://$DIR/guia.html" >/dev/null 2>&1
+  fi
+  if [ -f "$PDF" ]; then
+    echo "✅ PDF creado: $PDF"
+    open "$PDF" 2>/dev/null || true
+    echo "🎉 Ábrelo y dime si se ve bien — con esto cerramos la tarea."
+    exit 0
+  fi
+  echo "⚠️ Chrome no pudo generar el PDF — usa el plan Firefox de aquí abajo."
+fi
+
+if [ ! -f "$PDF" ]; then
+  awk '/<\/style>/ && !d { sub(/<\/style>/, "html{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style>"); d=1 } { print }' \
+    "$DIR/guia.html" > "$DIR/guia_print.html"
+  cat << 'FIREFOX'
+
+PLAN FIREFOX (2 minutos, sin Chrome):
+ 1. Finder → Inicio → carpeta «preureal_guia»
+ 2. Botón derecho en «guia_print.html» → Abrir con → Firefox
+ 3. En Firefox: Cmd+P → Destino: «Guardar como PDF»
+ 4. «Más ajustes»: Márgenes → «Ninguno» · Encabezados y pies: off · «Imprimir fondos»: on (si aparece)
+ 5. Guardar como «PreuReal_Guia_V23.pdf» en el Escritorio
+FIREFOX
+fi
+FIN_REC

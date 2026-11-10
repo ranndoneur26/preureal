@@ -4,6 +4,7 @@ import { clientIp } from "@/lib/security";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   MAX_TOTAL_ATTEMPTS,
+  RETRYABLE_TYPES,
   deliverWithResend,
   favoritesDigestMail,
   mailProvider,
@@ -39,7 +40,6 @@ import {
  *     tokens (les files anteriors a v19).
  */
 
-const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC", "DIGEST"];
 const DAY = 86_400_000;
 /** v24: màxim de favorits llistats al resum mensual (la resta es resum en una nota) */
 const DIGEST_MAX_ITEMS = 10;

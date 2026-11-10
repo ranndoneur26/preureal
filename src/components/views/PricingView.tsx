@@ -56,6 +56,14 @@ export default function PricingView() {
       } else if (d.ok && d.mode === "DEMO") {
         await auth.refresh();
         setNotice(d.message);
+      } else if (d.error === "ALREADY_SUBSCRIBED") {
+        // v31: en vez de un callejón sin salida, señalamos el nuevo flujo de cambio de plan
+        setNotice(
+          (d.message || d.error) +
+            (locale === "ca"
+              ? " També pots canviar de pla des de El meu compte → Facturació."
+              : " También puedes cambiar de plan desde Mi cuenta → Facturación."),
+        );
       } else {
         setNotice(d.message || d.error);
       }

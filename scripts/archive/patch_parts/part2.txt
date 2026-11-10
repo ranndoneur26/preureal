@@ -1,0 +1,949 @@
+bash << 'PREUREAL_P2_FI'
+set -e
+cd "/Users/marcxicola/Desktop/Feines 2025-26/preureal" || { echo "ERROR: no trobo la carpeta del projecte (/Users/marcxicola/Desktop/Feines 2025-26/preureal)"; exit 1; }
+echo "== PreuReal v22 · PART 2/3: rutes API de subscripcio + Stripe (preparat, no connectat) + hook useUserPlan + .env exemple ==" 
+check() { s=$(wc -c < "$1" | tr -d ' '); if [ "$s" = "$2" ]; then echo "  OK $1 ($s bytes)"; else echo "  !! ATENCIO: $1 te $s bytes (esperava $2) - copia tot aixo al xat"; fi; }
+mkdir -p "src/app/api/_impl/subscription"
+cat > "src/app/api/_impl/subscription/route.ts" << 'PREUREAL_V22_EOF'
+import { NextResponse } from "next/server";
+import { getAuthUser } from "@/lib/auth";
+import { getSubscriptionState } from "@/lib/subscription";
+
+/**
+ * GET /api/subscription — estat de la suscripció per al hook useUserPlan().
+ * 401 si no hi ha sessió (el hook mostra el pla gratuït per defecte).
+ * El pla SEMPRE ve de la BD via getAuthUser (mai del client) — equivalent
+ * funcional de `supabase.auth.getUser()` + RLS del encàrrec.
+ */
+export async function GET() {
+  let user;
+  try {
+    user = await getAuthUser();
+  } catch {
+    user = null;
+  }
+  if (!user) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+
+  const state = await getSubscriptionState(user);
+  return NextResponse.json(state);
+}
+PREUREAL_V22_EOF
+check "src/app/api/_impl/subscription/route.ts" 736
+mkdir -p "src/app/api/_impl/subscription/cancel"
+cat > "src/app/api/_impl/subscription/cancel/route.ts" << 'PREUREAL_V22_EOF'
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import { db } from "@/lib/db";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
+import { audit } from "@/lib/security";
+import { getSubscriptionState, subscriptionLocalData } from "@/lib/subscription";
+
+/**
+ * POST /api/subscription/cancel — programar la cancel·lació a FINAL DEL PERÍODE
+ * (l'usuari manté l'accés fins a currentPeriodEnd, igual que al Portal de
+ * Stripe). Equival a l'Edge Function `cancel-subscription` del encàrrec.
+ *
+ * Seguretat: l'usuari ve de requireVerifiedUser() (sessió server-side); només
+ * pot operar sobre LA SEVA subscripció vigent; el camp cancelAtPeriodEnd mai
+ * s'accepta del client (la política anti auto-Premium queda intacta: cancelar
+ * només REDUEIX accés, mai l'amplia).
+ */
+export async function POST() {
+  let user;
+  try {
+    user = await requireVerifiedUser();
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+  const rl = await rateLimit(`sub-cancel:${user.id}`, 5, 60_000);
+  if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  const sub = await db.subscription.findFirst({
+    where: { userId: user.id, status: { in: ["active", "trialing"] } },
+  });
+  if (!sub) {
+    return NextResponse.json(
+      { error: "NO_ACTIVE_SUBSCRIPTION", message: "No tens cap subscripció vigent." },
+      { status: 404 }
+    );
+  }
+
+  // Subscripció REAL de Stripe → la veritat és a Stripe (API), i sincronitzem.
+  // DEMO o sessió sense sub de Stripe → només estat local (sense cobrament).
+  const isRealStripe =
+    !sub.demo &&
+    Boolean(process.env.STRIPE_SECRET_KEY) &&
+    Boolean(sub.stripeSubscriptionId) &&
+    !String(sub.stripeSubscriptionId).startsWith("session_");
+
+  try {
+    if (isRealStripe) {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+      const s = await stripe.subscriptions.update(sub.stripeSubscriptionId!, {
+        cancel_at_period_end: true,
+      });
+      await db.subscription.update({
+        where: { id: sub.id },
+        data: { ...subscriptionLocalData(s), plan: sub.plan },
+      });
+    } else {
+      await db.subscription.update({
+        where: { id: sub.id },
+        data: { cancelAtPeriodEnd: true },
+      });
+    }
+  } catch (e) {
+    console.error("subscription/cancel", e);
+    return NextResponse.json(
+      { error: "STRIPE_ERROR", message: "No s'ha pogut programar la cancel·lació. Prova-ho més tard." },
+      { status: 502 }
+    );
+  }
+
+  await audit(user.id, "SUBSCRIPTION_CANCEL_SCHEDULED", sub.id, { plan: sub.plan }).catch(() => {});
+  const state = await getSubscriptionState(user);
+  return NextResponse.json({ ok: true, state });
+}
+PREUREAL_V22_EOF
+check "src/app/api/_impl/subscription/cancel/route.ts" 2925
+mkdir -p "src/app/api/_impl/subscription/reactivate"
+cat > "src/app/api/_impl/subscription/reactivate/route.ts" << 'PREUREAL_V22_EOF'
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import { db } from "@/lib/db";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
+import { audit } from "@/lib/security";
+import { getSubscriptionState, subscriptionLocalData } from "@/lib/subscription";
+
+/**
+ * POST /api/subscription/reactivate — desfés una cancel·lació programada
+ * (cancelAtPeriodEnd → false). Equival a l'Edge Function
+ * `reactivate-subscription` del encàrrec. Mai concedeix accés que la BD no
+ * tingui ja: només té efecte si hi ha una subscripció vigent que estava
+ * marcada per cancel·lar-se a final de període.
+ */
+export async function POST() {
+  let user;
+  try {
+    user = await requireVerifiedUser();
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+  const rl = await rateLimit(`sub-react:${user.id}`, 5, 60_000);
+  if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  const sub = await db.subscription.findFirst({
+    where: { userId: user.id, status: { in: ["active", "trialing"] } },
+  });
+  if (!sub || !sub.cancelAtPeriodEnd) {
+    return NextResponse.json(
+      {
+        error: "NOTHING_TO_REACTIVATE",
+        message: "No tens cap cancel·lació programada per desfés.",
+      },
+      { status: 404 }
+    );
+  }
+
+  const isRealStripe =
+    !sub.demo &&
+    Boolean(process.env.STRIPE_SECRET_KEY) &&
+    Boolean(sub.stripeSubscriptionId) &&
+    !String(sub.stripeSubscriptionId).startsWith("session_");
+
+  try {
+    if (isRealStripe) {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+      const s = await stripe.subscriptions.update(sub.stripeSubscriptionId!, {
+        cancel_at_period_end: false,
+      });
+      await db.subscription.update({
+        where: { id: sub.id },
+        data: { ...subscriptionLocalData(s), plan: sub.plan },
+      });
+    } else {
+      await db.subscription.update({
+        where: { id: sub.id },
+        data: { cancelAtPeriodEnd: false },
+      });
+    }
+  } catch (e) {
+    console.error("subscription/reactivate", e);
+    return NextResponse.json(
+      { error: "STRIPE_ERROR", message: "No s'ha pogut reactivar la subscripció. Prova-ho més tard." },
+      { status: 502 }
+    );
+  }
+
+  await audit(user.id, "SUBSCRIPTION_REACTIVATED", sub.id, { plan: sub.plan }).catch(() => {});
+  const state = await getSubscriptionState(user);
+  return NextResponse.json({ ok: true, state });
+}
+PREUREAL_V22_EOF
+check "src/app/api/_impl/subscription/reactivate/route.ts" 2645
+mkdir -p "src/app/api/_impl/lookup"
+cat > "src/app/api/_impl/lookup/route.ts" << 'PREUREAL_V22_EOF'
+import { NextResponse } from "next/server";
+import type { Building } from "@prisma/client";
+import { db } from "@/lib/db";
+import { getAuthUser } from "@/lib/auth";
+import { canConsult } from "@/lib/plans";
+import { rateLimit } from "@/lib/rate-limit";
+import { clientIp, hashIp, maskEmail } from "@/lib/security";
+import { fetchParcelAt, resolveMunicipalityCode } from "@/lib/icgc";
+import { getYearBuilt } from "@/lib/catastro";
+import { recordUsage, USAGE_TYPES } from "@/lib/subscription";
+
+/**
+ * POST /api/lookup  { lat, lng, buildingId? }
+ * CONSULTA DETALLADA: el cor del producte.
+ *  - Sense sessió → resposta teaser (protecció de dades + captació).
+ *  - Sessió amb correu SENSE verificar → 403 EMAIL_NOT_VERIFIED (Fase 1:
+ *    bloqueig de les funcions principals fins verificar; validació AL SERVIDOR).
+ *  - Pla FREE → quota/mes configurable (PlanSetting); exhaurida → 402 paywall.
+ *  - PREMIUM/PRO → il·limitades.
+ * Dades retornades: preu mitjà real (fiances Incasòl), contractes de referència,
+ * àrea tensada, refcat catastral real (ICGC), any de construcció (Catastro) i,
+ * si hi ha importació a nivell d'illa, el preu real de l'edifici (Fase 9).
+ */
+export async function POST(req: Request) {
+  const ip = clientIp(req);
+  const rl = await rateLimit(`lookup:${ip}`, 60, 60_000);
+  if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  const body = await req.json().catch(() => null);
+  const lat = parseFloat(body?.lat);
+  const lng = parseFloat(body?.lng);
+  const buildingId = body?.buildingId ? String(body.buildingId).slice(0, 40) : null;
+  if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return NextResponse.json({ error: "BAD_POINT" }, { status: 400 });
+  }
+
+  const session = await getAuthUser();
+
+  // 1) edifici (opcional)
+  let building: Building | null = null;
+  if (buildingId) {
+    building = await db.building.findUnique({ where: { id: buildingId } });
+  }
+
+  // 2) municipi: per l'edifici o per consulta ICGC amb cau
+  let munCode = building?.municipalityCode || null;
+  if (!munCode) {
+    munCode = await resolveMunicipalityCode(lat, lng);
+  }
+  if (!munCode) {
+    return NextResponse.json({ error: "MUNICIPALITY_NOT_FOUND" }, { status: 404 });
+  }
+  const mun = await db.municipality.findUnique({ where: { code: munCode } });
+  if (!mun) return NextResponse.json({ error: "MUNICIPALITY_NOT_FOUND" }, { status: 404 });
+
+  // 3) sense sessió → teaser
+  if (!session) {
+    await db.event
+      .create({ data: { type: "MAP_QUERY", meta: JSON.stringify({ kind: "teaser", mun: mun.code }) } })
+      .catch(() => {});
+    await db.searchLog
+      .create({ data: { kind: "TEASER", municipalityCode: mun.code, ipHash: hashIp(ip) } })
+      .catch(() => {});
+    return NextResponse.json({
+      kind: "teaser",
+      municipality: { name: mun.name, comarca: mun.comarca, isTense: mun.isTense },
+      teaser: {
+        hasRent: !!mun.rentLatest,
+        period: mun.rentPeriod,
+        message: "REGISTRA'T_PER_VEURE",
+      },
+    });
+  }
+
+  // 3.5) verificació de correu obligatòria per a les funcions principals
+  //      (Fase 1: registre i autenticació). El compte es pot obrir i explorar
+  //      el mapa, però les consultes detallades exigeixen correu verificat.
+  //      Els ADMIN hi tenen accés per operativa interna.
+  if (!session.emailVerifiedAt && session.role !== "ADMIN") {
+    await db.event
+      .create({ data: { type: "EMAIL_NOT_VERIFIED", userId: session.id, meta: JSON.stringify({ mun: mun.code }) } })
+      .catch(() => {});
+    return NextResponse.json(
+      { error: "EMAIL_NOT_VERIFIED", email: maskEmail(session.email) },
+      { status: 403 }
+    );
+  }
+
+  // 4) quota del pla (configuració efectiva, aplicada AL SERVIDOR)
+  const plan = (session.plan as "FREE" | "PREMIUM" | "PRO") || "FREE";
+  const quota = await canConsult(session.id, plan);
+  if (!quota.ok) {
+    await db.event
+      .create({ data: { type: "PAYWALL_VIEW", userId: session.id, meta: JSON.stringify({ plan, mun: mun.code }) } })
+      .catch(() => {});
+    return NextResponse.json(
+      {
+        error: "QUOTA_EXCEEDED",
+        quota: { used: quota.used, limit: quota.limit },
+        plan,
+      },
+      { status: 402 }
+    );
+  }
+
+  // 5) refcat real (ICGC) si no el tenim
+  let refcat = building?.refcat || null;
+  if (!refcat) {
+    refcat = await fetchParcelAt(lat, lng);
+  }
+
+  // 6) any de construcció (Catastro, degradació elegant)
+  let yearBuilt: { year: number; source: string } | null = null;
+  if (building) {
+    yearBuilt = await getYearBuilt(building.id, refcat);
+  }
+
+  // 7) registra la consulta
+  await db.searchLog.create({
+    data: {
+      userId: session.id,
+      buildingId: building?.id || null,
+      municipalityCode: mun.code,
+      kind: "DETAIL",
+      ipHash: hashIp(ip),
+    },
+  });
+  await db.event
+    .create({ data: { type: "MAP_QUERY", userId: session.id, meta: JSON.stringify({ kind: "detail", mun: mun.code }) } })
+    .catch(() => {});
+  // v22: comptador d'ús mensual (subscription_usage del encàrrec) — telemetria
+  // per al hook useUserPlan; mai bloqueja la consulta.
+  await recordUsage(session.id, USAGE_TYPES.DETAIL_QUERY);
+
+  return NextResponse.json({
+    kind: "full",
+    building: building
+      ? {
+          id: building.id,
+          tipus: building.tipus,
+          altura: building.altura,
+          nom: building.nom,
+          refcat,
+          yearBuilt,
+          avgRentEurMonth: building.avgRentEurMonth,
+          sampleSize: building.sampleSize,
+        }
+      : { refcat, yearBuilt: null },
+    municipality: {
+      code: mun.code,
+      name: mun.name,
+      comarca: mun.comarca,
+      province: mun.province,
+      rentLatest: mun.rentLatest,
+      rentPeriod: mun.rentPeriod,
+      rentPrevYear: mun.rentPrevYear,
+      rentPrevPeriod: mun.rentPrevPeriod,
+      rentHistory: mun.rentHistory ? JSON.parse(mun.rentHistory) : null,
+      contractsLatest: mun.contractsLatest,
+      isTense: mun.isTense,
+      tenseList: mun.tenseList,
+    },
+    quota: { used: quota.used + 1, limit: quota.limit },
+  });
+}
+PREUREAL_V22_EOF
+check "src/app/api/_impl/lookup/route.ts" 6130
+mkdir -p "src/app/api/_impl/account"
+cat > "src/app/api/_impl/account/route.ts" << 'PREUREAL_V22_EOF'
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { requireUser, revokeSessions } from "@/lib/auth";
+import { sanitizeName, audit } from "@/lib/security";
+
+/**
+ * PATCH /api/account  { name?, locale? }        — edita el perfil (Fase 6)
+ * DELETE /api/account { confirm: "ESBORRA" }    — eliminació del compte (RGPD)
+ *
+ * L'eliminació esborra dades personals (nom, correu, hash) i anonimitza els
+ * registres d'ús que tenen valor estadístic (SearchLog/Event), preservant
+ * agregats sense dades personals.
+ */
+export async function PATCH(req: Request) {
+  let user;
+  try {
+    user = await requireUser();
+  } catch {
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+  const body = await req.json().catch(() => null);
+  const data: { name?: string | null; locale?: string } = {};
+  if (body?.name !== undefined) data.name = body.name === null ? null : sanitizeName(String(body.name));
+  if (body?.locale === "es" || body?.locale === "ca") data.locale = body.locale;
+  const updated = await db.user.update({ where: { id: user.id }, data });
+  return NextResponse.json({
+    ok: true,
+    user: { id: updated.id, email: updated.email, name: updated.name, locale: updated.locale },
+  });
+}
+
+export async function DELETE(req: Request) {
+  let user;
+  try {
+    user = await requireUser();
+  } catch {
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+  const body = await req.json().catch(() => null);
+  if (body?.confirm !== "ESBORRA") {
+    return NextResponse.json({ error: "CONFIRM_REQUIRED" }, { status: 400 });
+  }
+
+  await db.$transaction([
+    // dades personals directes
+    db.favorite.deleteMany({ where: { userId: user.id } }),
+    db.savedComparison.deleteMany({ where: { userId: user.id } }),
+    db.passwordToken.deleteMany({ where: { userId: user.id } }),
+    db.emailToken.deleteMany({ where: { userId: user.id } }),
+    db.subscription.deleteMany({ where: { userId: user.id } }),
+    db.subscriptionUsage.deleteMany({ where: { userId: user.id } }), // v22
+    db.priceReport.deleteMany({ where: { userId: user.id } }),
+    // pseudonimització d'ús històric (mètriques agregades sense PII)
+    db.searchLog.updateMany({ where: { userId: user.id }, data: { userId: null } }),
+    db.event.updateMany({ where: { userId: user.id }, data: { userId: null } }),
+    db.emailLog.deleteMany({ where: { to: user.email } }),
+  ]);
+  await revokeSessions(user.id);
+  await db.user.delete({ where: { id: user.id } });
+  await audit(null, "ACCOUNT_DELETED", user.id, { email: "(esborrat)" });
+  return NextResponse.json({ ok: true });
+}
+PREUREAL_V22_EOF
+check "src/app/api/_impl/account/route.ts" 2644
+mkdir -p "src/app/api/_impl/stripe/checkout"
+cat > "src/app/api/_impl/stripe/checkout/route.ts" << 'PREUREAL_V22_EOF'
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+import { db } from "@/lib/db";
+import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
+import { PLANS } from "@/lib/plans";
+import { rateLimit } from "@/lib/rate-limit";
+import { audit } from "@/lib/security";
+
+/**
+ * POST /api/stripe/checkout { plan: "PREMIUM" | "PRO" }
+ *
+ * REGLA DE NEGOCIO: no se activa NINGÚN cobro real hasta que el propietario
+ * conecte y autorice su cuenta de Stripe (variables STRIPE_* en .env).
+ * Mientras tanto:
+ *  - Sin STRIPE_SECRET_KEY y sin DEMO_CHECKOUT → error controlado.
+ *  - Con DEMO_CHECKOUT=true (solo entorno de pruebas) → suscripción "demo"
+ *    marcada en la BD para poder probar el embudo completo sin cobros.
+ */
+export async function POST(req: Request) {
+  let user;
+  try {
+    // P1.3: MAI es cobra a un correu sense verificar (ni DEMO ni Stripe real)
+    user = await requireVerifiedUser();
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+  // rate limit PER USUARI (E5 de l'auditoria: abans era una clau global compartida)
+  const rl = await rateLimit(`checkout:${user.id}`, 10, 60_000);
+  if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  const body = await req.json().catch(() => null);
+  const planId = String(body?.plan || "");
+  if (planId !== "PREMIUM" && planId !== "PRO") {
+    return NextResponse.json({ error: "BAD_PLAN" }, { status: 400 });
+  }
+  const plan = PLANS[planId as "PREMIUM" | "PRO"];
+
+  const secret = process.env.STRIPE_SECRET_KEY;
+  if (!secret) {
+    if (process.env.DEMO_CHECKOUT === "true") {
+      // P1.4: una ÚNICA subscripció activa — les anteriors (demo o reals de
+      // proves) queden cancel·lades abans de crear la nova
+      await db.subscription.updateMany({
+        where: { userId: user.id, status: "active" },
+        data: { status: "canceled" },
+      });
+      // MODO PRUEBA: activa la suscripción sin Stripe, marcada como demo
+      const updated = await db.user.update({
+        where: { id: user.id },
+        data: { plan: planId },
+      });
+      const sub = await db.subscription.create({
+        data: {
+          userId: updated.id,
+          plan: planId,
+          status: "active",
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 3600 * 1000),
+          demo: true,
+        },
+      });
+      await db.event.create({ data: { type: "CHECKOUT_DEMO", userId: updated.id, meta: JSON.stringify({ plan: planId }) } }).catch(() => {});
+      await db.event.create({ data: { type: "SUBSCRIBE_SUCCESS", userId: updated.id, meta: JSON.stringify({ plan: planId, demo: true }) } }).catch(() => {});
+      await audit(updated.id, "CHECKOUT_DEMO", sub.id, { plan: planId });
+      return NextResponse.json({
+        ok: true,
+        mode: "DEMO",
+        message:
+          "Suscripción DEMO activada (modo prueba, sin cobro real). Conecta tu cuenta de Stripe para activar cobros reales.",
+        subscriptionId: sub.id,
+      });
+    }
+    return NextResponse.json(
+      {
+        error: "STRIPE_NOT_CONFIGURED",
+        message:
+          "Stripe no está configurado todavía. El propietario debe conectar su cuenta de Stripe y definir STRIPE_SECRET_KEY / STRIPE_PRICE_* en .env.",
+      },
+      { status: 503 }
+    );
+  }
+
+  // Stripe real (requiere precios creados en el panel de Stripe)
+  // v22: noms canònics del encàrrec (STRIPE_PREMIUM_PRICE_ID /
+  // STRIPE_PRO_AGENTS_PRICE_ID) amb retrocompatibilitat dels antics.
+  const priceId =
+    process.env[plan.stripePriceEnv!] ||
+    process.env[planId === "PRO" ? "STRIPE_PRICE_PRO" : "STRIPE_PRICE_PREMIUM"];
+  if (!priceId) {
+    return NextResponse.json(
+      {
+        error: "PRICE_NOT_CONFIGURED",
+        message: `Falta ${plan.stripePriceEnv} en .env (créalo en el panel de Stripe como precio recurrente).`,
+      },
+      { status: 503 }
+    );
+  }
+  const stripe = new Stripe(secret);
+
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+  const cs = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    line_items: [{ price: priceId, quantity: 1 }],
+    customer_email: user.email,
+    // la confirmació definitiva SEMPRE via webhook signat; la pantalla de
+    // retorn només consulta l'estat real de la sessió (Fase 7)
+    success_url: `${origin}/#/subscripcio/exit?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/#/subscripcio/cancelat`,
+    metadata: { userId: user.id, plan: planId },
+  });
+  await db.event.create({ data: { type: "CHECKOUT_START", userId: user.id, meta: JSON.stringify({ plan: planId }) } }).catch(() => {});
+  return NextResponse.json({ ok: true, mode: "STRIPE", url: cs.url });
+}
+PREUREAL_V22_EOF
+check "src/app/api/_impl/stripe/checkout/route.ts" 4864
+mkdir -p "src/app/api/stripe/webhook"
+cat > "src/app/api/stripe/webhook/route.ts" << 'PREUREAL_V22_EOF'
+import { NextResponse, after } from "next/server";
+import Stripe from "stripe";
+import { db } from "@/lib/db";
+import { receiptMail, sendMail } from "@/lib/mail";
+import { audit } from "@/lib/security";
+import { syncUserPlan } from "@/lib/plans";
+import { subscriptionLocalData } from "@/lib/subscription";
+
+// El rebut per correu va EN BACKGROUND amb after(): Vercel manté la funció
+// viva fins que acaba l'enviament (ignorat fora de Vercel).
+export const maxDuration = 60;
+
+/**
+ * POST /api/stripe/webhook — endpoint de webhooks de Stripe.
+ * Configurarlo en el panel de Stripe cuando el propietario conecte su cuenta
+ * (STRIPE_WEBHOOK_SECRET).
+ *
+ * Gestiona (Fase 7):
+ *  - checkout.session.completed → activa la subscripció (mai des de la URL de retorn)
+ *  - customer.subscription.updated/deleted → sincronitza estat i canvi de pla
+ *  - invoice.paid → renovacions (actualitza període)
+ *  - invoice.payment_failed → marca past_due
+ *
+ * IDEMPOTÈNCIA (P1.1): la fila StripeEvent fa de LOCK. S'insereix ABANS
+ * d'aplicar efectes (claim atòmic per la clau única eventId) i S'ELIMINA si
+ * el processament falla → Stripe reentrega i l'event torna a executar-se.
+ * Abans, la fila es registrava sense rollback: un error posterior deixava
+ * l'event «devorat» (reentregues rebutjades com a duplicat) i la subscripció
+ * podia quedar dessincronitzada per sempre.
+ */
+export async function POST(req: Request) {
+  const secret = process.env.STRIPE_SECRET_KEY;
+  const whSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) return NextResponse.json({ error: "STRIPE_NOT_CONFIGURED" }, { status: 503 });
+
+  const stripe = new Stripe(secret);
+  const sig = req.headers.get("stripe-signature");
+  const raw = await req.text();
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(raw, sig || "", whSecret || "");
+  } catch {
+    return NextResponse.json({ error: "BAD_SIGNATURE" }, { status: 400 });
+  }
+
+  // --- idempotència P1.1: claim → processar → alliberar si falla ---
+  const claimed = await db.stripeEvent
+    .create({ data: { eventId: event.id, type: event.type } })
+    .then(() => true)
+    .catch(() => false);
+  if (!claimed) {
+    // ja processat amb ÈXIT (reentrega): resposta sense efectes
+    return NextResponse.json({ received: true, duplicate: true });
+  }
+
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const cs = event.data.object as Stripe.Checkout.Session;
+        const userId = cs.metadata?.userId;
+        const plan = cs.metadata?.plan === "PRO" ? "PRO" : "PREMIUM";
+        if (userId) {
+          // mode subscription: l'estat real ve de la subscription de Stripe
+          let subId = typeof cs.subscription === "string" ? cs.subscription : cs.subscription?.id || null;
+          // v22: sincronitza TOTS els camps del encàrrec (període, interval,
+          // cancelAtPeriodEnd, price) directament des de la font de veritat
+          let stripeData: ReturnType<typeof subscriptionLocalData> | null = null;
+          if (subId) {
+            try {
+              const sub = await stripe.subscriptions.retrieve(subId);
+              stripeData = subscriptionLocalData(sub);
+            } catch {
+              // si no es pot llegir, el següent subscription.updated ho corregirà
+            }
+          }
+          await db.user.update({ where: { id: userId }, data: { plan } });
+          // P1.4: una ÚNICA subscripció activa per usuari — les anteriors
+          // queden tancades (l'upsert de sota reactiva la de subId)
+          await db.subscription.updateMany({
+            where: { userId, status: "active" },
+            data: { status: "canceled" },
+          });
+          if (subId) {
+            await db.subscription.upsert({
+              where: { stripeSubscriptionId: subId },
+              create: {
+                userId,
+                stripeCustomerId: String(cs.customer || ""),
+                stripeSubscriptionId: subId,
+                plan,
+                ...(stripeData ?? {
+                  status: "active",
+                  currentPeriodStart: null,
+                  currentPeriodEnd: null,
+                  cancelAtPeriodEnd: false,
+                  billingInterval: null,
+                  stripePriceId: null,
+                }),
+              },
+              update: { plan, ...(stripeData ?? {}) },
+            });
+          } else {
+            await db.subscription.create({
+              data: {
+                userId,
+                stripeCustomerId: String(cs.customer || ""),
+                stripeSubscriptionId: `session_${cs.id}`,
+                plan,
+                status: "active",
+                currentPeriodEnd: null,
+              },
+            });
+          }
+          await db.event
+            .create({ data: { type: "SUBSCRIBE_SUCCESS", userId, meta: JSON.stringify({ plan, mode: "stripe" }) } })
+            .catch(() => {});
+          await audit(userId, "STRIPE_SUBSCRIBE", subId || cs.id, { plan, status: stripeData?.status ?? "active" });
+          const u = await db.user.findUnique({ where: { id: userId } });
+          if (u) {
+            const locale = u.locale === "es" ? "es" : "ca";
+            const amount = plan === "PRO" ? "19,99 €" : "7,99 €";
+            const mail = receiptMail(plan === "PRO" ? "Pro" : "Premium", amount, locale);
+            after(async () => {
+              await sendMail({
+                to: u.email,
+                subject: mail.subject,
+                html: mail.html,
+                type: "RECEIPT",
+                userId: u.id,
+                // P1 v19 — idempotència: re-entregues del webhook o reprocessos
+                // mai generen un segon rebut per la mateixa checkout session
+                idempotencyKey: `stripe-receipt:${subId || cs.id}`,
+              });
+            });
+          }
+        }
+        break;
+      }
+      // v22: `created` també es gestiona — una subscripció creada fora del
+      // checkout (p. ex. des del Portal de Stripe) queda sincronitzada; l'usuari
+      // es dedueix del customer a partir de subscripcions anteriors.
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
+        const s = event.data.object as Stripe.Subscription;
+        const data = subscriptionLocalData(s);
+        let row = await db.subscription.findUnique({ where: { stripeSubscriptionId: String(s.id) } });
+        if (!row && event.type === "customer.subscription.created") {
+          const prior = await db.subscription.findFirst({
+            where: { stripeCustomerId: String(s.customer || "") },
+            orderBy: { createdAt: "desc" },
+          });
+          if (prior) {
+            row = await db.subscription.create({
+              data: {
+                userId: prior.userId,
+                stripeCustomerId: String(s.customer || ""),
+                stripeSubscriptionId: String(s.id),
+                plan: prior.plan === "PRO" ? "PRO" : "PREMIUM",
+                ...data,
+              },
+            });
+          }
+        }
+        if (row) {
+          await db.subscription.update({ where: { id: row.id }, data });
+          // P1.4: el pla de l'usuari es recalcula SEMPRE a partir de les
+          // subscripcions vigents (mai es confia en un estat intermedi)
+          await syncUserPlan(row.userId, { force: true });
+          const stillPaid = data.status === "active" || data.status === "trialing";
+          if (!stillPaid) {
+            await audit(null, "STRIPE_SUB_DOWNGRADED", String(s.id), { status: data.status });
+          }
+        }
+        break;
+      }
+      case "customer.subscription.deleted": {
+        const s = event.data.object as Stripe.Subscription;
+        const sub = await db.subscription.findUnique({ where: { stripeSubscriptionId: String(s.id) } });
+        if (sub) {
+          await db.subscription.update({
+            where: { id: sub.id },
+            data: { status: "canceled", cancelAtPeriodEnd: false },
+          });
+          // P1.4: el pla de l'usuari es recalcula SEMPRE a partir de les
+          // subscripcions vigents (mai es confia en un estat intermedi)
+          await syncUserPlan(sub.userId, { force: true });
+          await audit(null, "STRIPE_SUB_DOWNGRADED", String(s.id), { status: "canceled" });
+        }
+        break;
+      }
+      case "invoice.paid": {
+        const inv = event.data.object as Stripe.Invoice;
+        const customerId = String(inv.customer || "");
+        const sub = await db.subscription.findFirst({ where: { stripeCustomerId: customerId } });
+        if (sub) {
+          await db.subscription.update({
+            where: { id: sub.id },
+            data: {
+              status: "active",
+              currentPeriodEnd: inv.period_end ? new Date(inv.period_end * 1000) : sub.currentPeriodEnd,
+            },
+          });
+          await syncUserPlan(sub.userId, { force: true }); // P1.4: reactivació coherent
+        }
+        break;
+      }
+      case "invoice.payment_failed": {
+        const inv = event.data.object as Stripe.Invoice;
+        const customerId = String(inv.customer || "");
+        const sub = await db.subscription.findFirst({ where: { stripeCustomerId: customerId } });
+        if (sub) {
+          await db.subscription.update({ where: { id: sub.id }, data: { status: "past_due" } });
+          await audit(null, "STRIPE_PAYMENT_FAILED", String(inv.id), { customerId });
+        }
+        break;
+      }
+    }
+  } catch (e) {
+    // P1.1: alliberem el lock → Stripe reentregarà i l'event es reprocessarà
+    await db.stripeEvent.delete({ where: { eventId: event.id } }).catch(() => {});
+    console.error("stripe webhook", e);
+    return NextResponse.json({ error: "PROCESSING_FAILED" }, { status: 500 });
+  }
+  return NextResponse.json({ received: true });
+}
+PREUREAL_V22_EOF
+check "src/app/api/stripe/webhook/route.ts" 9829
+mkdir -p "src/hooks"
+cat > "src/hooks/use-user-plan.ts" << 'PREUREAL_V22_EOF'
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+/**
+ * v22 — useUserPlan() (encàrrec Fase 1, punt 6).
+ *
+ * Obté l'estat de la suscripció DES DEL SERVIDOR (GET /api/subscription) i mai
+ * des del client: el pla efectiu el decideix el backend a partir de les
+ * subscripcions vigents (equivalent a supabase.auth.getUser() + RLS del
+ * encàrrec). El frontend es refresca amb `refresh()` després de qualsevol
+ * acció que canvii la suscripció (checkout, cancelar, reactivar...).
+ *
+ * Camps retornats (exactament els del encàrrec): planType, subscriptionStatus,
+ * isFree, isPremium, isProAgents, hasPremiumAccess, hasProAgentsAccess,
+ * currentPeriodEnd, cancelAtPeriodEnd, subscriptionCount,
+ * monthlyDetailedQueriesUsed, loading.
+ */
+
+export interface UserPlanState {
+  planType: "free" | "premium" | "pro_agents";
+  subscriptionStatus: string;
+  isFree: boolean;
+  isPremium: boolean;
+  isProAgents: boolean;
+  hasPremiumAccess: boolean;
+  hasProAgentsAccess: boolean;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  subscriptionCount: number;
+  monthlyDetailedQueriesUsed: number;
+  stripeConfigured: boolean;
+  demoCheckout: boolean;
+}
+
+const DEFAULT_STATE: UserPlanState = {
+  planType: "free",
+  subscriptionStatus: "free",
+  isFree: true,
+  isPremium: false,
+  isProAgents: false,
+  hasPremiumAccess: false,
+  hasProAgentsAccess: false,
+  currentPeriodStart: null,
+  currentPeriodEnd: null,
+  cancelAtPeriodEnd: false,
+  subscriptionCount: 0,
+  monthlyDetailedQueriesUsed: 0,
+  stripeConfigured: false,
+  demoCheckout: false,
+};
+
+export function useUserPlan() {
+  const [state, setState] = useState<UserPlanState>(DEFAULT_STATE);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    try {
+      const r = await fetch("/api/subscription", { cache: "no-store" });
+      if (r.ok) {
+        const d = await r.json();
+        setState({ ...DEFAULT_STATE, ...d });
+      } else if (r.status === 401) {
+        // sense sessió: estat per defecte (pla gratuït)
+        setState(DEFAULT_STATE);
+      }
+      // altres errors: es manté l'últim estat conegut
+    } catch {
+      // xarxa caiguda: es manté l'últim estat conegut
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { ...state, loading, refresh };
+}
+PREUREAL_V22_EOF
+check "src/hooks/use-user-plan.ts" 2422
+cat > ".env.production.example" << 'PREUREAL_V22_EOF'
+# ============================================================================
+# PreuReal.cat — plantilla de variables de entorno de PRODUCCIÓN
+#
+#   cp .env.production.example .env && nano .env
+#
+# Genera los secretos con:  openssl rand -hex 32
+# NUNCA subas el .env real a git (ya está en .gitignore).
+# ============================================================================
+
+# --- Base de datos PostgreSQL (OBLIGATORIA) ---------------------------------
+# Supabase (proyecto ya creado): Settings → Database → Connection string → URI.
+# Runtime (Vercel): pooler puerto 6543 (transacción, pgbouncer=true).
+# Ejemplo:
+# DATABASE_URL=postgresql://postgres.tkbjifmflpxqszaozqlw:[DB-PASSWORD]@aws-0-<regio>.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require
+# NOTA: las claves anon / service_role JWT de Supabase NO valen para Prisma —
+# esta app se conecta directo a PostgreSQL. La service_role es un SECRETO:
+# nunca a git ni a código compartido.
+# Neon (alternativa, plan gratuito): "pooled connection string" (contiene -pooler).
+# Ejemplo:
+# DATABASE_URL=postgresql://usuari:clau@ep-xxxx-pooler.eu-central-1.aws.neon.tech/preureal?sslmode=require
+DATABASE_URL=
+
+# --- Obligatorias -----------------------------------------------------------
+
+# URL pública del sitio (SIN barra final).
+# v20: dominio canónico EN PRODUCCIÓN = https://www.preureal.com (el DNS de
+# preureal.cat no está configurado: NXDOMAIN — no usar hasta que apunte a Vercel).
+NEXT_PUBLIC_SITE_URL=https://www.preureal.com
+
+# Política de incrustación en iframes (CSP frame-ancestors).
+# Por defecto en producción: 'self' (anti-clickjacking).
+# Solo cámbiala si quieres incrustar el mapa como widget en otro dominio:
+# FRAME_ANCESTORS="'self' https://portal-exemple.cat"
+FRAME_ANCESTORS=
+
+# Secreto de firma de sesiones JWT — ¡GENÉRALO! (openssl rand -hex 32)
+# En producción, si falta, la app NO ARRANCA (protección contra secretos públicos).
+AUTH_SECRET=
+
+# Contraseña del administrador (el seed la crea: admin@preureal.cat).
+# ¡CÁMBIALA respecto al valor por defecto de desarrollo!
+ADMIN_PASSWORD=
+
+# --- Stripe (DEMO hasta que autorices la cuenta real) -----------------------
+# Mientras STRIPE_SECRET_KEY no exista y DEMO_CHECKOUT=true, el checkout usa
+# /api/stripe/demo y NO cobra (suscripciones marcadas como demo).
+# ⚠️ NUNCA dejes DEMO_CHECKOUT=true en producción real: permite activar
+# suscripciones de prueba SIN cobro (marcadas demo:true y claramente separadas).
+# Al activar la cuenta real:
+#  1) crea 2 precios recurrentes (Premium 7,99 €/mes, Pro 19,99 €/mes)
+#  2) pega aquí sus price_xxx (nombres canónicos v22; los antiguos
+#     STRIPE_PRICE_PREMIUM / STRIPE_PRICE_PRO siguen funcionando como fallback)
+#  3) webhook → https://www.preureal.com/api/stripe/webhook (eventos:
+#     checkout.session.completed, customer.subscription.created/updated/deleted,
+#     invoice.paid, invoice.payment_failed)
+#  4) activa el Portal de cliente en Stripe (Settings → Billing → Customer portal)
+#  5) DEMO_CHECKOUT=false
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PREMIUM_PRICE_ID=
+STRIPE_PRO_AGENTS_PRICE_ID=
+DEMO_CHECKOUT=true
+
+# --- Email (opcional; sin clave → proveedor "sandbox", solo log en BD) ------
+# Recomendado: Resend (capa gratuita 3.000 mails/mes) → verifica el dominio
+RESEND_API_KEY=
+MAIL_FROM="PreuReal.cat <hola@preureal.com>"
+# ⚠️ El dominio del remitente debe estar VERIFICADO en Resend (Domains →
+# añadir preureal.com → pegar los registros DKIM/SPF en el DNS de Vercel).
+# Sin dominio verificado, Resend solo permite enviar a la dirección de tu
+# propia cuenta (con onboarding@resend.dev rechaza el resto con HTTP 403).
+
+# --- Mantenimiento del sistema de correo (recomendado) ----------------------
+# Protege /api/cron/emails (limpieza + reintentos; Vercel Cron lo llama 1 vez
+# al día con Authorization: Bearer $CRON_SECRET). Genera: openssl rand -hex 32
+CRON_SECRET=
+# Días de retención del EmailLog (el cron borra lo más viejo; 90 por defecto)
+# EMAILLOG_RETENTION_DAYS=90
+
+# --- Google OAuth (opcional; sin credenciales el botón "Continua amb Google"
+#     se oculta automáticamente) ------------------------------------------------
+# Redirect URI a autorizar en Google Cloud Console:
+#   https://www.preureal.com/api/auth/google/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+PREUREAL_V22_EOF
+check ".env.production.example" 4378
+echo "== PART 2/3 completada. Torna al xat i escriu: continua =="
+PREUREAL_P2_FI

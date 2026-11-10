@@ -66,11 +66,10 @@ export default function AdminView() {
   }, [userQuery]);
 
   useEffect(() => {
-    auth.refresh().then(() => {
-      if (auth.user && auth.user.role !== "ADMIN") navigate("/");
-      else loadAll();
-    });
-     
+    // v31: la closure antigua leía auth.user dentro de .then (siempre null
+    // porque el estado aún no se había actualizado) — la rama nunca corría.
+    // El guard de render <NoAccess /> ya cubre el caso sin rol ADMIN.
+    auth.refresh().finally(loadAll);
   }, []);
 
   useEffect(() => {

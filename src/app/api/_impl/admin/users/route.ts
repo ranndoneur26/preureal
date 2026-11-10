@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/security";
+import { syncUserPlan } from "@/lib/plans";
 
 /** GET /api/admin/users — llistat de usuaris amb cerca/filtres (solo admin). */
 export async function GET(req: Request) {
@@ -67,7 +68,38 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "CANNOT_SELF_DEMOTE" }, { status: 400 });
   }
 
-  const user = await db.user.update({ where: { id }, data });
+  let user = await db.user.update({ where: { id }, data });
+
+  // v31 — el cambio de plan del admin ahora PERSISTE. Antes solo se escribía
+  // User.plan y syncUserPlan (caché de 60 s) lo revertía al recomputar desde
+  // las suscripciones. Se materializa como una suscripción ADMIN_GRANT
+  // (sin Stripe, sin demo, período +100 años) que syncUserPlan interpreta
+  // de forma natural; las grant anteriores se marcan "superseded". Si el
+  // usuario tiene suscripción Stripe real vigente, prevalece la de mayor
+  // rango (syncUserPlan elige siempre el plan más alto).
+  if (data.plan) {
+    await db.subscription.updateMany({
+      where: { userId: id, stripePriceId: "ADMIN_GRANT", status: { in: ["active", "trialing"] } },
+      data: { status: "superseded" },
+    });
+    if (data.plan !== "FREE") {
+      const now = new Date();
+      await db.subscription.create({
+        data: {
+          userId: id,
+          plan: data.plan,
+          status: "active",
+          demo: false,
+          stripePriceId: "ADMIN_GRANT",
+          currentPeriodStart: now,
+          currentPeriodEnd: new Date(now.getTime() + 100 * 365.25 * 86_400_000),
+          cancelAtPeriodEnd: false,
+        },
+      });
+    }
+    await syncUserPlan(id, { force: true });
+    user = (await db.user.findUnique({ where: { id } })) || user;
+  }
 
   // auditoria de l'acció (Fase 12) amb abans→després
   const before: Record<string, unknown> = { plan: target.plan, role: target.role, active: target.active };

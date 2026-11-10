@@ -25,7 +25,8 @@ import type { PlanId } from "@/lib/plans";
 
 export type PlanType = "free" | "premium" | "pro_agents";
 
-const PLAN_RANK: Record<PlanId, number> = { FREE: 0, PREMIUM: 1, PRO: 2 };
+/** v31: única fuente (plans.ts la importa — antes había 2 copias que podían divergir). */
+export const PLAN_RANK: Record<PlanId, number> = { FREE: 0, PREMIUM: 1, PRO: 2 };
 
 /**
  * v23 — Estats que mantenen el pla mentre són vigents.

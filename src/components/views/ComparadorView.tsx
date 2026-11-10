@@ -145,6 +145,14 @@ export default function ComparadorView() {
             : `El plan gratuito compara hasta ${d.max} municipios por consulta. Con Premium o Pro puedes comparar 6.`
         );
       }
+    } catch {
+      // v31: antes un fallo de red era una promesa rechazada sin mensaje
+      setResult(null);
+      setPlanLimitMsg(
+        ca
+          ? "No s'ha pogut comparar: revisa la connexió i torna-ho a provar."
+          : "No se pudo comparar: revisa la conexión e inténtalo de nuevo."
+      );
     } finally {
       setBusy(false);
     }

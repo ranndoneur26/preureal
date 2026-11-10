@@ -35,8 +35,7 @@ VERCEL_FILES = [
     # scripts d'operació referenciats per VERCEL.md / README.md
     "scripts/seed.ts", "scripts/update_all.sh", "scripts/prepare_data.py",
     "scripts/gen_api_dispatcher.py", "scripts/check_repo.mjs",
-    # P0 auditoria correu v19: purga de tokens històrics a EmailLog
-    "scripts/scrub_emaillog_tokens.ts",
+    # v31: scrub_emaillog_tokens.ts (one-off v19) archivado en scripts/archive/
 ]
 VERCEL_MUST_HAVE = VERCEL_FILES + [
     "src/instrumentation.ts", "src/lib/db.ts", "src/app/page.tsx",
