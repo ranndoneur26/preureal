@@ -114,6 +114,18 @@ const PROVENANCE = [
     qualitat: "ALTA — font oficial; estadística experimental",
     camps: ["StatObservation (source=INE_ATLAS_RENTA: RENTA_NETA_MEDIA_PERSONA, RENTA_NETA_MEDIA_HOGAR)"],
   },
+  {
+    id: "ajudes_lloguer_editorial",
+    nom: "Ajudes al lloguer (catàleg editorial)",
+    font: "Fonts oficials per ajuda: Ministerio de Vivienda (RD 42/2022), Agència de l'Habitatge de Catalunya, BOE/DOGC",
+    llicencia: "Informació pública referenciada amb enllaç a la font; contingut editorial amb data de revisió",
+    unitat: "fitxa per ajuda (títol, requisits resumits, import, estat, enllaç, font, data de revisió)",
+    ambit: "Estat i Catalunya (taula RentalAid)",
+    periodicitat: "Revisió editorial trimestral (les finalitzades es conserven)",
+    metodologia: "Cada ajuda cita la seva font oficial i la data de darrera revisió verificada. El text és orientatiu: les convocatories tenen terminis i crèdits propis; mai no substitueix la font oficial.",
+    qualitat: "EDITORIAL — orientatiu, amb font i data; la UI sempre enllaça l'original",
+    camps: ["RentalAid (code, status, url, source, lastReviewedAt)"],
+  },
 ];
 
 export async function GET() {

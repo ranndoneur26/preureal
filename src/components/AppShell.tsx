@@ -12,6 +12,7 @@ import PanelView from "@/components/views/PanelView";
 import AdminView from "@/components/views/AdminView";
 import LegalView from "@/components/views/LegalView";
 import ComparadorView from "@/components/views/ComparadorView";
+import GuiaView from "@/components/views/GuiaView";
 import SubscriptionResultView from "@/components/views/SubscriptionResultView";
 import CookieConsent from "@/components/CookieConsent";
 import { AppContext, AppCtx, AuthUser } from "@/components/app-context";
@@ -106,6 +107,7 @@ export default function AppShell() {
           {view === "/" && <LandingView />}
           {view === "/mapa" && <MapView />}
           {view === "/comparador" && <ComparadorView />}
+          {view === "/guia" && <GuiaView />}
           {view === "/preus" && <PricingView />}
           {view === "/subscripcio/exit" && <SubscriptionResultView mode="exit" />}
           {view === "/subscripcio/cancelat" && <SubscriptionResultView mode="cancelat" />}
@@ -157,6 +159,7 @@ function Header({ route }: { route: string }) {
               <nav className="hidden md:flex items-center gap-1">
                 {link("/mapa", t.nav.mapa)}
                 {link("/comparador", locale === "ca" ? "Comparador" : "Comparador")}
+                {link("/guia", locale === "ca" ? "Guia" : "Guía")}
                 {link("/preus", t.nav.preus)}
                 {link("/faq", t.nav.faq)}
                 {auth.user?.role === "ADMIN" && link("/admin", t.nav.admin)}
@@ -224,6 +227,7 @@ function Header({ route }: { route: string }) {
             <div id="mobile-nav" className="hidden md:hidden border-t border-[#e5e1da] bg-[#faf9f7] px-4 py-3 flex-col gap-1">
               {link("/mapa", t.nav.mapa)}
               {link("/comparador", locale === "ca" ? "Comparador" : "Comparador")}
+              {link("/guia", locale === "ca" ? "Guia" : "Guía")}
               {link("/preus", t.nav.preus)}
               {link("/faq", t.nav.faq)}
               {auth.user ? (
@@ -273,6 +277,7 @@ function Footer() {
                   <button onClick={() => navigate("/avis-legal")} className="text-left hover:text-white">{t.legal.avis}</button>
                   <button onClick={() => navigate("/privacitat")} className="text-left hover:text-white">{t.legal.privacitat}</button>
                   <button onClick={() => navigate("/cookies")} className="text-left hover:text-white">{t.legal.cookies}</button>
+                  <button onClick={() => navigate("/guia")} className="text-left hover:text-white">{ctx.locale === "ca" ? "Guia del lloguer" : "Guía del alquiler"}</button>
                 </div>
               </div>
               <div className="text-sm">

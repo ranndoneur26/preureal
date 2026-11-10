@@ -15,29 +15,29 @@ datasource db {
 }
 
 model User {
-  id              String        @id @default(cuid())
-  email           String        @unique
-  passwordHash    String
-  name            String?
-  locale          String        @default("ca")
-  role            String        @default("USER") // USER | ADMIN
-  plan            String        @default("FREE") // FREE | PREMIUM | PRO
-  active          Boolean       @default(true) // desactivació per admin (RGPD/bans)
-  emailVerifiedAt DateTime?     // verificació de correu (Fase 6)
-  tokenVersion    Int           @default(0) // +1 invalida totes les sessions actives
-  lastLoginAt     DateTime?
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  passwordHash       String
+  name               String?
+  locale             String              @default("ca")
+  role               String              @default("USER") // USER | ADMIN
+  plan               String              @default("FREE") // FREE | PREMIUM | PRO
+  active             Boolean             @default(true) // desactivació per admin (RGPD/bans)
+  emailVerifiedAt    DateTime? // verificació de correu (Fase 6)
+  tokenVersion       Int                 @default(0) // +1 invalida totes les sessions actives
+  lastLoginAt        DateTime?
   // v24 — resum mensual per correu dels municipis/edificis preferits (opt-in
   // explícit a "Panell → Preferits": mai actiu per defecte, RGPD-friendly)
-  alertsEnabled   Boolean       @default(false)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  subscriptions   Subscription[]
-  searchLogs      SearchLog[]
-  priceReports    PriceReport[]
-  passwordTokens  PasswordToken[]
-  emailTokens     EmailToken[]
-  favorites       Favorite[]
-  savedComparisons SavedComparison[]
+  alertsEnabled      Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  subscriptions      Subscription[]
+  searchLogs         SearchLog[]
+  priceReports       PriceReport[]
+  passwordTokens     PasswordToken[]
+  emailTokens        EmailToken[]
+  favorites          Favorite[]
+  savedComparisons   SavedComparison[]
   subscriptionUsages SubscriptionUsage[]
 
   @@index([role])
@@ -45,21 +45,21 @@ model User {
 }
 
 model Subscription {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   userId               String
-  user                 User     @relation(fields: [userId], references: [id])
+  user                 User      @relation(fields: [userId], references: [id])
   stripeCustomerId     String?
-  stripeSubscriptionId String?  @unique
+  stripeSubscriptionId String?   @unique
   stripePriceId        String?
-  plan                 String   // PREMIUM | PRO
-  status               String   // active | trialing | past_due | canceled | expired | superseded | incomplete | incomplete_expired
+  plan                 String // PREMIUM | PRO
+  status               String // active | trialing | past_due | canceled | expired | superseded | incomplete | incomplete_expired
   currentPeriodStart   DateTime? // v22: inici del període de facturació vigent
   currentPeriodEnd     DateTime?
-  billingInterval      String?   // v22: month | year (recurrent del preu de Stripe)
+  billingInterval      String? // v22: month | year (recurrent del preu de Stripe)
   cancelAtPeriodEnd    Boolean   @default(false) // v22: cancelació programada a final de període
-  demo                 Boolean  @default(false) // suscripción creada en modo prueba (sin Stripe)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  demo                 Boolean   @default(false) // suscripción creada en modo prueba (sin Stripe)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -74,8 +74,8 @@ model SubscriptionUsage {
   id         String   @id @default(cuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id])
-  usageType  String   // DETAIL_QUERY | EXPORT_CSV | PDF_REPORT | ...
-  usageMonth String   // "2026-11"
+  usageType  String // DETAIL_QUERY | EXPORT_CSV | PDF_REPORT | ...
+  usageMonth String // "2026-11"
   usageCount Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -107,24 +107,24 @@ model EmailToken {
 
 // Municipios de Cataluña (código INE de 5 dígitos) con datos reales de lloguer
 model Municipality {
-  code            String  @id // "080193" (6 dígitos formato Gencat/ICGC)
-  ineCode         String? // "08019" (5 dígitos)
-  name            String
-  comarca         String?
-  province        String?
-  lat             Float
-  lng             Float
-  rentLatest      Float?  // €/mes — fiances Incasòl, último período disponible
-  rentPeriod      String? // "2025" o "2026 I trim."
-  rentPrevYear    Float?  // año anterior para tendencia
-  rentPrevPeriod  String?
-  rentHistory     String? // JSON {"2005": 550.2, ...}
-  contractsLatest Int?    // nº contratos con fianza depositada (muestra)
-  isTense         Boolean @default(false)
-  tenseList       String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
-  boundary        String? // GeoJSON del límite municipal (cache ICGC)
+  code              String    @id // "080193" (6 dígitos formato Gencat/ICGC)
+  ineCode           String? // "08019" (5 dígitos)
+  name              String
+  comarca           String?
+  province          String?
+  lat               Float
+  lng               Float
+  rentLatest        Float? // €/mes — fiances Incasòl, último período disponible
+  rentPeriod        String? // "2025" o "2026 I trim."
+  rentPrevYear      Float? // año anterior para tendencia
+  rentPrevPeriod    String?
+  rentHistory       String? // JSON {"2005": 550.2, ...}
+  contractsLatest   Int? // nº contratos con fianza depositada (muestra)
+  isTense           Boolean   @default(false)
+  tenseList         String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
+  boundary          String? // GeoJSON del límite municipal (cache ICGC)
   boundaryFetchedAt DateTime?
-  updatedAt       DateTime @updatedAt
+  updatedAt         DateTime  @updatedAt
 
   @@index([name])
   @@index([isTense])
@@ -136,19 +136,19 @@ model Building {
   externalId       String   @unique // id RTT o refcat catastral
   source           String   @default("ICGC_RTT")
   municipalityCode String?
-  tipus            String?  // edi (edifici) | ill (illa) | ...
+  tipus            String? // edi (edifici) | ill (illa) | ...
   estat            String?
   altura           Int?
   nom              String?
-  polygonJson      String   // [[ [lng,lat], ... ]]
+  polygonJson      String // [[ [lng,lat], ... ]]
   centroidLat      Float
   centroidLng      Float
-  refcat           String?  // referencia catastral (si se conoce)
-  yearBuilt        Int?     // año de construcción (Catastro, cuando esté disponible)
-  yearSource       String?  // "CADASTRE_DNP" | "IMPORT"
+  refcat           String? // referencia catastral (si se conoce)
+  yearBuilt        Int? // año de construcción (Catastro, cuando esté disponible)
+  yearSource       String? // "CADASTRE_DNP" | "IMPORT"
   // Dades de lloguer a nivell edifici/illa (importació Incasòl — Fase 9.1)
-  avgRentEurMonth  Float?   // preu mitjà real de l'illa/edifici (font importada)
-  sampleSize       Int?     // mostres (contractes) de les quals surt la mitjana
+  avgRentEurMonth  Float? // preu mitjà real de l'illa/edifici (font importada)
+  sampleSize       Int? // mostres (contractes) de les quals surt la mitjana
   cachedAt         DateTime @default(now())
 
   @@index([municipalityCode])
@@ -183,22 +183,22 @@ model Event {
 
 // Informes de precio enviados por usuarios (crowdsourcing, amb moderació — Fase 10)
 model PriceReport {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   userId           String?
-  user             User?    @relation(fields: [userId], references: [id])
+  user             User?     @relation(fields: [userId], references: [id])
   municipalityCode String?
   buildingId       String?
   offerEurMonth    Float?
   offerEurM2       Float?
   surfaceM2        Float?
   rooms            Int?
-  contractType     String?  // HABITATGE | HABITATGE_COMPARTIT | LOCAL | ALTRE
+  contractType     String? // HABITATGE | HABITATGE_COMPARTIT | LOCAL | ALTRE
   reportedAt       DateTime? // data de l'operació declarada per l'usuari
   note             String?
-  status           String   @default("PENDING") // PENDING | ACCEPTED | REJECTED
+  status           String    @default("PENDING") // PENDING | ACCEPTED | REJECTED
   reviewedAt       DateTime?
   reviewNote       String?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime  @default(now())
 
   @@index([status])
   @@index([municipalityCode, createdAt])
@@ -239,9 +239,9 @@ model EmailLog {
 
 // Rate limiting COMPARTIT entre instàncies (serverless) — V3 de l'auditoria
 model RateLimit {
-  key     String   @id // "login:1.2.3.4" | "lookup:userId" ...
-  count   Int      @default(0)
-  resetAt DateTime
+  key       String   @id // "login:1.2.3.4" | "lookup:userId" ...
+  count     Int      @default(0)
+  resetAt   DateTime
   createdAt DateTime @default(now())
 
   @@index([resetAt])
@@ -257,10 +257,10 @@ model StripeEvent {
 // Historial d'auditoria d'accions administratives — Fase 12
 model AuditLog {
   id        String   @id @default(cuid())
-  actorId   String?  // usuari admin que fa l'acció
-  action    String   // USER_PLAN_CHANGE | USER_ROLE_CHANGE | USER_DEACTIVATE | IMPORT_RUN | REPORT_MODERATE | ...
-  target    String?  // identificador de l'objecte (userId, codi municipi...)
-  meta      String?  // JSON amb detalls (abans→després)
+  actorId   String? // usuari admin que fa l'acció
+  action    String // USER_PLAN_CHANGE | USER_ROLE_CHANGE | USER_DEACTIVATE | IMPORT_RUN | REPORT_MODERATE | ...
+  target    String? // identificador de l'objecte (userId, codi municipi...)
+  meta      String? // JSON amb detalls (abans→després)
   createdAt DateTime @default(now())
 
   @@index([createdAt])
@@ -270,8 +270,8 @@ model AuditLog {
 // Execucions d'importació de dades — Fase 9.2
 model ImportRun {
   id        String   @id @default(cuid())
-  source    String   // INCASOL_EDIFICIS | INCASOL_MUNICIPIS | ...
-  status    String   // OK | PARTIAL | ERROR
+  source    String // INCASOL_EDIFICIS | INCASOL_MUNICIPIS | ...
+  status    String // OK | PARTIAL | ERROR
   rowsTotal Int      @default(0)
   created   Int      @default(0)
   updated   Int      @default(0)
@@ -286,9 +286,9 @@ model ImportRun {
 // Límits i preus dels plans — configurables des de l'admin (Fase 5)
 model PlanSetting {
   plan       String   @id // FREE | PREMIUM | PRO
-  quotaMonth Int      // consultes detallades/mes (-1 = il·limitades)
+  quotaMonth Int // consultes detallades/mes (-1 = il·limitades)
   priceEur   Float
-  features   String?  // JSON {exportCsv: bool, historial: bool, ...}
+  features   String? // JSON {exportCsv: bool, historial: bool, ...}
   updatedAt  DateTime @updatedAt
 }
 
@@ -297,10 +297,10 @@ model Favorite {
   id               String   @id @default(cuid())
   userId           String
   user             User     @relation(fields: [userId], references: [id])
-  entityKey        String   // "BUILDING:<id>" | "MUNI:<code>"
+  entityKey        String // "BUILDING:<id>" | "MUNI:<code>"
   buildingId       String?
   municipalityCode String?
-  label            String?  // nom per mostrar (nom municipi / refcat)
+  label            String? // nom per mostrar (nom municipi / refcat)
   createdAt        DateTime @default(now())
 
   @@unique([userId, entityKey])
@@ -313,7 +313,7 @@ model SavedComparison {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   name      String
-  entities  String   // JSON [{type:"MUNI"|"BUILDING", code:"..."}]
+  entities  String // JSON [{type:"MUNI"|"BUILDING", code:"..."}]
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -326,19 +326,49 @@ model SavedComparison {
 // metodologies: les fiances continuen sent la mesura del mercat real
 // registrat, i aquestes taules aporten el marc de referència oficial.
 
+// ─── Fase 4 — Ajudes al lloguer (contingut editorial, enquestable) ──────────
+// Catàleg editorial d'ajudes i convocatories (nivell estatal i Generalitat),
+// citat per la guia #/guia. Cada fila porta font oficial, enllaç, estat i
+// data de revisió (governança: alta/actualització trimestral amb data i
+// font; les finalitzades es conserven, mai s'esborren). Migració ADITIVA:
+// cap taula existent no es toca.
+model RentalAid {
+  id             String   @id @default(cuid())
+  code           String   @unique // "BONO_ALQUILER_JOVEN" | "AJUTS_LLOGUER_GENCAT" | ...
+  title          String // títol (ca)
+  titleEs        String? // títol (es)
+  description    String // resum de requisits i condicions (ca)
+  descriptionEs  String? // resum (es)
+  scope          String // ESTATAL | CCAA
+  scopeCode      String? // null = tot l'Estat; "09" = Catalunya
+  amount         String? // "250 €/mes, màx. 24 mesos" (text lliure de la font)
+  audience       String? // a qui va dirigit (resum, ca)
+  audienceEs     String?
+  status         String   @default("VIGENTE") // VIGENTE | CONVOCATORIA_OBERTA | FINALIZADA
+  url            String // enllaç a la font/convocatòria oficial
+  source         String // nom de la font oficial (Ministeri, Gencat, BOE...)
+  lastReviewedAt DateTime // darrera revisió editorial amb verificació de la font
+  reviewedBy     String? // autor de la revisió (admin/system)
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, scope, scopeCode])
+}
+
 // Catàleg de fonts oficials amb la seva traçabilitat (encàrrec: font,
 // llicència, unitat, àmbit, periodicitat, metodologia). Citat per
 // /api/provenance i pels informes PDF.
 model DataSource {
   id           String            @id @default(cuid())
   code         String            @unique // INE_IPVA | INE_ATLAS_RENTA | SERPAVI | ...
-  name         String            // nom llegible de la font
-  institution  String            // INE | MIVAU | Incasòl | Gencat | ...
-  url          String?           // publicació oficial
-  license      String?           // condicions de reutilització
-  unit         String?           // unitat principal de les seves observacions
-  periodicity  String?           // ANUAL | TRIMESTRAL | EDITORIAL | ...
-  methodology  String?           // nota metodològica resumida
+  name         String // nom llegible de la font
+  institution  String // INE | MIVAU | Incasòl | Gencat | ...
+  url          String? // publicació oficial
+  license      String? // condicions de reutilització
+  unit         String? // unitat principal de les seves observacions
+  periodicity  String? // ANUAL | TRIMESTRAL | EDITORIAL | ...
+  methodology  String? // nota metodològica resumida
   notes        String?
   active       Boolean           @default(true)
   createdAt    DateTime          @default(now())
@@ -354,16 +384,16 @@ model StatObservation {
   id               String     @id @default(cuid())
   source           DataSource @relation(fields: [sourceId], references: [id])
   sourceId         String
-  variable         String     // IPVA_INDICE | IPVA_TASA_ANUAL | RENTA_NETA_MEDIA_PERSONA | RENTA_NETA_MEDIA_HOGAR
-  geoLevel         String     // ESTATAL | CCAA | PROV | MUNI
-  geoCode          String     // "ES" | "09" (CCAA) | "08" (prov) | ineCode de 5 dígits
-  geoName          String?    // nom oficial del territori segons la font
-  municipalityCode String?    // "080193" quan geoLevel=MUNI (enllaç lògic)
-  period           String     // "2024" (anual; admetrà "2026-T3" més endavant)
+  variable         String // IPVA_INDICE | IPVA_TASA_ANUAL | RENTA_NETA_MEDIA_PERSONA | RENTA_NETA_MEDIA_HOGAR
+  geoLevel         String // ESTATAL | CCAA | PROV | MUNI
+  geoCode          String // "ES" | "09" (CCAA) | "08" (prov) | ineCode de 5 dígits
+  geoName          String? // nom oficial del territori segons la font
+  municipalityCode String? // "080193" quan geoLevel=MUNI (enllaç lògic)
+  period           String // "2024" (anual; admetrà "2026-T3" més endavant)
   value            Float
   unit             String?
-  meta             String?    // JSON {serie: "ADRH103925"} — traçabilitat de la sèrie INE
-  runId            String?    // ImportRun.id que va portar aquesta fila
+  meta             String? // JSON {serie: "ADRH103925"} — traçabilitat de la sèrie INE
+  runId            String? // ImportRun.id que va portar aquesta fila
   importedAt       DateTime   @default(now())
 
   @@unique([sourceId, variable, geoLevel, geoCode, period])

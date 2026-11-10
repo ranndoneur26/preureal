@@ -1,0 +1,65 @@
+{
+  "revisado": "2026-11-10",
+  "aids": [
+    {
+      "code": "BONO_ALQUILER_JOVEN",
+      "title": "Bono alquiler joven (programa estatal)",
+      "titleEs": "Bono alquiler joven (programa estatal)",
+      "description": "Ajuda estatal de 250 €/mes (màxim 24 mesos) per al pagament del lloguer d'habitatge habitual, gestionada per cada comunitat autònoma segons el Reial decret 42/2022. Requereix tenir entre 18 i 35 anys, ingressos anuals inferiors a tres vegades l'IPREM i un lloguer vigent degudament documentat. La convocatoria concreta (terminis, crèdit i procediment) l'aprova cada comunitat: verifica-ho a la font oficial.",
+      "descriptionEs": "Ayuda estatal de 250 €/mes (máximo 24 meses) para el pago del alquiler de vivienda habitual, gestionada por cada comunidad autónoma según el Real Decreto 42/2022. Requiere tener entre 18 y 35 años, ingresos anuales inferiores a tres veces el IPREM y un alquiler vigente debidamente documentado. La convocatoria concreta (plazos, crédito y procedimiento) la aprueba cada comunidad: verifícalo en la fuente oficial.",
+      "scope": "ESTATAL",
+      "scopeCode": null,
+      "amount": "250 €/mes, màx. 24 mesos",
+      "audience": "Joves de 18 a 35 anys amb ingressos < 3× IPREM",
+      "audienceEs": "Jóvenes de 18 a 35 años con ingresos < 3× IPREM",
+      "status": "VIGENTE",
+      "url": "https://www.vivienda.gob.es/",
+      "source": "Ministerio de Vivienda y Agenda Urbana (RD 42/2022)"
+    },
+    {
+      "code": "BONO_ALQUILER_DISCAPACITAT",
+      "title": "Bono alquiler per a persones amb discapacitat (programa estatal)",
+      "titleEs": "Bono alquiler para personas con discapacidad (programa estatal)",
+      "description": "Modalitat del mateix programa estatal (RD 42/2022) dirigida a persones amb discapacitat reconeguda igual o superior al 33 %: 250 €/mes (màxim 24 mesos) per al lloguer d'habitatge habitual, sense límit d'edat, amb el mateix límit d'ingressos (inferiors a tres vegades l'IPREM). La convocatoria concreta la gestiona cada comunitat autònoma.",
+      "descriptionEs": "Modalidad del mismo programa estatal (RD 42/2022) dirigida a personas con discapacidad reconocida igual o superior al 33 %: 250 €/mes (máximo 24 meses) para el alquiler de vivienda habitual, sin límite de edad, con el mismo límite de ingresos (inferiores a tres veces el IPREM). La convocatoria concreta la gestiona cada comunidad autónoma.",
+      "scope": "ESTATAL",
+      "scopeCode": null,
+      "amount": "250 €/mes, màx. 24 mesos",
+      "audience": "Persones amb discapacitat ≥ 33 % (sense límit d'edat)",
+      "audienceEs": "Personas con discapacidad ≥ 33 % (sin límite de edad)",
+      "status": "VIGENTE",
+      "url": "https://www.vivienda.gob.es/",
+      "source": "Ministerio de Vivienda y Agenda Urbana (RD 42/2022)"
+    },
+    {
+      "code": "AJUTS_LLOGUER_GENCAT",
+      "title": "Ajuts al lloguer de l'Agència de l'Habitatge de Catalunya",
+      "titleEs": "Ayudas al alquiler de la Agencia de la Vivienda de Cataluña",
+      "description": "Línies d'ajut periòdiques de la Generalitat per al pagament del lloguer d'habitatge habitual, adreçades a llars amb rendes baixes i moderades segons els llindars de cada convocatòria (còmput per unitats de compra). Terminis, crèdit i requisits concrets canvien a cada convocatòria: consulta l'estat a la web oficial de l'Agència abans de presentar cap sol·licitud.",
+      "descriptionEs": "Líneas de ayuda periódicas de la Generalitat para el pago del alquiler de vivienda habitual, dirigidas a hogares con rentas bajas y moderadas según los umbrales de cada convocatoria (cómputo por unidades de compra). Plazos, crédito y requisitos concretos cambian en cada convocatoria: consulta el estado en la web oficial de la Agencia antes de presentar cualquier solicitud.",
+      "scope": "CCAA",
+      "scopeCode": "09",
+      "amount": "Variable segons convocatòria",
+      "audience": "Llars amb rendes baixes o moderades a Catalunya",
+      "audienceEs": "Hogares con rentas bajas o moderadas en Cataluña",
+      "status": "CONVOCATORIA_OBERTA",
+      "url": "https://habitatge.gencat.cat/",
+      "source": "Agència de l'Habitatge de Catalunya (Generalitat de Catalunya)"
+    },
+    {
+      "code": "SERVEI_MEDIACIO_GENCAT",
+      "title": "Servei de mediació i suport a l'accés a l'habitatge (Generalitat)",
+      "titleEs": "Servicio de mediación y apoyo al acceso a la vivienda (Generalitat)",
+      "description": "La Generalitat ofereix serveis gratuïts d'informació, mediació i suport per a persones amb dificultats per pagar el lloguer o per accedir a un habitatge, inclou orientació sobre ajudes i prestacions disponibles i interlocució amb els propietaris. Punt de partida oficial per valorar totes les opcions segons la situació personal.",
+      "descriptionEs": "La Generalitat ofrece servicios gratuitos de información, mediación y apoyo para personas con dificultades para pagar el alquiler o para acceder a una vivienda, incluyendo orientación sobre ayudas y prestaciones disponibles e interlocución con los propietarios. Punto de partida oficial para valorar todas las opciones según la situación personal.",
+      "scope": "CCAA",
+      "scopeCode": "09",
+      "amount": "Servei gratuït",
+      "audience": "Qualsevol llar a Catalunya amb dificultats d'accés o pagament",
+      "audienceEs": "Cualquier hogar en Cataluña con dificultades de acceso o pago",
+      "status": "VIGENTE",
+      "url": "https://habitatge.gencat.cat/",
+      "source": "Agència de l'Habitatge de Catalunya (Generalitat de Catalunya)"
+    }
+  ]
+}

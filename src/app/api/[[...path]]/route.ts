@@ -19,6 +19,7 @@ import * as h_admin_plan_settings from "../_impl/admin/plan-settings/route";
 import * as h_admin_reports from "../_impl/admin/reports/route";
 import * as h_admin_stats from "../_impl/admin/stats/route";
 import * as h_admin_users from "../_impl/admin/users/route";
+import * as h_aid from "../_impl/aid/route";
 import * as h_auth_change_password from "../_impl/auth/change-password/route";
 import * as h_auth_google from "../_impl/auth/google/route";
 import * as h_auth_google_callback from "../_impl/auth/google/callback/route";
@@ -60,6 +61,7 @@ import * as h_subscription_cancel from "../_impl/subscription/cancel/route";
 import * as h_subscription_reactivate from "../_impl/subscription/reactivate/route";
 import * as h_buildings_id from "../_impl/buildings/[id]/route";
 import * as h_export_code from "../_impl/export/[code]/route";
+import * as h_indicators_muni_code from "../_impl/indicators/muni/[code]/route";
 import * as h_municipalities_code from "../_impl/municipalities/[code]/route";
 
 type Ctx = { params: Promise<Record<string, string>> };
@@ -79,6 +81,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "reports"], h: h_admin_reports },
   { seg: ["admin", "stats"], h: h_admin_stats },
   { seg: ["admin", "users"], h: h_admin_users },
+  { seg: ["aid"], h: h_aid },
   { seg: ["auth", "change-password"], h: h_auth_change_password },
   { seg: ["auth", "google"], h: h_auth_google },
   { seg: ["auth", "google", "callback"], h: h_auth_google_callback },
@@ -120,6 +123,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["subscription", "reactivate"], h: h_subscription_reactivate },
   { seg: ["buildings", ":id"], h: h_buildings_id },
   { seg: ["export", ":code"], h: h_export_code },
+  { seg: ["indicators", "muni", ":code"], h: h_indicators_muni_code },
   { seg: ["municipalities", ":code"], h: h_municipalities_code },
 ];
 

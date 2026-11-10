@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { useUserPlan } from "@/hooks/use-user-plan";
-import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search } from "lucide-react";
+import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen } from "lucide-react";
 
 interface BillingData {
   subscriptions: Array<{ id: string; plan: string; status: string; demo: boolean; currentPeriodEnd: string | null; createdAt: string }>;
@@ -375,6 +375,18 @@ export default function PanelView() {
       {/* RESUM */}
       {tab === "resum" && (
         <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4">
+          {/* Fase 4 — accés a la guia (contingut gratuït: drets, fiança, despeses, ajudes) */}
+          <button
+            onClick={() => navigate("/guia")}
+            className="w-full flex items-center gap-3 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-3 text-left hover:border-[#e8673c] transition-colors"
+          >
+            <BookOpen className="w-5 h-5 text-[#e8673c] shrink-0" />
+            <span className="flex-1 text-sm">
+              <b className="text-[#0f2e21]">{locale === "ca" ? "Guia del lloguer" : "Guía del alquiler"}</b>
+              <span className="text-[#4b5349]"> — {locale === "ca" ? "drets, fiança amb calculadora, despeses, actualització de la renda i ajudes vigents" : "derechos, fianza con calculadora, gastos, actualización de la renta y ayudas vigentes"}</span>
+            </span>
+            <ExternalLink className="w-4 h-4 text-[#6b6f68] shrink-0" />
+          </button>
           <Row label={t.auth.email} value={u.email} />
           <Row label={t.panel.plan} value={planName} strong />
           {u.plan === "FREE" && auth.quota && (

@@ -10,6 +10,20 @@ interface Entity {
   name?: string; // opcional: les comparacions desades es resolen en carregar
 }
 
+interface ComparatorIndicators {
+  bandP25: number | null;
+  bandP50: number | null;
+  bandP75: number | null;
+  bandN: number | null;
+  effortHogarPct: number | null;
+  effortRentaPeriod: string | null;
+  rentaHogar: number | null;
+  rentaHogarYear: string | null;
+  ipvaCatAnual: number | null;
+  ipvaCatAnualPeriod: string | null;
+  ipvaCatAcum: number | null;
+}
+
 interface ComparatorResult {
   type: string;
   code: string;
@@ -26,6 +40,8 @@ interface ComparatorResult {
   vsMax: number | null;
   vsMean: number | null;
   yearBuilt?: number | null;
+  // Fase 4 — només amb pla pagant (la decisió és del servidor)
+  indicators?: ComparatorIndicators | null;
 }
 
 /**
@@ -40,7 +56,7 @@ export default function ComparadorView() {
   const [query, setQuery] = useState("");
   const [candidates, setCandidates] = useState<Entity[]>([]);
   const [entities, setEntities] = useState<Entity[]>([]);
-  const [result, setResult] = useState<{ results: ComparatorResult[]; stats: any } | null>(null);
+  const [result, setResult] = useState<{ results: ComparatorResult[]; stats: any; advanced?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [saveName, setSaveName] = useState("");
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
@@ -294,6 +310,26 @@ export default function ComparadorView() {
                       {r.median != null && <span>{ca ? "mediana històrica" : "mediana histórica"}: {r.median.toFixed(0)} €</span>}
                       {r.rentLatest == null && <span className="text-[#b0431c]">{ca ? "sense dades oficials per aquest municipi (no s'inventa)" : "sin datos oficiales para este municipio (no se inventa)"}</span>}
                     </div>
+                    {/* Fase 4 — xips avançats (Premium/Pro: la decisió és del servidor) */}
+                    {result.advanced && r.indicators && (r.indicators.effortHogarPct != null || r.indicators.rentaHogar != null || r.indicators.ipvaCatAcum != null) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {r.indicators.rentaHogar != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f0ede8] text-[#0f2e21]">
+                            {ca ? "renda llar" : "renta hogar"} {r.indicators.rentaHogar.toLocaleString(ca ? "ca-ES" : "es-ES")} €/any ({r.indicators.rentaHogarYear ?? "—"})
+                          </span>
+                        )}
+                        {r.indicators.effortHogarPct != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f0ede8] text-[#0f2e21]">
+                            {ca ? "esforç" : "esfuerzo"} {r.indicators.effortHogarPct.toFixed(1).replace(".", ",")} %
+                          </span>
+                        )}
+                        {r.indicators.ipvaCatAcum != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f0ede8] text-[#0f2e21]">
+                            IPVA +{r.indicators.ipvaCatAcum.toFixed(1).replace(".", ",")} % {ca ? "acum. des de 2015" : "acum. desde 2015"}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -312,6 +348,21 @@ export default function ComparadorView() {
                 : "Comparación estadística entre agregados oficiales; no es una valoración individual. Fuente: Incasòl via habitatge.gencat.cat."}
             </div>
           </div>
+
+          {/* Fase 4 — teaser de columnes avançades per al pla gratuït */}
+          {result && result.advanced === false && (
+            <div className="mt-4 rounded-2xl border border-[#f3d9b0] bg-[#fdf6ec] p-4 flex flex-wrap items-center gap-3">
+              <Crown className="w-5 h-5 text-[#b0431c] shrink-0" />
+              <p className="text-xs text-[#7a4a1c] flex-1 min-w-[220px]">
+                {ca
+                  ? "Amb Premium o Pro: renda mitjana per llar (INE), esforç econòmic i evolució IPVA de cada municipi, directament al comparador."
+                  : "Con Premium o Pro: renta media por hogar (INE), esfuerzo económico y evolución IPVA de cada municipio, directamente en el comparador."}
+              </p>
+              <button onClick={() => navigate("/preus")} className="px-4 py-2 rounded-xl bg-[#e8673c] text-white text-xs font-bold hover:bg-[#d95a31]">
+                {ca ? "Fes-te Premium" : "Hazte Premium"}
+              </button>
+            </div>
+          )}
 
           {/* evolució temporal */}
           {result.results.some((r) => r.rentHistory) && (

@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
-import { getPlanSettings, type PlanId } from "@/lib/plans";
+import { getPlanSettings, planAllows, type PlanId } from "@/lib/plans";
+import { getMuniIndicators } from "@/lib/indicators-data";
 
 /**
  * POST /api/comparator  { entities: [{type:"MUNI"|"BUILDING", code}] }
@@ -114,11 +115,36 @@ export async function POST(req: Request) {
     r.vsMean = typeof r.rentLatest === "number" && stats ? +(((r.rentLatest - stats.mean) / stats.mean) * 100).toFixed(1) : null;
   }
 
+  // Fase 4 — columnes avançades per a municipis: banda del mercat registrat
+  // (P25/mediana/P75), esforç econòmic (renda llar Atlas), renda i IPVA CAT.
+  // La decisió SEMPRE al servidor: amb pla gratuït no s'adjunta cap dada
+  // avançada (només el flag per al teaser de la UI).
+  const comparadorAvancat = await planAllows(planId, "comparadorAvancat");
+  if (comparadorAvancat) {
+    for (const r of results.filter((x: any) => x.type === "MUNI")) {
+      const ind = await getMuniIndicators(r.code).catch(() => null);
+      if (!ind) continue;
+      r.indicators = {
+        bandP25: ind.band?.p25 ?? null,
+        bandP50: ind.band?.p50 ?? null,
+        bandP75: ind.band?.p75 ?? null,
+        bandN: ind.band?.n ?? null,
+        effortHogarPct: ind.effort.hogar?.pct ?? null,
+        effortRentaPeriod: ind.effort.hogar?.rentaPeriod ?? null,
+        rentaHogar: ind.renta.municipi.hogar?.latest?.value ?? null,
+        rentaHogarYear: ind.renta.municipi.hogar?.latest?.period ?? null,
+        ipvaCatAnual: ind.ipva.catalunya?.latestAnual?.value ?? null,
+        ipvaCatAnualPeriod: ind.ipva.catalunya?.latestAnual?.period ?? null,
+        ipvaCatAcum: ind.ipva.catalunya?.acum2015?.value ?? null,
+      };
+    }
+  }
+
   await db.event
-    .create({ data: { type: "COMPARATOR_USED", userId: user?.id || null, meta: JSON.stringify({ entities: entities.length }) } })
+    .create({ data: { type: "COMPARATOR_USED", userId: user?.id || null, meta: JSON.stringify({ entities: entities.length, advanced: comparadorAvancat }) } })
     .catch(() => {});
 
-  return NextResponse.json({ results, stats });
+  return NextResponse.json({ results, stats, advanced: comparadorAvancat });
 }
 
 function medianOf(values: number[]): number {

@@ -3,7 +3,231 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
-import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, AlertTriangle, Home, MailCheck } from "lucide-react";
+import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, AlertTriangle, Home, MailCheck, Lock } from "lucide-react";
+
+/** Resposta de GET /api/indicators/muni/:code (Fase 4, gating al servidor). */
+interface GatedIndicatorsResponse {
+  plan: string;
+  medianaMunicipal: { p50: number; n: number; basis: string } | null;
+  teaser: { bandaDisponible: boolean; esforcDisponible: boolean } | null;
+  bandaCompleta: { p25: number; p50: number; p75: number; n: number; totalWeight: number; basis: string } | null;
+  posVsMedian: { absDiff: number; pctDiff: number; direction: "ABOVE" | "BELOW" | "AT"; median: number; basis: string } | null;
+  refBand: { position: "BELOW" | "WITHIN" | "ABOVE"; labelCa: string; labelEs: string; p25: number; p75: number; basis: string } | null;
+  ipva: {
+    catalunya: { latestAnual: { period: string; value: number } | null; acum2015: { period: string; value: number } | null } | null;
+    provincia: { geoName: string | null; latestAnual: { period: string; value: number } | null; acum2015: { period: string; value: number } | null } | null;
+    municipi: { geoName: string | null; latestAnual: { period: string; value: number } | null } | null;
+  } | null;
+  renta: {
+    municipi: {
+      hogar: { latest: { period: string; value: number } | null; series: { period: string; value: number }[] } | null;
+      persona: { latest: { period: string; value: number } | null } | null;
+    };
+  } | null;
+  effort: {
+    hogar: { pct: number; rentEurMonth: number; rentPeriod: string | null; rentaAnual: number; rentaPeriod: string } | null;
+    persona: { pct: number } | null;
+  } | null;
+  terrDelta: {
+    rentaVsProvincia: { pctDiff: number } | null;
+    rentaVsCatalunya: { pctDiff: number } | null;
+    rentaVsEspanya: { pctDiff: number } | null;
+  } | null;
+  fontsUsed: string[];
+  avisos: string[];
+  generatedAt: string;
+}
+
+/**
+ * Fase 4 — Bloc «Referència oficial i context» de la fitxa (FullPanel).
+ * Les dades decideixen-les SEMPRE el servidor (/api/indicators/muni/:code):
+ * el client només pinta el que ha rebut (gratuït: mediana + teaser;
+ * Premium/Pro: banda, posició, IPVA, renda i esforç amb metodologia).
+ */
+function IndicadorsOficials({ muniCode, price }: { muniCode: string; price: number | null }) {
+  const { locale, navigate } = useApp();
+  const ca = locale === "ca";
+  // dades etiquetades amb el municipi que les va portar: quan canvia el
+  // municipi, les velles deixen de pintar-se sense setState síncron a l'effect
+  const [data, setData] = useState<{ code: string; d: GatedIndicatorsResponse } | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/indicators/muni/${encodeURIComponent(muniCode)}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d) => { if (!cancelled) setData({ code: muniCode, d }); })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [muniCode]);
+
+  if (failed) return null; // degradació elegant: el bloc no és crític
+  if (!data || data.code !== muniCode) {
+    return (
+      <div className="rounded-xl border border-[#e5e1da] p-4 text-xs text-[#6b6f68]">
+        {ca ? "Carregant referència oficial…" : "Cargando referencia oficial…"}
+      </div>
+    );
+  }
+  const resp = data.d;
+
+  // posició davant la mediana: el server ja la calcula amb ?price; si l'usuari
+  // tecleja un preu nou, el % es recalcula localment (aritmètica sobre dades
+  // ja autoritzades pel servidor; la DECISIÓ de visibilitat és del server).
+  const banda = resp.bandaCompleta;
+  const posLocal =
+    banda && price && banda.p50 > 0
+      ? {
+          pctDiff: Math.round(((price - banda.p50) / banda.p50) * 100 * 10) / 10,
+          direction: (price === banda.p50 ? "AT" : price > banda.p50 ? "ABOVE" : "BELOW") as "ABOVE" | "BELOW" | "AT",
+        }
+      : null;
+  const pos = posLocal ?? (resp.posVsMedian ? { pctDiff: resp.posVsMedian.pctDiff, direction: resp.posVsMedian.direction } : null);
+  const bandPos =
+    banda && price
+      ? price < banda.p25
+        ? ca ? "Per sota del rang de referència" : "Por debajo del rango de referencia"
+        : price > banda.p75
+          ? ca ? "Per sobre del rang de referència" : "Por encima del rango de referencia"
+          : ca ? "Dins del rang de referència" : "Dentro del rango de referencia"
+      : null;
+  const markerPct = banda && price && banda.p75 > banda.p25
+    ? Math.min(100, Math.max(0, ((price - banda.p25) / (banda.p75 - banda.p25)) * 100))
+    : null;
+
+  const effort = resp.effort?.hogar ?? null;
+
+  return (
+    <div className="rounded-xl border border-[#e5e1da] p-4 space-y-3">
+      <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide">
+        {ca ? "Referència oficial i context" : "Referencia oficial y contexto"}
+      </div>
+
+      {/* — gratuït: mediana municipal de referència — */}
+      {resp.medianaMunicipal && (
+        <div className="text-sm">
+          <span className="text-[#6b6f68]">{ca ? "Mediana municipal (mercat registrat)" : "Mediana municipal (mercado registrado)"}: </span>
+          <b>{resp.medianaMunicipal.p50.toFixed(0)} €/mes</b>
+          <span className="text-xs text-[#6b6f68]"> · {resp.medianaMunicipal.n} {ca ? "illes amb dades" : "manzanas con datos"}</span>
+        </div>
+      )}
+
+      {/* — teaser gratuït (només si la dada existeix de debò) — */}
+      {resp.teaser && (resp.teaser.bandaDisponible || resp.teaser.esforcDisponible) && (
+        <div className="rounded-lg border border-[#f3d9b0] bg-[#fdf6ec] p-3 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-[#b0431c] shrink-0" />
+          <p className="text-xs text-[#7a4a1c] flex-1">
+            {ca
+              ? "Amb Premium: banda completa P25–P75, posició del teu preu, evolució IPVA, renda mitjana i esforç econòmic d'aquest municipi amb dades oficials."
+              : "Con Premium: banda completa P25–P75, posición de tu precio, evolución IPVA, renta media y esfuerzo económico de este municipio con datos oficiales."}
+          </p>
+          <button onClick={() => navigate("/preus")} className="px-3 py-1.5 rounded-lg bg-[#e8673c] text-white text-[11px] font-bold shrink-0 hover:bg-[#d95a31]">
+            {ca ? "Veure Premium" : "Ver Premium"}
+          </button>
+        </div>
+      )}
+
+      {/* — PREMIUM: banda + posició — */}
+      {banda && (
+        <div className="space-y-2">
+          <div className="flex justify-between text-[11px] text-[#6b6f68] font-semibold">
+            <span>P25 · {banda.p25.toFixed(0)} €</span>
+            <span>{ca ? "mediana" : "mediana"} · {banda.p50.toFixed(0)} €</span>
+            <span>P75 · {banda.p75.toFixed(0)} €</span>
+          </div>
+          <div className="relative h-3 rounded-full" style={{ background: "linear-gradient(90deg,#63b57c,#e5c46a,#dd5a35)" }}>
+            {markerPct !== null && (
+              <div
+                className="absolute -top-1 w-5 h-5 rounded-full bg-[#0f2e21] border-2 border-white shadow"
+                style={{ left: `calc(${markerPct}% - 10px)` }}
+                title={price ? `${price.toFixed(0)} €/mes` : ""}
+              />
+            )}
+          </div>
+          {bandPos && (
+            <div className="text-xs font-semibold text-[#0f2e21]">{bandPos}</div>
+          )}
+          {pos !== null && (
+            <div className="text-xs text-[#4b5349] flex items-center gap-1">
+              {pos.direction === "ABOVE" ? <TrendingUp className="w-3.5 h-3.5 text-[#b0431c]" /> : pos.direction === "BELOW" ? <TrendingDown className="w-3.5 h-3.5 text-[#1e7a41]" /> : <Minus className="w-3.5 h-3.5" />}
+              {pos.pctDiff > 0 ? "+" : ""}{pos.pctDiff.toFixed(1).replace(".", ",")} % {ca ? "respecte a la mediana de l'entorn" : "respecto a la mediana del entorno"}
+            </div>
+          )}
+          <div className="text-[10px] text-[#6b6f68]">{banda.basis} · n={banda.n}</div>
+        </div>
+      )}
+
+      {/* — PREMIUM: IPVA — */}
+      {resp.ipva?.catalunya && (
+        <div className="text-sm">
+          <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Evolució del mercat (IPVA INE)" : "Evolución del mercado (IPVA INE)"}</div>
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {resp.ipva.catalunya.latestAnual && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+                CAT {resp.ipva.catalunya.latestAnual.value > 0 ? "+" : ""}{resp.ipva.catalunya.latestAnual.value.toFixed(1).replace(".", ",")} % ({resp.ipva.catalunya.latestAnual.period})
+              </span>
+            )}
+            {resp.ipva.catalunya.acum2015 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+                {ca ? "acum." : "acum."} +{resp.ipva.catalunya.acum2015.value.toFixed(1).replace(".", ",")} % {ca ? "des de 2015" : "desde 2015"}
+              </span>
+            )}
+            {resp.ipva.provincia?.latestAnual && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+                {resp.ipva.provincia.geoName ?? (ca ? "Província" : "Provincia")} {resp.ipva.provincia.latestAnual.value > 0 ? "+" : ""}{resp.ipva.provincia.latestAnual.value.toFixed(1).replace(".", ",")} %
+              </span>
+            )}
+            {resp.ipva.municipi?.latestAnual && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+                {ca ? "Municipi" : "Municipio"} {resp.ipva.municipi.latestAnual.value > 0 ? "+" : ""}{resp.ipva.municipi.latestAnual.value.toFixed(1).replace(".", ",")} %
+              </span>
+            )}
+          </div>
+          <div className="mt-1 text-[10px] text-[#6b6f68]">
+            {ca ? "És un índex d'evolució (base 2015=100): no és un preu en euros." : "Es un índice de evolución (base 2015=100): no es un precio en euros."}
+          </div>
+        </div>
+      )}
+
+      {/* — PREMIUM: renda + esforç — */}
+      {resp.renta?.municipi.hogar?.latest && (
+        <div className="text-sm">
+          <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Renda i esforç econòmic (INE)" : "Renta y esfuerzo económico (INE)"}</div>
+          <div className="mt-1 text-sm">
+            <span className="text-[#6b6f68]">{ca ? "Renda neta mitjana per llar" : "Renta neta media por hogar"}: </span>
+            <b>{resp.renta.municipi.hogar.latest.value.toLocaleString(ca ? "ca-ES" : "es-ES")} €/any</b>
+            <span className="text-xs text-[#6b6f68]"> ({resp.renta.municipi.hogar.latest.period})</span>
+          </div>
+          {effort && (
+            <div className="mt-1.5 rounded-lg bg-[#faf9f7] border border-[#e5e1da] p-2.5">
+              <div className="font-black text-lg text-[#0f2e21]">{effort.pct.toFixed(1).replace(".", ",")} %</div>
+              <div className="text-[11px] text-[#4b5349]">
+                {ca
+                  ? `una llar amb la renda mitjana del municipi destinaria aquest % a un lloguer mitjà (${effort.rentEurMonth.toFixed(0)} €/mes × 12 ÷ ${effort.rentaAnual.toLocaleString(ca ? "ca-ES" : "es-ES")} €/any)`
+                  : `un hogar con la renta media del municipio destinaría este % a un alquiler medio (${effort.rentEurMonth.toFixed(0)} €/mes × 12 ÷ ${effort.rentaAnual.toLocaleString(ca ? "ca-ES" : "es-ES")} €/año)`}
+              </div>
+              <div className="mt-1 text-[10px] text-[#6b6f68]">
+                {ca
+                  ? "Indicador TERRITORIAL (renda per llar de l'Atlas INE): no mesura la teva situació personal. Fiances: " + (effort.rentPeriod ?? "—") + "."
+                  : "Indicador TERRITORIAL (renta por hogar del Atlas INE): no mide tu situación personal. Fianzas: " + (effort.rentPeriod ?? "—") + "."}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* — fonts + enllaç a la guia — */}
+      {resp.fontsUsed.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#6b6f68]">
+          <span>Font: {resp.fontsUsed.includes("INE_ATLAS_RENTA") ? "INE (IPVA + Atlas de renda)" : "INE (IPVA)"}</span>
+          <button onClick={() => navigate("/guia")} className="underline font-semibold text-[#0f2e21] hover:text-[#e8673c]">
+            {ca ? "Guia del lloguer i ajudes →" : "Guía del alquiler y ayudas →"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface MunLite {
   code: string;
@@ -916,6 +1140,9 @@ function FullPanel({
           </div>
         </div>
       )}
+
+      {/* Fase 4 — bloc «Referència oficial i context» (INE + mercat registrat) */}
+      <IndicadorsOficials muniCode={mun.code} price={isFinite(yourRentNum) && yourRentNum > 0 ? yourRentNum : null} />
 
       {/* COMPARADOR + ACCIONS */}
       <div className="rounded-xl border-2 border-[#0f2e21] p-4">

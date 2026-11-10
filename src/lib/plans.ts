@@ -19,6 +19,15 @@ export const PLANS: Record<
       preferits: boolean;
       pdfMunicipi: boolean;
       pdfEdifici: boolean;
+      // Fase 4 — indicadors de fonts oficials (INE + mercat registrat):
+      //  - referenciaAmpliada: banda completa P25/mediana/P75 + posició del preu
+      //  - indicadorsTerritorials: IPVA, renda Atlas, esforç econòmic i deltas
+      //  - comparadorAvancat: columnes avançades del comparador (banda + esforç)
+      // Configurables des de l'admin via PlanSetting.features (JSON fusionat
+      // sobre aquests defaults; cache 30 s) — recalibrar no requereix desplegar.
+      referenciaAmpliada: boolean;
+      indicadorsTerritorials: boolean;
+      comparadorAvancat: boolean;
     };
   }
 > = {
@@ -26,21 +35,21 @@ export const PLANS: Record<
     quotaMonth: 3,
     priceEur: 0,
     comparatorMax: 2,
-    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false },
+    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false },
   },
   PREMIUM: {
     quotaMonth: -1,
     priceEur: 7.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
-    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false },
+    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true },
   },
   PRO: {
     quotaMonth: -1,
     priceEur: 19.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
-    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true },
+    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true },
   },
 };
 
