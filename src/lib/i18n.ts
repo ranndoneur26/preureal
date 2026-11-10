@@ -56,9 +56,14 @@ export const STRINGS = {
       zoomHint: "Fes zoom (nivell 16+) per carregar els edificis de la zona",
       loadingBuildings: "Carregant edificis reals...",
       noDataMun: "Aquest municipi encara no té dades oficials de fiances publicades",
-      legend: { low: "Preu baix", high: "Preu alt", tense: "Municipi tensat" },
+      legend: { low: "Preu baix", high: "Preu alt", tense: "Municipi tensat", industrial: "Nau industrial (sense estadística d'habitatges)" },
       panel: {
         avgRent: "Preu mitjà real registrat",
+        // v33 — fitxa d'una nau industrial: el preu municipal és d'habitatges
+        avgRentHousing: "Preu mitjà de lloguer d'HABITATGES del municipi",
+        industrialBadge: "Zona industrial · Nau industrial",
+        industrialNote: "El preu que es mostra és el de lloguer d'habitatges del municipi (fiances Incasòl). Les naus i edificis industrials es lloguen per €/m² i mes i NO estan inclosos en aquesta estadística.",
+        industrialDeltaNote: "La mitjana municipal correspon a habitatges; no és aplicable a naus industrials.",
         perMonth: "€/mes",
         period: "Període",
         contracts: "Contractes amb fiança registrada",
@@ -251,9 +256,14 @@ export const STRINGS = {
       zoomHint: "Haz zoom (nivel 16+) para cargar los edificios de la zona",
       loadingBuildings: "Cargando edificios reales...",
       noDataMun: "Este municipio aún no tiene datos oficiales de fianzas publicados",
-      legend: { low: "Precio bajo", high: "Precio alto", tense: "Municipio tensionado" },
+      legend: { low: "Precio bajo", high: "Precio alto", tense: "Municipio tensionado", industrial: "Nave industrial (sin estadística de viviendas)" },
       panel: {
         avgRent: "Precio medio real registrado",
+        // v33 — ficha de una nave industrial: el precio municipal es de viviendas
+        avgRentHousing: "Precio medio de alquiler de VIVIENDAS del municipio",
+        industrialBadge: "Zona industrial · Nave industrial",
+        industrialNote: "El precio que se muestra es el de alquiler de viviendas del municipio (fianzas Incasòl). Las naves y edificios industriales se alquilan por €/m² y mes y NO están incluidos en esta estadística.",
+        industrialDeltaNote: "La media municipal corresponde a viviendas; no es aplicable a naves industriales.",
         perMonth: "€/mes",
         period: "Período",
         contracts: "Contratos con fianza registrada",

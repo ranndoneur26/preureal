@@ -5,7 +5,8 @@ import { db } from "@/lib/db";
  * https://api.icgc.cat/territorial/
  *
  * Capes utilitzades:
- *  - construccions-rtt: polígons d'edificis i illes de cases reals (màx 50 ha/consulta)
+ *  - construccions-rtt: polígons d'edificis, illes de cases i naus industrials
+ *    (màx 50 ha/consulta; v33: tipus edi/ill/ind)
  *  - parcelles-cadastre: parcel·la catastral per punt (refcat real)
  *  - municipis: límit municipal + CODIMUNI
  */
@@ -88,7 +89,10 @@ export async function fetchBuildingsBbox(b: BBox) {
   }> = [];
   for (const f of d.features || []) {
     const p = f.properties || {};
-    if (!["edi", "ill"].includes(p.tipus)) continue;
+    // v33 — "ind" = construcció industrial (nau): s'ha d'incloure per poder
+    // diferenciar-la visualment i avisar que les estadístiques de lloguer
+    // (fiances Incasòl) són d'habitatges i no cobreixen naus.
+    if (!["edi", "ill", "ind"].includes(p.tipus)) continue;
     const geom = f.geometry;
     let ring: number[][] | null = null;
     if (geom?.type === "Polygon") ring = geom.coordinates[0];
@@ -194,6 +198,52 @@ export async function getOrFetchBuildings(b: BBox) {
           data: { municipalityCode: code },
         });
         for (const c of cached) if (!c.municipalityCode) c.municipalityCode = code;
+      }
+    }
+    // v33 — lots encauats abans d'incloure naus industrials ("ind"): un únic
+    // rescan del mosaic les afegeix i refresca cachedAt de tot el lot per no
+    // repetir el rescan (autorreparació del cau, 1 crida ICGC per mosaic com a
+    // màxim un cop).
+    if (!cached.some((c) => c.tipus === "ind")) {
+      try {
+        const feats = await fetchBuildingsBbox(b);
+        const naus = feats.filter((f) => f.tipus === "ind");
+        for (const f of naus) {
+          await db.building.upsert({
+            where: { externalId: f.externalId },
+            create: {
+              ...f,
+              source: "ICGC_RTT",
+              municipalityCode: cached.find((c) => c.municipalityCode)?.municipalityCode ?? null,
+            },
+            update: {
+              tipus: f.tipus,
+              estat: f.estat,
+              altura: f.altura,
+              nom: f.nom,
+              polygonJson: f.polygonJson,
+              centroidLat: f.centroidLat,
+              centroidLng: f.centroidLng,
+              cachedAt: new Date(),
+            },
+          });
+        }
+        await db.building.updateMany({
+          where: { id: { in: cached.map((c) => c.id) } },
+          data: { cachedAt: new Date() },
+        });
+        if (naus.length > 0) {
+          const refreshed = await db.building.findMany({
+            where: {
+              centroidLat: { gte: b.south - 0.002, lte: b.north + 0.002 },
+              centroidLng: { gte: b.west - 0.003, lte: b.east + 0.003 },
+            },
+            take: 4000,
+          });
+          return { buildings: refreshed, fromCache: true };
+        }
+      } catch {
+        // degradació elegant: si el rescan falla servim el lot encauat tal com és
       }
     }
     return { buildings: cached, fromCache: true };

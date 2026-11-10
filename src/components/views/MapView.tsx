@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
-import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock } from "lucide-react";
+import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock, Factory } from "lucide-react";
 
 /** Resposta de GET /api/indicators/muni/:code (Fase 4, gating al servidor). */
 interface GatedIndicatorsResponse {
@@ -279,6 +279,13 @@ function rentColor(rent: number | null | undefined): string {
   return "#dd5a35";
 }
 
+// v33 — les naus industrials (tipus "ind" de l'ICGC) NO participen de l'escala
+// de lloguer d'habitatges (fiances Incasòl): un color neutre violeta fora de
+// l'escala evita que un usuari interpreti el preu residencial municipal com a
+// preu de la nau.
+const NAU_FILL = "#8b7bb5";
+const NAU_BORDER = "#5d5480";
+
 /** Un text que sembla referència catastral (14+ alfanumèrics sense espais). */
 function looksLikeRefcat(q: string): boolean {
   const s = q.replace(/\s+/g, "").toUpperCase();
@@ -310,6 +317,9 @@ export default function MapView() {
   const [panelState, setPanelState] = useState<"closed" | "loading" | "teaser" | "full" | "paywall" | "verificacio">("closed");
   const [verifySent, setVerifySent] = useState(false); // reenviament des del panell del mapa
   const [lookup, setLookup] = useState<LookupResult | null>(null);
+  // v33 — l'edifici clicat és una nau industrial? (el teaser no rep el building
+  // del servidor; el client ja ho sap en el moment del clic)
+  const [clickedNau, setClickedNau] = useState(false);
   const [quota, setQuota] = useState<{ used: number; limit: number } | null>(auth.quota);
   const [demoNotice, setDemoNotice] = useState<string | null>(null);
   const [favState, setFavState] = useState<"idle" | "saved" | "error" | "plan">("idle");
@@ -484,16 +494,26 @@ export default function MapView() {
     polyByIdRef.current = {}; // v24: el lot nou substitueix l'anterior
     lastBuildingsRef.current = buildings;
     for (const b of buildings) {
+      const isNau = b.tipus === "ind";
       let color = "#9aa5a0";
       // si l'edifici té dada pròpia importada, el color ve d'aquesta dada real
-      if (b.avgRentEurMonth) color = rentColor(b.avgRentEurMonth);
+      if (isNau) color = NAU_FILL;
+      else if (b.avgRentEurMonth) color = rentColor(b.avgRentEurMonth);
       else if (b.munRent) color = rentColor(b.munRent);
       const poly = L.polygon(b.ring.map((p: number[]) => [p[1], p[0]]), {
-        color: "#3d4a42",
-        weight: 0.7,
+        color: isNau ? NAU_BORDER : "#3d4a42",
+        weight: isNau ? 1 : 0.7,
+        dashArray: isNau ? "4 3" : undefined,
         fillColor: color,
-        fillOpacity: 0.55,
+        fillOpacity: isNau ? 0.45 : 0.55,
       });
+      if (isNau) {
+        // tooltip breu: és l'única pista sense obrir la fitxa
+        poly.bindTooltip(locale === "ca"
+          ? "Nau industrial · sense estadística de lloguer d'habitatges"
+          : "Nave industrial · sin estadística de alquiler de viviendas",
+          { sticky: true, direction: "top", opacity: 0.9 });
+      }
       poly.on("click", (e: any) => {
         L.DomEvent.stopPropagation(e);
         onSelectBuilding(b, e.latlng.lat, e.latlng.lng, poly);
@@ -501,8 +521,8 @@ export default function MapView() {
       poly.addTo(layer);
       if (b.id) polyByIdRef.current[b.id] = poly;
     }
-     
-  }, []);
+
+  }, [locale]);
 
   const lookupSeqRef = useRef(0);
   // recorda l'últim clic al mapa per poder repetir la consulta des del bloqueig
@@ -522,6 +542,7 @@ export default function MapView() {
     // invalida respuestas de consultas anteriores (evita carreras fuera de orden)
     const seq = ++lookupSeqRef.current;
     lastClickRef.current = { b, lat, lng, poly };
+    setClickedNau(b?.tipus === "ind"); // v33 — recorda si s'ha clicat una nau
     setPanelState("loading");
     setLookup(null);
     setDemoNotice(null);
@@ -899,6 +920,14 @@ export default function MapView() {
               <span key={c} className="w-5 h-3 rounded-sm inline-block" style={{ background: c }} />
             ))}
           </div>
+          {/* v33 — naus industrials: fora de l'escala de lloguer d'habitatges */}
+          <div className="mt-1 flex items-center gap-1 text-[#6b6f68]">
+            <span
+              className="w-5 h-3 rounded-sm inline-block shrink-0"
+              style={{ background: NAU_FILL, border: `1px dashed ${NAU_BORDER}` }}
+            />
+            {t.map.legend.industrial}
+          </div>
           <div className="mt-1 flex items-center gap-1 text-[#6b6f68]">
             <Flame className="w-3 h-3 text-[#e8673c]" /> {t.map.legend.tense}
           </div>
@@ -934,6 +963,8 @@ export default function MapView() {
                 {lookup?.municipality?.isTense && (
                   <TenseBadge note={t.tense.badgeEsNote} />
                 )}
+                {/* v33 — nau industrial clicada: l'avís també enregistrat sense sessió */}
+                {clickedNau && <IndustrialBadge t={t} />}
                 <div className="rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
                   <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide">{t.map.panel.avgRent}</div>
                   <div className="mt-2 select-none blur-[7px] text-4xl font-black text-[#0f2e21]">1.134 €</div>
@@ -1044,6 +1075,28 @@ function TenseBadge({ note }: { note: string }) {
   );
 }
 
+// v33 — avís prominent quan l'edifici clicat és una nau industrial: els preus
+// de la fitxa són d'habitatges (fiances Incasòl) i NO cobreixen naus.
+function IndustrialBadge({ t }: { t: any }) {
+  return (
+    <div
+      className="rounded-xl px-3 py-2.5 flex items-start gap-2"
+      style={{ background: "#efeafb", border: "1px solid #cabfe6" }}
+      role="note"
+    >
+      <Factory className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#5d5480" }} />
+      <div>
+        <div className="text-sm font-bold" style={{ color: "#5d5480" }}>
+          {t.map.panel.industrialBadge}
+        </div>
+        <div className="text-xs mt-0.5" style={{ color: "#5d5480" }}>
+          {t.map.panel.industrialNote}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FullPanel({
   lookup, quota, t, navigate, doCheckout, toggleFavorite, favState, downloadPdf, pdfMsg, pdfLocked, downloadCsv, csvMsg, csvLocked,
 }: {
@@ -1119,14 +1172,19 @@ function FullPanel({
 
   const bAvg = lookup.building?.avgRentEurMonth;
   const bSamples = lookup.building?.sampleSize;
+  // v33 — edifici industrial (nau): la fitxa ho indica i reetiqueta el preu
+  const isNau = lookup.building?.tipus === "ind";
 
   return (
     <div className="space-y-4">
       {mun.isTense && <TenseBadge note={t.tense.badgeEsNote} />}
+      {isNau && <IndustrialBadge t={t} />}
 
       {/* PREU MITJÀ REAL */}
       <div className="rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
-        <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide">{t.map.panel.avgRent}</div>
+        <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide">
+          {isNau ? t.map.panel.avgRentHousing : t.map.panel.avgRent}
+        </div>
         <div className="mt-1 flex items-end gap-2">
           <span className="text-4xl font-black text-[#0f2e21]">
             {mun.rentLatest ? `${mun.rentLatest.toFixed(0)} €` : "—"}
@@ -1164,6 +1222,15 @@ function FullPanel({
           <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide mb-2">
             {locale === "ca" ? "Edifici" : "Edificio"}
           </div>
+          {isNau && (
+            <div className="flex justify-between text-sm py-1">
+              <span className="text-[#6b6f68]">{locale === "ca" ? "Tipus" : "Tipo"}</span>
+              <b className="flex items-center gap-1.5" style={{ color: "#5d5480" }}>
+                <Factory className="w-3.5 h-3.5" />
+                {locale === "ca" ? "Nau industrial" : "Nave industrial"}
+              </b>
+            </div>
+          )}
           <div className="flex justify-between text-sm py-1">
             <span className="text-[#6b6f68]">{t.map.panel.yearBuilt}</span>
             <b>
@@ -1289,6 +1356,11 @@ function FullPanel({
         )}
         {delta !== null && (
           <div className="mt-1 text-[10px] text-[#6b6f68] text-center">
+            {isNau && (
+              <div className="font-semibold" style={{ color: "#5d5480" }}>
+                {t.map.panel.industrialDeltaNote}
+              </div>
+            )}
             {locale === "ca" ? "Comparació amb la MITJANA municipal (dades agregades Incasòl); no és una valoració de l'immoble." : "Comparación con la MEDIA municipal (datos agregados Incasòl); no es una valoración del inmueble."}
           </div>
         )}

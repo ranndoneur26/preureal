@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info, Crown, BarChart3 } from "lucide-react";
+import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info, Crown, BarChart3, Factory } from "lucide-react";
 
 interface Entity {
   type: "MUNI" | "BUILDING";
@@ -282,6 +282,21 @@ export default function ComparadorView() {
                 ? "Ordenats del més car al més barat. El % indica la diferència de cada municipi respecte al més barat de la selecció."
                 : "Ordenados del más caro al más barato. El % indica la diferencia de cada municipio respecto al más barato de la selección."}
             </p>
+            {/* v33 — si la comparació inclou naus industrials, s'avisa que el preu
+                municipal de referència és d'habitatges, no de naus */}
+            {result.results.some((x: any) => x.type === "BUILDING" && x.tipus === "ind") && (
+              <p
+                className="mb-4 text-xs rounded-xl px-3 py-2 flex items-start gap-1.5"
+                style={{ background: "#efeafb", color: "#5d5480", border: "1px solid #cabfe6" }}
+              >
+                <Factory className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                <span>
+                  {ca
+                    ? "Hi ha naus industrials a la comparació: el preu municipal de referència és el de lloguer d'habitatges (fiances Incasòl); les naus es lloguen per €/m² i mes i no queden representades en aquesta xifra."
+                    : "Hay naves industriales en la comparación: el precio municipal de referencia es el de alquiler de viviendas (fianzas Incasòl); las naves se alquilan por €/m² y mes y no quedan representadas en esta cifra."}
+                </span>
+              </p>
+            )}
             <div className="space-y-5">
               {ranked.map((r, idx) => {
                 const pct = r.rentLatest != null && minRent > 0 ? ((r.rentLatest - minRent) / minRent) * 100 : null;
@@ -292,6 +307,16 @@ export default function ComparadorView() {
                       <span className="font-semibold flex items-center gap-1.5 min-w-0">
                         <span className="w-5 h-5 rounded-full bg-[#f0ede8] text-[#0f2e21] text-[10px] font-black flex items-center justify-center shrink-0">{idx + 1}</span>
                         <span className="truncate">{r.name}</span>
+                        {/* v33 — naus industrials: fora de l'estadística d'habitatges */}
+                        {r.type === "BUILDING" && (r as any).tipus === "ind" && (
+                          <span
+                            className="text-[10px] font-bold rounded-full px-2 py-0.5 shrink-0 flex items-center gap-1"
+                            style={{ background: "#efeafb", color: "#5d5480", border: "1px solid #cabfe6" }}
+                          >
+                            <Factory className="w-3 h-3" />
+                            {ca ? "nau industrial" : "nave industrial"}
+                          </span>
+                        )}
                         {r.isTense && <Flame className="w-3.5 h-3.5 text-[#e8673c] shrink-0" />}
                         {isMin && (
                           <span className="text-[10px] font-bold text-[#1e7a41] bg-[#e6f4ea] border border-[#bfe3cc] rounded-full px-2 py-0.5 shrink-0">

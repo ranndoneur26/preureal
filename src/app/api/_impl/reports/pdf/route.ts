@@ -106,8 +106,9 @@ export async function GET(req: Request) {
   if (building) {
     text(building.nom || building.refcat || "Edifici", 20, DARK, true);
     y -= 6;
+    // v33 — nau industrial: el PDF ho indica expressament
     line(
-      `${mun ? mun.name + " · " : ""}${building.refcat ? "Ref. catastral " + building.refcat : "Sense ref. catastral coneguda"} · Font geomètrica: ${building.source}`,
+      `${building.tipus === "ind" ? "Nau industrial · " : ""}${mun ? mun.name + " · " : ""}${building.refcat ? "Ref. catastral " + building.refcat : "Sense ref. catastral coneguda"} · Font geomètrica: ${building.source}`,
       10,
       GRAY
     );
@@ -151,6 +152,10 @@ export async function GET(req: Request) {
   } else if (building) {
     y -= 26;
     line("Dada de lloguer a nivell d'edifici: no disponible. La xifra municipal és agregada i no descriu aquest edifici concret.", 9, GRAY);
+    if (building.tipus === "ind") {
+      y -= 14;
+      line("Nota: la xifra municipal correspon al lloguer d'habitatges (fiances Incasòl); les naus industrials es lloguen per €/m² i mes i no s'inclouen en aquesta estadística.", 9, GRAY);
+    }
   }
 
   // ---- zona tensionada ----
