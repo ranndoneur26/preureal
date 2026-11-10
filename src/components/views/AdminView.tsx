@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { RefreshCw, Shield, Mail, Database, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown } from "lucide-react";
+import { RefreshCw, Shield, Mail, Database, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown, HeartHandshake } from "lucide-react";
 
 interface Stats {
   users: number;
@@ -42,6 +42,8 @@ export default function AdminView() {
   const [emails, setEmails] = useState<any[]>([]);
   const [importJson, setImportJson] = useState("");
   const [importMsg, setImportMsg] = useState<string | null>(null);
+  const [seedAidMsg, setSeedAidMsg] = useState<string | null>(null);
+  const [seedingAid, setSeedingAid] = useState(false);
   const [modReports, setModReports] = useState<any[] | null>(null);
   const [modStats, setModStats] = useState<any>(null);
   const [planSettings, setPlanSettings] = useState<any>(null);
@@ -120,6 +122,26 @@ export default function AdminView() {
       setImportMsg(res.ok ? `OK: ${d.created} nous, ${d.updated} actualitzats, ${d.skipped} ignorats (run ${d.runId})` : d.message || d.error);
     } catch (e: any) {
       setImportMsg("JSON invàlid: " + e.message);
+    }
+  };
+
+  // Fase 4 — sincronitza el catàleg editorial d'ajudes al lloguer (RentalAid)
+  // amb src/data/rental_aid_seed.json. Idempotent (upsert per code).
+  const doSeedAid = async () => {
+    setSeedAidMsg(null);
+    setSeedingAid(true);
+    try {
+      const res = await fetch("/api/admin/seed-aid", { method: "POST" });
+      const d = await res.json();
+      setSeedAidMsg(
+        res.ok
+          ? `OK: ${d.created} noves, ${d.updated} actualitzades de ${d.total} (revisió ${d.revisado})`
+          : d.message || d.error,
+      );
+    } catch (e: any) {
+      setSeedAidMsg("Error: " + e.message);
+    } finally {
+      setSeedingAid(false);
     }
   };
 
@@ -403,6 +425,28 @@ export default function AdminView() {
                 {t.admin.importBtn}
               </button>
               {importMsg && <span className="text-sm text-[#4b5349]">{importMsg}</span>}
+            </div>
+          </div>
+
+          {/* Fase 4 — catàleg d'ajudes al lloguer (seed editorial) */}
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+            <h3 className="font-bold flex items-center gap-2"><HeartHandshake className="w-4 h-4 text-[#0f2e21]" />{ca ? "Ajudes al lloguer — catàleg editorial" : "Ayudas al alquiler — catálogo editorial"}</h3>
+            <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+              {ca
+                ? "Sincronitza a la base de dades el catàleg d'ajudes al lloguer (font: src/data/rental_aid_seed.json, revisió 2026-11-10). Idempotent: pot executar-se tantes vegades com calgui sense duplicar files. Només escriu a la taula RentalAid."
+                : "Sincroniza en la base de datos el catálogo de ayudas al alquiler (fuente: src/data/rental_aid_seed.json, revisión 2026-11-10). Idempotente: puede ejecutarse tantas veces como haga falta sin duplicar filas. Solo escribe en la tabla RentalAid."}
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={doSeedAid}
+                disabled={seedingAid}
+                className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+              >
+                {seedingAid
+                  ? ca ? "Sincronitzant…" : "Sincronizando…"
+                  : ca ? "Sincronitza el catàleg" : "Sincronizar el catálogo"}
+              </button>
+              {seedAidMsg && <span className="text-sm text-[#4b5349]">{seedAidMsg}</span>}
             </div>
           </div>
 
