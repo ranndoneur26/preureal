@@ -2,6 +2,34 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v25 — 2026-11-10 · Comparador per plans: 6 municipis amb Premium/Pro, % de diferència i gràfica premium
+
+### 1. Límit d'entitats per pla (gratuït 2, Premium i Pro 6)
+- **`plans.ts`**: nou camp `comparatorMax` per pla (FREE 2 · PREMIUM 6 · PRO 6).
+- **Servidor (`POST /api/comparator`)**: el pla efectiu el decideix sempre el
+  backend des de la sessió (mai el client). Amb més entitats del permès →
+  `403 { error: "PLAN_LIMIT", max, plan }`; amb menys, es retalla al límit.
+- **Client (ComparadorView)**: el selector no deixa afegir més enllà del límit,
+  mostra «Gratuït: màx. 2», i quan s'arriba al límit apareix upsell amb CTA
+  «Fes-te Premium» → `/preus`. Si el servidor retorna PLAN_LIMIT (comparació
+  desada amb 6 entitats oberta amb pla gratuït), retalla i avisa amb missatge.
+
+### 2. Gràfica comparativa premium amb % de diferència
+- Resultats reordenats **del més car al més barat** amb número de posició.
+- Cada municipi té **badge de % de diferència respecte al més barat** de la
+  selecció (format català amb coma decimal; tarifa ≥25% destacada en taronja) i
+  el més barat porta l'etiqueta verda «el més barat» (referència 0%).
+- Barres amb **degradat** i animació suau d'amplada (700 ms), altura major i
+  color per trams de preu (mateixa escala que abans).
+- Es mantenen: % vs mitjana del conjunt, contractes de mostra, mediana
+  històrica, estadístiques (mitjana/mediana/bretxa max-mín) i disclaimer.
+
+### 3. Copies
+- Subtítol del comparador: «fins a 2 amb el pla gratuït i fins a 6 amb Premium
+  o Pro». El mateix límit serveix per a Premium i Pro (agents).
+
+---
+
 ## v24 — 2026-11-09 · Panell Premium útil: accions, comparacions carregables i resum mensual de preferits
 
 ### 1. Panell accionable (mai més llistes morts)

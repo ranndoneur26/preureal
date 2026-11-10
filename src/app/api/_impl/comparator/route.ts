@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
+import { getPlanSettings, type PlanId } from "@/lib/plans";
 
 /**
  * POST /api/comparator  { entities: [{type:"MUNI"|"BUILDING", code}] }
@@ -17,10 +18,27 @@ export async function POST(req: Request) {
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
 
   const body = await req.json().catch(() => null);
-  const entities = Array.isArray(body?.entities) ? body.entities.slice(0, 6) : null;
-  if (!entities || entities.length < 2) {
+  // v25 — límit d'entitats per consulta segons el pla: gratuït 2, Premium i Pro 6.
+  // El pla efectiu el decideix sempre el servidor (mai el client).
+  const rawPlan = String(user?.plan || "FREE");
+  const planId: PlanId = rawPlan === "PREMIUM" || rawPlan === "PRO" ? rawPlan : "FREE";
+  const maxEntities = Math.max(2, (await getPlanSettings())[planId].comparatorMax || 2);
+  const raw = Array.isArray(body?.entities) ? body.entities : null;
+  if (!raw || raw.length < 2) {
     return NextResponse.json({ error: "BAD_INPUT", message: "Selecciona almenys 2 entitats." }, { status: 400 });
   }
+  if (raw.length > maxEntities) {
+    return NextResponse.json(
+      {
+        error: "PLAN_LIMIT",
+        max: maxEntities,
+        plan: planId,
+        message: `El teu pla compara fins a ${maxEntities} municipis per consulta.`,
+      },
+      { status: 403 }
+    );
+  }
+  const entities = raw.slice(0, maxEntities);
 
   const munCodes = entities.filter((e: any) => e?.type !== "BUILDING").map((e: any) => String(e.code).slice(0, 10));
   const buildingIds = entities.filter((e: any) => e?.type === "BUILDING").map((e: any) => String(e.code).slice(0, 40));

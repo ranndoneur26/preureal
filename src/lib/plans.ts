@@ -10,6 +10,7 @@ export const PLANS: Record<
   {
     quotaMonth: number; // -1 = il·limitades
     priceEur: number;
+    comparatorMax: number; // v25: entitats màximes per comparació (gratuït 2, pagament 6)
     stripePriceEnv?: "STRIPE_PREMIUM_PRICE_ID" | "STRIPE_PRO_AGENTS_PRICE_ID";
     features: {
       comparador: boolean;
@@ -24,17 +25,20 @@ export const PLANS: Record<
   FREE: {
     quotaMonth: 3,
     priceEur: 0,
+    comparatorMax: 2,
     features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false },
   },
   PREMIUM: {
     quotaMonth: -1,
     priceEur: 7.99,
+    comparatorMax: 6,
     stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
     features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false },
   },
   PRO: {
     quotaMonth: -1,
     priceEur: 19.99,
+    comparatorMax: 6,
     stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
     features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true },
   },
@@ -43,6 +47,7 @@ export const PLANS: Record<
 export type EffectivePlan = {
   quotaMonth: number;
   priceEur: number;
+  comparatorMax: number;
   features: (typeof PLANS)["FREE"]["features"];
 };
 
