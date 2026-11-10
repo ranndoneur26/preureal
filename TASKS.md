@@ -3,6 +3,16 @@
 Prioridad: **P0** bloquea / verificar primero · **P1** importante · **P2** mejora.
 Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 
+## Fase 7 — Validación final (2026-11-11: SUPERADA, ver `INFORME_FASE7.md`)
+- [x] Sondes de producció 54/54 (disponibilitat, seguretat, capçaleres, rendiment, dades) — `bun scripts/fase7_validate.ts`
+- [x] Contrast de valors amb fonts oficials: IPVA Catalunya 2024 = +3,1 % (coincidència exacta INE), Atlas ADRH 2024 vigent, fiances Incasòl coherents amb Gencat
+- [x] Smoke test navegador: 7 rutes, 0 errors de consola, canvi CA/ES correcte
+- [x] Correccions de text ca (tagline «illa a illa» + subtítol landing) — v35
+- [ ] **Propietari**: prémer «Sincronitza el catàleg» a `#/admin` (falten 2 de 4 ajudes a producció)
+- [ ] **Propietari**: connectar domini `preureal.cat` a Vercel si es vol la marca .cat (ara no resol DNS)
+- [ ] **Propietari**: Stripe real (`DEMO_CHECKOUT=false` + preus + webhook), Resend amb domini verificat, textos legals, `ADMIN_BOOTSTRAP_CODE`
+- [ ] P2 futur: netejar els 13 avisos ESLint (react-compiler) a MapView/ComparadorView/PanelView/use-user-plan (preexistents, no bloquegen)
+
 ## P0 — Base verde
 - [x] Build verificado en macOS (2026-11-02): Next 16.4.3, `prisma generate` y `next build` OK, TypeScript OK. Aviso no bloqueante: Next detecta un `package-lock.json` en `/Users/marcxicola` (fuera del repo); resuelto fijando `turbopack.root` en `next.config.ts`.
 - [ ] Probar el flujo completo en local con Postgres: registro → login → mapa → consulta → paywall → checkout DEMO.

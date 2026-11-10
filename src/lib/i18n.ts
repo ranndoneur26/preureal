@@ -5,12 +5,12 @@ export type Locale = "ca" | "es";
 export const STRINGS = {
   ca: {
     brand: "PreuReal.cat",
-    tagline: "El preu real del lloguer, manzana a manzana",
+    tagline: "El preu real del lloguer, illa a illa",
     nav: { mapa: "Mapa", preus: "Preus", panel: "El meu compte", admin: "Admin", entrada: "Entrar", registre: "Registra't", sortida: "Sortir", faq: "Preguntes" },
     hero: {
       badge: "Dades oficials · fiances Incasòl",
       title: "Sap si et cobra de més abans de signar el lloguer",
-      subtitle: "Consulta el preu mitjà real del lloguer registrat oficialment a qualsevol municipi de Catalunya (947), la zona si és àrea de mercat residencial tensat i l'any de construcció de l'edifici. directament sobre el mapa.",
+      subtitle: "Consulta el preu mitjà real del lloguer registrat oficialment a qualsevol municipi de Catalunya (947), la zona si és àrea de mercat residencial tensat i l'any de construcció de l'edifici, directament sobre el mapa.",
       ctaPrimary: "Obre el mapa gratis",
       ctaSecondary: "Com funciona",
       trust: "Sense targeta · 3 consultes detallades gratis cada mes",
