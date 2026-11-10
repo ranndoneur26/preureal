@@ -1,6 +1,6 @@
 # INFORME FASE 7 — Validació final · PreuReal.cat
 
-**Data:** 11-11-2026 · **Versió validada:** v34 (`0ae0a43`) + correccions v35
+**Data:** 11-11-2026 · **Versió validada:** v34 (`0ae0a43`) + correccions v35 · **Addenda v36-v37** (domini + pool BD, vegeu §8)
 **Mètode:** sondes HTTP de només lectura contra producció (`www.preureal.com`), inspecció de BD descartada per disseny (la base de dades de producció només és accessible des de Vercel), smoke test amb navegador real, gates locals complets i contrast dels valors clau amb les fonts oficials publicades.
 **Eina de validació versionada:** `scripts/fase7_validate.ts` (re-executable en qualsevol moment: `bun scripts/fase7_validate.ts`).
 
@@ -16,7 +16,7 @@
 | ESLint | 13 avisos preexistents (verificat contra v33 amb worktree: **0 nous**) |
 | Errors de consola navegant les 7 rutes | **0** |
 | Contrast amb fonts oficials (INE IPVA / INE Atlas / Incasòl) | **Coherent; IPVA coincidència exacta** |
-| Migracions / canvis de pagaments | **0** (només lectura + 2 correccions de text) |
+| Migracions / canvis de pagaments | **0** (v36: URLs de domini; v37: afinació del pool de BD — cap migració, cap canvi de pagaments) |
 
 **Conclusió:** el sistema compleix la verificació de la Fase 7. Les sis funcionalitats de la proposta (referència oficial, indicadors, evolució històrica, esforç econòmic, guía legal, ajudes + informes PDF) estan operatives i amb la procedència visible. Abans d'anunciar públicament queden **accions del propietari** (§7), cap de codi.
 
@@ -93,6 +93,13 @@ Cap endpoint supera els 2 s de mediana. El mosaic fred d'edificis (consulta ICGC
 7. **Accés admin:** definir `ADMIN_BOOTSTRAP_CODE` a Vercel + Redeploy i recuperar el compte des de `#/admin` (i canviar-se la contrasenya).
 8. **Refresc de dades:** executar el cicle trimestral (`update_all.sh`) perquè Palamós i la resta de municipis rebin l'última onada de fiances.
 
-## 8. Veredicte
+## 8. Addenda post-validació (2026-11-11 — v36 i v37)
+
+En re-executar el validador (`bun scripts/fase7_validate.ts`) després de l'aclariment del domini, s'han detectat i corregit dues coses:
+
+- **v36 (`a1ea7fe`) — Domini aclarit:** el propietari confirma que el domini connectat és **`preureal.com`** (el `.cat` no està registrat; opcional més endavant). Neteja d'URLs residuals que encara apuntaven a `preureal.cat` (domini mort): `robots.txt`, `sitemap.xml` (7 URLs), UA dels importadors INE/ICGC i peu de l'avís legal del PDF. Verificat en producció: robots/sitemap ja apunten a `www.preureal.com` i l'apex `.com` fa 308 cap a www.
+- **v37 (`a77d9c1`) — Fiabilitat BD:** 500 intermitents a `/api/municipalities?limit=200`, `/api/municipalities?code=080193` i `/api/indicators/status` per esgotament del pooler de Supabase (`FATAL: (EMAXCONNSESSION) … pool_size: 15`, mode sessió). Correcció a `src/lib/db.ts` sense tocar variables d'entorn: `connection_limit=4`, `pool_timeout=15`, `pgbouncer=true` per instància. Verificat: 12/12 peticions OK als tres endpoints crítics i validador complet **54 PASS / 0 FAIL**.
+
+## 9. Veredicte
 
 **Fase 7 SUPERADA.** Sistema validat de punta a punta amb dades oficials contrastades, seguretat verificada en producció i UX sense errors. El projecte queda en estat d'anunci públic un cop el propietari completi les accions del §7 (administració i credencials, no desenvolupament).
