@@ -2,6 +2,68 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v26 (Fase 2 de fonts oficials) — 2026-11-10 · Modelo de datos + importadores INE (IPVA y Atlas de renta), migración estrictamente aditiva
+
+### 0. Alcance (encargo fuentes oficiales — Fase 2)
+- Solo **modelo de datos + importadores INE**: la única fase bloqueante del
+  resto. Sin cambios de UI (Fase 4), sin Premium (Fase 5), sin PDF (Fase 6).
+- **Nada destructivo**: migración que solo AÑADE dos tablas nuevas
+  (`DataSource`, `StatObservation`); ninguna tabla, columna ni fila existente
+  se modifica. Cero toques a Stripe/pagos (verificado con `git diff`).
+
+### 1. Fuentes verificadas contra su publicación real (no se inventa nada)
+- **IPVA** (INE, base 2015=100, experimental, fuente AEAT/IRPF): tablas
+  Tempus3 **59056** (índice NAC+CCAA), **59058** (provincias), **59060**
+  (municipios >10.000 hab). Es un ÍNDICE de evolución, nunca un precio en €.
+- **ADRH / Atlas de distribución de renta** (INE, serie 2015-2024 publicada
+  19-10-2026): tabla nacional **53689** (Total Nacional + CCAA + provincias) y
+  provinciales **30896** Barcelona, **31016** Girona, **31079** Lleida,
+  **31223** Tarragona (séries municipales «Renta neta media por persona /
+  por hogar», 2015-2024). Renta media territorial, nunca salario individual.
+- SERPAVI queda fuera (sin API ni ficheros abiertos: solicitud en datos.gob.es
+  «asignada»); vigilancia para cuando se abra (Fase 7+).
+
+### 2. Base de datos (migración `20261110120000_fase2_fuentes_oficiales`)
+- **`DataSource`**: catálogo de fuentes (code único, institución, licencia,
+  unidad, periodicidad, metodología) — la trazabilidad que exige el encargo.
+- **`StatObservation`**: una observación = fuente + variable + territorio +
+  período + valor. Variables: `IPVA_INDICE`, `IPVA_TASA_ANUAL`,
+  `RENTA_NETA_MEDIA_PERSONA`, `RENTA_NETA_MEDIA_HOGAR`; niveles
+  `ESTATAL/CCAA/PROV/MUNI` con códigos INE; `municipalityCode` como enlace
+  LÓGICO con Municipality (sin FK: la tabla existente no se toca). Clave única
+  (sourceId, variable, geoLevel, geoCode, period) → reimportar es idempotente.
+- SQL idempotente (seguro también en el SQL Editor de Supabase).
+
+### 3. Importadores (`src/lib/ine-parse.ts` + `src/lib/ine-import.ts`)
+- **Parsers puros** testados con fixtures reales (data/fixtures/, fuera de
+  git): 23/23 checks OK, incluidas cifras oficiales (índice nacional 2024
+  122,92; tasa +3,5%; Cataluña +3,1%; renta neta media nacional 15.948 €) y
+  **mapeo 947/947 municipios** (resuelve artículos invertidos INE «Vendrell,
+  El» ↔ Gencat «Vendrell, el»). 124 municipios catalanes con IPVA municipal,
+  18.480 observaciones municipales de renta, secreto estadístico excluido.
+- **Orquestador**: upsert de DataSource, ImportRun + AuditLog, sustitución por
+  ventana (solo filas de la fuente/ámbito importado), createMany por lotes,
+  reintentos con backoff, `maxDuration=60`, scope parametrizable (Barcelona
+  pesa ~35 MB y puede lanzarse sola).
+- **Rutas**: `POST /api/admin/import-ine` (admin, rate-limited, {source,
+  scope}), `GET /api/cron/ine` (trimestral: ENE/MAR/JUN/SEP, cubre IPVA en
+  primavera y Atlas en otoño; guarda CRON_SECRET como en /api/cron/emails) y
+  `GET /api/ine/status` (probe público de verificación: solo datos INE,
+  ninguna dada de usuario). Dispatcher regenerado (54 rutas).
+
+### 4. Transparencia
+- `/api/provenance` documenta las dos fuentes nuevas (unidad, ámbito,
+  periodicidad, metodología, advertencias de interpretación).
+
+### 5. Activación tras desplegar (datos aún no cargados)
+- Automática: el cron trimestral carga todo (con presupuesto de tiempo; si
+  Barcelona no cabe, continúa en la siguiente ejecución).
+- Manual inmediato: `curl -X POST https://www.preureal.com/api/admin/import-ine
+  -H "Authorization: Bearer <JWT_ADMIN>" -H "Content-Type: application/json"
+  -d '{"source":"INE_ATLAS_RENTA"}'` (y `INE_IPVA`), o por scopes
+  `{"source":"INE_ATLAS_RENTA","scope":"08"}` para Barcelona.
+- Verificación: `curl https://www.preureal.com/api/ine/status`.
+
 ## v25 — 2026-11-10 · Comparador per plans: 6 municipis amb Premium/Pro, % de diferència i gràfica premium
 
 ### 1. Límit d'entitats per pla (gratuït 2, Premium i Pro 6)

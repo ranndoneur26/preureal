@@ -318,3 +318,57 @@ model SavedComparison {
 
   @@index([userId])
 }
+
+// ─── Fase 2 — Fonts oficials (INE): catàleg i observacions estadístiques ────
+// Migració ADDITIVA: cap taula existent no es toca. Els indicadors nous
+// (IPVA, Atlas de renda, més endavant SERPAVI i ajudes) viuen aquí, separats
+// de les dades de negoci (fiances Incasòl) per no barrejar unitats ni
+// metodologies: les fiances continuen sent la mesura del mercat real
+// registrat, i aquestes taules aporten el marc de referència oficial.
+
+// Catàleg de fonts oficials amb la seva traçabilitat (encàrrec: font,
+// llicència, unitat, àmbit, periodicitat, metodologia). Citat per
+// /api/provenance i pels informes PDF.
+model DataSource {
+  id           String            @id @default(cuid())
+  code         String            @unique // INE_IPVA | INE_ATLAS_RENTA | SERPAVI | ...
+  name         String            // nom llegible de la font
+  institution  String            // INE | MIVAU | Incasòl | Gencat | ...
+  url          String?           // publicació oficial
+  license      String?           // condicions de reutilització
+  unit         String?           // unitat principal de les seves observacions
+  periodicity  String?           // ANUAL | TRIMESTRAL | EDITORIAL | ...
+  methodology  String?           // nota metodològica resumida
+  notes        String?
+  active       Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  observations StatObservation[]
+}
+
+// Una observació estadística = font + variable + territori + període + valor.
+// municipalityCode és un enllaç LÒGIC amb Municipality.code (sense FK: la
+// taula existent no es toca). Idempotència per clau única: reimportar una
+// publicació actualitza els valors revisats per la font.
+model StatObservation {
+  id               String     @id @default(cuid())
+  source           DataSource @relation(fields: [sourceId], references: [id])
+  sourceId         String
+  variable         String     // IPVA_INDICE | IPVA_TASA_ANUAL | RENTA_NETA_MEDIA_PERSONA | RENTA_NETA_MEDIA_HOGAR
+  geoLevel         String     // ESTATAL | CCAA | PROV | MUNI
+  geoCode          String     // "ES" | "09" (CCAA) | "08" (prov) | ineCode de 5 dígits
+  geoName          String?    // nom oficial del territori segons la font
+  municipalityCode String?    // "080193" quan geoLevel=MUNI (enllaç lògic)
+  period           String     // "2024" (anual; admetrà "2026-T3" més endavant)
+  value            Float
+  unit             String?
+  meta             String?    // JSON {serie: "ADRH103925"} — traçabilitat de la sèrie INE
+  runId            String?    // ImportRun.id que va portar aquesta fila
+  importedAt       DateTime   @default(now())
+
+  @@unique([sourceId, variable, geoLevel, geoCode, period])
+  @@index([variable, period])
+  @@index([geoLevel, geoCode])
+  @@index([municipalityCode])
+  @@index([runId])
+}

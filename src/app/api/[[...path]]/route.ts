@@ -13,6 +13,7 @@ import * as h_admin_audit from "../_impl/admin/audit/route";
 import * as h_admin_emails from "../_impl/admin/emails/route";
 import * as h_admin_export_csv from "../_impl/admin/export-csv/route";
 import * as h_admin_import from "../_impl/admin/import/route";
+import * as h_admin_import_ine from "../_impl/admin/import-ine/route";
 import * as h_admin_imports from "../_impl/admin/imports/route";
 import * as h_admin_plan_settings from "../_impl/admin/plan-settings/route";
 import * as h_admin_reports from "../_impl/admin/reports/route";
@@ -35,10 +36,12 @@ import * as h_buildings from "../_impl/buildings/route";
 import * as h_comparator from "../_impl/comparator/route";
 import * as h_comparisons from "../_impl/comparisons/route";
 import * as h_cron_emails from "../_impl/cron/emails/route";
+import * as h_cron_ine from "../_impl/cron/ine/route";
 import * as h_events from "../_impl/events/route";
 import * as h_favorites from "../_impl/favorites/route";
 import * as h_geocode from "../_impl/geocode/route";
 import * as h_history from "../_impl/history/route";
+import * as h_ine_status from "../_impl/ine/status/route";
 import * as h_lookup from "../_impl/lookup/route";
 import * as h_lookup_refcat from "../_impl/lookup-refcat/route";
 import * as h_municipalities from "../_impl/municipalities/route";
@@ -69,6 +72,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "emails"], h: h_admin_emails },
   { seg: ["admin", "export-csv"], h: h_admin_export_csv },
   { seg: ["admin", "import"], h: h_admin_import },
+  { seg: ["admin", "import-ine"], h: h_admin_import_ine },
   { seg: ["admin", "imports"], h: h_admin_imports },
   { seg: ["admin", "plan-settings"], h: h_admin_plan_settings },
   { seg: ["admin", "reports"], h: h_admin_reports },
@@ -91,10 +95,12 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["comparator"], h: h_comparator },
   { seg: ["comparisons"], h: h_comparisons },
   { seg: ["cron", "emails"], h: h_cron_emails },
+  { seg: ["cron", "ine"], h: h_cron_ine },
   { seg: ["events"], h: h_events },
   { seg: ["favorites"], h: h_favorites },
   { seg: ["geocode"], h: h_geocode },
   { seg: ["history"], h: h_history },
+  { seg: ["ine", "status"], h: h_ine_status },
   { seg: ["lookup"], h: h_lookup },
   { seg: ["lookup-refcat"], h: h_lookup_refcat },
   { seg: ["municipalities"], h: h_municipalities },

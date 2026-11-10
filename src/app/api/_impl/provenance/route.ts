@@ -90,6 +90,30 @@ const PROVENANCE = [
     qualitat: "DECLARATIU — pot contenir errors; es mostra com a tal",
     camps: ["PriceReport (status=ACCEPTED)"],
   },
+  {
+    id: "ine_ipva",
+    nom: "Índex de Preus de la Vivienda en Alquiler (IPVA), base 2015",
+    font: "INE — estadística experimental (servicios.ine.es Tempus3, taules 59056/59058/59060)",
+    llicencia: "Reutilització lliure (INE)",
+    unitat: "índex (base 2015=100) i % de variació anual — NO és un preu en euros",
+    ambit: "Estat, Catalunya, 4 províncies i municipis >10.000 hab (124 catalans)",
+    periodicitat: "Anual (nota de premsa a la primavera; importació trimestral programada)",
+    metodologia: "Índex d'evolució del preu de l'habitatge llogat a partir del model 100 d'IRPF (AEAT). Es publica com a índex i taxes: mai es converteix a € ni es barreja amb les mitjanes de fiances.",
+    qualitat: "ALTA — font oficial; estadística experimental",
+    camps: ["StatObservation (source=INE_IPVA: IPVA_INDICE, IPVA_TASA_ANUAL)"],
+  },
+  {
+    id: "ine_atlas_renta",
+    nom: "Atlas de distribució de la renda dels llars (ADRH)",
+    font: "INE — estadística experimental (servicios.ine.es Tempus3, taules 53689/30896/31016/31079/31223)",
+    llicencia: "Reutilització lliure (INE)",
+    unitat: "€/any (renda neta MITJANA per persona i per llar)",
+    ambit: "Estat, Catalunya, 4 províncies i 947 municipis (sèries 2015-2024)",
+    periodicitat: "Anual (tardor; importació trimestral programada)",
+    metodologia: "Renda neta mitjana territorial d'origen tributari. Mai s'exhibeix com a salari individual. Els punts amb secreto estadístic no es desen. Sèries municipals i provincials verificades contra la nota de premsa oficial.",
+    qualitat: "ALTA — font oficial; estadística experimental",
+    camps: ["StatObservation (source=INE_ATLAS_RENTA: RENTA_NETA_MEDIA_PERSONA, RENTA_NETA_MEDIA_HOGAR)"],
+  },
 ];
 
 export async function GET() {
