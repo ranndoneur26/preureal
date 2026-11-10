@@ -41,6 +41,7 @@ import * as h_events from "../_impl/events/route";
 import * as h_favorites from "../_impl/favorites/route";
 import * as h_geocode from "../_impl/geocode/route";
 import * as h_history from "../_impl/history/route";
+import * as h_indicators_status from "../_impl/indicators/status/route";
 import * as h_ine_status from "../_impl/ine/status/route";
 import * as h_lookup from "../_impl/lookup/route";
 import * as h_lookup_refcat from "../_impl/lookup-refcat/route";
@@ -100,6 +101,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["favorites"], h: h_favorites },
   { seg: ["geocode"], h: h_geocode },
   { seg: ["history"], h: h_history },
+  { seg: ["indicators", "status"], h: h_indicators_status },
   { seg: ["ine", "status"], h: h_ine_status },
   { seg: ["lookup"], h: h_lookup },
   { seg: ["lookup-refcat"], h: h_lookup_refcat },
