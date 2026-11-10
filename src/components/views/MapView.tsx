@@ -741,6 +741,16 @@ export default function MapView() {
         setPdfMsg(locale === "ca" ? "Massa descàrregues; espera un moment." : "Demasiadas descargas; espera un momento.");
         return;
       }
+      // Fase 6 — quota pròpia d'informes PDF/mes (402 QUOTA_EXCEEDED)
+      if (res.status === 402) {
+        const d = await res.json().catch(() => ({}));
+        setPdfLocked(true);
+        const lim = d?.quota?.limit ?? 5;
+        setPdfMsg(locale === "ca"
+          ? `Has exhaurit els ${lim} informes PDF d'aquest mes del teu pla. El comptador es reinicia l'1 del mes vinent.`
+          : `Has agotado los ${lim} informes PDF de este mes de tu plan. El contador se reinicia el día 1 del próximo mes.`);
+        return;
+      }
       if (!res.ok) {
         setPdfMsg(locale === "ca" ? "No s'ha pogut generar l'informe." : "No se pudo generar el informe.");
         return;

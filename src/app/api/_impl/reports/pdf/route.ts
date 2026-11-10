@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
-import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import type { Building, Municipality } from "@prisma/client";
 import { db } from "@/lib/db";
 import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
-import { planAllows } from "@/lib/plans";
+import { planAllows, pdfLimitForPlan, planName } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
+import { getMuniIndicators } from "@/lib/indicators-data";
+import { buildReportPdf, type ReportInput } from "@/lib/pdf-report";
+import { recordUsage, monthKey, USAGE_TYPES } from "@/lib/subscription";
+import seedAids from "@/data/rental_aid_seed.json";
 
 /**
- * GET /api/reports/pdf?mun=CODE | ?building=ID — informe PDF professional (Fase 13).
- *  - Premium: informe de municipi.
- *  - Pro: informe de municipi + informe d'edifici.
- * Identitat visual PreuReal.cat; cada dada cita font i període; limitacions
- * estadístiques i metodologia incloses. Mai s'inventa informació absent.
+ * GET /api/reports/pdf?mun=CODE | ?building=ID — INFORME PROFESSIONAL DE 8
+ * PÀGINES (Fase 6, v34). La construcció del document viu a src/lib/pdf-report.ts
+ * (funció pura, testable); aquí només: auth, gating per pla, QUOTA pròpia
+ * (features.pdfMonth per pla, comptada amb SubscriptionUsage PDF_REPORT — la
+ * mateixa font que la resta de quotes) i reunió de dades amb degradació
+ * elegant. Premium: informe de municipi. Pro: municipi + edifici.
  */
 
-const DARK = rgb(0.059, 0.18, 0.129);   // #0f2e21
-const ACCENT = rgb(0.91, 0.4, 0.235);   // #e8673c
-const GRAY = rgb(0.42, 0.45, 0.42);
-const LIGHT = rgb(0.96, 0.95, 0.93);
-const WHITE = rgb(1, 1, 1);
+const maskEmail = (email: string) => email.replace(/(.{2}).+(@.*)/, "$1***$2");
 
 export async function GET(req: Request) {
   let user;
@@ -59,175 +59,123 @@ export async function GET(req: Request) {
     if (building.municipalityCode) {
       mun = await db.municipality.findUnique({ where: { code: building.municipalityCode } });
     }
+    if (!mun) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
-  const pdf = await PDFDocument.create();
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const page = pdf.addPage([595, 842]); // A4
-  const W = 595;
-  let y = 800;
-
-  const text = (s: string, size = 10, color = rgb(0.09, 0.11, 0.09), b = false, x = 40) => {
-    page.drawText(s, { x, y, size, font: b ? bold : font, color });
-  };
-  const line = (s: string, size = 10, color = rgb(0.09, 0.11, 0.09), b = false, x = 40, max = 515) => {
-    // wrap simple
-    const words = s.split(" ");
-    let cur = "";
-    for (const w of words) {
-      if (font.widthOfTextAtSize(cur + " " + w, size) > max) {
-        text(cur, size, color, b, x);
-        y -= size + 4;
-        cur = w;
-      } else {
-        cur = cur ? cur + " " + w : w;
-      }
-    }
-    if (cur) {
-      text(cur, size, color, b, x);
-      y -= size + 4;
-    }
-  };
-
-  // ---- capçalera de marca ----
-  page.drawRectangle({ x: 0, y: 780, width: W, height: 62, color: DARK });
-  page.drawText("PreuReal.cat", { x: 40, y: 806, size: 22, font: bold, color: WHITE });
-  page.drawText(".cat", { x: 40 + bold.widthOfTextAtSize("PreuReal", 22), y: 806, size: 22, font: bold, color: ACCENT });
-  page.drawText("Informe de dades de lloguer", { x: 40, y: 788, size: 10, font, color: rgb(0.79, 0.83, 0.8) });
-  y = 750;
-
-  // ---- títol ----
-  if (mun) {
-    text(mun.name, 20, DARK, true);
-    y -= 6;
-    line(`${mun.comarca || "—"} · ${mun.province || "—"} · Codi municipal ${mun.code}`, 10, GRAY);
-  }
-  if (building) {
-    text(building.nom || building.refcat || "Edifici", 20, DARK, true);
-    y -= 6;
-    // v33 — nau industrial: el PDF ho indica expressament
-    line(
-      `${building.tipus === "ind" ? "Nau industrial · " : ""}${mun ? mun.name + " · " : ""}${building.refcat ? "Ref. catastral " + building.refcat : "Sense ref. catastral coneguda"} · Font geomètrica: ${building.source}`,
-      10,
-      GRAY
-    );
-  }
-  y -= 8;
-
-  // ---- dades de lloguer (municipal) ----
-  if (mun) {
-    page.drawRectangle({ x: 40, y: y - 66, width: W - 80, height: 78, color: LIGHT });
-    text("Lloguer mitjà registrat oficialment (fiances Incasòl)", 9, GRAY);
-    y -= 34;
-    text(
-      mun.rentLatest != null ? `${mun.rentLatest.toFixed(0)} €/mes` : "No disponible per aquest municipi",
-      26,
-      DARK,
-      true
-    );
-    y -= 20;
-    line(`Període: ${mun.rentPeriod || "—"} · Contractes de referència: ${mun.contractsLatest ?? "—"}`, 9, GRAY);
-    y -= 14;
-    if (mun.rentPrevYear != null && mun.rentLatest != null) {
-      const delta = ((mun.rentLatest - mun.rentPrevYear) / mun.rentPrevYear) * 100;
-      line(
-        `Variació vs període anterior (${mun.rentPrevPeriod || "—"}): ${delta > 0 ? "+" : ""}${delta.toFixed(1)}%`,
-        10,
-        delta > 0 ? ACCENT : DARK,
-        true
+  // ---- Fase 6: quota pròpia d'informes PDF/mes (abans de generar res) ----
+  const pdfLimit = await pdfLimitForPlan(plan);
+  let pdfUsed = 0;
+  if (pdfLimit >= 0) {
+    pdfUsed = await db.subscriptionUsage.count({
+      where: { userId: user.id, usageType: USAGE_TYPES.PDF_REPORT, usageMonth: monthKey() },
+    });
+    if (pdfUsed >= pdfLimit) {
+      await db.event
+        .create({ data: { type: "PDF_PAYWALL", userId: user.id, meta: JSON.stringify({ plan, used: pdfUsed, limit: pdfLimit }) } })
+        .catch(() => {});
+      return NextResponse.json(
+        { error: "QUOTA_EXCEEDED", quota: { used: pdfUsed, limit: pdfLimit }, plan },
+        { status: 402 }
       );
     }
   }
 
-  // ---- dades a nivell edifici si n'hi ha (importació) ----
-  if (building?.avgRentEurMonth != null) {
-    y -= 26;
-    text("Dada a nivell d'edifici/illa (importació pròpia)", 12, DARK, true);
-    y -= 18;
-    line(
-      `Mitjana: ${building.avgRentEurMonth.toFixed(0)} €/mes · Mostres: ${building.sampleSize ?? "—"} · Font: Incasòl (importació)`,
-      10
-    );
-  } else if (building) {
-    y -= 26;
-    line("Dada de lloguer a nivell d'edifici: no disponible. La xifra municipal és agregada i no descriu aquest edifici concret.", 9, GRAY);
-    if (building.tipus === "ind") {
-      y -= 14;
-      line("Nota: la xifra municipal correspon al lloguer d'habitatges (fiances Incasòl); les naus industrials es lloguen per €/m² i mes i no s'inclouen en aquesta estadística.", 9, GRAY);
-    }
+  // ---- dades auxiliars (degradació elegant: una peça que falta no treu la resta) ----
+  const indRaw = await getMuniIndicators(mun.code, { price: building?.avgRentEurMonth ?? null }).catch(() => null);
+  const ind: ReportInput["ind"] = indRaw
+    ? {
+        band: indRaw.band
+          ? { p25: indRaw.band.p25, p50: indRaw.band.p50, p75: indRaw.band.p75, n: indRaw.band.n, totalWeight: indRaw.band.totalWeight }
+          : null,
+        effortHogar: indRaw.effort?.hogar
+          ? {
+              pct: indRaw.effort.hogar.pct,
+              rentEurMonth: indRaw.effort.hogar.rentEurMonth,
+              rentPeriod: indRaw.effort.hogar.rentPeriod,
+              rentaAnual: indRaw.effort.hogar.rentaAnual,
+              rentaPeriod: indRaw.effort.hogar.rentaPeriod,
+            }
+          : null,
+        rentaHogarLatest: indRaw.renta?.municipi?.hogar?.latest
+          ? { value: indRaw.renta.municipi.hogar.latest.value, period: indRaw.renta.municipi.hogar.latest.period }
+          : null,
+        ipvaCat: indRaw.ipva?.catalunya
+          ? {
+              latestAnual: indRaw.ipva.catalunya.latestAnual
+                ? { value: indRaw.ipva.catalunya.latestAnual.value, period: indRaw.ipva.catalunya.latestAnual.period }
+                : null,
+              acum2015: indRaw.ipva.catalunya.acum2015 ? { value: indRaw.ipva.catalunya.acum2015.value } : null,
+            }
+          : null,
+      }
+    : null;
+
+  let aids: ReportInput["aids"] = [];
+  try {
+    const rows = await db.rentalAid.findMany({
+      where: { active: true, status: { not: "FINALIZADA" }, OR: [{ scopeCode: null }, { scopeCode: "09" }] },
+      orderBy: [{ scope: "asc" }, { code: "asc" }],
+      take: 6,
+    });
+    aids = rows.map((r) => ({
+      title: r.title, amount: r.amount, audience: r.audience, source: r.source, url: r.url,
+      reviewed: r.lastReviewedAt.toISOString().slice(0, 10),
+    }));
+  } catch {}
+  if (aids.length === 0) {
+    // mateix fallback editorial que /api/aid (mai inventat en calent)
+    aids = (seedAids.aids as Array<Record<string, unknown>>)
+      .filter((a) => (a.scopeCode === null || a.scopeCode === "09") && a.status !== "FINALIZADA")
+      .slice(0, 6)
+      .map((a) => ({
+        title: String(a.title), amount: (a.amount as string) ?? null, audience: (a.audience as string) ?? null,
+        source: String(a.source), url: String(a.url), reviewed: String(seedAids.revisado),
+      }));
   }
 
-  // ---- zona tensionada ----
-  if (mun) {
-    y -= 26;
-    text("Regulació: àrea de mercat residencial tensat", 12, DARK, true);
-    y -= 16;
-    line(
-      mun.isTense
-        ? `Aquest municipi ESTÀ declarat àrea de mercat residencial tensat (llista ${mun.tenseList === "A" ? "A — TER/3739/2026" : mun.tenseList === "C" || mun.tenseList === "B" ? "C — TER/3740/2026" : mun.tenseList || "—"}). Aplica l'índex de referència de lloguers.`
-        : "Aquest municipi NO consta a les resolucions TER/3739/2026 ni TER/3740/2026 (DOGC 19-10-2026).",
-      9
-    );
-  }
+  const input: ReportInput = {
+    mun: {
+      name: mun.name,
+      comarca: mun.comarca,
+      province: mun.province,
+      code: mun.code,
+      rentLatest: mun.rentLatest,
+      rentPeriod: mun.rentPeriod,
+      rentPrevYear: mun.rentPrevYear,
+      rentPrevPeriod: mun.rentPrevPeriod,
+      contractsLatest: mun.contractsLatest,
+      isTense: mun.isTense,
+      tenseList: mun.tenseList,
+      rentHistory: mun.rentHistory,
+    },
+    building: building
+      ? {
+          nom: building.nom,
+          refcat: building.refcat,
+          tipus: building.tipus,
+          altura: building.altura,
+          yearBuilt: building.yearBuilt,
+          avgRentEurMonth: building.avgRentEurMonth,
+          sampleSize: building.sampleSize,
+          source: building.source,
+        }
+      : null,
+    ind,
+    aids,
+    subscriberMasked: maskEmail(user.email),
+    planLabel: planName(plan, "ca"),
+    genDate: new Date().toLocaleDateString("ca-ES", { day: "numeric", month: "long", year: "numeric" }),
+  };
 
-  // ---- històric (gràfic de barres) ----
-  const hist = mun?.rentHistory ? Object.entries(JSON.parse(mun.rentHistory as string)) : [];
-  if (hist.length > 1) {
-    const histShow = hist.slice(-10);
-    const maxVal = Math.max(...histShow.map(([, v]) => Number(v)), 1);
-    y -= 150;
-    text("Evolució del lloguer mitjà (font: Incasòl)", 12, DARK, true);
-    y -= 8;
-    const chartTop = y;
-    const barW = (W - 120) / histShow.length;
-    for (let i = 0; i < histShow.length; i++) {
-      const [year, v] = histShow[i];
-      const h = (Number(v) / maxVal) * 90;
-      page.drawRectangle({
-        x: 50 + i * barW,
-        y: chartTop - h,
-        width: barW - 6,
-        height: h,
-        color: DARK,
-      });
-      page.drawText(String(year).slice(2), { x: 50 + i * barW + (barW - 12) / 2, y: chartTop - h - 10, size: 7, font, color: GRAY });
-      page.drawText(String(Math.round(Number(v))), { x: 50 + i * barW + 2, y: chartTop - h - 20, size: 6.5, font, color: GRAY });
-    }
-    y = chartTop - 108;
-  }
-
-  // ---- metodologia, fonts, limitacions ----
-  y -= 12;
-  text("Fonts i metodologia", 12, DARK, true);
-  y -= 14;
-  line("• Lloguer mitjà per municipi: fiances dipositades a Incasòl (Agència de l'Habitatge de Catalunya), via habitatge.gencat.cat. És una MITJANA MUNICIPAL: no descriu cap edifici concret.", 8.5);
-  line("• Edificis i geometria: ICGC (RTT), llicència CC-BY 4.0. Referència catastral: ICGC/Cadastre.", 8.5);
-  line("• Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026 del DOGC (19-10-2026).", 8.5);
-  line("• Any de construcció: Cadastre (serveis lliures DNPPC), quan està disponible.", 8.5);
-  y -= 6;
-  text("Limitacions estadístiques", 12, DARK, true);
-  y -= 14;
-  line("• El preu mitjà municipal no reflecteix la variabilitat dins del municipi ni la qualitat de cada immoble.", 8.5);
-  line(`• Mida de mostra municipal: ${mun?.contractsLatest ?? "—"} contractes amb fiança. Mostres petites impliquen més incertesa.`, 8.5);
-  line("• Les dades declarades pels usuaris (crowdsourcing) NO es barregen amb les oficials en aquest informe.", 8.5);
-  y -= 6;
-  text("Legal", 12, DARK, true);
-  y -= 14;
-  line("Informe generat per PreuReal.cat amb dades oficials. Ús informatiu; no constitueix valoració immobiliària formal. Consulteu l'avís legal i la política de privacitat a preureal.cat.", 8.5, GRAY);
-
-  // ---- peu ----
-  page.drawRectangle({ x: 0, y: 0, width: W, height: 34, color: LIGHT });
-  page.drawText(`Generat el ${new Date().toLocaleDateString("ca-ES")} · preureal.cat · Dades actualitzades: ${mun?.rentPeriod || "—"}`, {
-    x: 40, y: 13, size: 8, font, color: GRAY,
-  });
-
-  const bytes = await pdf.save();
+  const bytes = await buildReportPdf(input);
+  await recordUsage(user.id, USAGE_TYPES.PDF_REPORT); // Fase 6: quota després de generar (una petició fallida no compta)
   await db.event
-    .create({ data: { type: "PDF_DOWNLOADED", userId: user.id, meta: JSON.stringify({ mun: munCode, building: buildingId }) } })
+    .create({ data: { type: "PDF_DOWNLOADED", userId: user.id, meta: JSON.stringify({ mun: munCode, building: buildingId, plan }) } })
     .catch(() => {});
 
-  const fname = mun ? `preureal_informe_${mun.name.replace(/[^\p{L}\p{N}]+/gu, "_")}.pdf` : `preureal_informe_edifici_${building!.id.slice(-6)}.pdf`;
+  const fname = building
+    ? `preureal_informe_edifici_${building.id.slice(-6)}.pdf`
+    : `preureal_informe_${mun.name.replace(/[^\p{L}\p{N}]+/gu, "_")}.pdf`;
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       "Content-Type": "application/pdf",

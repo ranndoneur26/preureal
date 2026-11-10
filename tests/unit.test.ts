@@ -73,4 +73,9 @@ describe("plans: valors per defecte", () => {
     expect(PLANS.PREMIUM.features.pdfEdifici).toBe(false);
     expect(PLANS.PRO.features.pdfEdifici).toBe(true);
   });
+  test("Fase 6: quota PDF/mes (pdfMonth) FREE 0, PREMIUM 5, PRO 30", () => {
+    expect(PLANS.FREE.features.pdfMonth).toBe(0);
+    expect(PLANS.PREMIUM.features.pdfMonth).toBe(5);
+    expect(PLANS.PRO.features.pdfMonth).toBe(30);
+  });
 });

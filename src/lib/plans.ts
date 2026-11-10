@@ -28,6 +28,11 @@ export const PLANS: Record<
       referenciaAmpliada: boolean;
       indicadorsTerritorials: boolean;
       comparadorAvancat: boolean;
+      // Fase 6 — quota pròpia d'informes PDF/mes (nombre dins del JSON de
+      // features: PlanSetting la pot retocar des de l'admin sense desplegar;
+      // -1 = il·limitats). No es comprova amb planAllows() (booleà) sinó amb
+      // pdfLimitForPlan().
+      pdfMonth: number;
     };
   }
 > = {
@@ -35,21 +40,21 @@ export const PLANS: Record<
     quotaMonth: 3,
     priceEur: 0,
     comparatorMax: 2,
-    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false },
+    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false, pdfMonth: 0 },
   },
   PREMIUM: {
     quotaMonth: -1,
     priceEur: 7.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
-    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true },
+    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 5 },
   },
   PRO: {
     quotaMonth: -1,
     priceEur: 19.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
-    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true },
+    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 30 },
   },
 };
 
@@ -133,6 +138,15 @@ export async function canConsult(
 export async function planAllows(plan: PlanId, feature: keyof EffectivePlan["features"]): Promise<boolean> {
   const s = await getPlanSettings();
   return Boolean(s[plan]?.features[feature]);
+}
+
+/** Fase 6 — quota d'informes PDF/mes del pla (features.pdfMonth, -1 = il·limitats).
+ *  Fallback defensiu al default del pla si l'admin hi ha posat un no-numèric. */
+export async function pdfLimitForPlan(plan: PlanId): Promise<number> {
+  const s = await getPlanSettings();
+  const v = s[plan]?.features.pdfMonth;
+  if (Number.isFinite(v)) return v as number;
+  return PLANS[plan].features.pdfMonth;
 }
 
 // v31: PLAN_RANK vive en subscription.ts (fuente única importada aquí arriba)
