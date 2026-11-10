@@ -119,7 +119,20 @@ export default function ComparadorView() {
   }, [query]);
 
   const addEntity = (e: Entity) => {
-    if (entities.length >= maxEntities || entities.some((x) => x.code === e.code)) return;
+    if (entities.some((x) => x.code === e.code)) return;
+    // Fase 5 — si el pla ja està al màxim, avís clar (no ignorar el clic en silenci)
+    if (entities.length >= maxEntities) {
+      setPlanLimitMsg(
+        isPaid
+          ? ca
+            ? `Màxim ${maxEntities} municipis per comparació.`
+            : `Máximo ${maxEntities} municipios por comparación.`
+          : ca
+            ? `Has arribat al màxim del pla gratuït (${maxEntities} municipis). Amb Premium o Pro en pots comparar 6.`
+            : `Has llegado al máximo del plan gratuito (${maxEntities} municipios). Con Premium o Pro puedes comparar 6.`
+      );
+      return;
+    }
     setEntities([...entities, e]);
     setQuery("");
     setCandidates([]);
@@ -218,7 +231,7 @@ export default function ComparadorView() {
           {entities.map((e) => (
             <span key={e.code} className="px-3 py-1.5 rounded-full bg-[#0f2e21] text-white text-xs font-semibold flex items-center gap-1.5">
               {e.name || e.code}
-              <button onClick={() => setEntities(entities.filter((x) => x.code !== e.code))}><X className="w-3 h-3" /></button>
+              <button onClick={() => { setEntities(entities.filter((x) => x.code !== e.code)); setPlanLimitMsg(null); }}><X className="w-3 h-3" /></button>
             </span>
           ))}
           {entities.length < 2 && (

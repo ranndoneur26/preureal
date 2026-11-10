@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { useUserPlan } from "@/hooks/use-user-plan";
 import { diffPlanKeys, labelForDiffKey, dataNote, type PlanIdLite, type PlanShapeLite } from "@/lib/plan-change";
-import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen, Check, X as XIcon, AlertCircle } from "lucide-react";
+import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen, Check, X as XIcon, AlertCircle, Lock } from "lucide-react";
 
 interface BillingData {
   subscriptions: Array<{ id: string; plan: string; status: string; demo: boolean; currentPeriodEnd: string | null; createdAt: string }>;
@@ -23,6 +23,10 @@ export default function PanelView() {
   const [name, setName] = useState("");
   const [history, setHistory] = useState<any[] | null>(null);
   const [favorites, setFavorites] = useState<any[] | null>(null);
+  // Fase 5 — la API torna 403 PLAN_REQUIRED amb pla gratuït: la pestanya es
+  // mostra BLOCADA amb teaser (mai com una llista buida que confon).
+  const [historyLocked, setHistoryLocked] = useState(false);
+  const [favoritesLocked, setFavoritesLocked] = useState(false);
   const [comparisons, setComparisons] = useState<any[] | null>(null);
   const [billing, setBilling] = useState<BillingData | null>(null);
   // v22: estat de la suscripció des del SERVIDOR (mai del client) — encàrrec punt 6
@@ -60,40 +64,47 @@ export default function PanelView() {
   }, [auth.user]);
 
   const loadTab = useCallback(async (tabId: string) => {
-    const j = (u: string) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    // Fase 5 — el codi d'estat importa: 403 PLAN_REQUIRED = pestanya blocada
+    // pel pla (teaser d'upgrade), no «llista buida».
+    const j = (u: string) =>
+      fetch(u)
+        .then(async (r) => ({ ok: r.ok, status: r.status, d: await r.json().catch(() => null) }))
+        .catch(() => null);
     if (tabId === "historial" && history === null) {
-      const d = await j("/api/history");
-      if (d) setHistory(d.history);
+      const r = await j("/api/history");
+      if (r?.ok && r.d) setHistory(r.d.history);
+      else if (r?.status === 403) { setHistoryLocked(true); setHistory([]); }
       else setHistory([]);
     }
     if (tabId === "preferits" && favorites === null) {
-      const d = await j("/api/favorites");
-      if (d) setFavorites(d.favorites);
+      const r = await j("/api/favorites");
+      if (r?.ok && r.d) setFavorites(r.d.favorites);
+      else if (r?.status === 403) { setFavoritesLocked(true); setFavorites([]); }
       else setFavorites([]);
     }
     if (tabId === "comparacions" && comparisons === null) {
-      const d = await j("/api/comparisons");
-      if (d) setComparisons(d.comparisons);
+      const r = await j("/api/comparisons");
+      if (r?.ok && r.d) setComparisons(r.d.comparisons);
       else setComparisons([]);
     }
     if (tabId === "facturacio") {
       if (billing === null) {
-        const d = await j("/api/billing/history");
-        if (d) setBilling(d);
+        const r = await j("/api/billing/history");
+        if (r?.ok && r.d) setBilling(r.d);
       }
       // v31: config efectiva de planes para los avisos del cambio (misma fuente que el backend)
       const p = await j("/api/plans");
-      if (p?.plans) setPlansCfg(p.plans);
+      if (p?.ok && p.d?.plans) setPlansCfg(p.d.plans);
     }
     if (tabId === "informes" && myReports === null) {
-      const d = await j("/api/account/export");
-      if (d) setMyReports(d.informesPreu || []);
+      const r = await j("/api/account/export");
+      if (r?.ok && r.d) setMyReports(r.d.informesPreu || []);
     }
     if (tabId === "seguretat" && activity === null) {
-      const d = await j("/api/account/activity");
-      if (d) {
-        setActivity(d.events || []);
-        setLastLoginAt(d.lastLoginAt || null);
+      const r = await j("/api/account/activity");
+      if (r?.ok && r.d) {
+        setActivity(r.d.events || []);
+        setLastLoginAt(r.d.lastLoginAt || null);
       } else setActivity([]);
     }
   }, [history, favorites, comparisons, billing, myReports, activity]);
@@ -420,6 +431,10 @@ export default function PanelView() {
           >
             <Icon className="w-4 h-4" />
             {label}
+            {/* Fase 5 — candado visible en las pestañas que el plan gratuito tiene bloqueadas */}
+            {(id === "historial" || id === "preferits") && u.plan === "FREE" && (
+              <Lock className="w-3 h-3 opacity-60" aria-hidden />
+            )}
           </button>
         ))}
       </div>
@@ -703,7 +718,25 @@ export default function PanelView() {
               <button onClick={() => deleteHistory()} className="text-xs text-[#b0431c] underline">{locale === "ca" ? "Buida-ho tot" : "Vaciar todo"}</button>
             )}
           </div>
-          {history === null ? (
+          {/* Fase 5 — pla gratuït: pestanya blocada amb teaser (la API torna 403 PLAN_REQUIRED) */}
+          {historyLocked ? (
+            <div className="text-center py-5">
+              <div className="mx-auto w-10 h-10 rounded-full bg-[#fdf6ec] border border-[#f3d9b0] flex items-center justify-center">
+                <Lock className="w-5 h-5 text-[#b0431c]" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-[#0f2e21]">
+                {locale === "ca" ? "L'historial és del pla Premium" : "El historial es del plan Premium"}
+              </p>
+              <p className="mt-1 text-sm text-[#4b5349] max-w-md mx-auto leading-relaxed">
+                {locale === "ca"
+                  ? "Amb Premium, cada consulta queda desada perquè puguis tornar-la a obrir i veure l'evolució del municipi. Les teves dades no s'esborren mai: si actives Premium, hi tornaràs a tenir accés."
+                  : "Con Premium, cada consulta queda guardada para que puedas volver a abrirla y ver la evolución del municipio. Tus datos no se borran nunca: si activas Premium, volverás a tener acceso."}
+              </p>
+              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-[#e8673c] text-white text-xs font-bold hover:bg-[#d95a31]">
+                {locale === "ca" ? "Veure Premium" : "Ver Premium"}
+              </button>
+            </div>
+          ) : history === null ? (
             <p className="text-sm text-[#6b6f68]">…</p>
           ) : history.length === 0 ? (
             <div className="text-center py-4">
@@ -745,7 +778,25 @@ export default function PanelView() {
       {tab === "preferits" && (
         <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6">
           <h3 className="font-bold mb-3">{locale === "ca" ? "Edificis i municipis preferits (Premium)" : "Edificios y municipios favoritos (Premium)"}</h3>
-          {favorites === null ? (
+          {/* Fase 5 — pla gratuït: pestanya blocada amb teaser (la API torna 403 PLAN_REQUIRED) */}
+          {favoritesLocked ? (
+            <div className="text-center py-5">
+              <div className="mx-auto w-10 h-10 rounded-full bg-[#fdf6ec] border border-[#f3d9b0] flex items-center justify-center">
+                <Lock className="w-5 h-5 text-[#b0431c]" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-[#0f2e21]">
+                {locale === "ca" ? "Els preferits són del pla Premium" : "Los favoritos son del plan Premium"}
+              </p>
+              <p className="mt-1 text-sm text-[#4b5349] max-w-md mx-auto leading-relaxed">
+                {locale === "ca"
+                  ? "Desa municipis i edificis amb l'estrella del mapa i segueix-los amb un resum mensual per correu. Les teves dades no s'esborren mai: si actives Premium, els recuperaràs tal com els vas desar."
+                  : "Guarda municipios y edificios con la estrella del mapa y síguelos con un resumen mensual por correo. Tus datos no se borran nunca: si activas Premium, los recuperarás tal como los guardaste."}
+              </p>
+              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-[#e8673c] text-white text-xs font-bold hover:bg-[#d95a31]">
+                {locale === "ca" ? "Veure Premium" : "Ver Premium"}
+              </button>
+            </div>
+          ) : favorites === null ? (
             <p className="text-sm text-[#6b6f68]">…</p>
           ) : favorites.length === 0 ? (
             <div className="text-center py-4">

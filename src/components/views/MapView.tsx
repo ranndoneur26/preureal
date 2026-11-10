@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
-import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, AlertTriangle, Home, MailCheck, Lock } from "lucide-react";
+import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock } from "lucide-react";
 
 /** Resposta de GET /api/indicators/muni/:code (Fase 4, gating al servidor). */
 interface GatedIndicatorsResponse {
@@ -314,6 +314,10 @@ export default function MapView() {
   const [demoNotice, setDemoNotice] = useState<string | null>(null);
   const [favState, setFavState] = useState<"idle" | "saved" | "error" | "plan">("idle");
   const [pdfMsg, setPdfMsg] = useState<string | null>(null);
+  const [pdfLocked, setPdfLocked] = useState(false);
+  // Fase 5 — exportació CSV (pla Pro · agents) visible a la fitxa
+  const [csvMsg, setCsvMsg] = useState<string | null>(null);
+  const [csvLocked, setCsvLocked] = useState(false);
 
   useEffect(() => { setQuota(auth.quota); }, [auth.quota]);
 
@@ -701,13 +705,15 @@ export default function MapView() {
     const bId = lookup?.building?.id;
     if (!mun) return;
     setPdfMsg(null);
+    setPdfLocked(false);
     const qs = bId ? `building=${bId}` : `mun=${mun.code}`;
     fetch(`/api/reports/pdf?${qs}`).then(async (res) => {
       if (res.status === 403) {
         const d = await res.json().catch(() => ({}));
+        setPdfLocked(true); // Fase 5 — el missatge inclou CTA als plans
         setPdfMsg(d.plan === "PRO"
-          ? (locale === "ca" ? "L'informe d'edifici requereix el pla Pro." : "El informe de edificio requiere el plan Pro.")
-          : (locale === "ca" ? "L'informe PDF requereix el pla Premium." : "El informe PDF requiere el plan Premium."));
+          ? (locale === "ca" ? "L'informe d'edifici requereix el pla Pro · agents (19,99 €/mes)." : "El informe de edificio requiere el plan Pro · agentes (19,99 €/mes).")
+          : (locale === "ca" ? "L'informe PDF requereix el pla Premium (7,99 €/mes)." : "El informe PDF requiere el plan Premium (7,99 €/mes)."));
         return;
       }
       if (res.status === 429) {
@@ -728,6 +734,44 @@ export default function MapView() {
       a.remove();
       URL.revokeObjectURL(url);
     }).catch(() => setPdfMsg(locale === "ca" ? "Error de xarxa" : "Error de red"));
+  };
+
+  // Fase 5 — exportació CSV de dades del municipi (feature distintiva del pla
+  // Pro · agents, ja existent al servidor: GET /api/export/[code]). Fins ara no
+  // tenia cap botó a la UI: els subscriptors Pro no podien fer-la servir.
+  const downloadCsv = () => {
+    const mun = lookup?.municipality;
+    if (!mun) return;
+    setCsvMsg(null);
+    setCsvLocked(false);
+    fetch(`/api/export/${mun.code}`).then(async (res) => {
+      if (res.status === 403) {
+        setCsvLocked(true);
+        setCsvMsg(locale === "ca"
+          ? "L'exportació CSV és del pla Pro · agents (19,99 €/mes)."
+          : "La exportación CSV es del plan Pro · agentes (19,99 €/mes).");
+        return;
+      }
+      if (res.status === 429) {
+        setCsvMsg(locale === "ca" ? "Massa descàrregues; espera un moment." : "Demasiadas descargas; espera un momento.");
+        return;
+      }
+      if (!res.ok) {
+        setCsvMsg(locale === "ca" ? "No s'ha pogut generar el CSV." : "No se pudo generar el CSV.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const cd = res.headers.get("Content-Disposition") || "";
+      const m = cd.match(/filename="([^"]+)"/);
+      a.download = m ? m[1] : `preureal_${mun.name || mun.code}_lloguer.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }).catch(() => setCsvMsg(locale === "ca" ? "Error de xarxa" : "Error de red"));
   };
 
   return (
@@ -974,6 +1018,10 @@ export default function MapView() {
                 favState={favState}
                 downloadPdf={downloadPdf}
                 pdfMsg={pdfMsg}
+                pdfLocked={pdfLocked}
+                downloadCsv={downloadCsv}
+                csvMsg={csvMsg}
+                csvLocked={csvLocked}
               />
             )}
           </div>
@@ -997,7 +1045,7 @@ function TenseBadge({ note }: { note: string }) {
 }
 
 function FullPanel({
-  lookup, quota, t, navigate, doCheckout, toggleFavorite, favState, downloadPdf, pdfMsg,
+  lookup, quota, t, navigate, doCheckout, toggleFavorite, favState, downloadPdf, pdfMsg, pdfLocked, downloadCsv, csvMsg, csvLocked,
 }: {
   lookup: LookupResult;
   quota: { used: number; limit: number } | null;
@@ -1008,6 +1056,10 @@ function FullPanel({
   favState: "idle" | "saved" | "error" | "plan";
   downloadPdf: () => void;
   pdfMsg: string | null;
+  pdfLocked: boolean;
+  downloadCsv: () => void;
+  csvMsg: string | null;
+  csvLocked: boolean;
 }) {
   const { locale, auth } = useApp();
   const mun = lookup.municipality!;
@@ -1160,6 +1212,14 @@ function FullPanel({
             >
               <FileDown className="w-4 h-4" />
             </button>
+            {/* Fase 5 — exportació CSV (Pro · agents) ara visible a la fitxa */}
+            <button
+              onClick={downloadCsv}
+              title={locale === "ca" ? "Exporta les dades en CSV (Pro · agents)" : "Exporta los datos en CSV (Pro · agentes)"}
+              className="p-1.5 rounded-lg hover:bg-[#f0ede8] text-[#6b6f68]"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+            </button>
           </div>
         </div>
         {favState === "saved" && (
@@ -1175,7 +1235,25 @@ function FullPanel({
           <div className="mt-2 text-xs text-[#b0431c]">{locale === "ca" ? "No s'ha pogut desar ara mateix." : "No se pudo guardar ahora mismo."}</div>
         )}
         {pdfMsg && (
-          <div className="mt-2 text-xs text-[#8a6116]">{pdfMsg}</div>
+          <div className="mt-2 text-xs text-[#8a6116]">
+            {pdfMsg}{" "}
+            {pdfLocked && (
+              <button onClick={() => navigate("/preus")} className="underline font-semibold">
+                {locale === "ca" ? "Veure plans" : "Ver planes"}
+              </button>
+            )}
+          </div>
+        )}
+        {/* Fase 5 — exportació CSV (Pro · agents): resultat o bloqueig visible */}
+        {csvMsg && (
+          <div className="mt-2 text-xs text-[#8a6116]">
+            {csvMsg}{" "}
+            {csvLocked && (
+              <button onClick={() => navigate("/preus")} className="underline font-semibold">
+                {locale === "ca" ? "Veure plans" : "Ver planes"}
+              </button>
+            )}
+          </div>
         )}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div>
