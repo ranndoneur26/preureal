@@ -406,6 +406,48 @@ export function buildRentaTerritory(
   };
 }
 
+// ── Noves funcionalitats (F1/F2): evolució temporal + comparativa territorial ─
+
+/** Punt de la sèrie de fiances d'un municipi (rentHistory). */
+export interface RentYearPoint {
+  year: string;
+  value: number; // €/mes per habitatge
+}
+
+/** Mediana anual d'un àmbit (comarca/província) — metadologia mediana/any validada. */
+export interface RentAggPoint {
+  year: string;
+  median: number; // €/mes per habitatge
+  n: number; // municipis amb dada aquell any
+}
+
+/** F1 — bundle d'evolució temporal (Premium, flag evolucioTemporal). */
+export interface EvolucioBundle {
+  muni: RentYearPoint[];
+  interanual: Array<{ year: string; pct: number }>;
+  comarca: RentAggPoint[] | null;
+  provincia: RentAggPoint[] | null;
+  /** Període vigent del municipi ("2025") per etiquetar l'últim punt. */
+  muniPeriod: string | null;
+  /** Avís de mostra petita: algun salt interanual |pct| > 35 %. */
+  volatileJump: boolean;
+}
+
+/** F2 — bundle de comparativa territorial (Premium, flag comparativaTerritorial). */
+export interface ComparativaBundle {
+  /** Any comú usat (el del període vigent del municipi). */
+  year: string | null;
+  muni: { value: number; period: string | null };
+  comarca: { median: number; n: number; name: string | null } | null;
+  provincia: { median: number; n: number; name: string | null } | null;
+  deltaComarcaPct: number | null;
+  deltaProvinciaPct: number | null;
+  /** Més car / més barat de la comarca aquell any (amb nom). */
+  extremes: { car: { name: string; value: number } | null; barat: { name: string; value: number } | null } | null;
+  /** Sempre false: no hi ha font oficial per secció censal/districte (§5 informe). */
+  seccioCensalDisponible: false;
+}
+
 // ── Assemblador del bloc d'indicadors d'un municipi ──────────────────────────
 
 export interface AssembleMuniInput {
@@ -442,8 +484,19 @@ export interface MuniIndicators {
   };
   renta: {
     municipi: { hogar: RentaTerritory | null; persona: RentaTerritory | null };
+    /** Noves funcionalitats: sèries superiors ja calculades dins l'assemblador. */
+    provincia?: RentaTerritory | null;
+    catalunya?: RentaTerritory | null;
   };
   effort: { hogar: EffortSide | null; persona: EffortSide | null };
+  /** F3 — esforç amb el lloguer MEDIANA DE CATALUNYA aquell any (flag indicadorsTerritorials). */
+  effortCatalunya?: EffortSide | null;
+  /** €/mes: mediana de fiances de Catalunya l'any del període vigent del municipi. */
+  catalunyaRentYear?: { year: string | null; median: number | null; n: number | null } | null;
+  /** F1 — evolució temporal (flag evolucioTemporal). */
+  evolucio?: EvolucioBundle | null;
+  /** F2 — comparativa territorial (flag comparativaTerritorial). */
+  comparativa?: ComparativaBundle | null;
   terrDelta: {
     rentaVsProvincia: TerrDeltaResult | null;
     rentaVsCatalunya: TerrDeltaResult | null;
@@ -560,7 +613,7 @@ export function assembleMuniIndicators(input: AssembleMuniInput): MuniIndicators
           }
         : null,
     ipva: { catalunya: ipvaCat, provincia: ipvaProv, municipi: ipvaMuni },
-    renta: { municipi: { hogar: rentaHogar, persona: rentaPersona } },
+    renta: { municipi: { hogar: rentaHogar, persona: rentaPersona }, provincia: rentaProv, catalunya: rentaCat },
     effort: { hogar: effortHogar, persona: effortPersona },
     terrDelta: terrDeltaResult,
     fontsUsed: [...fonts].sort(),

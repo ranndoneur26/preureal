@@ -84,6 +84,7 @@ export const USAGE_TYPES = {
   DETAIL_QUERY: "DETAIL_QUERY",
   EXPORT_CSV: "EXPORT_CSV",
   PDF_REPORT: "PDF_REPORT",
+  VALUATION: "VALUATION", // noves funcionalitats (F4): quota pròpia 5/30 per mes
 } as const;
 export type UsageType = (typeof USAGE_TYPES)[keyof typeof USAGE_TYPES];
 

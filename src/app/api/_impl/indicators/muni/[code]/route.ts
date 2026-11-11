@@ -48,12 +48,14 @@ export async function GET(req: NextRequest, ctx: { params: Promise<Record<string
   }
 
   const plan = (session.plan as PlanId) || "FREE";
-  const [referenciaAmpliada, indicadorsTerritorials] = await Promise.all([
+  const [referenciaAmpliada, indicadorsTerritorials, evolucioTemporal, comparativaTerritorial] = await Promise.all([
     planAllows(plan, "referenciaAmpliada"),
     planAllows(plan, "indicadorsTerritorials"),
+    planAllows(plan, "evolucioTemporal"),
+    planAllows(plan, "comparativaTerritorial"),
   ]);
 
   return NextResponse.json(
-    gateIndicators(full, plan, { referenciaAmpliada, indicadorsTerritorials }),
+    gateIndicators(full, plan, { referenciaAmpliada, indicadorsTerritorials, evolucioTemporal, comparativaTerritorial }),
   );
 }

@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
-import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock, Factory } from "lucide-react";
+import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock, Factory, Calculator } from "lucide-react";
+import LineChart, { type LineSeries } from "@/components/charts/LineChart";
+import BarChart, { type BarRow } from "@/components/charts/BarChart";
+import ValuationPanel from "@/components/views/ValuationPanel";
 
 /** Resposta de GET /api/indicators/muni/:code (Fase 4, gating al servidor). */
 interface GatedIndicatorsResponse {
   plan: string;
   medianaMunicipal: { p50: number; n: number; basis: string } | null;
-  teaser: { bandaDisponible: boolean; esforcDisponible: boolean } | null;
+  teaser: { bandaDisponible: boolean; esforcDisponible: boolean; evolucioDisponible?: boolean; comparativaDisponible?: boolean } | null;
   bandaCompleta: { p25: number; p50: number; p75: number; n: number; totalWeight: number; basis: string } | null;
   posVsMedian: { absDiff: number; pctDiff: number; direction: "ABOVE" | "BELOW" | "AT"; median: number; basis: string } | null;
   refBand: { position: "BELOW" | "WITHIN" | "ABOVE"; labelCa: string; labelEs: string; p25: number; p75: number; basis: string } | null;
@@ -28,6 +31,27 @@ interface GatedIndicatorsResponse {
     hogar: { pct: number; rentEurMonth: number; rentPeriod: string | null; rentaAnual: number; rentaPeriod: string } | null;
     persona: { pct: number } | null;
   } | null;
+  /** Noves funcionalitats (F1-F4) — tallades al servidor per pla/flags. */
+  effortCatalunya: { pct: number; rentEurMonth: number; rentPeriod: string | null; rentaAnual: number; rentaPeriod: string } | null;
+  catalunyaRentYear: { year: string | null; median: number | null; n: number | null } | null;
+  evolucio: {
+    muni: Array<{ year: string; value: number }>;
+    interanual: Array<{ year: string; pct: number }>;
+    comarca: Array<{ year: string; median: number; n: number }> | null;
+    provincia: Array<{ year: string; median: number; n: number }> | null;
+    muniPeriod: string | null;
+    volatileJump: boolean;
+  } | null;
+  comparativa: {
+    year: string | null;
+    muni: { value: number; period: string | null };
+    comarca: { median: number; n: number; name: string | null } | null;
+    provincia: { median: number; n: number; name: string | null } | null;
+    deltaComarcaPct: number | null;
+    deltaProvinciaPct: number | null;
+    extremes: { car: { name: string; value: number } | null; barat: { name: string; value: number } | null } | null;
+    seccioCensalDisponible: false;
+  } | null;
   terrDelta: {
     rentaVsProvincia: { pctDiff: number } | null;
     rentaVsCatalunya: { pctDiff: number } | null;
@@ -44,7 +68,7 @@ interface GatedIndicatorsResponse {
  * el client només pinta el que ha rebut (gratuït: mediana + teaser;
  * Premium/Pro: banda, posició, IPVA, renda i esforç amb metodologia).
  */
-function IndicadorsOficials({ muniCode, price }: { muniCode: string; price: number | null }) {
+function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; muniName: string; price: number | null }) {
   const { locale, navigate } = useApp();
   const ca = locale === "ca";
   // dades etiquetades amb el municipi que les va portar: quan canvia el
@@ -118,8 +142,8 @@ function IndicadorsOficials({ muniCode, price }: { muniCode: string; price: numb
           <Lock className="w-4 h-4 text-[#b0431c] shrink-0" />
           <p className="text-xs text-[#7a4a1c] flex-1">
             {ca
-              ? "Amb Premium: banda completa P25–P75, posició del teu preu, evolució IPVA, renda mitjana i esforç econòmic d'aquest municipi amb dades oficials."
-              : "Con Premium: banda completa P25–P75, posición de tu precio, evolución IPVA, renta media y esfuerzo económico de este municipio con datos oficiales."}
+              ? "Amb Premium: banda completa P25–P75, posició del teu preu, evolució del lloguer any a any, comparativa comarca/província, renda mitjana i esforç econòmic amb dades oficials."
+              : "Con Premium: banda completa P25–P75, posición de tu precio, evolución del alquiler año a año, comparativa comarca/provincia, renta media y esfuerzo económico con datos oficiales."}
           </p>
           <button onClick={() => navigate("/preus")} className="px-3 py-1.5 rounded-lg bg-[#e8673c] text-white text-[11px] font-bold shrink-0 hover:bg-[#d95a31]">
             {ca ? "Veure Premium" : "Ver Premium"}
@@ -211,10 +235,120 @@ function IndicadorsOficials({ muniCode, price }: { muniCode: string; price: numb
                   ? "Indicador TERRITORIAL (renda per llar de l'Atlas INE): no mesura la teva situació personal. Fiances: " + (effort.rentPeriod ?? "—") + "."
                   : "Indicador TERRITORIAL (renta por hogar del Atlas INE): no mide tu situación personal. Fianzas: " + (effort.rentPeriod ?? "—") + "."}
               </div>
+              {/* Noves funcionalitats (F3): termòmetre d'esforç + comparativa Catalunya */}
+              <div className="mt-2">
+                <div className="relative h-3 rounded-full" style={{ background: "linear-gradient(90deg,#63b57c 0%,#e5c46a 42%,#dd5a35 75%)" }}>
+                  <div
+                    className="absolute -top-1 w-5 h-5 rounded-full bg-[#0f2e21] border-2 border-white shadow"
+                    style={{ left: `calc(${Math.min(100, Math.max(0, (effort.pct / 60) * 100))}% - 10px)` }}
+                    title={`${effort.pct.toFixed(1).replace(".", ",")} %`}
+                  />
+                </div>
+                <div className="flex justify-between text-[9px] text-[#6b6f68] mt-0.5">
+                  <span>0 %</span>
+                  <span>60 %</span>
+                </div>
+              </div>
+              {resp.effortCatalunya && (
+                <div className="mt-1.5 text-[11px] text-[#4b5349]">
+                  {ca ? "Catalunya amb el mateix lloguer medianà: " : "Cataluña con el mismo alquiler mediano: "}
+                  <b>{resp.effortCatalunya.pct.toFixed(1).replace(".", ",")} %</b>
+                  {resp.catalunyaRentYear?.median ? (
+                    <>
+                      {" · "}
+                      {ca ? "lloguer medianà Cat." : "alquiler mediano Cat."} <b>{resp.catalunyaRentYear.median.toFixed(0)} €/mes</b> ({resp.catalunyaRentYear.year}, n={resp.catalunyaRentYear.n})
+                    </>
+                  ) : null}
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
+
+      {/* — Noves funcionalitats (F1): evolució temporal — Premium — */}
+      {resp.evolucio && resp.evolucio.muni.length >= 2 && (() => {
+        const evo = resp.evolucio;
+        const evoSeries: LineSeries[] = [
+          { id: "muni", label: muniName, color: "#e8673c", points: evo.muni.map((p) => ({ x: p.year, y: p.value })) },
+          ...(evo.comarca && evo.comarca.length >= 2
+            ? [{ id: "comarca", label: ca ? "Comarca (mediana)" : "Comarca (mediana)", color: "#0f2e21", points: evo.comarca.map((p) => ({ x: p.year, y: p.median })), dashed: true }]
+            : []),
+          ...(evo.provincia && evo.provincia.length >= 2
+            ? [{ id: "prov", label: ca ? "Província (mediana)" : "Provincia (mediana)", color: "#6b6f68", points: evo.provincia.map((p) => ({ x: p.year, y: p.median })), dashed: true }]
+            : []),
+        ];
+        return (
+          <div className="pt-2.5 border-t border-[#e5e1da]">
+            <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Evolució del lloguer (fiances Incasòl)" : "Evolución del alquiler (fianzas Incasòl)"}</div>
+            <div className="mt-1.5">
+              <LineChart locale={ca ? "ca" : "es"} series={evoSeries} />
+            </div>
+            {evo.interanual.length > 0 && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {evo.interanual.slice(-4).map((p) => (
+                  <span key={p.year} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${p.pct > 0 ? "bg-[#fbe9e2] text-[#b0431c]" : p.pct < 0 ? "bg-[#e4f2e8] text-[#1e7a41]" : "bg-[#f0ede8] text-[#4b5349]"}`}>
+                    {p.year}: {p.pct > 0 ? "+" : ""}{p.pct.toFixed(1).replace(".", ",")} %
+                  </span>
+                ))}
+              </div>
+            )}
+            {evo.volatileJump && (
+              <div className="mt-1 text-[10px] text-[#9a6a1a] flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 shrink-0" />
+                {ca ? "Alguns salts interanuals són grans: municipi amb pocs contractes (mostra petita)." : "Algunos saltos interanuales son grandes: municipio con pocos contratos (muestra pequeña)."}
+              </div>
+            )}
+            <div className="mt-1 text-[10px] text-[#6b6f68]">
+              {ca ? "Només anys amb dada publicada (sense interpolació). Mitjana de fiances per habitatge · període vigent: " : "Solo años con dato publicado (sin interpolación). Media de fianzas por vivienda · período vigente: "}
+              {evo.muniPeriod ?? "—"}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* — Noves funcionalitats (F2): comparativa territorial — Premium — */}
+      {resp.comparativa && resp.comparativa.muni.value > 0 && (() => {
+        const comp = resp.comparativa;
+        const compRows: BarRow[] = [
+          { label: ca ? "Aquest municipi" : "Este municipio", value: comp.muni.value, period: comp.muni.period, highlight: true },
+        ];
+        if (comp.comarca) compRows.push({ label: comp.comarca.name ?? (ca ? "Comarca" : "Comarca"), value: comp.comarca.median, period: comp.year, sub: `mediana · n=${comp.comarca.n} ${ca ? "munis" : "munis."}` });
+        if (comp.provincia) compRows.push({ label: comp.provincia.name ?? (ca ? "Província" : "Provincia"), value: comp.provincia.median, period: comp.year, sub: `mediana · n=${comp.provincia.n} ${ca ? "munis" : "munis."}` });
+        return (
+          <div className="pt-2.5 border-t border-[#e5e1da]">
+            <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Comparativa territorial" : "Comparativa territorial"}</div>
+            <div className="mt-2">
+              <BarChart locale={ca ? "ca" : "es"} rows={compRows} />
+            </div>
+            {(comp.deltaComarcaPct !== null || comp.deltaProvinciaPct !== null) && (
+              <div className="mt-1.5 text-[11px] text-[#4b5349]">
+                {comp.deltaComarcaPct !== null && (
+                  <>
+                    {ca ? "Respecte a la comarca: " : "Respecto a la comarca: "}
+                    <b className={comp.deltaComarcaPct > 0 ? "text-[#b0431c]" : "text-[#1e7a41]"}>{comp.deltaComarcaPct > 0 ? "+" : ""}{comp.deltaComarcaPct.toFixed(1).replace(".", ",")} %</b>
+                    {comp.deltaProvinciaPct !== null ? " · " : ""}
+                  </>
+                )}
+                {comp.deltaProvinciaPct !== null && (
+                  <>
+                    {ca ? "respecte a la província: " : "respecto a la provincia: "}
+                    <b className={comp.deltaProvinciaPct > 0 ? "text-[#b0431c]" : "text-[#1e7a41]"}>{comp.deltaProvinciaPct > 0 ? "+" : ""}{comp.deltaProvinciaPct.toFixed(1).replace(".", ",")} %</b>
+                  </>
+                )}
+              </div>
+            )}
+            {comp.extremes?.car && comp.extremes?.barat && (
+              <div className="mt-1 text-[10px] text-[#6b6f68]">
+                {ca ? "A la comarca" : "En la comarca"} ({comp.year}): {ca ? "més car" : "más caro"} <b>{comp.extremes.car.name}</b> ({comp.extremes.car.value.toFixed(0)} €) · {ca ? "més barat" : "más barato"} <b>{comp.extremes.barat.name}</b> ({comp.extremes.barat.value.toFixed(0)} €)
+              </div>
+            )}
+            <div className="mt-1 text-[10px] text-[#6b6f68]">
+              {ca ? "Mediana dels municipis amb dada el mateix any (comparabilitat de períodes garantida). Secció censal i districte: no disponibles — la font oficial no els publica." : "Mediana de los municipios con dato el mismo año (comparabilidad de períodos garantida). Sección censal y distrito: no disponibles — la fuente oficial no los publica."}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* — fonts + enllaç a la guia — */}
       {resp.fontsUsed.length > 0 && (
@@ -1268,7 +1402,10 @@ function FullPanel({
       )}
 
       {/* Fase 4 — bloc «Referència oficial i context» (INE + mercat registrat) */}
-      <IndicadorsOficials muniCode={mun.code} price={isFinite(yourRentNum) && yourRentNum > 0 ? yourRentNum : null} />
+      <IndicadorsOficials muniCode={mun.code} muniName={mun.name} price={isFinite(yourRentNum) && yourRentNum > 0 ? yourRentNum : null} />
+
+      {/* Noves funcionalitats (F4) — valoració orientativa de lloguer (Premium/Pro) */}
+      <ValuationPanel muniCode={mun.code} muniName={mun.name} />
 
       {/* COMPARADOR + ACCIONS */}
       <div className="rounded-xl border-2 border-[#0f2e21] p-4">

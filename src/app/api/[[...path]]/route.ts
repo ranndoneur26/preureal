@@ -62,6 +62,7 @@ import * as h_subscription from "../_impl/subscription/route";
 import * as h_subscription_cancel from "../_impl/subscription/cancel/route";
 import * as h_subscription_change from "../_impl/subscription/change/route";
 import * as h_subscription_reactivate from "../_impl/subscription/reactivate/route";
+import * as h_valuation from "../_impl/valuation/route";
 import * as h_buildings_id from "../_impl/buildings/[id]/route";
 import * as h_export_code from "../_impl/export/[code]/route";
 import * as h_indicators_muni_code from "../_impl/indicators/muni/[code]/route";
@@ -127,6 +128,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["subscription", "cancel"], h: h_subscription_cancel },
   { seg: ["subscription", "change"], h: h_subscription_change },
   { seg: ["subscription", "reactivate"], h: h_subscription_reactivate },
+  { seg: ["valuation"], h: h_valuation },
   { seg: ["buildings", ":id"], h: h_buildings_id },
   { seg: ["export", ":code"], h: h_export_code },
   { seg: ["indicators", "muni", ":code"], h: h_indicators_muni_code },

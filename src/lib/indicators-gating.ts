@@ -19,6 +19,9 @@ export type PlanIdLite = "FREE" | "PREMIUM" | "PRO";
 export interface IndicatorAllowFlags {
   referenciaAmpliada: boolean;
   indicadorsTerritorials: boolean;
+  /** Noves funcionalitats (F1/F2) — flags propis per activar-los/desactivar-los des de l'admin. */
+  evolucioTemporal: boolean;
+  comparativaTerritorial: boolean;
 }
 
 export interface GatedIndicators {
@@ -26,7 +29,7 @@ export interface GatedIndicators {
   /** Visible per a TOTS els plans (Taula 8: mediana municipal de referència). */
   medianaMunicipal: { p50: number; n: number; basis: string } | null;
   /** Només FREE: avís de disponibilitat (només quan la dada existeix de debò). */
-  teaser: { bandaDisponible: boolean; esforcDisponible: boolean } | null;
+  teaser: { bandaDisponible: boolean; esforcDisponible: boolean; evolucioDisponible?: boolean; comparativaDisponible?: boolean } | null;
   /** PREMIUM/PRO amb referenciaAmpliada. */
   bandaCompleta: MuniIndicators["band"];
   posVsMedian: MuniIndicators["posVsMedian"];
@@ -36,6 +39,13 @@ export interface GatedIndicators {
   renta: MuniIndicators["renta"] | null;
   effort: MuniIndicators["effort"] | null;
   terrDelta: MuniIndicators["terrDelta"] | null;
+  /** F3 — esforç amb la mediana de Catalunya (indicadorsTerritorials). */
+  effortCatalunya: MuniIndicators["effortCatalunya"] | null;
+  catalunyaRentYear: MuniIndicators["catalunyaRentYear"] | null;
+  /** F1 — evolució temporal (evolucioTemporal). */
+  evolucio: MuniIndicators["evolucio"] | null;
+  /** F2 — comparativa territorial (comparativaTerritorial). */
+  comparativa: MuniIndicators["comparativa"] | null;
   fontsUsed: string[];
   avisos: string[];
   generatedAt: string;
@@ -53,6 +63,8 @@ export function gateIndicators(
   const fullAccess = plan !== "FREE" && full !== null;
   const ampl = fullAccess && allows.referenciaAmpliada;
   const terr = fullAccess && allows.indicadorsTerritorials;
+  const evo = fullAccess && allows.evolucioTemporal;
+  const comp = fullAccess && allows.comparativaTerritorial;
   return {
     plan,
     medianaMunicipal:
@@ -63,6 +75,8 @@ export function gateIndicators(
         : {
             bandaDisponible: full.band !== null,
             esforcDisponible: full.effort.hogar !== null,
+            evolucioDisponible: (full.evolucio?.muni?.length ?? 0) >= 2,
+            comparativaDisponible: full.comparativa !== null,
           },
     bandaCompleta: ampl ? (full?.band ?? null) : null,
     posVsMedian: ampl ? (full?.posVsMedian ?? null) : null,
@@ -71,6 +85,10 @@ export function gateIndicators(
     renta: terr ? (full?.renta ?? null) : null,
     effort: terr ? (full?.effort ?? null) : null,
     terrDelta: terr ? (full?.terrDelta ?? null) : null,
+    effortCatalunya: terr ? (full?.effortCatalunya ?? null) : null,
+    catalunyaRentYear: terr ? (full?.catalunyaRentYear ?? null) : null,
+    evolucio: evo ? (full?.evolucio ?? null) : null,
+    comparativa: comp ? (full?.comparativa ?? null) : null,
     fontsUsed: full?.fontsUsed ?? [],
     avisos: full?.avisos ?? [],
     generatedAt: full?.generatedAt ?? new Date().toISOString(),

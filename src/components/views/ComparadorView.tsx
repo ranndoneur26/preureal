@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info, Crown, BarChart3, Factory } from "lucide-react";
+import LineChart from "@/components/charts/LineChart";
 
 interface Entity {
   type: "MUNI" | "BUILDING";
@@ -414,6 +415,30 @@ export default function ComparadorView() {
           {result.results.some((r) => r.rentHistory) && (
             <div className="mt-4 bg-white rounded-2xl border border-[#e5e1da] p-5">
               <h2 className="font-bold mb-4">{ca ? "Evolució temporal" : "Evolución temporal"}</h2>
+              {/* Noves funcionalitats (F1): gràfic interactiu multi-municipi — només
+                  amb historial del servidor (les fiances ja arriben gatejades pel pla) */}
+              {(() => {
+                const palette = ["#e8673c", "#0f2e21", "#1e7a41", "#9a6a1a", "#5d5480", "#6b6f68"];
+                const series = result.results
+                  .filter((r) => r.rentHistory && Object.keys(r.rentHistory).length >= 2)
+                  .map((r, i) => ({
+                    id: r.code,
+                    label: r.name,
+                    color: palette[i % palette.length],
+                    points: Object.entries(r.rentHistory!)
+                      .filter(([, v]) => Number(v) > 0)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([y, v]) => ({ x: y, y: Number(v) })),
+                  }));
+                return series.length >= 2 ? (
+                  <div className="mb-4">
+                    <LineChart locale={ca ? "ca" : "es"} series={series} />
+                    <p className="mt-1 text-[10px] text-[#6b6f68]">
+                      {ca ? "Mitjana de fiances per habitatge (Incasòl). Només anys amb dada publicada, sense interpolació." : "Media de fianzas por vivienda (Incasòl). Solo años con dato publicado, sin interpolación."}
+                    </p>
+                  </div>
+                ) : null;
+              })()}
               <table className="w-full text-xs">
                 <thead>
                   <tr className="text-[#6b6f68]">

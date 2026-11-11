@@ -33,6 +33,16 @@ export const PLANS: Record<
       // -1 = il·limitats). No es comprova amb planAllows() (booleà) sinó amb
       // pdfLimitForPlan().
       pdfMonth: number;
+      // Noves funcionalitats 2026-11 (F1-F4) — flags additius amb el mateix
+      // patró: l'admin els pot retocar via PlanSetting.features sense desplegar.
+      //  - evolucioTemporal: gràfic interactiu de sèries (fitxa + comparador)
+      //  - comparativaTerritorial: barres muni/comarca/província (fitxa)
+      //  - valoracio: motor de valoració de renta (formulari del panell)
+      //  - valoracionsMonth: quota pròpia/mes (com pdfMonth; -1 = il·limitades)
+      evolucioTemporal: boolean;
+      comparativaTerritorial: boolean;
+      valoracio: boolean;
+      valoracionsMonth: number;
     };
   }
 > = {
@@ -40,21 +50,21 @@ export const PLANS: Record<
     quotaMonth: 3,
     priceEur: 0,
     comparatorMax: 2,
-    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false, pdfMonth: 0 },
+    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false, pdfMonth: 0, evolucioTemporal: false, comparativaTerritorial: false, valoracio: false, valoracionsMonth: 0 },
   },
   PREMIUM: {
     quotaMonth: -1,
     priceEur: 7.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
-    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 5 },
+    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 5, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 5 },
   },
   PRO: {
     quotaMonth: -1,
     priceEur: 19.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
-    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 30 },
+    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 30, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 30 },
   },
 };
 
@@ -147,6 +157,15 @@ export async function pdfLimitForPlan(plan: PlanId): Promise<number> {
   const v = s[plan]?.features.pdfMonth;
   if (Number.isFinite(v)) return v as number;
   return PLANS[plan].features.pdfMonth;
+}
+
+/** Noves funcionalitats — quota de valoracions/mes (features.valoracionsMonth).
+ *  Mateix patró que pdfLimitForPlan: -1 = il·limitades, fallback defensiu. */
+export async function valuationLimitForPlan(plan: PlanId): Promise<number> {
+  const s = await getPlanSettings();
+  const v = s[plan]?.features.valoracionsMonth;
+  if (Number.isFinite(v)) return v as number;
+  return PLANS[plan].features.valoracionsMonth;
 }
 
 // v31: PLAN_RANK vive en subscription.ts (fuente única importada aquí arriba)

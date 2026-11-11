@@ -60,7 +60,7 @@ const FULL: MuniIndicators = {
   avisos: ["EFFORT", "IPVA_ANUAL"],
 };
 
-const ALL_TRUE = { referenciaAmpliada: true, indicadorsTerritorials: true };
+const ALL_TRUE = { referenciaAmpliada: true, indicadorsTerritorials: true, evolucioTemporal: true, comparativaTerritorial: true };
 
 // ── PART A — gating ─────────────────────────────────────────────────────────
 console.log("\n── PART A · gating d'indicadors per pla ──");
@@ -85,11 +85,11 @@ ok(prem.terrDelta?.rentaVsCatalunya?.pctDiff === -8.31, "PREMIUM: delta territor
 const pro = gateIndicators(FULL, "PRO", ALL_TRUE);
 ok(pro.bandaCompleta !== null && pro.effort !== null, "PRO: accés complet com Premium");
 
-const flagOff = gateIndicators(FULL, "PREMIUM", { referenciaAmpliada: false, indicadorsTerritorials: true });
+const flagOff = gateIndicators(FULL, "PREMIUM", { referenciaAmpliada: false, indicadorsTerritorials: true, evolucioTemporal: true, comparativaTerritorial: true });
 ok(flagOff.bandaCompleta === null && flagOff.posVsMedian === null, "flag OFF (referenciaAmpliada): banda NULL");
 ok(flagOff.effort?.hogar?.pct === 23.08, "flag OFF: esforç segueix present (indicadorsTerritorials ON)");
 
-const flagTerrOff = gateIndicators(FULL, "PREMIUM", { referenciaAmpliada: true, indicadorsTerritorials: false });
+const flagTerrOff = gateIndicators(FULL, "PREMIUM", { referenciaAmpliada: true, indicadorsTerritorials: false, evolucioTemporal: true, comparativaTerritorial: true });
 ok(flagTerrOff.bandaCompleta !== null && flagTerrOff.effort === null, "flag OFF (indicadorsTerritorials): banda sí, esforç no");
 
 const nullSafe = gateIndicators(null, "FREE", ALL_TRUE);
