@@ -19,6 +19,7 @@ import * as h_admin_imports from "../_impl/admin/imports/route";
 import * as h_admin_plan_settings from "../_impl/admin/plan-settings/route";
 import * as h_admin_reports from "../_impl/admin/reports/route";
 import * as h_admin_seed_aid from "../_impl/admin/seed-aid/route";
+import * as h_admin_seed_municipalities from "../_impl/admin/seed-municipalities/route";
 import * as h_admin_stats from "../_impl/admin/stats/route";
 import * as h_admin_users from "../_impl/admin/users/route";
 import * as h_aid from "../_impl/aid/route";
@@ -85,6 +86,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "plan-settings"], h: h_admin_plan_settings },
   { seg: ["admin", "reports"], h: h_admin_reports },
   { seg: ["admin", "seed-aid"], h: h_admin_seed_aid },
+  { seg: ["admin", "seed-municipalities"], h: h_admin_seed_municipalities },
   { seg: ["admin", "stats"], h: h_admin_stats },
   { seg: ["admin", "users"], h: h_admin_users },
   { seg: ["aid"], h: h_aid },
