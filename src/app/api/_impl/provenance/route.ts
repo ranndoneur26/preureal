@@ -57,7 +57,7 @@ const PROVENANCE = [
   {
     id: "catastro_any_construccio",
     nom: "Any de construcció",
-    font: "Cadastre (Direcció General del Catastro) — serveis lliures Consulta_DNPPC",
+    font: "Cadastre (Direcció General del Catastro) — serveis lliures Consulta_DNPRC (OVCCallejero.asmx)",
     llicencia: "Serveis lliures del Cadastre; l'ús massiu requereix autorització",
     unitat: "any (de la construcció principal de la parcel·la)",
     ambit: "Per edifici consultat",

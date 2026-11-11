@@ -2,6 +2,47 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Fix: servei Catastro (any de construcció) — 2026-11-11
+
+**Problema en producció:** `/api/health` reportava `catastro ok:false, status:404`
+i la fitxa d'edificis deixava de mostrar l'any de construcció per a edificis
+sense cau.
+
+**Causa arrel (verificada en calent):** la D.G. del Catastro ha RETIRAT el
+servei WCF REST `COVCCatastro.svc` (`ovc.catastro.meh.es/OVCServWeb/
+OVCWcfCatastro/`): totes les operacions (`Consulta_DNPPC`, `Consulta_DNPRC`,
+`Consulta_PMULT`, `Consulta_DLOC`) i el WSDL responen 404, també al mirall
+`www.catastro.hacienda.gob.es/ovc.catastro.meh.es/`. El substitut viu és el
+servei clàssic `OVCSWLocalizacionRC/OVCCallejero.asmx` → **`Consulta_DNPRC`**
+(Provincia + Municipio en NOM + RC; any al camp `<debi><ant>`).
+
+**Canvis:**
+- `src/lib/catastro.ts`: migració a `Consulta_DNPRC` (OVCCallejero.asmx).
+  Requereix Provincia i Municipio normalitzats (sense accents, majúscules);
+  derivats del municipi de la consulta (`mun.province`, `mun.name`, o per
+  prefix de codi 08/17/25/43). Retalla RC de 20 → 14 caràcters (el servei
+  només accepta parcel·la; amb 20 respon error de formació — verificat).
+  Manté el mateix contracte (`getYearBuilt`), el cau en BD i la degradació
+  elegant; ara també reconeix els errors de negoci `<err>` que arriben amb
+  HTTP 200 i el nou camp `<ant>` (compatibilitat amb l'antic `<antiguedad>`).
+- `src/app/api/_impl/lookup/route.ts`: passa el context territorial
+  (provincia, municipio, municipalityCode) a `getYearBuilt`.
+- `src/app/api/health/route.ts`: la prova ara és una consulta REAL al servei
+  viu amb una parcel·la real (Carrer de Sants 10, Barcelona → ant 1900) i
+  valida XML (`<consulta_dnp`, sense `<err>`); abans només mirava el status
+  HTTP d'una URL morta.
+- `src/app/api/_impl/provenance/route.ts` + `src/app/api/_impl/reports/pdf/route.ts`:
+  text de font actualitzat a `Consulta_DNPRC (OVCCallejero.asmx)`.
+
+**Verificació executada (sandbox, serveis reals):**
+- Servei antic: 404 a totes les operacions + WSDL (http i mirall).
+- Servei nou: `ConsultaNumero` (refcat real de «Carrer de Sants 10») →
+  `Consulta_DNPRC` → HTTP 200, XML `consulta_dnp`, `<debi><ant>1900</ant>`.
+- RC de 20 caràcters → error oficial «LA REFERENCIA CATASTRAL NO ESTÁ
+  CORRECTAMENTE FORMADA» (d'aquí el retall a 14).
+- Errors de negoci (p. ex. tipus de via >5 caràcters) arriben amb HTTP 200 +
+  `<err>`: gestionats com a null (mai s'inventa cap dada).
+
 ## v26 (Fase 2 de fonts oficials) — 2026-11-10 · Modelo de datos + importadores INE (IPVA y Atlas de renta), migración estrictamente aditiva
 
 ### 0. Alcance (encargo fuentes oficiales — Fase 2)

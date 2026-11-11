@@ -29,15 +29,24 @@ export async function GET() {
     check("ICGC API Territorial", "https://api.icgc.cat/territorial/collections"),
   ]);
 
-  // Catastro: estat de configuració (la comprobación real se hace al consultar)
+  // Catastro: prova REAL del servei viu (fix 2026-11-11). El servei WCF antic
+  // COVCCatastro.svc/Consulta_DNPPC va ser retirat per la D.G. del Catastro
+  // (404 global, WSDL inclòs); el substitut és OVCCallejero.asmx /
+  // Consulta_DNPRC (Provincia + Municipio + RC, any al camp <debi><ant>).
+  // RC de prova: parcel·la real de Carrer de Sants 10, Barcelona (any 1900).
   let catastro: { name: string; ok: boolean; status: string | number };
   try {
-    const r = await check(
-      "Cadastre",
-      "https://ovc.catastro.meh.es/OVCServWeb/OVCWcfCatastro/COVCCatastro.svc/Consulta_DNPPC?RC=0801917DF3851E0001OR",
-      7000
-    );
-    catastro = { name: "Cadastre (any construcció)", ok: r.ok, status: r.status };
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 7000);
+    const r = await fetch(
+      "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC?Provincia=BARCELONA&Municipio=BARCELONA&RC=8110708DF2881A",
+      { signal: ctrl.signal, headers: { "User-Agent": "PreuReal.cat/1.0" }, cache: "no-store" }
+    ).finally(() => clearTimeout(t));
+    const text = r.ok ? await r.text() : "";
+    // ok només si el servei respon XML vàlid sense <err> (errors de negoci
+    // arriben amb HTTP 200; un 200 buit no seria una prova fiable)
+    const ok = r.ok && text.includes("<consulta_dnp") && !text.includes("<err>");
+    catastro = { name: "Cadastre (any construcció)", ok, status: r.status };
   } catch (e: any) {
     catastro = { name: "Cadastre (any construcció)", ok: false, status: String(e) };
   }

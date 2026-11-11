@@ -114,9 +114,15 @@ export async function POST(req: Request) {
   }
 
   // 6) any de construcció (Catastro, degradació elegant)
+  //    fix 2026-11-11: el servei .asmx Consulta_DNPRC exigeix Provincia i
+  //    Municipio en nom — es passen des del municipi de la consulta
   let yearBuilt: { year: number; source: string } | null = null;
   if (building) {
-    yearBuilt = await getYearBuilt(building.id, refcat);
+    yearBuilt = await getYearBuilt(building.id, refcat, {
+      provincia: mun.province,
+      municipio: mun.name,
+      municipalityCode: mun.code,
+    });
   }
 
   // 7) registra la consulta
