@@ -155,11 +155,9 @@ export default function AdminView() {
     try {
       const res = await fetch("/api/admin/seed-municipalities", { method: "POST" });
       const d = await res.json();
-      const errs: string[] = d.errors || [];
       setSeedMunisMsg(
         res.ok
-          ? `OK: ${d.created} nous, ${d.updated} actualitzats de ${d.total} municipis` +
-            (errs.length ? ` — ERRORS (mostreig): ${errs.join(" | ")}` : "")
+          ? `OK: ${d.synced ?? d.updated}/${d.total} municipis sincronitzats`
           : d.message || d.error,
       );
     } catch (e: any) {

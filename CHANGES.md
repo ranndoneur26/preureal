@@ -2,6 +2,24 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Seed en 1 sola sentència SQL (upsert) — fix del «botó penjat» — 2026-11-11
+
+**Símptoma:** el botó «Sincroniza les dades municipals» es quedava pensant i
+mai responia. PERO les dades SÍ van aterrar: /api/health va passar a
+`withRent: 693` (+Palamós) i `withComarcaRef: 254` — la funció escrivia tot i
+el timeout del serverless la matava ABANS de respondre.
+
+**Causa:** 947 UPDATE individuals en 38 rondes seqüencials de 25 (~20-40 s amb
+la latència real de la BD) > límit de durada de la funció (Vercel).
+
+**Fix:** tot l'upsert és ara UNA sola sentència SQL (INSERT … ON CONFLICT DO
+UPDATE des de `json_to_recordset`, paràmetre JSON de 518 KB): 1 ida i
+tornada, ~1-3 s. Sintaxi validada amb el parser real de PostgreSQL
+(libpg_query). `boundary`/`boundaryFetchedAt` NO es toquen (caché ICGC
+preservada); `updatedAt` = NOW(). Resposta `{ ok, synced, total }` i el panell
+mostra «OK: N/947 municipis sincronitzats».
+
+
 ## Causa arrel del SEED_FAIL corregida: `contractsPeriod` inexistent al schema — 2026-11-11
 
 **Causa confirmada (reproducció empírica):** el payload de
