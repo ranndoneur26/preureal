@@ -3,6 +3,11 @@
 Prioridad: **P0** bloquea / verificar primero · **P1** importante · **P2** mejora.
 Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 
+## Noves funcionalitats — anàlisi i valoració (encàrrec 2026-11-11: ESPERA VALIDACIÓ)
+- [x] **Fase 1 auditoria de dades** — `INFORME_AUDITORIA_FUNCIONALIDADES.md` (auditoria real: 692/947 munis amb sèrie Incasòl 2005–2025, Atlas INE 947/947, esforç de renta ja calculat, sense €/m² ni secció censal; 0 migracions per a les 4 funcionalitats)
+- [ ] **Propietari**: validar els 6 punts del §5 de l'informe (unitat €/habitatge, sense secció censal, mediana comarca/prov per any, valoració v1 sense ajustos, quotes valoració, SVG propi)
+- [ ] F3 esforç de renta (visual, S) → F1 evolució temporal (M) → F2 comparativa territorial (M) → F4 motor de valoració (M-Alta) — només amb validació prèvia
+
 ## Fase 7 — Validación final (2026-11-11: SUPERADA, ver `INFORME_FASE7.md`)
 - [x] Sondes de producció 54/54 (disponibilitat, seguretat, capçaleres, rendiment, dades) — `bun scripts/fase7_validate.ts`
 - [x] Contrast de valors amb fonts oficials: IPVA Catalunya 2024 = +3,1 % (coincidència exacta INE), Atlas ADRH 2024 vigent, fiances Incasòl coherents amb Gencat
