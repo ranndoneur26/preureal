@@ -6,7 +6,7 @@
 import { describe, expect, test } from "bun:test";
 import { inflateSync } from "zlib";
 import { PDFDocument } from "pdf-lib";
-import { buildReportPdf, REPORT_PAGES, type ReportInput } from "../src/lib/pdf-report";
+import { buildReportPdf, REPORT_PAGES, winAnsi, type ReportInput } from "../src/lib/pdf-report";
 
 const base: ReportInput = {
   mun: {
@@ -127,5 +127,59 @@ describe("Fase 6: informe PDF de 8 pàgines", () => {
     const bytes = await buildReportPdf(calm);
     const text = extractText(bytes);
     expect(text.includes("NO consta a les resolucions")).toBe(true);
+  });
+});
+
+describe("Fase 6 — regressió WinAnsi (fix 2026-11-11)", () => {
+  test("ajuts reals del catàleg amb ≥ i ≤ NO trenquen l'informe (bug 500 en producció)", async () => {
+    // Textos LITERALS del seed (rental_aid_seed.json) que van trencar l'informe:
+    // «Persones amb discapacitat ≥ 33 %», «ingressos ≤ 25.200 €/any»…
+    const realAids = [
+      {
+        title: "Bono alquiler personas con discapacidad",
+        amount: "250 €/mes",
+        audience: "Persones amb discapacitat ≥ 33 % (sense límit d'edat)",
+        source: "Ministerio de Vivienda y Agenda Urbana",
+        url: "https://www.vivienda.gob.es/",
+        reviewed: "2026-11-11",
+      },
+      {
+        title: "Bónic lloguer jove (Generalitat)",
+        amount: "185 €/mes",
+        audience: "Joves de fins a 35 anys, ingressos ≤ 25.200 €/any, renda dins dels límits per delimitats",
+        source: "Generalitat de Catalunya",
+        url: "https://habitatge.gencat.cat/",
+        reviewed: "2026-11-11",
+      },
+      {
+        title: "Simbolz variats: ≥ ≤ ≈ ≠ → ← ∞ − \u2009espai fi",
+        amount: null,
+        audience: null,
+        source: "test",
+        url: "https://example.cat/",
+        reviewed: "2026-11-11",
+      },
+    ];
+    const bytes = await buildReportPdf({ ...base, aids: realAids });
+    expect(await pageCount(bytes)).toBe(REPORT_PAGES);
+    const text = extractText(bytes);
+    expect(text.includes(">= 33")).toBe(true);
+    expect(text.includes("<= 25.200")).toBe(true);
+  });
+
+  test("rentHistory corrupte → degradació elegant, no throw", async () => {
+    const corrupt: ReportInput = { ...base, mun: { ...base.mun, rentHistory: "{no-json-valid:" } };
+    const bytes = await buildReportPdf(corrupt);
+    expect(await pageCount(bytes)).toBe(REPORT_PAGES);
+    const text = extractText(bytes);
+    expect(text.includes("sèrie històrica suficient")).toBe(true);
+  });
+
+  test("winAnsi: mapa de símbols i filtre final", () => {
+    expect(winAnsi("a ≥ b ≤ c")).toBe("a >= b <= c");
+    expect(winAnsi("∞")).toBe("infinit");
+    expect(winAnsi("hola")).toBe("hola");
+    expect(winAnsi("a\u2009b")).toBe("a b");
+    expect(winAnsi("\u2260")).toBe("!=");
   });
 });

@@ -75,7 +75,92 @@ export interface ReportInput {
 const fmt0 = (n: number) => n.toLocaleString("ca-ES", { maximumFractionDigits: 0 });
 const fmt1 = (n: number) => n.toLocaleString("ca-ES", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
 
-export async function buildReportPdf(input: ReportInput): Promise<Uint8Array> {
+// Fix 2026-11-11 — pdf-lib amb StandardFonts (WinAnsi) NO pot codificar
+// símbols matemàtics presents a dades oficials reals (p. ex. «discapacitat
+// ≥ 33 %», «ingressos ≤ 25.200 €/any» del catàleg d'ajuts): widthOfTextAtSize
+// llançava «WinAnsi cannot encode "≥"» i l'informe retornava 500 per a TOTS
+// els usuaris (reproduït i confirmat amb Postgres local + seed real).
+// Sanegem TOTA l'entrada: símbols coneguts → equivalent ASCII; qualsevol
+// caràcter fora del repertori WinAnsi → «?».
+const WINANSI_EXTRA = "€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ";
+const WINANSI_MAP: Record<string, string> = {
+  "≥": ">=", "≤": "<=", "≈": "~", "≠": "!=",
+  "→": "->", "←": "<-", "↔": "<->", "⇒": "=>", "⇐": "<=",
+  "−": "-", "‑": "-", "‒": "-", "∕": "/", "⁄": "/",
+  "\u2009": " ", "\u2005": " ", "\u2007": " ", "\u202f": " ", "\u00a0": " ",
+  "\ufeff": "", "\u200b": "", "\u200c": "", "\u200d": "",
+  "∞": "infinit",
+};
+export function winAnsi(s: string): string {
+  let out = "";
+  for (const ch of s) {
+    if (ch in WINANSI_MAP) {
+      out += WINANSI_MAP[ch];
+      continue;
+    }
+    const c = ch.codePointAt(0) ?? 0;
+    if (c >= 0x20 && c <= 0x7e) { out += ch; continue; } // ASCII
+    if (c >= 0xa0 && c <= 0xff) { out += ch; continue; } // Latin-1 (à ç ñ €…)
+    if (WINANSI_EXTRA.includes(ch)) { out += ch; continue; } // 0x80-0x9F WinAnsi
+    if (ch === "\n" || ch === "\t") { out += ch; continue; }
+    out += "?";
+  }
+  return out;
+}
+
+export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array> {
+  // Fix 2026-11-11 — sanegat WinAnsi de TOTS els camps de text de l'entrada
+  // (cobreix drawText directes, helpers text()/line() i capsçaleres/peus).
+  const ns = (v: string | null | undefined) => (v == null ? null : winAnsi(v));
+  const input: ReportInput = {
+    mun: {
+      ...rawInput.mun,
+      name: winAnsi(rawInput.mun.name),
+      comarca: ns(rawInput.mun.comarca),
+      province: ns(rawInput.mun.province),
+      tenseList: ns(rawInput.mun.tenseList),
+      rentHistory: ns(rawInput.mun.rentHistory),
+    },
+    building: rawInput.building
+      ? {
+          ...rawInput.building,
+          nom: ns(rawInput.building.nom),
+          refcat: ns(rawInput.building.refcat),
+          tipus: ns(rawInput.building.tipus),
+          source: winAnsi(rawInput.building.source),
+        }
+      : null,
+    ind: rawInput.ind
+      ? {
+          band: rawInput.ind.band,
+          effortHogar: rawInput.ind.effortHogar
+            ? { ...rawInput.ind.effortHogar, rentPeriod: ns(rawInput.ind.effortHogar.rentPeriod), rentaPeriod: winAnsi(rawInput.ind.effortHogar.rentaPeriod) }
+            : null,
+          rentaHogarLatest: rawInput.ind.rentaHogarLatest
+            ? { ...rawInput.ind.rentaHogarLatest, period: winAnsi(rawInput.ind.rentaHogarLatest.period) }
+            : null,
+          ipvaCat: rawInput.ind.ipvaCat
+            ? {
+                latestAnual: rawInput.ind.ipvaCat.latestAnual
+                  ? { ...rawInput.ind.ipvaCat.latestAnual, period: winAnsi(rawInput.ind.ipvaCat.latestAnual.period) }
+                  : null,
+                acum2015: rawInput.ind.ipvaCat.acum2015,
+              }
+            : null,
+        }
+      : null,
+    aids: rawInput.aids.map((a) => ({
+      title: winAnsi(a.title),
+      amount: ns(a.amount),
+      audience: ns(a.audience),
+      source: winAnsi(a.source),
+      url: winAnsi(a.url),
+      reviewed: winAnsi(a.reviewed),
+    })),
+    subscriberMasked: winAnsi(rawInput.subscriberMasked),
+    planLabel: winAnsi(rawInput.planLabel),
+    genDate: winAnsi(rawInput.genDate),
+  };
   const { mun, building, ind, aids } = input;
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -227,9 +312,19 @@ export async function buildReportPdf(input: ReportInput): Promise<Uint8Array> {
   // ---------- P3 · EVOLUCIÓ ----------
   newPage();
   section("Evolució del lloguer mitjà");
-  const hist: Array<[string, number]> = mun.rentHistory
-    ? Object.entries(JSON.parse(mun.rentHistory as string)).sort((a, b) => Number(a[0]) - Number(b[0])).map(([k, v]) => [k, Number(v)])
-    : [];
+  // Fix 2026-11-11 — JSON.parse defensiu: un rentHistory corrupte no pot
+  // trencar l'informe (abans seria un 500); sense sèrie es mostra el missatge
+  // de degradació de sota.
+  let hist: Array<[string, number]> = [];
+  if (mun.rentHistory) {
+    try {
+      hist = Object.entries(JSON.parse(mun.rentHistory as string))
+        .sort((a, b) => Number(a[0]) - Number(b[0]))
+        .map(([k, v]) => [k, Number(v)]);
+    } catch {
+      hist = [];
+    }
+  }
   if (hist.length > 1) {
     const maxVal = Math.max(...hist.map(([, v]) => v), 1);
     const chartTop = y - 8;

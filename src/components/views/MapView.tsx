@@ -1027,7 +1027,9 @@ export default function MapView() {
         return;
       }
       if (!res.ok) {
-        setPdfMsg(locale === "ca" ? "No s'ha pogut generar l'informe." : "No se pudo generar el informe.");
+        // Fix 2026-11-11 — inclou el codi HTTP: qualsevol 5xx nou es pot
+        // diagnosticar directament des d'una captura de l'usuari.
+        setPdfMsg(locale === "ca" ? `No s'ha pogut generar l'informe (error ${res.status}).` : `No se pudo generar el informe (error ${res.status}).`);
         return;
       }
       const blob = await res.blob();
@@ -1084,7 +1086,7 @@ export default function MapView() {
         return;
       }
       if (!res.ok) {
-        setCsvMsg(locale === "ca" ? "No s'ha pogut generar el CSV." : "No se pudo generar el CSV.");
+        setCsvMsg(locale === "ca" ? `No s'ha pogut generar el CSV (error ${res.status}).` : `No se pudo generar el CSV (error ${res.status}).`);
         return;
       }
       const blob = await res.blob();
