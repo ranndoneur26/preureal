@@ -109,7 +109,7 @@ const codes = new Set(seed.aids.map((a) => a.code));
 ok(codes.size === seed.aids.length, "codis únics");
 ok(seed.aids.every((a) => a.url.startsWith("https://")), "tots els enllaços són HTTPS oficials");
 ok(seed.aids.every((a) => a.url.includes("gob.es") || a.url.includes("gencat.cat") || a.url.includes("boe.es")), "enllaços només a dominis oficials (gob.es/gencat.cat/boe.es)", seed.aids.map((a) => a.url));
-ok(seed.aids.every((a) => ["VIGENTE", "CONVOCATORIA_OBERTA", "FINALIZADA"].includes(a.status)), "estats vàlids");
+ok(seed.aids.every((a) => ["VIGENTE", "CONVOCATORIA_OBERTA", "CONVOCATORIA_TANCADA", "FINALIZADA"].includes(a.status)), "estats vàlids");
 ok(seed.aids.every((a) => a.scope === "ESTATAL" ? a.scopeCode === null : typeof a.scopeCode === "string"), "coherència àmbit/codi");
 ok(seed.aids.every((a) => a.description.length > 80 && a.source.length > 5), "descripcions i fonts substantives");
 ok(seed.aids.some((a) => a.scope === "CCAA" && a.scopeCode === "09"), "inclou àmbit Catalunya (09)");

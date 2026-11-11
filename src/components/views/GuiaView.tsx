@@ -89,7 +89,7 @@ const S = {
     s6t: "Ajudes vigents al lloguer",
     s6intro:
       "Convocatories i línies d'ajut amb font oficial i data de darrera revisió editorial. Les convocatories tenen terminis i crèdits propis: verifica sempre la font oficial abans de presentar cap sol·licitud.",
-    aidStatus: { VIGENTE: "Vigent", CONVOCATORIA_OBERTA: "Convocatòria oberta", FINALIZADA: "Finalitzada" },
+    aidStatus: { VIGENTE: "Vigent", CONVOCATORIA_OBERTA: "Convocatòria oberta", CONVOCATORIA_TANCADA: "Convocatòria tancada", FINALIZADA: "Finalitzada" },
     aidRequisits: "A qui va dirigit",
     aidRevisat: "Contingut revisat",
     s7t: "Fonts oficials",
@@ -160,7 +160,7 @@ const S = {
     s6t: "Ayudas vigentes al alquiler",
     s6intro:
       "Convocatorias y líneas de ayuda con fuente oficial y fecha de última revisión editorial. Las convocatorias tienen plazos y créditos propios: verifica siempre la fuente oficial antes de presentar cualquier solicitud.",
-    aidStatus: { VIGENTE: "Vigente", CONVOCATORIA_OBERTA: "Convocatoria abierta", FINALIZADA: "Finalizada" },
+    aidStatus: { VIGENTE: "Vigente", CONVOCATORIA_OBERTA: "Convocatoria abierta", CONVOCATORIA_TANCADA: "Convocatoria cerrada", FINALIZADA: "Finalizada" },
     aidRequisits: "A quién va dirigido",
     aidRevisat: "Contenido revisado",
     s7t: "Fuentes oficiales",

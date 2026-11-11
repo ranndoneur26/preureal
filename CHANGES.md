@@ -2,6 +2,45 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Fase 4: catàleg d'ajudes ampliat (4→9, verificades) + lint React 19 net — 2026-11-11
+
+**1) Ajudes al lloguer (Fase 4)** — catàleg editorial ampliat de 4 a 9 entrades,
+TOTES verificades avui contra les fonts oficials (enllaç + estat de convocatòria):
+- NOVA `AYUDA_ALQUILER_PLA_ESTATAL_2026_2030`: ajuda al lloguer del nou Pla
+  Estatal (RD 326/2026, BOE 22/04/2026) — fins a 300 €/mes habitatge /
+  200 €/mes habitació, màx. 60 % de la renda, 2 anys; gestió per CCAA.
+- NOVA `BO_LLOGUER_JOVE_GENCAT`: convocatòria catalana del bono joven —
+  250 €/mes (límit de renda), ≤35 anys, ingressos ≤25.200 €/any, caps per
+  demarcació; convocatòria 2026: 9-13 març (tancada, anual).
+- NOVA `AJUTS_LLOGUER_36_64_GENCAT`: 50-200 €/mes, ingressos ≤36.279,32 €;
+  convocatòria 2026: 14 abril-8 maig (tancada, anual).
+- NOVA `AJUTS_LLOGUER_65_MES_GENCAT`: 65+ anys; convocatòria 2026:
+  31 març-30 abril (tancada, anual).
+- NOVA `AJUTS_LLOGUER_JOVES_RISC_GENCAT`: joves ≤35 en risc de residència —
+  600-3.000 €/any, 2 anys; convocatòria 2026: 29 juny-10 juliol (tancada, anual).
+- `BONO_ALQUILER_JOVEN` actualitzat (RD 326/2026: fins a 300 €/mes; a Catalunya
+  = Bo Lloguer Jove); `AJUTS_LLOGUER_GENCAT` passa a VIGENTE com a paraigües.
+- Nou estat editorial `CONVOCATORIA_TANCADA` (honest: programa vigent, finestra
+  anual tancada) amb traduccions al badge de GuiaView i validació del test.
+- Fitxers: `src/data/rental_aid_seed.json`, `src/components/views/GuiaView.tsx`,
+  `scripts/fase4_test.ts`. Per carregar-les a producció: panell #/admin
+  (POST /api/admin/seed-aid, upsert idempotent) o `npx tsx scripts/seed_rental_aid.ts`.
+
+**2) Lint React 19 (13 errors → 0, sense canvi de comportament)** — regles noves
+`react-hooks` v6 (`set-state-in-effect`, `immutability`,
+`preserve-manual-memoization`); TASKS.md P2 tancat:
+- `MapView.tsx` (8): callbacks de selecció/dibuix moguts ABANS de l'efecte
+  d'inicialització (accés abans de declarar); deps completades
+  (drawBuildings, loadBuildingsInView); sincronització de quota i esborrat del
+  cercador com a ajust d'estat durant el render; recarrega per idioma amb
+  continuació asíncrona.
+- `PanelView.tsx` (3): verificació del hash amb lazy initializer; sincronització
+  de nom/alertes amb ajust de render (sentinel); càrrega de pestanya asíncrona.
+- `ComparadorView.tsx` (2): esborrat de candidats al render; comparació
+  automàtica asíncrona.
+- `use-user-plan.ts` (1): refresc inicial en continuació asíncrona.
+- Verificació: `npx eslint src` = 0 problemes; `npx tsc --noEmit` = net.
+
 ## Fix: la valoració orientativa respon a les característiques (motor v2) — 2026-11-11
 
 **Problema reportat pel propietari:** la valoració orientativa donava SEMPRE el

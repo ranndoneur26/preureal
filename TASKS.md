@@ -50,7 +50,7 @@ Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 - [ ] Google OAuth: redirect URI de producción.
 
 ## P2 — Calidad
-- [ ] Corregir los 12 errores de lint de React 19 sin cambiar comportamiento.
+- [x] Corregir los errores de lint de React 19 sin cambiar comportamiento (2026-11-11: 13 errores → 0).
 - [ ] Eliminar o activar `tailwind.config.ts` (Tailwind 4) tras comprobar que no altera estilos.
 - [ ] Revisar dependencias sin uso aparente (`@mdxeditor/editor`, `react-syntax-highlighter`, `@dnd-kit/*`, `next-intl`, `zustand`…) antes de quitar nada.
 - [ ] SEO: sitemap sin `#/` o rutas reales (implica cambiar el routing: requiere decisión).
