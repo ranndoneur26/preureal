@@ -2,6 +2,30 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## CAUSA ARREL REAL del «No s'ha pogut generar l'informe»: WinAnsi cannot encode ≥/≤ — 2026-11-11
+
+**Correcció de l'entrada següent:** la hipòtesi del paywall era ERRÒNIA.
+Amb captura de l'usuari + Postgres local (embedded-postgres, migracions i seed
+reals) + usuari Premium/Pro de prova, el fetch es reproduït EXACTAMENT:
+
+```
+⨯ Error: WinAnsi cannot encode "≥" (0x2265)
+    at widthOfTextAtSize → line() → buildReportPdf → /api/reports/pdf = 500
+```
+
+**Origen:** els textos oficials del catàleg d'ajuts (Fase 4, ampliada 4→9)
+contenen símbols matemàtics — «Persones amb discapacitat **≥** 33 %»,
+«ingressos **≤** 25.200 €/any» — que les StandardFonts de pdf-lib (WinAnsi)
+NO poden codificar. Des que el catàleg ampli està carregat, l'informe PDF
+donava 500 per a TOTS els usuaris (el CSV seguia funcionant: és text UTF-8).
+
+**Fix (commit eccfe78):** `winAnsi()` a pdf-report.ts — mapa de símbols
+(≥→">=", ≤→"<=", ≈→"~", →→"->", espais fi→espai, etc.) + filtre final fora de
+repertori → «?»; buildReportPdf sanititza TOTA l'entrada abans de dibuixar;
+`JSON.parse(rentHistory)` defensiu a P3; el missatge genèric del frontend ara
+inclou el codi HTTP. Verificació E2E local: mun → 200 (%PDF-1.7, 15 KB),
+edifici → 200, CSV → 200; tests 7/7 amb regressió pels textos reals.
+
 ## Diagnòstic i millores de «Exportació CSV / Informe PDF» a «Estàs pagant de més?» — 2026-11-11
 
 **Informe de l'usuari:** a la secció «Estàs pagant de més?» de la fitxa no es
