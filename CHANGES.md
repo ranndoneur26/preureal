@@ -2,6 +2,22 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Causa arrel del SEED_FAIL corregida: `contractsPeriod` inexistent al schema — 2026-11-11
+
+**Causa confirmada (reproducció empírica):** el payload de
+`POST /api/admin/seed-municipalities` enviava `contractsPeriod`, un camp que
+NO existeix al model `Municipality` (només hi ha `contractsLatest`). El JSON
+el portava als 947 municipis, així que `?? null` no l'amagava: cada
+`createMany` i cada `update` llançava `PrismaClientValidationError: Unknown
+argument \`contractsPeriod\`` — el seed sencer fallava des del primer
+argument. Reproduït i aïllat contra un model mirall (SQLite): amb el camp →
+`Unknown argument \`contractsPeriod\``; sense el camp → insert OK.
+
+**Fix:** `contractsPeriod` eliminat del payload i de la interfície `MunRow`,
+amb nota que impedeix regressions. `skipDuplicates` es manté (vàlid a
+PostgreSQL; només falla a SQLite, artefacte del mirall de prova).
+
+
 ## Seed municipal sincer (recomptes reals) + verificació externa via /api/health — 2026-11-11
 
 **Símptoma en producció:** el botó #/admin podia mostrar «OK: 947 actualitzats»

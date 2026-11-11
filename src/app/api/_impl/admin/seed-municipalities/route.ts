@@ -31,7 +31,12 @@ interface MunRow {
   rentPrevPeriod: string | null;
   rentHistory: Record<string, number> | null;
   contractsLatest: number | null;
-  contractsPeriod?: string | null;
+  // NOTA: el JSON puede traer `contractsPeriod`, pero NO se envía a Prisma:
+  // el modelo Municipality no tiene ese campo y `Unknown argument
+  // `contractsPeriod`` invalida createMany/update COMPLETOS (PrismaClient
+  // ValidationError) — causa real del SEED_FAIL de 2026-11-11 (reproducido
+  // y verificado contra un modelo espejo). El seed original (scripts/seed.ts)
+  // nunca lo envió: por eso el seed local sí funcionaba.
   comarcaRefLatest: number | null;
   comarcaRefPeriod: string | null;
   comarcaRefHistory: Record<string, number> | null;
@@ -54,7 +59,7 @@ function payload(m: MunRow) {
     rentPrevPeriod: m.rentPrevPeriod ?? null,
     rentHistory: m.rentHistory ? JSON.stringify(m.rentHistory) : null,
     contractsLatest: m.contractsLatest ?? null,
-    contractsPeriod: m.contractsPeriod ?? null,
+    // contractsPeriod: NO enviar — campo inexistente en el schema (ver nota arriba)
     comarcaRefLatest: m.comarcaRefLatest ?? null,
     comarcaRefPeriod: m.comarcaRefPeriod ?? null,
     comarcaRefHistory: m.comarcaRefHistory ? JSON.stringify(m.comarcaRefHistory) : null,
