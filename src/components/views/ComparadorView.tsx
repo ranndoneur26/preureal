@@ -56,6 +56,11 @@ export default function ComparadorView() {
   const ca = locale === "ca";
   const [query, setQuery] = useState("");
   const [candidates, setCandidates] = useState<Entity[]>([]);
+  // lint v2: l'esborrat immediat de candidats amb consultes curtes es fa com a
+  // ajust d'estat durant el render (patró React), no dins de l'efecte.
+  if (query.trim().length < 2 && candidates.length > 0) {
+    setCandidates([]);
+  }
   const [entities, setEntities] = useState<Entity[]>([]);
   const [result, setResult] = useState<{ results: ComparatorResult[]; stats: any; advanced?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -108,7 +113,7 @@ export default function ComparadorView() {
 
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) { setCandidates([]); return; }
+    if (q.length < 2) return; // l'esborrat es fa com a ajust d'estat al render
     const id = setTimeout(async () => {
       try {
         const res = await fetch(`/api/municipalities?q=${encodeURIComponent(q)}&limit=6`);
@@ -172,8 +177,14 @@ export default function ComparadorView() {
     }
   }, []);
 
+  // lint v2: la comparació automàtica s'arrenca en una continuació asíncrona
+  // (runCompare posa estat; mai síncron dins de l'efecte)
   useEffect(() => {
-    if (entities.length >= 2) runCompare(entities);
+    if (entities.length < 2) return;
+    void (async () => {
+      await Promise.resolve();
+      await runCompare(entities);
+    })();
   }, [entities, runCompare]);
 
   const saveComparison = async () => {

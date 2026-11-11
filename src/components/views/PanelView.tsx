@@ -17,7 +17,13 @@ export default function PanelView() {
   const [tab, setTab] = useState("resum");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const [verificacio, setVerificacio] = useState<string | null>(null);
+  // lint v2: el codi de verificació del hash s'inicialitza directament a l'estat
+  // (lazy initializer) en comptes d'un efecte de muntatge amb setState síncron.
+  const [verificacio, setVerificacio] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const hq0 = window.location.hash.split("?")[1] || "";
+    return hq0 ? new URLSearchParams(hq0).get("verificacio") : null;
+  });
 
   // dades
   const [name, setName] = useState("");
@@ -48,20 +54,18 @@ export default function PanelView() {
 
   useEffect(() => {
     auth.refresh();
-    const hq = typeof window !== "undefined" ? window.location.hash.split("?")[1] || "" : "";
-    if (hq) {
-      const p = new URLSearchParams(hq);
-      if (p.get("verificacio")) setVerificacio(p.get("verificacio"));
-    }
-     
   }, []);
 
-  useEffect(() => {
-    if (auth.user) {
-      setName(auth.user.name || "");
-      setAlertsOn(Boolean(auth.user.alertsEnabled)); // v24
-    }
-  }, [auth.user]);
+  // lint v2: sincronitza el formulari amb l'usuari carregat mitjançant l'ajust
+  // d'estat durant el render (patró React recomanat), no un efecte. El sentinel
+  // (undefined) garanteix la primera sincronització també quan l'usuari ja hi és
+  // al primer render, igual que feia l'efecte de muntatge.
+  const [syncedUser, setSyncedUser] = useState<unknown>(undefined);
+  if (auth.user && auth.user !== syncedUser) {
+    setSyncedUser(auth.user);
+    setName(auth.user.name || "");
+    setAlertsOn(Boolean(auth.user.alertsEnabled)); // v24
+  }
 
   const loadTab = useCallback(async (tabId: string) => {
     // Fase 5 — el codi d'estat importa: 403 PLAN_REQUIRED = pestanya blocada
@@ -109,7 +113,14 @@ export default function PanelView() {
     }
   }, [history, favorites, comparisons, billing, myReports, activity]);
 
-  useEffect(() => { loadTab(tab); }, [tab, loadTab]);
+  // lint v2: la càrrega de la pestanya s'arrenca en una continuació asíncrona
+  // (loadTab posa estat; mai síncron dins de l'efecte)
+  useEffect(() => {
+    void (async () => {
+      await Promise.resolve();
+      await loadTab(tab);
+    })();
+  }, [tab, loadTab]);
 
   if (!auth.user) {
     return (

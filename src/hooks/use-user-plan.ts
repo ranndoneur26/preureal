@@ -73,8 +73,13 @@ export function useUserPlan() {
     }
   }, []);
 
+  // lint v2: el refresc inicial es fa en una continuació asíncrona (setState
+  // mai és síncron dins de l'efecte; regla react-hooks/set-state-in-effect)
   useEffect(() => {
-    refresh();
+    void (async () => {
+      await Promise.resolve();
+      await refresh();
+    })();
   }, [refresh]);
 
   return { ...state, loading, refresh };

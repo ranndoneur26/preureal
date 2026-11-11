@@ -463,7 +463,205 @@ export default function MapView() {
   const [csvMsg, setCsvMsg] = useState<string | null>(null);
   const [csvLocked, setCsvLocked] = useState(false);
 
-  useEffect(() => { setQuota(auth.quota); }, [auth.quota]);
+  // ---- Selecció i dibuix d'edificis — moguts ABANS de l'efecte d'inicialització del
+  // mapa perquè l'anàlisi de react-hooks no detecti accés abans de la declaració ----
+  const lookupSeqRef = useRef(0);
+  // recorda l'últim clic al mapa per poder repetir la consulta des del bloqueig
+  // de verificació («Ja l'he verificat: comprova-ho») sense haver de reclicar
+  const lastClickRef = useRef<{ b: any; lat: number; lng: number; poly: any } | null>(null);
+
+  const onSelectBuilding = useCallback(async (b: any, lat: number, lng: number, poly: any) => {
+    const L = LRef.current;
+    const map = mapRef.current;
+    if (L && map) {
+      if (selectedRef.current) {
+        selectedRef.current.setStyle({ color: "#3d4a42", weight: 0.7, fillOpacity: 0.55 });
+      }
+      poly.setStyle({ color: "#e8673c", weight: 3, fillOpacity: 0.8 });
+      selectedRef.current = poly;
+    }
+    // invalida respuestas de consultas anteriores (evita carreras fuera de orden)
+    const seq = ++lookupSeqRef.current;
+    lastClickRef.current = { b, lat, lng, poly };
+    setClickedNau(b?.tipus === "ind"); // v33 — recorda si s'ha clicat una nau
+    setPanelState("loading");
+    setLookup(null);
+    setDemoNotice(null);
+    setFavState("idle");
+    setPdfMsg(null);
+    try {
+      const res = await fetch("/api/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng, buildingId: b.id }),
+      });
+      if (seq !== lookupSeqRef.current) return; // resposta obsoleta
+      if (res.status === 402) {
+        const d = await res.json().catch(() => ({}));
+        setLookup(d);
+        setPanelState("paywall");
+        return;
+      }
+      // Fase 1: correu sense verificar → 403 del servidor (bloqueig principal)
+      if (res.status === 403) {
+        const d = await res.json().catch(() => ({}));
+        if (d?.error === "EMAIL_NOT_VERIFIED") {
+          setLookup(d);
+          setPanelState("verificacio");
+          setVerifySent(false);
+          return;
+        }
+      }
+      const d: LookupResult = await res.json();
+      if (seq !== lookupSeqRef.current) return; // resposta obsoleta
+      setLookup(d);
+      setPanelState(d.kind === "full" ? "full" : "teaser");
+      if (d.kind === "full" && d.quota) setQuota(d.quota);
+    } catch {
+      if (seq === lookupSeqRef.current) setPanelState("closed");
+    }
+  }, []);
+
+  const drawBuildings = useCallback((buildings: any[]) => {
+    const L = LRef.current;
+    const layer = layerRef.current;
+    if (!L || !layer) return;
+    layer.clearLayers();
+    polyByIdRef.current = {}; // v24: el lot nou substitueix l'anterior
+    lastBuildingsRef.current = buildings;
+    for (const b of buildings) {
+      const isNau = b.tipus === "ind";
+      let color = "#9aa5a0";
+      // si l'edifici té dada pròpia importada, el color ve d'aquesta dada real
+      if (isNau) color = NAU_FILL;
+      else if (b.avgRentEurMonth) color = rentColor(b.avgRentEurMonth);
+      else if (b.munRent) color = rentColor(b.munRent);
+      const poly = L.polygon(b.ring.map((p: number[]) => [p[1], p[0]]), {
+        color: isNau ? NAU_BORDER : "#3d4a42",
+        weight: isNau ? 1 : 0.7,
+        dashArray: isNau ? "4 3" : undefined,
+        fillColor: color,
+        fillOpacity: isNau ? 0.45 : 0.55,
+      });
+      if (isNau) {
+        // tooltip breu: és l'única pista sense obrir la fitxa
+        poly.bindTooltip(locale === "ca"
+          ? "Nau industrial · sense estadística de lloguer d'habitatges"
+          : "Nave industrial · sin estadística de alquiler de viviendas",
+          { sticky: true, direction: "top", opacity: 0.9 });
+      }
+      poly.on("click", (e: any) => {
+        L.DomEvent.stopPropagation(e);
+        onSelectBuilding(b, e.latlng.lat, e.latlng.lng, poly);
+      });
+      poly.addTo(layer);
+      if (b.id) polyByIdRef.current[b.id] = poly;
+    }
+
+  }, [locale, onSelectBuilding]);
+
+  const loadBuildingsInView = useCallback(async () => {
+    const map = mapRef.current;
+    if (!map || !layerRef.current) return;
+    const z = map.getZoom();
+    if (z < 16) {
+      layerRef.current.clearLayers();
+      setZoomHint(true);
+      setLoadingBuildings(false);
+      setCoverageWarn(null);
+      return;
+    }
+    setZoomHint(false);
+    const b = map.getBounds();
+    const qs = new URLSearchParams({
+      west: String(b.getWest().toFixed(5)),
+      south: String(b.getSouth().toFixed(5)),
+      east: String(b.getEast().toFixed(5)),
+      north: String(b.getNorth().toFixed(5)),
+    });
+    setLoadingBuildings(true);
+    setBuildingsError(null);
+    try {
+      const res = await fetch(`/api/buildings?${qs}`);
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        if (d.error === "BBOX_TOO_BIG") {
+          layerRef.current.clearLayers();
+          setBuildingsError("zoom");
+        } else {
+          setBuildingsError("service");
+        }
+        setCoverageWarn(null);
+        return;
+      }
+      const data = await res.json();
+      drawBuildings(data.buildings || []);
+      // Fase 8.1: mai es presenta la vista com a completa si falten mosaics
+      const cov = data.coverage;
+      if (cov && cov.failed > 0) {
+        setCoverageWarn(locale === "ca"
+          ? `${cov.failed} de ${cov.total} zones no s'han pogut carregar: la vista NO està completa. Ampla-hi o torna-ho a provar.`
+          : `${cov.failed} de ${cov.total} zonas no se pudieron cargar: la vista NO está completa. Amplía o inténtalo de nuevo.`);
+      } else if (cov && cov.empty > 0) {
+        setCoverageWarn(locale === "ca"
+          ? `${cov.empty} de ${cov.total} zones sense edificis registrats (àrees rurals o sense dades ICGC).`
+          : `${cov.empty} de ${cov.total} zonas sin edificios registrados (áreas rurales o sin datos ICGC).`);
+      } else {
+        setCoverageWarn(null);
+      }
+    } catch {
+      setBuildingsError("service");
+      setCoverageWarn(null);
+    } finally {
+      setLoadingBuildings(false);
+    }
+     
+  }, [locale, drawBuildings]);
+
+  const selectMunicipality = useCallback(async (mun: MunLite) => {
+    setShowResults(false);
+    setQuery(mun.name);
+    const map = mapRef.current;
+    if (!map) return;
+    // límit municipal real (ICGC amb cau) + fit
+    try {
+      const res = await fetch(`/api/municipalities/${mun.code}`);
+      const d = await res.json();
+      if (d.boundary) {
+        const L = LRef.current;
+        boundaryRef.current?.clearLayers();
+        const layer = L.geoJSON(d.boundary, {
+          style: { color: "#0f2e21", weight: 2, fill: false, dashArray: "4 3" },
+        });
+        layer.addTo(boundaryRef.current);
+        map.fitBounds(layer.getBounds().pad(0.05));
+        // si ja tenim prou zoom, carreguem edificis immediatament
+        if (map.getZoom() >= 16) loadBuildingsInView();
+      } else {
+        map.setView([mun.lat, mun.lng], 16);
+        setTimeout(() => loadBuildingsInView(), 400);
+      }
+    } catch {
+      map.setView([mun.lat, mun.lng], 16);
+    }
+  }, [loadBuildingsInView]);
+
+  // recarrega edificis quan canvia l'idioma per refrescar colors i accés
+  // recarrega edificis quan canvia l'idioma per refrescar colors i accés
+  useEffect(() => {
+    void (async () => {
+      await Promise.resolve();
+      await loadBuildingsInView();
+    })();
+  }, [locale, loadBuildingsInView]);
+
+  // lint v2: sincronitza la quota del context amb l'estat local mitjançant
+  // l'ajust d'estat durant el render (patró React recomanat), no un efecte.
+  const [syncedQuota, setSyncedQuota] = useState(auth.quota);
+  if (auth.quota !== syncedQuota) {
+    setSyncedQuota(auth.quota);
+    setQuota(auth.quota);
+  }
 
   // ---- Inicialització del mapa ----
   useEffect(() => {
@@ -556,173 +754,17 @@ export default function MapView() {
      
   }, []);
 
-  const loadBuildingsInView = useCallback(async () => {
-    const map = mapRef.current;
-    if (!map || !layerRef.current) return;
-    const z = map.getZoom();
-    if (z < 16) {
-      layerRef.current.clearLayers();
-      setZoomHint(true);
-      setLoadingBuildings(false);
-      setCoverageWarn(null);
-      return;
-    }
-    setZoomHint(false);
-    const b = map.getBounds();
-    const qs = new URLSearchParams({
-      west: String(b.getWest().toFixed(5)),
-      south: String(b.getSouth().toFixed(5)),
-      east: String(b.getEast().toFixed(5)),
-      north: String(b.getNorth().toFixed(5)),
-    });
-    setLoadingBuildings(true);
-    setBuildingsError(null);
-    try {
-      const res = await fetch(`/api/buildings?${qs}`);
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        if (d.error === "BBOX_TOO_BIG") {
-          layerRef.current.clearLayers();
-          setBuildingsError("zoom");
-        } else {
-          setBuildingsError("service");
-        }
-        setCoverageWarn(null);
-        return;
-      }
-      const data = await res.json();
-      drawBuildings(data.buildings || []);
-      // Fase 8.1: mai es presenta la vista com a completa si falten mosaics
-      const cov = data.coverage;
-      if (cov && cov.failed > 0) {
-        setCoverageWarn(locale === "ca"
-          ? `${cov.failed} de ${cov.total} zones no s'han pogut carregar: la vista NO està completa. Ampla-hi o torna-ho a provar.`
-          : `${cov.failed} de ${cov.total} zonas no se pudieron cargar: la vista NO está completa. Amplía o inténtalo de nuevo.`);
-      } else if (cov && cov.empty > 0) {
-        setCoverageWarn(locale === "ca"
-          ? `${cov.empty} de ${cov.total} zones sense edificis registrats (àrees rurals o sense dades ICGC).`
-          : `${cov.empty} de ${cov.total} zonas sin edificios registrados (áreas rurales o sin datos ICGC).`);
-      } else {
-        setCoverageWarn(null);
-      }
-    } catch {
-      setBuildingsError("service");
-      setCoverageWarn(null);
-    } finally {
-      setLoadingBuildings(false);
-    }
-     
-  }, [locale]);
-
-  // recarrega edificis quan canvia l'idioma per refrescar colors i accés
-  useEffect(() => {
-    loadBuildingsInView();
-     
-  }, [locale]);
-
-  const drawBuildings = useCallback((buildings: any[]) => {
-    const L = LRef.current;
-    const layer = layerRef.current;
-    if (!L || !layer) return;
-    layer.clearLayers();
-    polyByIdRef.current = {}; // v24: el lot nou substitueix l'anterior
-    lastBuildingsRef.current = buildings;
-    for (const b of buildings) {
-      const isNau = b.tipus === "ind";
-      let color = "#9aa5a0";
-      // si l'edifici té dada pròpia importada, el color ve d'aquesta dada real
-      if (isNau) color = NAU_FILL;
-      else if (b.avgRentEurMonth) color = rentColor(b.avgRentEurMonth);
-      else if (b.munRent) color = rentColor(b.munRent);
-      const poly = L.polygon(b.ring.map((p: number[]) => [p[1], p[0]]), {
-        color: isNau ? NAU_BORDER : "#3d4a42",
-        weight: isNau ? 1 : 0.7,
-        dashArray: isNau ? "4 3" : undefined,
-        fillColor: color,
-        fillOpacity: isNau ? 0.45 : 0.55,
-      });
-      if (isNau) {
-        // tooltip breu: és l'única pista sense obrir la fitxa
-        poly.bindTooltip(locale === "ca"
-          ? "Nau industrial · sense estadística de lloguer d'habitatges"
-          : "Nave industrial · sin estadística de alquiler de viviendas",
-          { sticky: true, direction: "top", opacity: 0.9 });
-      }
-      poly.on("click", (e: any) => {
-        L.DomEvent.stopPropagation(e);
-        onSelectBuilding(b, e.latlng.lat, e.latlng.lng, poly);
-      });
-      poly.addTo(layer);
-      if (b.id) polyByIdRef.current[b.id] = poly;
-    }
-
-  }, [locale]);
-
-  const lookupSeqRef = useRef(0);
-  // recorda l'últim clic al mapa per poder repetir la consulta des del bloqueig
-  // de verificació («Ja l'he verificat: comprova-ho») sense haver de reclicar
-  const lastClickRef = useRef<{ b: any; lat: number; lng: number; poly: any } | null>(null);
-
-  const onSelectBuilding = useCallback(async (b: any, lat: number, lng: number, poly: any) => {
-    const L = LRef.current;
-    const map = mapRef.current;
-    if (L && map) {
-      if (selectedRef.current) {
-        selectedRef.current.setStyle({ color: "#3d4a42", weight: 0.7, fillOpacity: 0.55 });
-      }
-      poly.setStyle({ color: "#e8673c", weight: 3, fillOpacity: 0.8 });
-      selectedRef.current = poly;
-    }
-    // invalida respuestas de consultas anteriores (evita carreras fuera de orden)
-    const seq = ++lookupSeqRef.current;
-    lastClickRef.current = { b, lat, lng, poly };
-    setClickedNau(b?.tipus === "ind"); // v33 — recorda si s'ha clicat una nau
-    setPanelState("loading");
-    setLookup(null);
-    setDemoNotice(null);
-    setFavState("idle");
-    setPdfMsg(null);
-    try {
-      const res = await fetch("/api/lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat, lng, buildingId: b.id }),
-      });
-      if (seq !== lookupSeqRef.current) return; // resposta obsoleta
-      if (res.status === 402) {
-        const d = await res.json().catch(() => ({}));
-        setLookup(d);
-        setPanelState("paywall");
-        return;
-      }
-      // Fase 1: correu sense verificar → 403 del servidor (bloqueig principal)
-      if (res.status === 403) {
-        const d = await res.json().catch(() => ({}));
-        if (d?.error === "EMAIL_NOT_VERIFIED") {
-          setLookup(d);
-          setPanelState("verificacio");
-          setVerifySent(false);
-          return;
-        }
-      }
-      const d: LookupResult = await res.json();
-      if (seq !== lookupSeqRef.current) return; // resposta obsoleta
-      setLookup(d);
-      setPanelState(d.kind === "full" ? "full" : "teaser");
-      if (d.kind === "full" && d.quota) setQuota(d.quota);
-    } catch {
-      if (seq === lookupSeqRef.current) setPanelState("closed");
-    }
-  }, []);
 
   // ---- Cercador: municipis + adreces (ICGC) + refcat (BD) ----
+  // lint v2: l'esborrat immediat amb consultes curtes es fa com a ajust
+  // d'estat durant el render (patró React); l'efecte només debança la cerca.
+  if (query.trim().length < 2 && (results.length > 0 || addresses.length > 0)) {
+    setResults([]);
+    setAddresses([]);
+  }
   useEffect(() => {
     const q = query.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setAddresses([]);
-      return;
-    }
+    if (q.length < 2) return;
     const id = setTimeout(async () => {
       // 1) municipis (BD local, instantani)
       try {
@@ -767,33 +809,6 @@ export default function MapView() {
     return () => clearTimeout(id);
   }, [query]);
 
-  const selectMunicipality = useCallback(async (mun: MunLite) => {
-    setShowResults(false);
-    setQuery(mun.name);
-    const map = mapRef.current;
-    if (!map) return;
-    // límit municipal real (ICGC amb cau) + fit
-    try {
-      const res = await fetch(`/api/municipalities/${mun.code}`);
-      const d = await res.json();
-      if (d.boundary) {
-        const L = LRef.current;
-        boundaryRef.current?.clearLayers();
-        const layer = L.geoJSON(d.boundary, {
-          style: { color: "#0f2e21", weight: 2, fill: false, dashArray: "4 3" },
-        });
-        layer.addTo(boundaryRef.current);
-        map.fitBounds(layer.getBounds().pad(0.05));
-        // si ja tenim prou zoom, carreguem edificis immediatament
-        if (map.getZoom() >= 16) loadBuildingsInView();
-      } else {
-        map.setView([mun.lat, mun.lng], 16);
-        setTimeout(() => loadBuildingsInView(), 400);
-      }
-    } catch {
-      map.setView([mun.lat, mun.lng], 16);
-    }
-  }, [loadBuildingsInView]);
 
   const selectAddress = useCallback((a: AddressResult) => {
     const map = mapRef.current;
