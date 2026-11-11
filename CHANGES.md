@@ -2,6 +2,28 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Seed municipal sincer (recomptes reals) + verificació externa via /api/health — 2026-11-11
+
+**Símptoma en producció:** el botó #/admin podia mostrar «OK: 947 actualitzats»
+mentre la BD seguia intacta (Barcelona sense `rentSource`, Palamós buit,
+cap referència de comarca).
+
+**Causa:** el comptador d'actualitzacions comptava INTENTS, no èxits
+(`updated += chunk.length` rere un `.catch(() => null)` que silenciava
+qualsevol error per fila).
+
+**Fix:**
+- `POST /api/admin/seed-municipalities`: ara compta només èxits reals
+  (`Promise.allSettled`), captura fins a 3 errors de mostra i, si cap fila no
+  ha reeixit, respon 502 `SEED_FAIL` amb el missatge real (createMany o primer
+  error per fila) en lloc d'un èxit fals.
+- `GET /api/health`: nous comptadors agregats `municipalities`
+  (`total` / `withRent` / `withComarcaRef` — només recomptes, cap dada
+  sensible) per verificar des de fora que el seed ha aterrat.
+- Panell #/admin: el missatge del botó ara mostra els errors mostrejats si
+  n'hi ha, tant en èxit parcial com en fallda total.
+
+
 ## Els 255 municipis sense dada + avisos d'habitabilitat (Decret 141/2012) — 2026-11-11
 
 **1) Diagnòstic real dels 255 municipis sense dada** (excels oficials Incasòl

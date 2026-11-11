@@ -83,31 +83,63 @@ export async function POST() {
   }
 
   try {
-    // 1) altes en un sol lot (normalment 0: la taula ja té els 947)
-    const created = await db.municipality.createMany({
-      data: rows.map((m) => ({ code: m.code, ...payload(m) })),
-      skipDuplicates: true,
-    });
+    const errors: string[] = [];
 
-    // 2) actualitzacions per lots paral·lels (idempotent, refresca tot)
+    // 1) altes en un sol lot (normalment 0: la taula ja té els 947)
+    const created = await db.municipality
+      .createMany({
+        data: rows.map((m) => ({ code: m.code, ...payload(m) })),
+        skipDuplicates: true,
+      })
+      .catch((e: unknown) => {
+        errors.push(`createMany: ${String(e).slice(0, 300)}`);
+        return null;
+      });
+
+    // 2) actualitzacions per lots paral·lels (idempotent, refresca tot).
+    //    FIX 2026-11-11: només es compten ÈXITS reals. Abans es comptava cada
+    //    intent (updated += chunk.length rere un .catch(() => null)), així que
+    //    qualsevol error per fila era silenciat i el panell podia dir
+    //    «OK: 947 actualitzats» amb la base de dades intacta.
     let updated = 0;
     const CHUNK = 25;
     for (let i = 0; i < rows.length; i += CHUNK) {
       const chunk = rows.slice(i, i + CHUNK);
-      await Promise.all(
-        chunk.map((m) =>
-          db.municipality.update({ where: { code: m.code }, data: payload(m) }).catch(() => null),
-        ),
+      const settled = await Promise.allSettled(
+        chunk.map((m) => db.municipality.update({ where: { code: m.code }, data: payload(m) })),
       );
-      updated += chunk.length;
+      settled.forEach((r, j) => {
+        if (r.status === "fulfilled") updated++;
+        else if (errors.length < 3)
+          errors.push(`${chunk[j].code}: ${String(r.reason).slice(0, 300)}`);
+      });
     }
 
-    await audit(admin.id, "SEED_MUNICIPALITIES", null, { total: rows.length });
+    if (updated === 0) {
+      // Cap èxit real: no és «OK». Informem la causa perquè es pugui corregir.
+      const message = errors[0] || "cap fila actualitzada";
+      await audit(admin.id, "SEED_MUNICIPALITIES_FAIL", null, {
+        total: rows.length,
+        message,
+      }).catch(() => null);
+      return NextResponse.json(
+        { ok: false, error: "SEED_FAIL", created: created?.count ?? 0, updated: 0, total: rows.length, errors, message },
+        { status: 502 },
+      );
+    }
+
+    await audit(admin.id, "SEED_MUNICIPALITIES", null, {
+      total: rows.length,
+      created: created?.count ?? 0,
+      updated,
+      withErrors: errors.length,
+    }).catch(() => null);
     return NextResponse.json({
       ok: true,
-      created: created.count,
+      created: created?.count ?? 0,
       updated,
       total: rows.length,
+      errors: errors.length ? errors : undefined,
     });
   } catch (e) {
     return NextResponse.json(

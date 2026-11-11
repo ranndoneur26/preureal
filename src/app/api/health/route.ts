@@ -16,6 +16,21 @@ export async function GET() {
     dbStatus = { ok: false, latencyMs: null, error: String(e?.message || e).slice(0, 200) };
   }
 
+  // Contadors AGREGATS de dades municipals (només recomptes, cap dada
+  // sensible): permeten verificar des de fora si el seed municipal ha
+  // aterrat a la BD després de sincronitzar des del panell #/admin.
+  let municipalities: Record<string, number | string>;
+  try {
+    const [total, withRent, withComarcaRef] = await Promise.all([
+      db.municipality.count(),
+      db.municipality.count({ where: { rentLatest: { not: null } } }),
+      db.municipality.count({ where: { comarcaRefLatest: { not: null } } }),
+    ]);
+    municipalities = { total, withRent, withComarcaRef };
+  } catch (e: any) {
+    municipalities = { error: String(e?.message || e).slice(0, 200) };
+  }
+
   function check(name: string, url: string, timeout = 6000) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeout);
@@ -54,6 +69,7 @@ export async function GET() {
   return NextResponse.json({
     status: dbStatus.ok ? "ok" : "degraded",
     database: { ...dbStatus, provider: "postgresql" },
+    municipalities,
     integrations: {
       icgc,
       catastro,
