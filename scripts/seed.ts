@@ -38,6 +38,10 @@ interface Mun {
   rentHistory: Record<string, number> | null;
   contractsLatest: number | null;
   contractsPeriod: string | null;
+  comarcaRefLatest: number | null;
+  comarcaRefPeriod: string | null;
+  comarcaRefHistory: Record<string, number> | null;
+  rentSource: string | null;
   isTense: boolean;
   tenseList: string | null;
 }
@@ -63,6 +67,10 @@ async function seedMunicipalities() {
         rentPrevPeriod: m.rentPrevPeriod,
         rentHistory: m.rentHistory ? JSON.stringify(m.rentHistory) : null,
         contractsLatest: m.contractsLatest,
+        comarcaRefLatest: m.comarcaRefLatest ?? null,
+        comarcaRefPeriod: m.comarcaRefPeriod ?? null,
+        comarcaRefHistory: m.comarcaRefHistory ? JSON.stringify(m.comarcaRefHistory) : null,
+        rentSource: m.rentSource ?? null,
         isTense: m.isTense,
         tenseList: m.tenseList,
       },
@@ -73,6 +81,10 @@ async function seedMunicipalities() {
         rentPrevPeriod: m.rentPrevPeriod,
         rentHistory: m.rentHistory ? JSON.stringify(m.rentHistory) : null,
         contractsLatest: m.contractsLatest,
+        comarcaRefLatest: m.comarcaRefLatest ?? null,
+        comarcaRefPeriod: m.comarcaRefPeriod ?? null,
+        comarcaRefHistory: m.comarcaRefHistory ? JSON.stringify(m.comarcaRefHistory) : null,
+        rentSource: m.rentSource ?? null,
         isTense: m.isTense,
         tenseList: m.tenseList,
       },

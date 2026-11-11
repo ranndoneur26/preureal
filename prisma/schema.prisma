@@ -120,6 +120,14 @@ model Municipality {
   rentPrevPeriod    String?
   rentHistory       String? // JSON {"2005": 550.2, ...}
   contractsLatest   Int? // nº contratos con fianza depositada (muestra)
+  // Referència de comarca per als municipis sense dada oficial municipal
+  // (mostra petita: Incasòl no publica la renda mitjana). MITJANA PONDERADA
+  // pel nº de contractes dels municipis de la comarca EL MATEIX ANY — mai
+  // dada municipal inventada; la UI la mostra sempre marcada com estimació.
+  comarcaRefLatest  Float? // €/mes — ref. comarca vigent
+  comarcaRefPeriod  String? // "2025"
+  comarcaRefHistory String? // JSON {"2005": ..., } sèrie de ref. de comarca
+  rentSource        String? // "INCASOL" | "COMARCA_REF" | "SENSE_DADA"
   isTense           Boolean   @default(false)
   tenseList         String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
   boundary          String? // GeoJSON del límite municipal (cache ICGC)

@@ -35,6 +35,9 @@ interface ComparatorResult {
   rentPrevYear: number | null;
   rentHistory: Record<string, number> | null;
   contractsLatest: number | null;
+  comarcaRefLatest?: number | null;
+  comarcaRefPeriod?: string | null;
+  rentSource?: string | null;
   isTense: boolean | null;
   median: number | null;
   samples: number | null;
@@ -199,7 +202,7 @@ export default function ComparadorView() {
     setSaveMsg(res.ok ? (ca ? "Comparació desada al teu panell." : "Comparación guardada en tu panel.") : (ca ? "No s'ha pogut desar." : "No se pudo guardar."));
   };
 
-  const maxRent = result?.results ? Math.max(...result.results.map((r) => r.rentLatest || 0), 1) : 1;
+  const maxRent = result?.results ? Math.max(...result.results.map((r) => r.rentLatest || r.comarcaRefLatest || 0), 1) : 1;
 
   // v25 — gràfica premium: ordenats del més car al més barat, % vs el més barat
   const withData = result?.results ? result.results.filter((r) => r.rentLatest != null) : [];
@@ -344,16 +347,29 @@ export default function ComparadorView() {
                           </span>
                         )}
                         <span className="font-black text-[#0f2e21]">
-                          {r.rentLatest != null ? `${r.rentLatest.toFixed(0)} €/mes` : ca ? "sense dades" : "sin datos"}
+                          {r.rentLatest != null
+                            ? `${r.rentLatest.toFixed(0)} €/mes`
+                            : r.comarcaRefLatest != null
+                              ? `≈ ${r.comarcaRefLatest.toFixed(0)} €/mes`
+                              : ca ? "sense dades" : "sin datos"}
                         </span>
+                        {r.rentLatest == null && r.comarcaRefLatest != null && (
+                          <span className="text-[10px] font-bold italic rounded-full px-2 py-0.5 bg-[#fdf3e0] text-[#8a6116]">
+                            {ca ? "ref. comarca" : "ref. comarca"}
+                          </span>
+                        )}
                       </span>
                     </div>
                     <div className="h-3.5 rounded-full bg-[#f0ede8] overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-700 ease-out"
                         style={{
-                          width: `${((r.rentLatest || 0) / maxRent) * 100}%`,
-                          background: `linear-gradient(90deg, ${rentBarColor(r.rentLatest || 0)}, ${rentBarColor(r.rentLatest || 0)}cc)`,
+                          width: `${((r.rentLatest || r.comarcaRefLatest || 0) / maxRent) * 100}%`,
+                          background:
+                            r.rentLatest != null
+                              ? `linear-gradient(90deg, ${rentBarColor(r.rentLatest || 0)}, ${rentBarColor(r.rentLatest || 0)}cc)`
+                              : "repeating-linear-gradient(45deg, #d9a441, #d9a441 6px, #e9c47a 6px, #e9c47a 12px)",
+                          opacity: r.rentLatest == null ? 0.75 : 1,
                         }}
                       />
                     </div>
@@ -366,7 +382,10 @@ export default function ComparadorView() {
                       )}
                       {r.contractsLatest != null && <span>{r.contractsLatest.toLocaleString()} {ca ? "contractes de mostra" : "contratos de muestra"}</span>}
                       {r.median != null && <span>{ca ? "mediana històrica" : "mediana histórica"}: {r.median.toFixed(0)} €</span>}
-                      {r.rentLatest == null && <span className="text-[#b0431c]">{ca ? "sense dades oficials per aquest municipi (no s'inventa)" : "sin datos oficiales para este municipio (no se inventa)"}</span>}
+                      {r.rentLatest == null && r.comarcaRefLatest != null && (
+                        <span className="text-[#8a6116]">{ca ? "≈ referència de comarca (estimació, sense dada municipal oficial)" : "≈ referencia de comarca (estimación, sin dato municipal oficial)"}</span>
+                      )}
+                      {r.rentLatest == null && r.comarcaRefLatest == null && <span className="text-[#b0431c]">{ca ? "sense dades oficials per aquest municipi (no s'inventa)" : "sin datos oficiales para este municipio (no se inventa)"}</span>}
                     </div>
                     {/* Fase 4 — xips avançats (Premium/Pro: la decisió és del servidor) */}
                     {result.advanced && r.indicators && (r.indicators.effortHogarPct != null || r.indicators.rentaHogar != null || r.indicators.ipvaCatAcum != null) && (

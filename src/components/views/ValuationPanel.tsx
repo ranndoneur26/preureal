@@ -16,7 +16,7 @@
 import { useState } from "react";
 import { useApp } from "@/components/app-context";
 import { useUserPlan } from "@/hooks/use-user-plan";
-import { Calculator, Lock, Info } from "lucide-react";
+import { Calculator, Lock, Info, TriangleAlert, ShieldAlert } from "lucide-react";
 
 interface ValuationAdjustment {
   key: "AJUST_SUPERFICIE" | "AJUST_ESTAT" | "AJUST_HABITACIONS";
@@ -24,11 +24,19 @@ interface ValuationAdjustment {
   detail: string;
 }
 
+interface ValuationWarning {
+  key: "HAB_MENOR_15" | "HAB_MENOR_20" | "HAB_HABITACIONS_MINIM" | "HAB_COMPACTA";
+  level: "ILLEGAL" | "EXCEPCIONAL" | "ADVERTENCIA" | "INFO";
+  detail: string;
+}
+
 interface ValuationResult {
   central: number;
   baseCentral: number;
+  baseSource: "MUNICIPI" | "COMARCA_REF";
   typical: boolean;
   adjustments: ValuationAdjustment[];
+  warnings: ValuationWarning[];
   min: number;
   max: number;
   bandBasis: "COMARCA" | "PROVINCIA" | "HISTORICA";
@@ -102,6 +110,36 @@ const AJUST_LABEL: Record<string, { ca: string; es: string }> = {
   AJUST_SUPERFICIE: { ca: "Superfície", es: "Superficie" },
   AJUST_ESTAT: { ca: "Estat", es: "Estado" },
   AJUST_HABITACIONS: { ca: "Habitacions", es: "Habitaciones" },
+};
+
+/** Avisos d'habitabilitat — Decret 141/2012, de 30 d'octubre (DOGC 6254):
+ *  art. 4.1 mínim 20 m² útils; art. 4.2 excepció 15-20 m² (llicència
+ *  anterior a 1-2-1984 + cèdula vigent); art. 5.2 habitacions ≥ 5 m²;
+ *  arts. 5.1/3.7.1 sala ≥ 10 m² (14 amb cuina integrada); art. 3.5 alçada 2,50 m. */
+const HAB_WARNING: Record<string, { ca: string; es: string }> = {
+  HAB_MENOR_15: {
+    ca: "NO ES POT ARRENDAR LEGALMENT COM A HABITATGE: per sota del mínim excepcional de 15 m² útils (Decret 141/2012, arts. 4.1-4.2, Catalunya). El càlcul només té valor il·lustratiu.",
+    es: "NO SE PUEDE ALQUILAR LEGALMENTE COMO VIVIENDA: por debajo del mínimo excepcional de 15 m² útiles (Decreto 141/2012, arts. 4.1-4.2, Cataluña). El cálculo solo tiene valor ilustrativo.",
+  },
+  HAB_MENOR_20: {
+    ca: "Per sota del mínim legal de 20 m² útils (Decret 141/2012, art. 4.1). Només és admissible excepcionalment (art. 4.2): llicència d'obres sol·licitada abans de l'1-2-1984 i cèdula d'habitabilitat vigent anterior al Decret.",
+    es: "Por debajo del mínimo legal de 20 m² útiles (Decreto 141/2012, art. 4.1). Solo es admisible excepcionalmente (art. 4.2): licencia de obras solicitada antes del 1-2-1984 y cédula de habitabilidad vigente anterior al Decreto.",
+  },
+  HAB_HABITACIONS_MINIM: {
+    ca: "Cada habitació ha de tenir com a mínim 5 m² útils (Decret 141/2012, art. 5.2): amb aquesta distribució l'habitatge no compliria la normativa.",
+    es: "Cada habitación debe tener como mínimo 5 m² útiles (Decreto 141/2012, art. 5.2): con esa distribución la vivienda no cumpliría la normativa.",
+  },
+  HAB_COMPACTA: {
+    ca: "Habitatge de superfície reduïda: comprova que tingui sala d'estar d'almenys 10 m² (14 m² si integra la cuina), zona d'ús comú de 20 m² i alçada lliure de 2,50 m (Decret 141/2012, arts. 3.5, 3.7.1 i 5.1), amb cèdula d'habitabilitat vigent.",
+    es: "Vivienda de superficie reducida: comprueba que tenga salón de al menos 10 m² (14 m² si integra la cocina), zona de uso común de 20 m² y altura libre de 2,50 m (Decreto 141/2012, arts. 3.5, 3.7.1 y 5.1), con cédula de habitabilidad vigente.",
+  },
+};
+
+const HAB_STYLE: Record<string, { border: string; bg: string; fg: string }> = {
+  ILLEGAL: { border: "#b0431c", bg: "#fbe9e2", fg: "#8f2f10" },
+  EXCEPCIONAL: { border: "#c96f2e", bg: "#fdf3e0", fg: "#7a4a1c" },
+  ADVERTENCIA: { border: "#c9a22e", bg: "#fdf9e0", fg: "#6b5a1a" },
+  INFO: { border: "#e5e1da", bg: "#faf9f7", fg: "#4b5349" },
 };
 
 function pctFactor(f: number): string {
@@ -198,6 +236,12 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                     placeholder="75"
                     className="mt-0.5 w-full rounded-lg border border-[#e5e1da] px-2 py-1.5 text-sm focus:outline-none focus:border-[#e8673c]"
                   />
+                  {Number(surface) > 0 && Number(surface) < 20 && (
+                    <span className="mt-0.5 flex items-start gap-1 text-[9px] font-semibold text-[#b0431c]">
+                      <ShieldAlert className="mt-0.5 h-2.5 w-2.5 shrink-0" />
+                      {ca ? "mínim legal 20 m² (Decret 141/2012)" : "mínimo legal 20 m² (Decreto 141/2012)"}
+                    </span>
+                  )}
                 </label>
                 <label className="block">
                   <span className="text-[10px] font-semibold text-[#6b6f68] uppercase">{ca ? "Habitacions" : "Habitaciones"}</span>
@@ -273,12 +317,37 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                 </div>
               </div>
 
+              {result.warnings?.length > 0 && (
+                <div className="space-y-1.5">
+                  {result.warnings.map((w) => {
+                    const st = HAB_STYLE[w.level] ?? HAB_STYLE.INFO;
+                    return (
+                      <div key={w.key} className="rounded-lg border p-2.5 flex items-start gap-2" style={{ borderColor: st.border, background: st.bg }}>
+                        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" style={{ color: st.fg }} />
+                        <div className="text-[11px] leading-snug" style={{ color: st.fg }}>
+                          <b>{HAB_WARNING[w.key]?.[ca ? "ca" : "es"] ?? w.key}</b>
+                          <span className="ml-1 opacity-75">({w.detail})</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
               <div className="rounded-lg border border-[#e5e1da] bg-white p-3 space-y-1">
                 <div className="text-[10px] font-semibold text-[#6b6f68] uppercase">
                   {ca ? "Com es calcula" : "Cómo se calcula"}
                 </div>
                 <div className="flex justify-between text-xs text-[#4b5349]">
-                  <span>{ca ? "Fiança municipal (vivenda típica)" : "Fianza municipal (vivienda típica)"}</span>
+                  <span>
+                    {result.baseSource === "COMARCA_REF"
+                      ? ca
+                        ? "Referència de comarca (estimació, sense dada municipal)"
+                        : "Referencia de comarca (estimación, sin dato municipal)"
+                      : ca
+                        ? "Fiança municipal (vivenda típica)"
+                        : "Fianza municipal (vivienda típica)"}
+                  </span>
                   <b>{fmt(result.baseCentral)} €</b>
                 </div>
                 {result.adjustments.map((a) => (

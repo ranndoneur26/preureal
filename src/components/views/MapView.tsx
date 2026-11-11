@@ -371,6 +371,8 @@ interface MunLite {
   lng: number;
   rentLatest: number | null;
   rentPeriod: string | null;
+  comarcaRefLatest?: number | null;
+  rentSource?: string | null;
   isTense: boolean;
   tenseList?: string | null;
 }
@@ -409,6 +411,10 @@ interface LookupResult {
     rentPrevYear: number | null; rentPrevPeriod: string | null;
     rentHistory: Record<string, number> | null;
     contractsLatest: number | null;
+    comarcaRefLatest: number | null;
+    comarcaRefPeriod: string | null;
+    comarcaRefHistory: Record<string, number> | null;
+    rentSource: string | null;
     isTense: boolean; tenseList: string | null;
   };
   quota?: { used: number; limit: number };
@@ -556,24 +562,33 @@ export default function MapView() {
     lastBuildingsRef.current = buildings;
     for (const b of buildings) {
       const isNau = b.tipus === "ind";
+      // v39 — municipis sense dada oficial (mostra petita Incasòl): el color ve
+      // de la REFERÈNCIA DE COMARCA, traçat discontinu i més translúcid per
+      // distingir estimació de dada municipal oficial.
+      const isRefComarca = !isNau && !b.avgRentEurMonth && !b.munRent && !!b.munRefRent;
       let color = "#9aa5a0";
       // si l'edifici té dada pròpia importada, el color ve d'aquesta dada real
       if (isNau) color = NAU_FILL;
       else if (b.avgRentEurMonth) color = rentColor(b.avgRentEurMonth);
       else if (b.munRent) color = rentColor(b.munRent);
+      else if (b.munRefRent) color = rentColor(b.munRefRent);
       const poly = L.polygon(b.ring.map((p: number[]) => [p[1], p[0]]), {
         color: isNau ? NAU_BORDER : "#3d4a42",
-        weight: isNau ? 1 : 0.7,
-        dashArray: isNau ? "4 3" : undefined,
+        weight: isNau ? 1 : isRefComarca ? 1 : 0.7,
+        dashArray: isNau ? "4 3" : isRefComarca ? "2 3" : undefined,
         fillColor: color,
-        fillOpacity: isNau ? 0.45 : 0.55,
+        fillOpacity: isNau ? 0.45 : isRefComarca ? 0.3 : 0.55,
       });
-      if (isNau) {
+      if (isNau || isRefComarca) {
         // tooltip breu: és l'única pista sense obrir la fitxa
-        poly.bindTooltip(locale === "ca"
-          ? "Nau industrial · sense estadística de lloguer d'habitatges"
-          : "Nave industrial · sin estadística de alquiler de viviendas",
-          { sticky: true, direction: "top", opacity: 0.9 });
+        const tip = isNau
+          ? (locale === "ca"
+            ? "Nau industrial · sense estadística de lloguer d'habitatges"
+            : "Nave industrial · sin estadística de alquiler de viviendas")
+          : (locale === "ca"
+            ? "≈ Estimació per referència de comarca (municipi sense dada oficial)"
+            : "≈ Estimación por referencia de comarca (municipio sin dato oficial)");
+        poly.bindTooltip(tip, { sticky: true, direction: "top", opacity: 0.9 });
       }
       poly.on("click", (e: any) => {
         L.DomEvent.stopPropagation(e);
@@ -762,6 +777,8 @@ export default function MapView() {
                   lng: m.lng,
                   rentLatest: m.rentLatest,
                   rentPeriod: m.rentPeriod,
+                  comarcaRefLatest: m.comarcaRefLatest,
+                  rentSource: m.rentSource,
                   isTense: m.isTense,
                   tenseList: m.tenseList,
                 });
@@ -1085,6 +1102,10 @@ export default function MapView() {
                     <span className="text-xs text-[#6b6f68] flex items-center gap-1.5">
                       {m.rentLatest ? (
                         <span className="font-bold text-[#0f2e21]">{Math.round(m.rentLatest)} €/mes</span>
+                      ) : m.comarcaRefLatest ? (
+                        <span className="italic text-[#8a6116]" title={locale === "ca" ? "Referència de comarca (estimació)" : "Referencia de comarca (estimación)"}>
+                          ≈{Math.round(m.comarcaRefLatest)} €
+                        </span>
                       ) : (
                         <span>—</span>
                       )}
@@ -1239,6 +1260,14 @@ export default function MapView() {
               style={{ background: NAU_FILL, border: `1px dashed ${NAU_BORDER}` }}
             />
             {t.map.legend.industrial}
+          </div>
+          {/* v39 — referència de comarca (municipis sense dada oficial) */}
+          <div className="mt-1 flex items-center gap-1 text-[#6b6f68]">
+            <span
+              className="w-5 h-3 rounded-sm inline-block shrink-0"
+              style={{ background: "#e5c46a99", border: "1px dashed #3d4a42" }}
+            />
+            {t.map.legend.refComarca}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[#6b6f68]">
             <Flame className="w-3 h-3 text-[#e8673c]" /> {t.map.legend.tense}
@@ -1441,22 +1470,32 @@ function FullPanel({
   //  b) el bloc desapareixia en silenci amb <2 punts → ara amb 1 punt es mostra,
   //     sense sèrie però amb variació interanual es mostren els 2 punts reals
   //     (anterior vs vigent) i sense cap dada s'ho diu clar (mai s'inventa).
+  //  c) v39 — municipis sense sèrie municipal (255): sèrie de REFERÈNCIA DE
+  //     COMARCA (comarcaRefHistory), sempre etiquetada com a estimació.
   const histPts: Array<[string, number]> = mun.rentHistory
     ? Object.entries(mun.rentHistory)
+        .filter(([, v]) => Number.isFinite(Number(v)) && Number(v) > 0)
+        .sort((a, b) => Number(a[0]) - Number(b[0]))
+    : [];
+  const refPts: Array<[string, number]> = !mun.rentHistory && mun.comarcaRefHistory
+    ? Object.entries(mun.comarcaRefHistory)
         .filter(([, v]) => Number.isFinite(Number(v)) && Number(v) > 0)
         .sort((a, b) => Number(a[0]) - Number(b[0]))
     : [];
   const histShow: Array<[string, number]> =
     histPts.length > 0
       ? histPts.slice(-8)
-      : mun.rentPrevYear && mun.rentLatest
-        ? [
-            [mun.rentPrevPeriod || "—", Number(mun.rentPrevYear)],
-            [mun.rentPeriod || "—", Number(mun.rentLatest)],
-          ]
-        : [];
+      : refPts.length > 0
+        ? refPts.slice(-8)
+        : mun.rentPrevYear && mun.rentLatest
+          ? [
+              [mun.rentPrevPeriod || "—", Number(mun.rentPrevYear)],
+              [mun.rentPeriod || "—", Number(mun.rentLatest)],
+            ]
+          : [];
   const maxVal = Math.max(...histShow.map(([, v]) => Number(v)), 1);
   const histPairFallback = histPts.length === 0 && histShow.length > 0;
+  const histRefFallback = histPts.length === 0 && refPts.length > 0;
 
   const trend =
     mun.rentLatest && mun.rentPrevYear
@@ -1518,9 +1557,18 @@ function FullPanel({
         </div>
         <div className="mt-1 flex items-end gap-2">
           <span className="text-4xl font-black text-[#0f2e21]">
-            {mun.rentLatest ? `${mun.rentLatest.toFixed(0)} €` : "—"}
+            {mun.rentLatest
+              ? `${mun.rentLatest.toFixed(0)} €`
+              : mun.comarcaRefLatest
+                ? `≈ ${mun.comarcaRefLatest.toFixed(0)} €`
+                : "—"}
           </span>
           <span className="text-sm text-[#6b6f68] mb-1">{t.map.panel.perMonth}</span>
+          {!mun.rentLatest && mun.comarcaRefLatest ? (
+            <span className="mb-1.5 ml-auto text-[10px] font-bold px-2 py-1 rounded-md bg-[#fdf3e0] text-[#8a6116] italic">
+              {t.map.panel.refComarcaLabel}
+            </span>
+          ) : null}
           {trend !== null && (
             <span className={`mb-1.5 ml-auto text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 ${
               trend > 0 ? "bg-[#fdeae2] text-[#b0431c]" : trend < 0 ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#f0ede8]"
@@ -1530,13 +1578,18 @@ function FullPanel({
             </span>
           )}
         </div>
-        {mun.rentLatest === null && (
+        {mun.rentLatest === null && mun.comarcaRefLatest != null && (
+          <div className="mt-2 text-xs text-[#8a6116] leading-snug">
+            {t.map.panel.refComarcaNote}
+          </div>
+        )}
+        {mun.rentLatest === null && mun.comarcaRefLatest == null && (
           <div className="mt-2 text-xs text-[#b0431c]">
             {locale === "ca" ? "Aquest municipi no té lloguer registrat al període actual (sense dades oficials; no s'inventa cap xifra)." : "Este municipio no tiene alquiler registrado en el período actual (sin datos oficiales; no se inventa ninguna cifra)."}
           </div>
         )}
         <div className="mt-2 text-xs text-[#6b6f68] space-y-0.5">
-          <div>{t.map.panel.period}: <b>{mun.rentPeriod || "—"}</b></div>
+          <div>{t.map.panel.period}: <b>{mun.rentPeriod || mun.comarcaRefPeriod || "—"}</b></div>
           {mun.contractsLatest !== null && (
             <div>{t.map.panel.contracts}: <b>{mun.contractsLatest.toLocaleString(locale === "ca" ? "ca-ES" : "es-ES")}</b></div>
           )}
@@ -1740,11 +1793,11 @@ function FullPanel({
         <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide mb-3">{t.map.panel.history}</div>
         {histShow.length > 0 ? (
           <>
-            <div className="flex items-end gap-1.5 h-24">
+            <div className={`flex items-end gap-1.5 h-24 ${histRefFallback ? "opacity-80" : ""}`}>
               {histShow.map(([year, v]) => (
                 <div key={year} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
                   <div
-                    className="w-full rounded-t bg-[#0f2e21]/85 min-h-[3px]"
+                    className={`w-full rounded-t min-h-[3px] ${histRefFallback ? "bg-[#8a6116]/70" : "bg-[#0f2e21]/85"}`}
                     style={{ height: `${Math.max(3, Math.round((Number(v) / maxVal) * 72))}px` }}
                     title={`${year}: ${Number(v).toFixed(0)} €`}
                   />
@@ -1752,6 +1805,9 @@ function FullPanel({
                 </div>
               ))}
             </div>
+            {histRefFallback && (
+              <div className="text-[10px] text-[#8a6116] mt-1.5">{t.map.panel.historyRefNote}</div>
+            )}
             {histPairFallback && (
               <div className="text-[10px] text-[#6b6f68] mt-1.5">{t.map.panel.historyPairNote}</div>
             )}

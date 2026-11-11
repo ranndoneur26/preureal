@@ -20,7 +20,8 @@ export async function GET(req: Request) {
       select: {
         code: true, name: true, comarca: true, province: true, lat: true, lng: true,
         rentLatest: true, rentPeriod: true, rentPrevYear: true, rentPrevPeriod: true,
-        contractsLatest: true, isTense: true, tenseList: true,
+        contractsLatest: true, comarcaRefLatest: true, comarcaRefPeriod: true,
+        rentSource: true, isTense: true, tenseList: true,
       },
     });
     return NextResponse.json({ municipalities: mun ? [mun] : [] });
@@ -46,6 +47,9 @@ export async function GET(req: Request) {
       rentPrevYear: true,
       rentPrevPeriod: true,
       contractsLatest: true,
+      comarcaRefLatest: true,
+      comarcaRefPeriod: true,
+      rentSource: true,
       isTense: true,
       tenseList: true,
     },

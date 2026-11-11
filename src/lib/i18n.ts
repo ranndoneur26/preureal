@@ -56,7 +56,7 @@ export const STRINGS = {
       zoomHint: "Fes zoom (nivell 16+) per carregar els edificis de la zona",
       loadingBuildings: "Carregant edificis reals...",
       noDataMun: "Aquest municipi encara no té dades oficials de fiances publicades",
-      legend: { low: "Preu baix", high: "Preu alt", tense: "Municipi tensat", industrial: "Nau industrial (sense estadística d'habitatges)" },
+      legend: { low: "Preu baix", high: "Preu alt", tense: "Municipi tensat", industrial: "Nau industrial (sense estadística d'habitatges)", refComarca: "≈ Ref. de comarca (estimació, sense dada municipal)" },
       panel: {
         avgRent: "Preu mitjà real registrat",
         // v33 — fitxa d'una nau industrial: el preu municipal és d'habitatges
@@ -91,6 +91,12 @@ export const STRINGS = {
         source: "Font: fiances Incasòl (habitatge.gencat.cat)",
         historyPairNote: "Sense sèrie publicada: es comparen l'any anterior i el període vigent.",
         historyNoSeries: "Aquest municipi no té sèrie històrica publicada de fiances (Incasòl).",
+        // 255 municipis sense dada oficial: referència de comarca (estimació)
+        refComarcaLabel: "Referència de comarca (estimació)",
+        refComarcaOf: "de",
+        refComarcaNote: "Incasòl no publica la renda mitjana d'aquest municipi (mostra petita). La xifra és la mitjana ponderada pels contractes dels municipis de la comarca: NO és dada municipal oficial.",
+        legendRefComarca: "≈ Ref. de comarca (estimació, sense dada municipal)",
+        historyRefNote: "Sèrie de la COMARCA (estimació ponderada Incasòl): el municipi no té sèrie municipal publicada.",
       },
       // Buscador per referència catastral (2026-11-11)
       rc: {
@@ -272,7 +278,7 @@ export const STRINGS = {
       zoomHint: "Haz zoom (nivel 16+) para cargar los edificios de la zona",
       loadingBuildings: "Cargando edificios reales...",
       noDataMun: "Este municipio aún no tiene datos oficiales de fianzas publicados",
-      legend: { low: "Precio bajo", high: "Precio alto", tense: "Municipio tensionado", industrial: "Nave industrial (sin estadística de viviendas)" },
+      legend: { low: "Precio bajo", high: "Precio alto", tense: "Municipio tensionado", industrial: "Nave industrial (sin estadística de viviendas)", refComarca: "≈ Ref. de comarca (estimación, sin dato municipal)" },
       panel: {
         avgRent: "Precio medio real registrado",
         // v33 — ficha de una nave industrial: el precio municipal es de viviendas
@@ -307,6 +313,12 @@ export const STRINGS = {
         source: "Fuente: fianzas Incasòl (habitatge.gencat.cat)",
         historyPairNote: "Sin serie publicada: se comparan el año anterior y el periodo vigente.",
         historyNoSeries: "Este municipio no tiene serie histórica publicada de fianzas (Incasòl).",
+        // 255 municipios sin dato oficial: referencia de comarca (estimación)
+        refComarcaLabel: "Referencia de comarca (estimación)",
+        refComarcaOf: "de",
+        refComarcaNote: "Incasòl no publica la renta media de este municipio (muestra pequeña). La cifra es la media ponderada por los contratos de los municipios de la comarca: NO es dato municipal oficial.",
+        legendRefComarca: "≈ Ref. de comarca (estimación, sin dato municipal)",
+        historyRefNote: "Serie de la COMARCA (estimación ponderada Incasòl): el municipio no tiene serie municipal publicada.",
       },
       // Buscador por referencia catastral (2026-11-11)
       rc: {

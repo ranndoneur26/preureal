@@ -197,10 +197,15 @@ export interface ValuationData {
   comarcaValues: number[];
   /** Idem per a la província (sense el municipi exclòs: la mediana no hi és sensible). */
   provinciaValues: number[];
+  /** Referència de comarca (mitjana ponderada Incasòl) quan el municipi no
+   *  té fiança municipal publicada (mostra petita). Mai dada municipal. */
+  comarcaRefLatest?: number | null;
+  comarcaRefPeriod?: string | null;
 }
 
 export type ValuationConfidence = "ALTA" | "MITJANA" | "BAIXA";
 export type ValuationBandBasis = "COMARCA" | "PROVINCIA" | "HISTORICA";
+export type ValuationBaseSource = "MUNICIPI" | "COMARCA_REF";
 
 /** Un ajust aplicat sobre la fiança municipal (desglossament visible). */
 export interface ValuationAdjustment {
@@ -209,11 +214,62 @@ export interface ValuationAdjustment {
   detail: string; // descripció curta ("75 m²", "REFORMADA", "3 hab · 25 m²/hab")
 }
 
+/** Avisos d'habitabilitat (Decret 141/2012) que acompanyen el resultat. No
+ *  modifiquen el càlcul: informen de la LEGALITAT de l'habitatge introduït. */
+export interface ValuationWarning {
+  key: "HAB_MENOR_15" | "HAB_MENOR_20" | "HAB_HABITACIONS_MINIM" | "HAB_COMPACTA";
+  level: "ILLEGAL" | "EXCEPCIONAL" | "ADVERTENCIA" | "INFO";
+  detail: string;
+}
+
+// ── Habitabilitat (Decret 141/2012, de 30 d'octubre — DOGC 6254) ───────────
+//  art. 4.1: superfície útil mínima dels habitatges USATS = 20 m²
+//  art. 4.2: excepcionalment 15-20 m² (llicència sol·licitada < 1-2-1984 + cèdula vigent)
+//  art. 5.2: cada habitació ≥ 5 m² útils
+//  art. 5.1 / 3.7.1: sala ≥ 10 m² (14 si integra la cuina); zona d'ús comú ≥ 20 m²
+//  art. 3.5: alçada lliure ≥ 2,50 m (2,20 m a banys, cuines i circulació)
+export const HAB_MIN_M2 = 20; // art. 4.1
+export const HAB_EXCEPCIONAL_MIN_M2 = 15; // art. 4.2
+export const HAB_HABITACIO_MIN_M2 = 5; // art. 5.2
+export const HAB_COMPACTA_THRESHOLD_M2 = 40; // sota: risc elevat d'incomplir sala/cuina mínimes
+
+/** Avisos d'habitabilitat derivats de la superfície i les habitacions
+ *  introduïdes, del més greu al menys. La superfície legal és l'ÚTIL
+ *  (excloent zones < 1,90 m d'alçada); la que introdueix l'usuari sol ser
+ *  construïda → la comprovació és prudent (a favor de l'avís). */
+export function habitabilityWarnings(
+  surface: number | null,
+  rooms: number | null,
+  effM2: number | null
+): ValuationWarning[] {
+  const out: ValuationWarning[] = [];
+  const s = valid(surface) && surface! > 0 ? surface! : null;
+  if (s !== null) {
+    if (s < HAB_EXCEPCIONAL_MIN_M2) {
+      out.push({ key: "HAB_MENOR_15", level: "ILLEGAL", detail: `${Math.round(s)} m² < 15 m²` });
+    } else if (s < HAB_MIN_M2) {
+      out.push({ key: "HAB_MENOR_20", level: "EXCEPCIONAL", detail: `${Math.round(s)} m² (mín. legal 20 m²)` });
+    } else if (s < HAB_COMPACTA_THRESHOLD_M2) {
+      out.push({ key: "HAB_COMPACTA", level: "ADVERTENCIA", detail: `${Math.round(s)} m²` });
+    }
+  }
+  if (rooms !== null && rooms >= 1 && effM2 !== null && effM2 / rooms < HAB_HABITACIO_MIN_M2) {
+    out.push({
+      key: "HAB_HABITACIONS_MINIM",
+      level: "ILLEGAL",
+      detail: `${rooms} hab · ${Math.round(effM2 / rooms)} m²/hab < 5 m²`,
+    });
+  }
+  return out;
+}
+
 export interface ValuationResult {
   central: number; // €/mes FINAL: base ajustada per característiques (si n'hi ha)
-  baseCentral: number; // €/mes: fiança municipal vigent SENSE ajustos (dada oficial)
+  baseCentral: number; // €/mes: base vigent SENSE ajustos (fiança municipal oficial o ref. de comarca)
+  baseSource: ValuationBaseSource; // d'on surt la base (traçabilitat)
   typical: boolean; // true = cap característica → central = vivenda típica
   adjustments: ValuationAdjustment[]; // ajustos aplicats, en ordre d'aplicació
+  warnings: ValuationWarning[]; // habitabilitat (Decret 141/2012), sense efecte al càlcul
   min: number; // €/mes
   max: number; // €/mes
   bandBasis: ValuationBandBasis; // d'on surt l'amplada (traçabilitat)
@@ -289,11 +345,19 @@ export function typM2ForRooms(rooms: number): number {
 }
 
 export function computeValuation(data: ValuationData, input: ValuationInput): ValuationOutcome {
-  if (!valid(data.rentLatest) || data.rentLatest <= 0) {
+  // Base: fiança municipal OFICIAL; si el municipi no la té publicada (mostra
+  // petita Incasòl), REFERÈNCIA DE COMARCA (mitjana ponderada pel nº de
+  // contractes dels municipis oficials de la comarca, mateix any). La base
+  // queda exposada sempre a baseCentral/baseSource per traçabilitat.
+  const baseIsMuni = valid(data.rentLatest) && data.rentLatest > 0;
+  const baseIsRef =
+    !baseIsMuni && valid(data.comarcaRefLatest) && data.comarcaRefLatest! > 0;
+  if (!baseIsMuni && !baseIsRef) {
     return { ok: false, reason: "NO_RENT" };
   }
-  const baseCentral = data.rentLatest;
-  const year = yearOfPeriod(data.rentPeriod);
+  const baseSource: ValuationBaseSource = baseIsMuni ? "MUNICIPI" : "COMARCA_REF";
+  const baseCentral = baseIsMuni ? data.rentLatest! : data.comarcaRefLatest!;
+  const year = yearOfPeriod(data.rentPeriod) ?? yearOfPeriod(data.comarcaRefPeriod ?? null);
 
   // 0) ajustos hedònics sobre la base oficial (ordre: superfície → estat → habitacions)
   const adjustments: ValuationAdjustment[] = [];
@@ -386,6 +450,11 @@ export function computeValuation(data: ValuationData, input: ValuationInput): Va
     if (yearNum === null || yearNum < 2020) confidenceKeys.push("CONF_PERIODE_VELL");
     if (contracts < 30) confidenceKeys.push("CONF_CONTRACTS_POCS");
   }
+  // base de comarca (sense dada municipal): la confiança MAI pot ser ALTA
+  if (baseSource === "COMARCA_REF") {
+    confidence = "BAIXA";
+    confidenceKeys.push("CONF_BASE_COMARCA_REF");
+  }
 
   // 3) notes qualitatives (surface/rooms ja validats a l'apartat 0)
   const notes = {
@@ -394,13 +463,18 @@ export function computeValuation(data: ValuationData, input: ValuationInput): Va
     surface: surface ? "SURFACE_DERIVED" : null,
   };
 
+  // 4) avisos d'habitabilitat (Decret 141/2012) — informatiu, no altera el càlcul
+  const warnings = habitabilityWarnings(surface, rooms, effM2);
+
   return {
     ok: true,
     result: {
       central: round1(central),
       baseCentral: round1(baseCentral),
+      baseSource,
       typical,
       adjustments,
+      warnings,
       min,
       max,
       bandBasis: basis,

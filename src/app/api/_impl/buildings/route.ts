@@ -61,7 +61,7 @@ export async function GET(req: Request) {
     const muns = codes.length
       ? await db.municipality.findMany({
           where: { code: { in: codes } },
-          select: { code: true, rentLatest: true, isTense: true },
+          select: { code: true, rentLatest: true, comarcaRefLatest: true, isTense: true },
         })
       : [];
     const munMap = new Map(muns.map((m) => [m.code, m]));
@@ -91,6 +91,7 @@ export async function GET(req: Request) {
           avgRentEurMonth: b.avgRentEurMonth ?? null,
           sampleSize: b.sampleSize ?? null,
           munRent: m?.rentLatest ?? null,
+          munRefRent: m?.comarcaRefLatest ?? null,
           munTense: m?.isTense ?? null,
           municipalityCode: b.municipalityCode,
           ring: JSON.parse(b.polygonJson),

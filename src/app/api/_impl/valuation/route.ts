@@ -55,7 +55,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "BAD_MUNICIPALITY" }, { status: 400 });
   }
   const surfaceRaw = Number(body.surfaceM2);
-  const surfaceM2 = Number.isFinite(surfaceRaw) && surfaceRaw >= 15 && surfaceRaw <= 500 ? surfaceRaw : null;
+  // des de 5 m²: l'usuari pot introduir habitatges ILLEGALS (p. ex. 10 m²) i
+  // el motor els calcula però adjunta avisos d'habitabilitat (Decret 141/2012).
+  const surfaceM2 = Number.isFinite(surfaceRaw) && surfaceRaw >= 5 && surfaceRaw <= 500 ? surfaceRaw : null;
   const roomsRaw = Number(body.rooms);
   const rooms = Number.isFinite(roomsRaw) && roomsRaw >= 0 && roomsRaw <= 10 ? Math.round(roomsRaw) : null;
   const estatRaw = String(body.estat ?? "");
@@ -88,6 +90,9 @@ export async function POST(req: Request) {
       rentPeriod: true,
       rentHistory: true,
       contractsLatest: true,
+      comarcaRefLatest: true,
+      comarcaRefPeriod: true,
+      rentSource: true,
     },
   });
   if (!mun) return NextResponse.json({ error: "MUNICIPALITY_NOT_FOUND" }, { status: 404 });
@@ -109,8 +114,10 @@ export async function POST(req: Request) {
     history,
     comarcaValues: [],
     provinciaValues: [],
+    comarcaRefLatest: mun.comarcaRefLatest,
+    comarcaRefPeriod: mun.comarcaRefPeriod,
   };
-  const year = yearOfPeriod(mun.rentPeriod);
+  const year = yearOfPeriod(mun.rentPeriod) ?? yearOfPeriod(mun.comarcaRefPeriod);
   if (year) {
     // pools EL MATEIX ANY del període vigent (comparabilitat garantida)
     const [comRows, provRows] = await Promise.all([
@@ -127,7 +134,7 @@ export async function POST(req: Request) {
       {
         error: "NO_DATA",
         message:
-          "Aquest municipi no té fiança municipal vigent publicada per Incasòl: no es pot valorar sense inventar dades.",
+          "Aquest municipi no té fiança municipal vigent publicada per Incasòl ni referència de comarca calculable: no es pot valorar sense inventar dades.",
       },
       { status: 422 },
     );
@@ -142,7 +149,13 @@ export async function POST(req: Request) {
   const quota = limit >= 0 ? { used: used + 1, limit } : { used: 0, limit: -1 };
   return NextResponse.json({
     valuation: outcome.result,
-    municipality: { code: mun.code, name: mun.name, comarca: mun.comarca, province: mun.province },
+    municipality: {
+      code: mun.code,
+      name: mun.name,
+      comarca: mun.comarca,
+      province: mun.province,
+      rentSource: mun.rentSource,
+    },
     planName: planName(plan, "ca"),
     quota,
     generatedAt: new Date().toISOString(),

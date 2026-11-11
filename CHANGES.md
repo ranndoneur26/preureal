@@ -2,6 +2,55 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Els 255 municipis sense dada + avisos d'habitabilitat (Decret 141/2012) — 2026-11-11
+
+**1) Diagnòstic real dels 255 municipis sense dada** (excels oficials Incasòl
+«Lloguers per àmbits geogràfics», descarregats avui de habitatge.gencat.cat):
+- **Palamós (1)**: el cruïlla per nom havia fallat → **recuperat amb la sèrie
+  oficial completa** (19 anys, 2007-2025; vigent 722,6 €/mes el 2025).
+- **252 municipis**: tenen 1-5 contractes de fiances registrats però Incasòl NO
+  publica la renda mitjana (mostra massa petita) → **no existeix dada oficial
+  municipal que importar**.
+- **Oliola i Arres (2)**: cap contracte en 2005-2025.
+
+**2) Referència de comarca (mai dada municipal inventada)** — nous camps
+`comarcaRefLatest/Period/History` + `rentSource` a Municipality (migració
+`20261111120000_comarca_ref`, estrictament aditiva i idempotent): mitjana
+PONDERADA pel nº de contractes dels municipis oficials de la mateixa comarca
+EL MATEIX ANY (mín. 3 municipis; sèrie 2005-2025). Els camps oficials
+(`rentLatest/rentHistory`) resten intactes i buits per a aquests 254.
+Exposició: `/api/municipalities`, `/api/municipalities/[code]`, `/api/lookup`,
+`/api/comparator`, `/api/buildings` (munRefRent) i `/api/valuation` (base).
+UI: cercador («≈612 €»), llegenda del mapa («≈ Ref. de comarca»), edificis
+traçats discontinus amb tooltip, fitxa (xifra «≈», etiqueta i nota metòdica),
+gràfica «Històric» amb la sèrie de la comarca (barres ocre + nota) i
+comparador (barra jaspiada + xip «ref. comarca»). Resultat: cap municipi
+dels 947 queda «sense cap dada».
+
+**3) Valoració amb base de comarca** — si el municipi no té fiança oficial,
+`computeValuation` usa la referència de comarca amb `baseSource="COMARCA_REF"`
+(confiança MAI superior a BAIXA, clau `CONF_BASE_COMARCA_REF`; la base queda
+exposada intacta a `baseCentral`). Els 254 ja no donen «NO_DATA» a
+`/api/valuation` (si la comarca té pool, valoren; si no, segueix el 422).
+
+**4) Criteris d'habitabilitat a la valoració (Decret 141/2012, de 30
+d'octubre, DOGC 6254)** — fins ara una superfície < 15 m² es silenciava a
+`null` (10 m² «calculaven» com si no s'haguessin introduït). Ara:
+- La validació accepta des de 5 m² per poder AVISAR (mai per cobrir el mínim legal).
+- Nou camp `warnings[]` al resultat (`habitabilityWarnings` a territorial.ts),
+  informatiu i sense efecte sobre el càlcul:
+  - `HAB_MENOR_15` (ILLEGAL): < 15 m² → cap habitatge legal ni excepcional.
+  - `HAB_MENOR_20` (EXCEPCIONAL): 15-20 m² → només art. 4.2 (llicència
+    sol·licitada abans de 1-2-1984 + cèdula vigent anterior al Decret).
+  - `HAB_COMPACTA` (ADVERTENCIA): 20-40 m² → sala ≥ 10 m² (14 amb cuina
+    integrada, art. 5.1), zona d'ús comú ≥ 20 m² (art. 3.7.1), alçada 2,50 m
+    (art. 3.5), cèdula vigent.
+  - `HAB_HABITACIONS_MINIM` (ILLEGAL): habitacions < 5 m² útils (art. 5.2).
+- ValuationPanel: pista en viu sota l'input («mínim legal 20 m²») i banners
+  per nivell (vermell/taronja/ambre) amb l'article citat; «Com es calcula»
+  distingeix «Fiança municipal» de «Referència de comarca».
+- Proves: 27 (19 de v2 + 8 noves d'habitabilitat i base de comarca), totes verdes.
+
 ## Buscador per referència catastral al mapa + «Històric del municipi» arreglat — 2026-11-11
 
 **1) Buscador per referència catastral sobre el mapa** — sota el cercador del mapa,

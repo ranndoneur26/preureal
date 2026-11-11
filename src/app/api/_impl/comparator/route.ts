@@ -47,7 +47,7 @@ export async function POST(req: Request) {
   const muns = munCodes.length
     ? await db.municipality.findMany({
         where: { code: { in: munCodes } },
-        select: { code: true, name: true, comarca: true, province: true, rentLatest: true, rentPeriod: true, rentPrevYear: true, rentHistory: true, contractsLatest: true, isTense: true, tenseList: true },
+        select: { code: true, name: true, comarca: true, province: true, rentLatest: true, rentPeriod: true, rentPrevYear: true, rentHistory: true, contractsLatest: true, comarcaRefLatest: true, comarcaRefPeriod: true, rentSource: true, isTense: true, tenseList: true },
       })
     : [];
   const buildings = buildingIds.length
@@ -73,6 +73,9 @@ export async function POST(req: Request) {
       rentPrevYear: m.rentPrevYear,
       rentHistory: hist,
       contractsLatest: m.contractsLatest,
+      comarcaRefLatest: m.comarcaRefLatest,
+      comarcaRefPeriod: m.comarcaRefPeriod,
+      rentSource: m.rentSource,
       isTense: m.isTense,
       tenseList: m.tenseList,
       median: median != null ? +median.toFixed(2) : null,

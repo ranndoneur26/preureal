@@ -55,4 +55,5 @@ Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 - [ ] Revisar dependencias sin uso aparente (`@mdxeditor/editor`, `react-syntax-highlighter`, `@dnd-kit/*`, `next-intl`, `zustand`…) antes de quitar nada.
 - [ ] SEO: sitemap sin `#/` o rutas reales (implica cambiar el routing: requiere decisión).
 - [ ] Tests mínimos: auth, cuotas (`canConsult`), webhook Stripe, rate limit.
-- [ ] Importación de datos por edificio/illa (convenio Incasòl) y datos por municipio sin alquiler (255 sin dato).
+- [ ] Importación de datos por edificio/illa (convenio Incasòl).
+- [x] 255 municipis sense dada (2026-11-11): Palamós recuperat amb la sèrie oficial Incasòl (cruïlla de nom) i 254 municipis amb REFERÈNCIA DE COMARCA (mitjana ponderada pel nº de contractes, mateix any, mín. 3 munis) exposada separada (`comarcaRefLatest/History`, `rentSource="COMARCA_REF"`) i sempre etiquetada com a estimació a la UI (mapa, fitxa, històric, comparador i valoració). Cap dada municipal inventada.
