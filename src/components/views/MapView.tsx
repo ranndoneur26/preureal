@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
-import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock, Factory, Calculator } from "lucide-react";
+import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock, Factory, Calculator, Hash } from "lucide-react";
 import LineChart, { type LineSeries } from "@/components/charts/LineChart";
 import BarChart, { type BarRow } from "@/components/charts/BarChart";
 import ValuationPanel from "@/components/views/ValuationPanel";
@@ -387,6 +387,19 @@ interface AddressResult {
   street: string | null;
 }
 
+/** Resultat del buscador per referència catastral (GET /api/lookup-refcat v2). */
+interface RcResult {
+  id: string | null;
+  refcat: string;
+  nom: string | null;
+  lat: number;
+  lng: number;
+  municipalityCode: string | null;
+  ring: number[][] | null;
+  details: { address: string | null; postalCode: string | null; uso: string | null; surfaceM2: number | null; yearBuilt: number | null } | null;
+  source: string;
+}
+
 interface LookupResult {
   kind: "full" | "teaser";
   building?: { id?: string; refcat?: string | null; yearBuilt?: { year: number; source: string } | null; tipus?: string | null; altura?: number | null; nom?: string | null; avgRentEurMonth?: number | null; sampleSize?: number | null };
@@ -444,6 +457,12 @@ export default function MapView() {
   const [results, setResults] = useState<MunLite[]>([]);
   const [addresses, setAddresses] = useState<AddressResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  // Buscador per referència catastral (2026-11-11)
+  const parcelRef = useRef<any>(null); // ressaltat de la parcel·la trobada
+  const [rcInput, setRcInput] = useState("");
+  const [rcBusy, setRcBusy] = useState(false);
+  const [rcResult, setRcResult] = useState<RcResult | null>(null);
+  const [rcError, setRcError] = useState<string | null>(null);
   const [zoomHint, setZoomHint] = useState(false);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [buildingsError, setBuildingsError] = useState<string | null>(null);
@@ -470,19 +489,10 @@ export default function MapView() {
   // de verificació («Ja l'he verificat: comprova-ho») sense haver de reclicar
   const lastClickRef = useRef<{ b: any; lat: number; lng: number; poly: any } | null>(null);
 
-  const onSelectBuilding = useCallback(async (b: any, lat: number, lng: number, poly: any) => {
-    const L = LRef.current;
-    const map = mapRef.current;
-    if (L && map) {
-      if (selectedRef.current) {
-        selectedRef.current.setStyle({ color: "#3d4a42", weight: 0.7, fillOpacity: 0.55 });
-      }
-      poly.setStyle({ color: "#e8673c", weight: 3, fillOpacity: 0.8 });
-      selectedRef.current = poly;
-    }
+  /** Consulta /api/lookup (compartida per clic d'edifici i buscador de RC). */
+  const runLookup = useCallback(async (b: any | null, lat: number, lng: number) => {
     // invalida respuestas de consultas anteriores (evita carreras fuera de orden)
     const seq = ++lookupSeqRef.current;
-    lastClickRef.current = { b, lat, lng, poly };
     setClickedNau(b?.tipus === "ind"); // v33 — recorda si s'ha clicat una nau
     setPanelState("loading");
     setLookup(null);
@@ -493,7 +503,7 @@ export default function MapView() {
       const res = await fetch("/api/lookup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lat, lng, buildingId: b.id }),
+        body: JSON.stringify({ lat, lng, ...(b?.id ? { buildingId: b.id } : {}) }),
       });
       if (seq !== lookupSeqRef.current) return; // resposta obsoleta
       if (res.status === 402) {
@@ -521,6 +531,21 @@ export default function MapView() {
       if (seq === lookupSeqRef.current) setPanelState("closed");
     }
   }, []);
+
+  const onSelectBuilding = useCallback(async (b: any, lat: number, lng: number, poly: any) => {
+    const L = LRef.current;
+    const map = mapRef.current;
+    if (L && map && poly?.setStyle) {
+      if (selectedRef.current) {
+        selectedRef.current.setStyle({ color: "#3d4a42", weight: 0.7, fillOpacity: 0.55 });
+      }
+      poly.setStyle({ color: "#e8673c", weight: 3, fillOpacity: 0.8 });
+      selectedRef.current = poly;
+    }
+    // recorda l'últim clic per al bloqueig de verificació («comprova-ho»)
+    lastClickRef.current = { b, lat, lng, poly };
+    await runLookup(b, lat, lng);
+  }, [runLookup]);
 
   const drawBuildings = useCallback((buildings: any[]) => {
     const L = LRef.current;
@@ -621,6 +646,7 @@ export default function MapView() {
   const selectMunicipality = useCallback(async (mun: MunLite) => {
     setShowResults(false);
     setQuery(mun.name);
+    parcelRef.current?.clearLayers?.(); // nova cerca: neteja el ressaltat de parcel·la
     const map = mapRef.current;
     if (!map) return;
     // límit municipal real (ICGC amb cau) + fit
@@ -684,6 +710,7 @@ export default function MapView() {
       }).addTo(map);
       layerRef.current = L.layerGroup().addTo(map);
       boundaryRef.current = L.layerGroup().addTo(map);
+      parcelRef.current = L.layerGroup().addTo(map); // ressaltat parcel·la RC
 
       const onMove = () => loadBuildingsInView();
       map.on("moveend", onMove);
@@ -817,9 +844,69 @@ export default function MapView() {
     setShowResults(false);
     setQuery(a.label);
     boundaryRef.current?.clearLayers();
+    parcelRef.current?.clearLayers?.(); // nova cerca: neteja el ressaltat de parcel·la
     map.flyTo([a.lat, a.lng], 18, { duration: 0.8 });
     setTimeout(() => loadBuildingsInView(), 900);
   }, [loadBuildingsInView]);
+
+  // ---- Buscador per referència catastral (2026-11-11) ----
+  const clearParcel = useCallback(() => {
+    parcelRef.current?.clearLayers?.();
+    setRcResult(null);
+  }, []);
+
+  /** Cerca una RC: localitza (ICGC/BD), ressalta la parcel·la i obre la fitxa. */
+  const searchRefcat = useCallback(async () => {
+    const rc = rcInput.replace(/\s+/g, "").toUpperCase();
+    if (!looksLikeRefcat(rc)) {
+      setRcError(t.map.rc.badFormat);
+      return;
+    }
+    setRcBusy(true);
+    setRcError(null);
+    try {
+      const res = await fetch(`/api/lookup-refcat?rc=${encodeURIComponent(rc)}`);
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.result) {
+        setRcResult(null);
+        setRcError(t.map.rc.notFound);
+        return;
+      }
+      const r = d.result as RcResult;
+      setRcResult(r);
+      const L = LRef.current;
+      const map = mapRef.current;
+      if (L && map) {
+        parcelRef.current?.clearLayers?.();
+        if (Array.isArray(r.ring) && r.ring.length >= 3) {
+          L.polygon(r.ring.map((p: number[]) => [p[1], p[0]]), {
+            color: "#e8673c",
+            weight: 3,
+            dashArray: "6 4",
+            fillOpacity: 0.12,
+          }).addTo(parcelRef.current);
+        }
+        map.flyTo([r.lat, r.lng], 18, { duration: 0.8 });
+        setTimeout(() => loadBuildingsInView(), 900);
+        // si la parcel·la coincideix amb un edifici conegut del mapa → fitxa
+        // completa d'edifici; si no → fitxa del municipi al punt de la parcel·la
+        const bm = lastBuildingsRef.current.find(
+          (x: any) => x.refcat && String(x.refcat).startsWith(rc.slice(0, 14))
+        );
+        const poly = bm?.id ? polyByIdRef.current[bm.id] : null;
+        if (bm && poly) {
+          setTimeout(() => onSelectBuilding(bm, r.lat, r.lng, poly), 950);
+        } else {
+          lastClickRef.current = { b: null, lat: r.lat, lng: r.lng, poly: null };
+          setTimeout(() => runLookup(null, r.lat, r.lng), 950);
+        }
+      }
+    } catch {
+      setRcError(locale === "ca" ? "Error de xarxa. Torna-ho a provar." : "Error de red. Inténtalo de nuevo.");
+    } finally {
+      setRcBusy(false);
+    }
+  }, [rcInput, t, locale, loadBuildingsInView, onSelectBuilding, runLookup]);
 
   const doCheckout = async (plan: "PREMIUM" | "PRO") => {
     try {
@@ -960,9 +1047,9 @@ export default function MapView() {
       <div className="relative flex-1 min-h-[55vh] md:h-full md:min-h-[520px] md:flex-none md:basis-auto md:grow">
         <div ref={mapDivRef} className="absolute inset-0 z-0" />
 
-        {/* Cercador */}
+        {/* Cercador + buscador per referència catastral */}
         <div className="absolute top-3 left-3 right-3 z-[500] max-w-md">
-          <div className="relative">
+          <div className="relative z-10">
             <div className="bg-white rounded-xl shadow-lg border border-[#e5e1da] flex items-center px-3">
               <Search className="w-4 h-4 text-[#6b6f68] shrink-0" />
               <input
@@ -1035,14 +1122,80 @@ export default function MapView() {
               </div>
             )}
           </div>
-        </div>
 
-        {demoNotice && (
-          <div className="absolute top-16 left-3 right-3 z-[500] max-w-md bg-[#0f2e21] text-white text-xs rounded-xl p-3 shadow-lg flex justify-between gap-2">
-            <span>{demoNotice}</span>
-            <button onClick={() => setDemoNotice(null)}><X className="w-3.5 h-3.5" /></button>
+          {/* Buscador per referència catastral (2026-11-11): encima del mapa,
+              sota el cercador. Localitza qualsevol parcel·la de Catalunya
+              (ICGC) i en mostra els detalls públics del Cadastre. */}
+          <div className="relative z-0 mt-2">
+            <div className="bg-white rounded-xl shadow-lg border border-[#e5e1da] flex items-center px-3 gap-1.5">
+              <Hash className="w-4 h-4 text-[#6b6f68] shrink-0" />
+              <input
+                value={rcInput}
+                onChange={(e) => {
+                  setRcInput(e.target.value.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 20));
+                  setRcError(null);
+                }}
+                onKeyDown={(e) => { if (e.key === "Enter" && rcInput.trim().length >= 14 && !rcBusy) searchRefcat(); }}
+                placeholder={t.map.rc.placeholder}
+                className="w-full px-1 py-2.5 text-sm font-mono uppercase tracking-wide outline-none bg-transparent"
+                aria-label={t.map.rc.placeholder}
+              />
+              <button
+                onClick={searchRefcat}
+                disabled={rcBusy || rcInput.trim().length < 14}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-[#0f2e21] text-white text-xs font-bold hover:bg-[#16402e] disabled:opacity-40"
+              >
+                {rcBusy ? (
+                  <span className="block w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                ) : (
+                  t.map.rc.button
+                )}
+              </button>
+            </div>
+            {rcError && (
+              <div className="mt-1 rounded-lg px-3 py-2 text-xs shadow border bg-[#fdeae2] border-[#f2c4ac] text-[#b0431c]">
+                {rcError}
+              </div>
+            )}
+            {rcResult && (
+              <div className="mt-1 bg-white rounded-xl shadow-xl border border-[#e5e1da] overflow-hidden">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#faf9f7] border-b border-[#e5e1da]">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#0f2e21] flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-[#e8673c]" />
+                    {t.map.rc.found}
+                  </div>
+                  <button onClick={clearParcel} aria-label={t.map.rc.clear}>
+                    <X className="w-3.5 h-3.5 text-[#6b6f68]" />
+                  </button>
+                </div>
+                <div className="px-3 py-2">
+                  <div className="font-mono text-xs font-bold text-[#0f2e21]">{rcResult.refcat}</div>
+                  {rcResult.details?.address && (
+                    <div className="text-xs mt-1 text-[#0f2e21]">{rcResult.details.address}</div>
+                  )}
+                  <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                    <span className="text-[#6b6f68]">{t.map.rc.surface}</span>
+                    <b>{rcResult.details?.surfaceM2 ? `${rcResult.details.surfaceM2} m²` : "—"}</b>
+                    <span className="text-[#6b6f68]">{t.map.rc.year}</span>
+                    <b>{rcResult.details?.yearBuilt ?? "—"}</b>
+                    <span className="text-[#6b6f68]">{t.map.rc.uso}</span>
+                    <b>{rcResult.details?.uso || "—"}</b>
+                    <span className="text-[#6b6f68]">{t.map.rc.postal}</span>
+                    <b>{rcResult.details?.postalCode || "—"}</b>
+                  </div>
+                  <div className="text-[10px] text-[#6b6f68] mt-2">{t.map.rc.fonts}</div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+
+          {demoNotice && (
+            <div className="mt-2 bg-[#0f2e21] text-white text-xs rounded-xl p-3 shadow-lg flex justify-between gap-2">
+              <span>{demoNotice}</span>
+              <button onClick={() => setDemoNotice(null)}><X className="w-3.5 h-3.5" /></button>
+            </div>
+          )}
+        </div>
 
         {/* Estats */}
         <div className="absolute bottom-3 left-3 z-[500] flex flex-col gap-2 max-w-[85%]">
@@ -1282,9 +1435,28 @@ function FullPanel({
   const [reportSent, setReportSent] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
 
-  const hist = mun.rentHistory ? Object.entries(mun.rentHistory).sort() : [];
-  const histShow = hist.slice(-8);
+  // Fix 2026-11-11 — «Històric del municipi» sempre visible:
+  //  a) les barres col·lapsaven (height en % dins d'una columna d'alçada
+  //     automàtica no es resol: totes quedaven a min-h 3px) → ara alçada en px.
+  //  b) el bloc desapareixia en silenci amb <2 punts → ara amb 1 punt es mostra,
+  //     sense sèrie però amb variació interanual es mostren els 2 punts reals
+  //     (anterior vs vigent) i sense cap dada s'ho diu clar (mai s'inventa).
+  const histPts: Array<[string, number]> = mun.rentHistory
+    ? Object.entries(mun.rentHistory)
+        .filter(([, v]) => Number.isFinite(Number(v)) && Number(v) > 0)
+        .sort((a, b) => Number(a[0]) - Number(b[0]))
+    : [];
+  const histShow: Array<[string, number]> =
+    histPts.length > 0
+      ? histPts.slice(-8)
+      : mun.rentPrevYear && mun.rentLatest
+        ? [
+            [mun.rentPrevPeriod || "—", Number(mun.rentPrevYear)],
+            [mun.rentPeriod || "—", Number(mun.rentLatest)],
+          ]
+        : [];
   const maxVal = Math.max(...histShow.map(([, v]) => Number(v)), 1);
+  const histPairFallback = histPts.length === 0 && histShow.length > 0;
 
   const trend =
     mun.rentLatest && mun.rentPrevYear
@@ -1563,25 +1735,32 @@ function FullPanel({
         )}
       </div>
 
-      {/* HISTÒRIC */}
-      {histShow.length > 1 && (
-        <div className="rounded-xl border border-[#e5e1da] p-4">
-          <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide mb-3">{t.map.panel.history}</div>
-          <div className="flex items-end gap-1.5 h-24">
-            {histShow.map(([year, v]) => (
-              <div key={year} className="flex-1 flex flex-col items-center gap-1">
-                <div
-                  className="w-full rounded-t bg-[#0f2e21]/85 min-h-[3px]"
-                  style={{ height: `${(Number(v) / maxVal) * 100}%` }}
-                  title={`${year}: ${v} €`}
-                />
-                <span className="text-[9px] text-[#6b6f68]">{year.slice(2)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="text-[10px] text-[#6b6f68] mt-2">{t.map.panel.source}</div>
-        </div>
-      )}
+      {/* HISTÒRIC — bloc sempre visible (barres reals o missatge clar) */}
+      <div className="rounded-xl border border-[#e5e1da] p-4">
+        <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide mb-3">{t.map.panel.history}</div>
+        {histShow.length > 0 ? (
+          <>
+            <div className="flex items-end gap-1.5 h-24">
+              {histShow.map(([year, v]) => (
+                <div key={year} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
+                  <div
+                    className="w-full rounded-t bg-[#0f2e21]/85 min-h-[3px]"
+                    style={{ height: `${Math.max(3, Math.round((Number(v) / maxVal) * 72))}px` }}
+                    title={`${year}: ${Number(v).toFixed(0)} €`}
+                  />
+                  <span className="text-[9px] text-[#6b6f68] whitespace-nowrap">{year.slice(-2)}</span>
+                </div>
+              ))}
+            </div>
+            {histPairFallback && (
+              <div className="text-[10px] text-[#6b6f68] mt-1.5">{t.map.panel.historyPairNote}</div>
+            )}
+            <div className="text-[10px] text-[#6b6f68] mt-2">{t.map.panel.source}</div>
+          </>
+        ) : (
+          <div className="text-xs text-[#6b6f68] py-4 text-center">{t.map.panel.historyNoSeries}</div>
+        )}
+      </div>
 
       {/* QUOTA + UPGRADE */}
       {auth.user?.plan === "FREE" && quota && (

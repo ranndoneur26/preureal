@@ -55,6 +55,11 @@ export function catastroConfigured(): boolean {
   return true;
 }
 
+/** Província catastral (en nom, per a DNPRC) a partir del codi municipal Gencat. */
+export function provinciaForCode(municipalityCode: string): string | null {
+  return PROVINCIES[municipalityCode.slice(0, 2)] || null;
+}
+
 async function fetchWithTimeout(url: string, timeoutMs: number) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -146,4 +151,76 @@ export async function getYearBuilt(
     // degradació: sense dades
   }
   return null;
+}
+
+/** Detalls cadastrals públics d'una parcel·la (buscador per RC, 2026-11-11). */
+export interface ParcelCadastreDetails {
+  yearBuilt: number | null;
+  surfaceM2: number | null;
+  uso: string | null;
+  address: string | null;
+  postalCode: string | null;
+}
+
+/**
+ * Detalls DNPRC complets per al buscador de referència catastral (2026-11-11).
+ * Del mateix XML ja usat per l'any de construcció també surten:
+ *  - <ldt>  : adreça completa ("CL SANTS 10 08014 BARCELONA (BARCELONA)")
+ *  - <dp>   : codi postal
+ *  - <debi><luso> : ús principal (Residencial...)
+ *  - <debi><sfc>  : superfície total de la construcció principal (m²)
+ *  - <debi><ant>  : any de construcció
+ * Requereix Provincia + Municipio en nom (el caller els obté del municipi ICGC).
+ * Degradació elegant: qualsevol camp absent → null; error de servei → null.
+ */
+export async function fetchParcelDetailsByRefcat(
+  refcat: string,
+  ctx: { provincia: string; municipio: string }
+): Promise<ParcelCadastreDetails | null> {
+  let rc = refcat.replace(/\s+/g, "").toUpperCase();
+  if (!/^[0-9A-Z]{14,20}$/.test(rc)) return null;
+  if (rc.length > 14) rc = rc.slice(0, 14);
+
+  const url = `${CATASTRO_DNPRC}?${new URLSearchParams({
+    Provincia: normalitzaNom(ctx.provincia),
+    Municipio: normalitzaNom(ctx.municipio),
+    RC: rc,
+  })}`;
+  try {
+    const xml = await fetchWithTimeout(url, 6000);
+    if (!xml || xml.includes("<title>####")) return null;
+    if (!xml.includes("<consulta_dnp")) return null;
+
+    // el bloc <debi> del PRIMER bé (la construcció principal de la parcel·la)
+    const debi = xml.match(/<debi>[\s\S]*?<\/debi>/i)?.[0] || "";
+
+    const yearMatch = debi.match(/<ant>(\d{4})<\/ant>/i);
+    const year = yearMatch
+      ? parseInt(yearMatch[1], 10)
+      : parseInt(
+          [...xml.matchAll(/<(?:data:)?antiguedad>(\d{4})<\/(?:data:)?antiguedad>/gi)].map((m) => m[1])[0] || "",
+          10
+        );
+    const supMatch = debi.match(/<sfc>([\d.,]+)<\/sfc>/i);
+    let surfaceM2: number | null = null;
+    if (supMatch) {
+      const n = Number(supMatch[1].replace(/\./g, "").replace(",", "."));
+      if (isFinite(n) && n > 0) surfaceM2 = Math.round(n);
+    }
+    const uso = debi.match(/<luso>([^<]+)<\/luso>/i)?.[1]?.trim() || null;
+    // parcel·les sense edificació (solars): el servei literalment retorna "null"
+    const rawAddr = xml.match(/<ldt>([^<]+)<\/ldt>/i)?.[1]?.trim() || null;
+    const address = rawAddr && rawAddr.toLowerCase() !== "null" ? rawAddr : null;
+    const postal = xml.match(/<dp>(\d{5})<\/dp>/i)?.[1] || null;
+
+    return {
+      yearBuilt: year && year > 1500 && year <= new Date().getFullYear() ? year : null,
+      surfaceM2,
+      uso,
+      address,
+      postalCode: postal,
+    };
+  } catch {
+    return null; // degradació elegant
+  }
 }

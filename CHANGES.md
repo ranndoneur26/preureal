@@ -2,6 +2,42 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Buscador per referència catastral al mapa + «Històric del municipi» arreglat — 2026-11-11
+
+**1) Buscador per referència catastral sobre el mapa** — sota el cercador del mapa,
+qualsevol visitant pot enganxar la RC (14 o 20 caràcters; surt al rebut de l'IBI i
+al contracte de lloguer) i localitzar la parcel·la a qualsevol municipi de Catalunya:
+- `/api/lookup-refcat` v2: (1) ruta ràpida per la BD d'edificis coneguts; (2)
+  qualsevol parcel·la via ICGC `parcelles-cadastre` amb filtre OGC API
+  `filter=refcadp='<RC14>'` (2,66 M de parcel·les, dades obertes CC-BY) →
+  centroid → municipi (ICGC elements) → detalls cadastrals públics del Cadastre
+  (DNPRC): adreça completa, codi postal, ús principal, superfície (m²) i any de
+  construcció. Verificat en calent amb RC reals de Barcelona, Girona i Tarragona.
+- `src/lib/icgc.ts`: nova `fetchParcelByRefcat` (polígon + centroid, degradació
+  elegant). `src/lib/catastro.ts`: nova `fetchParcelDetailsByRefcat` (parseja
+  `<ldt>`, `<dp>`, `<debi><luso|sfc|ant>`; tracta el «null» literal que el servei
+  retorna per a solars) i `provinciaForCode`.
+- `MapView.tsx`: input dedicat amb botó i Enter, ressaltat de la parcel·la
+  trobada (polígon taronja discontinu), vol a z18 i obertura automàtica de la
+  fitxa (d'edifici si coincideix amb un conegut, del municipi si no); targeta
+  amb els detalls cadastrals i les fonts citades. El cercador general també
+  resol ara qualsevol RC (abans només edificis importats).
+- Degradació en tota la cadena: si ICGC o Cadastre fallen, la resta continua;
+  sense dades → «—», mai s'inventa res.
+
+**2) «Històric del municipi» — gràfica arreglada (mai més buida)** — dues causes:
+- a) CSS: les barres feien `height:%` dins d'una columna d'alçada automàtica →
+  el percentatge no es resolia i totes quedaven a 3 px (per això semblava buida
+  encara que la sèrie fos a la BD). Ara l'alçada és proporcional en px.
+- b) El bloc desapareixia en silenci amb <2 punts. Ara sempre és visible: amb
+  1 punt es mostra; sense sèrie però amb variació interanual es mostren 2 barres
+  reals (any anterior vs període vigent); sense cap dada → missatge clar de
+  «sense sèrie publicada» (mai s'inventa). La sèrie 2005–2025 (692 municipis)
+  ja és a la BD de producció: ara es veu.
+- i18n ca/es (`map.rc.*`, `map.panel.historyPairNote`, `historyNoSeries`).
+- Lint 100 % net: `scripts/**` (tooling de dev, no codi de l'app) fora de
+  l'escaneig ESLint; així desapareixen els 7 errors preexistents de `require()`.
+
 ## Fase 4: catàleg d'ajudes ampliat (4→9, verificades) + lint React 19 net — 2026-11-11
 
 **1) Ajudes al lloguer (Fase 4)** — catàleg editorial ampliat de 4 a 9 entrades,

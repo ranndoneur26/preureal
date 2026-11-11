@@ -127,6 +127,47 @@ export async function fetchParcelAt(lat: number, lng: number): Promise<string | 
   }
 }
 
+/**
+ * Buscador per referència catastral (2026-11-11): localitza QUALSEVOL parcel·la
+ * de Catalunya a partir de la seva RC, sense necessitar municipi ni província.
+ * La capa OGC `parcelles-cadastre` admet el filtre OGC API - Features Part 3:
+ *   ?filter=refcadp='<RC de parcel·la (14)>'
+ * Retorna el polígon i el centroid. Degradació elegant: si la capa no respon o
+ * la RC no existeix → null (mai trenca la resposta de la API, mai s'inventa).
+ */
+export async function fetchParcelByRefcat(refcat: string): Promise<{
+  refcat: string;
+  ring: number[][];
+  centroidLat: number;
+  centroidLng: number;
+} | null> {
+  const rc = refcat.replace(/\s+/g, "").toUpperCase().slice(0, 14);
+  if (!/^[0-9A-Z]{14}$/.test(rc)) return null;
+  try {
+    const d = await icgcGet(
+      `/collections/parcelles-cadastre/items?limit=1&filter=${encodeURIComponent(`refcadp='${rc}'`)}`,
+      12000
+    );
+    const f = d?.features?.[0];
+    const geom = f?.geometry;
+    let ring: number[][] | null = null;
+    if (geom?.type === "Polygon") ring = geom.coordinates[0];
+    else if (geom?.type === "MultiPolygon") ring = geom.coordinates?.[0]?.[0];
+    if (!ring || ring.length < 3) return null;
+    let cx = 0, cy = 0;
+    for (const [x, y] of ring) { cx += x; cy += y; }
+    cx /= ring.length; cy /= ring.length;
+    return {
+      refcat: String(f.properties?.refcadp || rc),
+      ring,
+      centroidLat: cy,
+      centroidLng: cx,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Límit municipal (GeoJSON simplificat) + CODIMUNI pel punt donat. */
 export async function fetchMunicipalityBoundary(
   lat: number,
