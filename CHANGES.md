@@ -2,6 +2,41 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Fix: la valoració orientativa respon a les característiques (motor v2) — 2026-11-11
+
+**Problema reportat pel propietari:** la valoració orientativa donava SEMPRE el
+mateix preu, independentment dels m², el nombre d'habitacions o l'estat de
+l'immoble.
+
+**Causa:** el motor v1 feia `central = fiança municipal` exacta i les
+característiques només generaven notes qualitatives (decisió conservadora de la
+v1: "cap coeficient inventat"). Correcte estadísticament, però inútil per a
+l'usuari que vol veure COM canvien els números.
+
+**Solució (v2 — coeficients aproximats, documentats i VISIBLES):**
+- `src/lib/territorial.ts`: constants exportades amb fonts als comentaris —
+  `VAL_REF_M2 = 85` (superfície de la vivenda típica darrere de la mediana de
+  fiances; l'oferta de lloguer es concentra entre 60-100 m², Observatori del
+  Lloguer; parc total 106,5 m², INE 2023), `VAL_BETA_SUPERFICIE = 0,8` (escala
+  sublineal renta-superfície: el €/m² cau amb la mida; estudis hedònics UB
+  Barcelona i DIW Berlín), `VAL_ESTAT_MULT` (a reformar 0,80 · bon estat 1,00 ·
+  reformada 1,06 · obra nova 1,12; ancoratge Fotocasa 2021: reformar porta la
+  renta de ~1.000 a ~1.300 €/mes, +30%), ajust de densitat m²/hab limitat ±5%.
+  Nou resultat (additiu, sense trencar res): `baseCentral` (dada oficial
+  intacta), `typical`, `adjustments[]` (desglossament traçable). Sense
+  característiques → comportament idèntic a la v1 (vivenda típica).
+- `src/app/api/_impl/valuation/route.ts`: docstring de metodologia v2 (cap
+  canvi de contracte, gating ni quotes).
+- `src/components/views/ValuationPanel.tsx`: nou bloc "Com es calcula" —
+  fiança municipal → cada ajust amb el seu % i detall → central ajustada;
+  notes i textos explicatius actualitzats (ca/es).
+
+**Validació:** 19 comprovacions automàtiques passant (monotonia en superfície,
+multiplicadors d'estat exactes, efecte habitacions limitat, horquilla coherent,
+baseCentral intacta, 4 perfils diferents → 4 preus diferents). Exemple amb base
+1.050 € (tipus Barcelona): estudi 40 m² a reformar ≈ 460 € · vivenda típica
+1.050 € · 75 m²/3 hab bon estat ≈ 933 € · 120 m²/4 hab obra nova ≈ 1.550 €.
+
 ## Fix: servei Catastro (any de construcció) — 2026-11-11
 
 **Problema en producció:** `/api/health` reportava `catastro ok:false, status:404`

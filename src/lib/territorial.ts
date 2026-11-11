@@ -10,8 +10,10 @@
  *  1. Unitat: sempre €/mes per HABITATGE (les fiances Incasòl no publiquen €/m²).
  *  2. Comarca/província = MEDIANA dels municipis amb dada EL MATEIX ANY
  *     (període homogeni garantit; mai es barregen anys ni s'interpola).
- *  3. Valoració v1: horquilla territorial (dispersió MESURA, no coeficients
- *     inventats); superfície/habitacions/estat només orientació qualitativa.
+ *  3. Valoració v2 (2026-11-11): horquilla territorial (dispersió MESURADA)
+ *     + ajustos hedònics APROXIMATS i visibles per superfície/habitacions/
+ *     estat (constants exportades amb fonts als comentaris). La dada oficial
+ *     (fiança municipal) sempre queda exposada intacta com a baseCentral.
  *  4. Secció censal/districte: no hi ha font oficial → mai es fabriquen.
  *
  * Regla d'or: valors no disponibles → null (mai inventats ni interpolats).
@@ -176,7 +178,7 @@ export function relativeIqr(values: Array<number | null | undefined>): number | 
   return (q.p75 - q.p25) / q.p50;
 }
 
-// ── F4 — Motor de valoració de renta (v1 territorial validada) ───────────────
+// ── F4 — Motor de valoració de renta (v2: ajustos hedònics aproximats) ─────────
 
 export type EstatConservacio = "A_REFORMAR" | "BON_ESTAT" | "REFORMADA" | "OBRA_NOVA";
 
@@ -200,8 +202,18 @@ export interface ValuationData {
 export type ValuationConfidence = "ALTA" | "MITJANA" | "BAIXA";
 export type ValuationBandBasis = "COMARCA" | "PROVINCIA" | "HISTORICA";
 
+/** Un ajust aplicat sobre la fiança municipal (desglossament visible). */
+export interface ValuationAdjustment {
+  key: "AJUST_SUPERFICIE" | "AJUST_ESTAT" | "AJUST_HABITACIONS";
+  factor: number; // multiplicador aplicat (1 = neutre)
+  detail: string; // descripció curta ("75 m²", "REFORMADA", "3 hab · 25 m²/hab")
+}
+
 export interface ValuationResult {
-  central: number; // €/mes (mediana municipal vigent)
+  central: number; // €/mes FINAL: base ajustada per característiques (si n'hi ha)
+  baseCentral: number; // €/mes: fiança municipal vigent SENSE ajustos (dada oficial)
+  typical: boolean; // true = cap característica → central = vivenda típica
+  adjustments: ValuationAdjustment[]; // ajustos aplicats, en ordre d'aplicació
   min: number; // €/mes
   max: number; // €/mes
   bandBasis: ValuationBandBasis; // d'on surt l'amplada (traçabilitat)
@@ -222,23 +234,110 @@ export const MIN_POOL_COMARCA = 5;
 export const MIN_POOL_PROVINCIA = 10;
 
 /**
- * Motor v1 (metodologia validada §5 de l'informe):
- *  - central = rentLatest municipal (mercat registrat vigent)
- *  - amplada = dispersió interquartílica RELATIVA del pool territorial el
- *    mateix any (comarca ≥5 munis; si no província ≥10; si no, rang
- *    històric del propi municipi) → horquilla = central × (1 ± disp/2)
- *  - superfície/habitacions/estat: orientació QUALITATIVA (claus UI),
- *    mai multiplicadors (els coeficients no es poden calibrar amb fiances
- *    agregades: no s'inventen)
- *  - confiança per regles explícites i visibles
+ * Motor v2 (2026-11-11 — "el preu ha de respondre a les característiques"):
+ *  - base = fiança municipal vigent (dada oficial Incasòl, €/mes per habitatge
+ *    de la vivenda TÍPICA del municipi) → exposada intacta com a baseCentral.
+ *  - superfície/habitacions/estat apliquen ajustos MULTIPLICATIUS aproximats
+ *    i visibles (adjustments[]), amb constants exportades i fonts documentades.
+ *  - horquilla = dispersió MESURADA del pool territorial (comarca ≥5 munis;
+ *    si no província ≥10; si no, rang històric) sobre el central AJUSTAT.
+ *  - cap característica → central = baseCentral (vivenda típica), com v1.
+ *  - confiança per regles explícites i visibles.
  * Mai llança: si falta la dada central → { ok: false, reason }.
  */
+
+/** Superfície de referència de la vivenda típica darrere de la mediana de
+ *  fiances (m²). L'oferta de lloguer es concentra entre 60 i 100 m²
+ *  (Observatori del Lloguer: 60-80 m² 25,2% i 80-100 m² 22,1% dels anuncis)
+ *  i la mitjana del parc total espanyol és 106,5 m² (INE, 2023): el parc de
+ *  lloguer és més petit. 85 m² ≈ centre de gravetat del contracte mitjà. */
+export const VAL_REF_M2 = 85;
+
+/** Elasticitat renta-superfície (β < 1: el €/m² cau amb la mida). Els estudis
+ *  hedònics troben elasticitats €/m²-superfície negatives (≈ −0,10 a −0,25;
+ *  Raya Vílchez, UB — Barcelona; DIW DP 1191 — Berlín). β = 0,8: punt mitjà
+ *  conservador del rang documentat. renta(m²) = base × (m²/85)^0,8. */
+export const VAL_BETA_SUPERFICIE = 0.8;
+
+/** Multiplicadors per estat de conservació (referència BON_ESTAT = estat modal
+ *  del parc de lloguer). Ancoratge: reformar porta la renta de ~1.000 a
+ *  ~1.300 €/mes segons Fotocasa (2021, +30%); aquí a reformar→reformada és
+ *  +32,5% i obra nova afegeix la prima d'estrena documentada. */
+export const VAL_ESTAT_MULT: Record<EstatConservacio, number> = {
+  A_REFORMAR: 0.8,
+  BON_ESTAT: 1,
+  REFORMADA: 1.06,
+  OBRA_NOVA: 1.12,
+};
+
+/** Densitat de referència (m²/habitació) del parc: 85 m² / ~3 hab (format
+ *  modal 2-3 habitacions de l'oferta). A igual superfície, formats comprimits
+ *  (moltes hab) petit descompte i espais grans (poques hab) petit premium;
+ *  efecte limitat a ±5% (l'efecte principal de les habitacions ja entra per
+ *  la superfície). */
+export const VAL_REF_M2_PER_HAB = 30;
+export const VAL_ROOMS_EXPONENT = 0.1; // suavitza l'efecte densitat
+export const VAL_ROOMS_CLAMP = 0.05; // ±5% màxim
+
+/** Superfície típica (m²) per nombre d'habitacions quan no se n'introdueix:
+ *  coherent amb VAL_REF_M2 (≈3 hab) i l'oferta 60-100 m². Aproximació
+ *  documentada; ≥6 hab: +15 m² per habitació addicional. */
+export function typM2ForRooms(rooms: number): number {
+  const t = [0, 50, 70, 85, 100, 115];
+  if (rooms <= 5) return t[rooms];
+  return 115 + (rooms - 5) * 15;
+}
+
 export function computeValuation(data: ValuationData, input: ValuationInput): ValuationOutcome {
   if (!valid(data.rentLatest) || data.rentLatest <= 0) {
     return { ok: false, reason: "NO_RENT" };
   }
-  const central = data.rentLatest;
+  const baseCentral = data.rentLatest;
   const year = yearOfPeriod(data.rentPeriod);
+
+  // 0) ajustos hedònics sobre la base oficial (ordre: superfície → estat → habitacions)
+  const adjustments: ValuationAdjustment[] = [];
+  let central = baseCentral;
+
+  const surface = valid(input.surfaceM2) && input.surfaceM2! > 0 ? input.surfaceM2! : null;
+  const rooms = valid(input.rooms) && input.rooms! >= 0 ? Math.round(input.rooms!) : null;
+
+  // superfície: escala sublineal respecte la vivenda típica (85 m²). Si només
+  // hi ha habitacions, s'estima la superfície típica del format (documentada).
+  const effM2 =
+    surface ?? (rooms !== null && rooms >= 1 ? typM2ForRooms(Math.min(rooms, 10)) : null);
+  if (effM2 !== null) {
+    const m2 = Math.min(Math.max(effM2, 20), 400); // fora del rang calibrat → saturació
+    const f = Math.pow(m2 / VAL_REF_M2, VAL_BETA_SUPERFICIE);
+    central *= f;
+    adjustments.push({
+      key: "AJUST_SUPERFICIE",
+      factor: Math.round(f * 1000) / 1000,
+      detail: surface ? `${Math.round(surface)} m²` : `${rooms} hab · ≈${m2} m² típics`,
+    });
+  }
+
+  // estat de conservació (BON_ESTAT = neutre, referència del parc)
+  if (input.estat) {
+    const f = VAL_ESTAT_MULT[input.estat];
+    central *= f;
+    adjustments.push({ key: "AJUST_ESTAT", factor: f, detail: input.estat });
+  }
+
+  // habitacions: només amb superfície REAL introduïda (densitat autèntica m²/hab)
+  if (rooms !== null && rooms >= 1 && surface !== null) {
+    const dens = surface / rooms;
+    const raw = Math.pow(dens / VAL_REF_M2_PER_HAB, VAL_ROOMS_EXPONENT);
+    const f = Math.min(Math.max(raw, 1 - VAL_ROOMS_CLAMP), 1 + VAL_ROOMS_CLAMP);
+    central *= f;
+    adjustments.push({
+      key: "AJUST_HABITACIONS",
+      factor: Math.round(f * 1000) / 1000,
+      detail: `${rooms} hab · ${Math.round(dens)} m²/hab`,
+    });
+  }
+
+  const typical = adjustments.length === 0;
 
   // 1) amplada de l'horquilla: dispersió MESURADA del pool més gran disponible
   let basis: ValuationBandBasis = "HISTORICA";
@@ -288,9 +387,7 @@ export function computeValuation(data: ValuationData, input: ValuationInput): Va
     if (contracts < 30) confidenceKeys.push("CONF_CONTRACTS_POCS");
   }
 
-  // 3) notes qualitatives (cap número inventat)
-  const surface = valid(input.surfaceM2) && input.surfaceM2! > 0 ? input.surfaceM2! : null;
-  const rooms = valid(input.rooms) ? input.rooms! : null;
+  // 3) notes qualitatives (surface/rooms ja validats a l'apartat 0)
   const notes = {
     rooms: rooms === null ? null : rooms <= 2 ? "ROOMS_LOW" : rooms <= 4 ? "ROOMS_MID" : "ROOMS_HIGH",
     estat: input.estat ?? null,
@@ -301,6 +398,9 @@ export function computeValuation(data: ValuationData, input: ValuationInput): Va
     ok: true,
     result: {
       central: round1(central),
+      baseCentral: round1(baseCentral),
+      typical,
+      adjustments,
       min,
       max,
       bandBasis: basis,

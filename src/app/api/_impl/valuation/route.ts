@@ -11,11 +11,13 @@ import { getMuniRentRows } from "@/lib/indicators-data";
  * POST /api/valuation — Noves funcionalitats (F4): valoració orientativa de
  * la renta d'una vivenda concreta. Metodologia validada §5 de
  * INFORME_AUDITORIA_FUNCIONALIDADES.md:
- *  - central = fiança municipal vigent (€/mes per habitatge, mercat real registrat)
- *  - horquilla = dispersió MESURADA (RIQ relatiu) de la comarca el mateix any
- *    (≥5 munis); si no, província (≥10); si no, rang històric del municipi
- *  - superfície/habitacions/estat: orientació QUALITATIVA (cap coeficient
- *    inventat) + €/m² DERIVAT de la superfície introduïda
+ *  - base = fiança municipal vigent (€/mes per habitatge, mercat real registrat;
+ *    vivenda típica ~85 m²) → exposada intacta com a baseCentral
+ *  - ajustos hedònics APROXIMATS i VISIBLES (motor v2 a src/lib/territorial.ts):
+ *    superfície (escala sublineal β=0,8), estat (−20%/+6%/+12%), habitacions
+ *    (densitat m²/hab, ±5%); desglossament al resultat (adjustments[])
+ *  - horquilla = dispersió MESURADA (RIQ relatiu) del central ajustat: comarca
+ *    el mateix any (≥5 munis); si no, província (≥10); si no, rang històric
  *  - confiança ALTA/MITJANA/BAIXA per regles explícites
  * Gating server-side complet: auth + correu verificat + flag valoracio del
  * pla + quota VALUATION/mes (features.valoracionsMonth, 5 Premium / 30 Pro).

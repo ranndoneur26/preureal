@@ -6,10 +6,11 @@
  *
  * El formulari només recull característiques (superfície, habitacions, estat);
  * TOTA la valoració la fa el servidor (POST /api/valuation) amb la fiança
- * Incasòl vigent i dispersió mesurada de la comarca/província. El client mai
- * decideix res: sense sessió Premium/Pro la resposta és 403, sense quota 402.
- * L'horquilla és TERRITORIAL (metodologia validada §5 de l'informe): les
- * característiques només donen orientació qualitativa, mai multiplicadors.
+ * Incasòl vigent (base oficial, vivenda típica ~85 m²) + ajustos hedònics
+ * aproximats i VISIBLES al desglossament (motor v2, constants documentades a
+ * src/lib/territorial.ts). El client mai decideix res: sense sessió
+ * Premium/Pro la resposta és 403, sense quota 402. L'horquilla és TERRITORIAL
+ * (dispersió mesurada de la comarca/província el mateix any).
  */
 
 import { useState } from "react";
@@ -17,8 +18,17 @@ import { useApp } from "@/components/app-context";
 import { useUserPlan } from "@/hooks/use-user-plan";
 import { Calculator, Lock, Info } from "lucide-react";
 
+interface ValuationAdjustment {
+  key: "AJUST_SUPERFICIE" | "AJUST_ESTAT" | "AJUST_HABITACIONS";
+  factor: number;
+  detail: string;
+}
+
 interface ValuationResult {
   central: number;
+  baseCentral: number;
+  typical: boolean;
+  adjustments: ValuationAdjustment[];
   min: number;
   max: number;
   bandBasis: "COMARCA" | "PROVINCIA" | "HISTORICA";
@@ -43,16 +53,20 @@ function estatNote(id: string | null, ca: boolean): string | null {
   switch (id) {
     case "A_REFORMAR":
       return ca
-        ? "Els immobles a reformar solen situar-se a la part baixa de l'horquilla."
-        : "Los inmuebles a reformar suelen situarse en la parte baja de la horquilla.";
+        ? "A reformar: descompte aproximat del 20% sobre la fiança municipal (referència de mercat: reformar pot pujar la renta un ~30%)."
+        : "A reformar: descuento aproximado del 20% sobre la fianza municipal (referencia de mercado: reformar puede subir la renta un ~30%).";
     case "BON_ESTAT":
       return ca
-        ? "Els immobles en bon estat solen situar-se prop del valor central."
-        : "Los inmuebles en buen estado suelen situarse cerca del valor central.";
+        ? "Bon estat: sense ajust; és la referència del parc de lloguer."
+        : "Buen estado: sin ajuste; es la referencia del parque de alquiler.";
+    case "REFORMADA":
+      return ca
+        ? "Reformada: prima aproximada del 6% sobre la fiança municipal."
+        : "Reformada: prima aproximada del 6% sobre la fianza municipal.";
     default:
       return ca
-        ? "Els immobles reformats o de obra nova solen situar-se a la part alta de l'horquilla."
-        : "Los inmuebles reformados o de obra nueva suelen situarse en la parte alta de la horquilla.";
+        ? "Obra nova: prima aproximada del 12% sobre la fiança municipal."
+        : "Obra nueva: prima aproximada del 12% sobre la fianza municipal.";
   }
 }
 
@@ -60,15 +74,15 @@ function roomsNote(id: string | null, ca: boolean): string | null {
   if (!id) return null;
   if (id === "ROOMS_LOW")
     return ca
-      ? "Poces habitacions amb poca superfície solen anar per sota de la mitjana municipal (que inclou vivendes de tots els formats)."
-      : "Pocas habitaciones con poca superficie suelen ir por debajo de la media municipal (que incluye viviendas de todos los formatos).";
+      ? "Formats petits (1-2 hab): la superfície típica estimada és menor que la vivenda mitjana i el preu s'ajusta a la baixa."
+      : "Formatos pequeños (1-2 hab): la superficie típica estimada es menor que la vivienda media y el precio se ajusta a la baja.";
   if (id === "ROOMS_MID")
     return ca
-      ? "El format més comú del mercat: sol prop del valor central."
-      : "El formato más común del mercado: suelo cerca del valor central.";
+      ? "Format modal del mercat (3-4 hab): superfície típica propera a la vivenda mitjana (~85 m²)."
+      : "Formato modal del mercado (3-4 hab): superficie típica cercana a la vivienda media (~85 m²).";
   return ca
-    ? "Moltes habitacions i molta superfície solen anar per sobre de la mitjana municipal, però amb €/m² menor (efecte mida)."
-    : "Muchas habitaciones y mucha superficie suelen ir por encima de la media municipal, pero con €/m² menor (efecto tamaño).";
+    ? "Formats grans: més superfície típica, però amb €/m² menor (efecte mida)."
+    : "Formatos grandes: más superficie típica, pero con €/m² menor (efecto tamaño).";
 }
 
 const confidenceStyle: Record<string, { bg: string; fg: string }> = {
@@ -76,6 +90,24 @@ const confidenceStyle: Record<string, { bg: string; fg: string }> = {
   MITJANA: { bg: "#fdf3e0", fg: "#9a6a1a" },
   BAIXA: { bg: "#fbe9e2", fg: "#b0431c" },
 };
+
+const ESTAT_LABEL: Record<string, { ca: string; es: string }> = {
+  A_REFORMAR: { ca: "A reformar", es: "A reformar" },
+  BON_ESTAT: { ca: "Bon estat", es: "Buen estado" },
+  REFORMADA: { ca: "Reformada", es: "Reformada" },
+  OBRA_NOVA: { ca: "Obra nova", es: "Obra nueva" },
+};
+
+const AJUST_LABEL: Record<string, { ca: string; es: string }> = {
+  AJUST_SUPERFICIE: { ca: "Superfície", es: "Superficie" },
+  AJUST_ESTAT: { ca: "Estat", es: "Estado" },
+  AJUST_HABITACIONS: { ca: "Habitacions", es: "Habitaciones" },
+};
+
+function pctFactor(f: number): string {
+  const p = Math.round((f - 1) * 100);
+  return p === 0 ? "0%" : `${p > 0 ? "+" : ""}${p}%`;
+}
 
 export default function ValuationPanel({ muniCode, muniName }: { muniCode: string; muniName: string }) {
   const { locale, navigate } = useApp();
@@ -199,8 +231,8 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
               </button>
               <p className="text-[10px] text-[#6b6f68]">
                 {ca
-                  ? "Horquilla calculada amb la fiança municipal d'Incasòl i la dispersió real del mercat de la comarca el mateix any. Superfície, habitacions i estat només donen orientació: no multipliquem res que les dades oficials no permetin calibrar."
-                  : "Horquilla calculada con la fianza municipal de Incasòl y la dispersión real del mercado de la comarca el mismo año. Superficie, habitaciones y estado solo dan orientación: no multiplicamos nada que los datos oficiales no permitan calibrar."}
+                  ? "Central: fiança municipal oficial d'Incasòl per a la vivenda típica (~85 m²). Superfície, habitacions i estat apliquen ajustos aproximats de mercat que veuràs desglossats. Horquilla: dispersió real de la comarca el mateix any."
+                  : "Central: fianza municipal oficial de Incasòl para la vivienda típica (~85 m²). Superficie, habitaciones y estado aplican ajustes aproximados de mercado que verás desglosados. Horquilla: dispersión real de la comarca el mismo año."}
               </p>
             </div>
           )}
@@ -241,6 +273,31 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                 </div>
               </div>
 
+              <div className="rounded-lg border border-[#e5e1da] bg-white p-3 space-y-1">
+                <div className="text-[10px] font-semibold text-[#6b6f68] uppercase">
+                  {ca ? "Com es calcula" : "Cómo se calcula"}
+                </div>
+                <div className="flex justify-between text-xs text-[#4b5349]">
+                  <span>{ca ? "Fiança municipal (vivenda típica)" : "Fianza municipal (vivienda típica)"}</span>
+                  <b>{fmt(result.baseCentral)} €</b>
+                </div>
+                {result.adjustments.map((a) => (
+                  <div key={a.key} className="flex justify-between text-xs text-[#4b5349]">
+                    <span>
+                      {ca ? AJUST_LABEL[a.key]?.ca : AJUST_LABEL[a.key]?.es}{" "}
+                      <span className="text-[10px] text-[#6b6f68]">
+                        · {a.key === "AJUST_ESTAT" ? (ca ? ESTAT_LABEL[a.detail]?.ca ?? a.detail : ESTAT_LABEL[a.detail]?.es ?? a.detail) : a.detail}
+                      </span>
+                    </span>
+                    <b className={a.factor >= 1 ? "text-[#1e7a41]" : "text-[#b0431c]"}>{pctFactor(a.factor)}</b>
+                  </div>
+                ))}
+                <div className="flex justify-between text-xs text-[#0f2e21] border-t border-[#e5e1da] pt-1">
+                  <span className="font-semibold">{ca ? "Central ajustada" : "Central ajustada"}</span>
+                  <b>{fmt(result.central)} €</b>
+                </div>
+              </div>
+
               {result.eurM2 !== null && (
                 <div className="text-xs text-[#4b5349]">
                   ≈ <b>{fmt(result.eurM2)} €/m²·mes</b>{" "}
@@ -275,7 +332,9 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                 {result.bandYear ? ` · any ${result.bandYear}` : ""}
                 {result.bandN ? ` · n=${result.bandN} municipis` : ""}
                 {" · "}
-                {ca ? "aproximació estadística del territori: no és una taxació d'immoble" : "aproximación estadística del territorio: no es una tasación de inmueble"}
+                {ca
+                  ? "ajustos de mercat aproximats sobre la fiança oficial: no és una taxació d'immoble"
+                  : "ajustes de mercado aproximados sobre la fianza oficial: no es una tasación de inmueble"}
                 {quota && quota.limit >= 0 ? ` · ${quota.used}/${quota.limit} ${ca ? "valoracions aquest mes" : "valoraciones este mes"}` : ""}
               </div>
 
