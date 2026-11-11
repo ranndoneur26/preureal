@@ -51,6 +51,13 @@ d'octubre, DOGC 6254)** — fins ara una superfície < 15 m² es silenciava a
   distingeix «Fiança municipal» de «Referència de comarca».
 - Proves: 27 (19 de v2 + 8 noves d'habitabilitat i base de comarca), totes verdes.
 
+**5) Sincronització de dades des del panell admin** — nou `POST
+/api/admin/seed-municipalities` (mateix patró que seed-aid): upsert idempotent
+de la taula Municipality amb `src/data/municipalities.json` (packaged, 528 KB).
+El propietari executa la sincronització des de #/admin («Sincronitza les dades
+municipals») sense .env local: refresca les fiances oficials, Palamós i les
+254 referències de comarca de cop. NOMÉS escriu a Municipality i queda auditat.
+
 ## Buscador per referència catastral al mapa + «Històric del municipi» arreglat — 2026-11-11
 
 **1) Buscador per referència catastral sobre el mapa** — sota el cercador del mapa,

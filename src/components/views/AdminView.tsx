@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { RefreshCw, Shield, Mail, Database, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown, HeartHandshake } from "lucide-react";
+import { RefreshCw, Shield, Mail, Database, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown, HeartHandshake, MapPin } from "lucide-react";
 
 interface Stats {
   users: number;
@@ -44,6 +44,9 @@ export default function AdminView() {
   const [importMsg, setImportMsg] = useState<string | null>(null);
   const [seedAidMsg, setSeedAidMsg] = useState<string | null>(null);
   const [seedingAid, setSeedingAid] = useState(false);
+  // v39 — sincronitza Municipality amb el seed empaquetat (255 munis + refs comarca)
+  const [seedMunisMsg, setSeedMunisMsg] = useState<string | null>(null);
+  const [seedingMunis, setSeedingMunis] = useState(false);
   const [modReports, setModReports] = useState<any[] | null>(null);
   const [modStats, setModStats] = useState<any>(null);
   const [planSettings, setPlanSettings] = useState<any>(null);
@@ -141,6 +144,26 @@ export default function AdminView() {
       setSeedAidMsg("Error: " + e.message);
     } finally {
       setSeedingAid(false);
+    }
+  };
+
+  // v39 — sincronitza la taula Municipality amb src/data/municipalities.json
+  // (dades Incasòl vigents + referències de comarca). Idempotent (upsert).
+  const doSeedMunis = async () => {
+    setSeedMunisMsg(null);
+    setSeedingMunis(true);
+    try {
+      const res = await fetch("/api/admin/seed-municipalities", { method: "POST" });
+      const d = await res.json();
+      setSeedMunisMsg(
+        res.ok
+          ? `OK: ${d.created} nous, ${d.updated} actualitzats de ${d.total} municipis`
+          : d.message || d.error,
+      );
+    } catch (e: any) {
+      setSeedMunisMsg("Error: " + e.message);
+    } finally {
+      setSeedingMunis(false);
     }
   };
 
@@ -446,6 +469,28 @@ export default function AdminView() {
                   : ca ? "Sincronitza el catàleg" : "Sincronizar el catálogo"}
               </button>
               {seedAidMsg && <span className="text-sm text-[#4b5349]">{seedAidMsg}</span>}
+            </div>
+          </div>
+
+          {/* v39 — dades municipals (fiances Incasòl + ref. comarca) */}
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+            <h3 className="font-bold flex items-center gap-2"><MapPin className="w-4 h-4 text-[#0f2e21]" />{ca ? "Dades municipals — fiances i referències de comarca" : "Datos municipales — fianzas y referencias de comarca"}</h3>
+            <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+              {ca
+                ? "Sincronitza la taula Municipality amb el seed empaquetat (src/data/municipalities.json): fiances Incasòl oficials vigents, Palamós recuperat i la referència de comarca dels 254 municipis sense renda publicada. Idempotent (upsert per codi): no duplica files i només escriu a Municipality."
+                : "Sincroniza la tabla Municipality con el seed empaquetado (src/data/municipalities.json): fianzas Incasòl oficiales vigentes, Palamós recuperado y la referencia de comarca de los 254 municipios sin renta publicada. Idempotente (upsert por código): no duplica filas y solo escribe en Municipality."}
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={doSeedMunis}
+                disabled={seedingMunis}
+                className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+              >
+                {seedingMunis
+                  ? ca ? "Sincronitzant…" : "Sincronizando…"
+                  : ca ? "Sincronitza les dades municipals" : "Sincronizar los datos municipales"}
+              </button>
+              {seedMunisMsg && <span className="text-sm text-[#4b5349]">{seedMunisMsg}</span>}
             </div>
           </div>
 
