@@ -2,6 +2,24 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Seed-aid també en 1 sentència SQL (mateix patró que el seed municipal) — 2026-11-11
+
+**Risc detectat:** el bucle per fila de `POST /api/admin/seed-aid` feia
+2 queries × 9 ajuts (~9-18 s amb la latència real de la BD) — el mateix patró
+que va penjar el botó municipal. El comentari encara deia «4-5 filas» però el
+catàleg ampliats ja són 9.
+
+**Fix:** 1 SELECT de codis existents (per reportar created/updated) + 1 upsert
+SQL únic (INSERT … ON CONFLICT ("code") DO UPDATE des de json_to_recordset).
+Sintaxi validada amb el parser real de PostgreSQL (libpg_query) juntament amb
+el seed municipal: tots dos PARSE_PG OK.
+
+**Detall crític cobert:** `RentalAid.id` és `@default(cuid())` — un default
+del CLIENT Prisma, no de la BD. L'INSERT cru genera un `randomUUID()` per fila
+nova; `createdAt`/`updatedAt` = NOW() explícit (també defaults de client).
+La resposta conserva la forma `{ ok, created, updated, total, revisado }` que
+ja pinta el botó del panell.
+
 ## Seed en 1 sola sentència SQL (upsert) — fix del «botó penjat» — 2026-11-11
 
 **Símptoma:** el botó «Sincroniza les dades municipals» es quedava pensant i
