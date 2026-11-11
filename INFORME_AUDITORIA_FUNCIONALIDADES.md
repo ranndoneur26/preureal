@@ -1,6 +1,6 @@
 # INFORME — Auditoría de datos y propuesta técnica: nuevas funcionalidades de análisis y valoración
 
-**Fecha:** 11-11-2026 · **Estado:** ⏸️ ESPERA DE VALIDACIÓN DEL PROPIETARIO — no se ha modificado ningún código ni estructura (auditoría solo lectura)
+**Fecha:** 11-11-2026 · **Estado:** ✅ VALIDADO E IMPLEMENTADO (v38, commit `3a490d9` — F1, F2, F3 y F4 desplegadas y sondeadas en producción; los 6 puntos del §5 fueron validados por el propietario) · Auditoría original solo lectura, sin modificar nada existente
 **Método:** auditoría real del seed importado a producción (`data/municipalities.json`, 947 municipios), del esquema Prisma completo, de los servicios existentes (`indicators*.ts`, `pdf-report.ts`, comparador, provenance, sistema de planes) y sondas HTTP de solo lectura contra producción (`www.preureal.com`).
 **Alcance:** las 4 funcionalidades del encargo — F1 evolución temporal, F2 comparativa territorial, F3 esfuerzo de renta, F4 valoración de alquiler.
 
