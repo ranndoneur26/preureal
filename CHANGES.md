@@ -2,6 +2,43 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Diagnòstic i millores de «Exportació CSV / Informe PDF» a «Estàs pagant de més?» — 2026-11-11
+
+**Informe de l'usuari:** a la secció «Estàs pagant de més?» de la fitxa no es
+pot generar ni descarregar l'informe PDF (ni l'exportació CSV).
+
+**Auditoria feta (tot en ordre):** (a) rutes registrades al dispatcher
+(`reports/pdf`, `export/:code`) i vives a producció (401 sense sessió, no 404);
+(b) el constructor del PDF és pur i passa els 4 tests de `tests/pdf_report.test.ts`
+(8 pàgines, degradació, nau industrial, municipi no tensat); (c) cap camí del
+servidor llança sense capturar (`recordUsage` mai llança; indicadors i ajudes
+tenen fallback). **Conclusió:** els botons funcionen; el que veia l'usuari era
+el paywall del seu pla (FREE/Premium) amb un missatge petit només visible
+DESPRÉS de clicar + el cas 401 (sessió caducada) que queia al missatge genèric
+«No s'ha pogut generar».
+
+**Millores aplicades (MapView):**
+1. **Affordància de pla ABANS de clicar:** candau als botons — PDF bloquejat
+   per a FREE (i per a informe d'EDIFICI amb Premium, que requereix Pro);
+   CSV bloquejat per a tot pla no-Pro. El clic segueix actiu i el servidor
+   revalida (mai confiem només en el client).
+2. **401 amb causa real:** «La teva sessió ha caducat: torna a iniciar-la.»
+   en comptes del genèric (abans semblava un error del sistema).
+3. **403 EMAIL_NOT_VERIFIED amb el seu propi missatge** (verificar correu),
+   que abans també queia al genèric.
+4. **404 informatiu** (municipi/edifici sense dades per a l'informe).
+5. **Nom de fitxer del PDF des de Content-Disposition** (abans
+   `download=""` i alguns navegadors guardaven «download» sense extensió
+   .pdf — semblava «no descarrega res»).
+
+**Servidor (`export/[code]`):** `JSON.parse(rentHistory)` ara és defensiu —
+un historial corrupte exportaria la capçalera en lloc d'un 500.
+
+**Per provar les features com a propietari:** Panell d'administració →
+Usuaris → canvia el pla del teu compte (Premium informa PDF de municipi;
+Pro afegeix informe d'edifici i exportació CSV). El canvi del admin PERSISTE
+(subscripció de suport creada amb auditoria).
+
 ## Seed-aid també en 1 sentència SQL (mateix patró que el seed municipal) — 2026-11-11
 
 **Risc detectat:** el bucle per fila de `POST /api/admin/seed-aid` feia

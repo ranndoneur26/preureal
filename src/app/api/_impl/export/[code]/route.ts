@@ -34,7 +34,17 @@ export async function GET(
   const mun = await db.municipality.findUnique({ where: { code } });
   if (!mun) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
 
-  const hist = mun.rentHistory ? JSON.parse(mun.rentHistory) : {};
+  // Fix 2026-11-11 — JSON.parse defensiu: un rentHistory corrupte no pot trencar
+  // l'exportació (abans seria un 500); amb dada dolenta es exporta la capçalera.
+  let hist: Record<string, unknown> = {};
+  if (mun.rentHistory) {
+    try {
+      hist = JSON.parse(mun.rentHistory);
+    } catch {
+      hist = {};
+    }
+  }
+  if (!hist || typeof hist !== "object" || Array.isArray(hist)) hist = {};
   const rows = [["any", "lloguer_mitja_eur_mes", "contractes", "font"]];
   for (const [year, value] of Object.entries(hist)) {
     // defensa CSV injection: prefixem ' si el valor comença amb = + - @

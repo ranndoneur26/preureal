@@ -982,12 +982,34 @@ export default function MapView() {
     setPdfLocked(false);
     const qs = bId ? `building=${bId}` : `mun=${mun.code}`;
     fetch(`/api/reports/pdf?${qs}`).then(async (res) => {
+      // Fix 2026-11-11 — 401 (sessió caducada) i 403 EMAIL_NOT_VERIFIED tenien
+      // el missatge genèric «No s'ha pogut generar», que semblava un error de
+      // sistema; ara cadascun diu la causa real amb el seu CTA.
+      if (res.status === 401) {
+        setPdfMsg(locale === "ca"
+          ? "La teva sessió ha caducat: torna a iniciar-la."
+          : "Tu sesión ha caducado: vuelve a iniciarla.");
+        setPdfLocked(true);
+        return;
+      }
       if (res.status === 403) {
         const d = await res.json().catch(() => ({}));
+        if (d?.error === "EMAIL_NOT_VERIFIED") {
+          setPdfMsg(locale === "ca"
+            ? "Verifica el teu correu per descarregar l'informe."
+            : "Verifica tu correo para descargar el informe.");
+          return;
+        }
         setPdfLocked(true); // Fase 5 — el missatge inclou CTA als plans
         setPdfMsg(d.plan === "PRO"
           ? (locale === "ca" ? "L'informe d'edifici requereix el pla Pro · agents (19,99 €/mes)." : "El informe de edificio requiere el plan Pro · agentes (19,99 €/mes).")
           : (locale === "ca" ? "L'informe PDF requereix el pla Premium (7,99 €/mes)." : "El informe PDF requiere el plan Premium (7,99 €/mes)."));
+        return;
+      }
+      if (res.status === 404) {
+        setPdfMsg(locale === "ca"
+          ? "No trobem les dades d'aquest municipi/edifici per a l'informe."
+          : "No encontramos los datos de este municipio/edificio para el informe.");
         return;
       }
       if (res.status === 429) {
@@ -1012,7 +1034,12 @@ export default function MapView() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "";
+      // Fix 2026-11-11 — abans `download=""` i alguns navegadors guardaven el
+      // fitxer com a «download» sense extensió .pdf (semblava «no descarrega
+      // res»). Ara el nom ve del Content-Disposition del servidor.
+      const cd = res.headers.get("Content-Disposition") || "";
+      const m = cd.match(/filename="([^"]+)"/);
+      a.download = m ? m[1] : `preureal_informe_${mun.name || mun.code}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1029,7 +1056,23 @@ export default function MapView() {
     setCsvMsg(null);
     setCsvLocked(false);
     fetch(`/api/export/${mun.code}`).then(async (res) => {
+      // Fix 2026-11-11 — mateix tractament de 401 / email sense verificar que
+      // el PDF: causa real en comptes del missatge genèric.
+      if (res.status === 401) {
+        setCsvMsg(locale === "ca"
+          ? "La teva sessió ha caducat: torna a iniciar-la."
+          : "Tu sesión ha caducado: vuelve a iniciarla.");
+        setCsvLocked(true);
+        return;
+      }
       if (res.status === 403) {
+        const d = await res.json().catch(() => ({}));
+        if (d?.error === "EMAIL_NOT_VERIFIED") {
+          setCsvMsg(locale === "ca"
+            ? "Verifica el teu correu per exportar les dades."
+            : "Verifica tu correo para exportar los datos.");
+          return;
+        }
         setCsvLocked(true);
         setCsvMsg(locale === "ca"
           ? "L'exportació CSV és del pla Pro · agents (19,99 €/mes)."
@@ -1545,6 +1588,16 @@ function FullPanel({
   // v33 — edifici industrial (nau): la fitxa ho indica i reetiqueta el preu
   const isNau = lookup.building?.tipus === "ind";
 
+  // Fix 2026-11-11 — affordància de pla als botons PDF/CSV: el pla efectiu el
+  // sap el client (auth.user.plan); si la feature no és inclosa es mostra un
+  // candau ABANS de clicar. El clic segueix actiu i el servidor revalida.
+  const plan = auth.user?.plan ?? "FREE";
+  // CSV: només Pro · agents (features.exportCsv).
+  const csvNeedsPro = plan !== "PRO";
+  // PDF: municipi amb Premium ja n'hi ha; l'informe D'EDIFICI requereix Pro
+  // (features.pdfEdifici). Sense sessió (plan FREE per defecte) → candau.
+  const pdfNeedsProHere = plan === "FREE" || (plan === "PREMIUM" && Boolean(lookup.building?.id));
+
   return (
     <div className="space-y-4">
       {mun.isTense && <TenseBadge note={t.tense.badgeEsNote} />}
@@ -1661,18 +1714,29 @@ function FullPanel({
             </button>
             <button
               onClick={downloadPdf}
-              title={locale === "ca" ? "Descarrega l'informe PDF (Premium)" : "Descarga el informe PDF (Premium)"}
-              className="p-1.5 rounded-lg hover:bg-[#f0ede8] text-[#6b6f68]"
+              title={locale === "ca"
+                ? (pdfNeedsProHere ? "Descarrega l'informe PDF d'edifici (Pro · agents)" : "Descarrega l'informe PDF (Premium)")
+                : (pdfNeedsProHere ? "Descarga el informe PDF de edificio (Pro · agentes)" : "Descarga el informe PDF (Premium)")}
+              className={`relative p-1.5 rounded-lg hover:bg-[#f0ede8] ${pdfNeedsProHere ? "text-[#8a6116]" : "text-[#6b6f68]"}`}
             >
               <FileDown className="w-4 h-4" />
+              {/* Fix 2026-11-11 — affordància: si el pla actual no inclou aquest
+                  informe, es veu un candau ABANS de clicar (abans només apareixia
+                  el missatge després, i semblava que «no funcionava»). */}
+              {pdfNeedsProHere && (
+                <Lock className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 fill-[#faf9f7] text-[#8a6116]" />
+              )}
             </button>
             {/* Fase 5 — exportació CSV (Pro · agents) ara visible a la fitxa */}
             <button
               onClick={downloadCsv}
               title={locale === "ca" ? "Exporta les dades en CSV (Pro · agents)" : "Exporta los datos en CSV (Pro · agentes)"}
-              className="p-1.5 rounded-lg hover:bg-[#f0ede8] text-[#6b6f68]"
+              className={`relative p-1.5 rounded-lg hover:bg-[#f0ede8] ${csvNeedsPro ? "text-[#8a6116]" : "text-[#6b6f68]"}`}
             >
               <FileSpreadsheet className="w-4 h-4" />
+              {csvNeedsPro && (
+                <Lock className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 fill-[#faf9f7] text-[#8a6116]" />
+              )}
             </button>
           </div>
         </div>
