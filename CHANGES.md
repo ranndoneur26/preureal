@@ -95,6 +95,27 @@ v38.2 UX, v38.3 infra.
 Operativa post-deploy: cap migració (cap canvi d'esquema). Opcional: definir
 `SENTRY_DSN` a Vercel per activar l'enviament d'errors a Sentry.
 
+### v38.4 — Guia: acordió «Informació bàsica de l'habitatge»
+- Nou acordió a `#/guia` just després de «Fonts oficials» (sol·licitud
+  explícita): 8 blocs desplegables amb les preguntes que qualsevol persona que
+  vol llogar es fa (dades essencials, fotos i estat real, ubicació i entorn,
+  preu i despeses, condicions del contracte, eficiència i confort,
+  característiques especials, seguretat i confiança).
+- Cada punt FORMULAT + RESPOSTA ACOTADA verificada amb fonts oficials: fiança
+  1 mes + màx. 2 de garanties (art. 36 LAU), durada i pròrrogues 10/11 anys i
+  +3 en zona tensada (art. 9-10 LAU), sortida anticipada (art. 11),
+  comunitat/IBI al propietari (art. 20), reparacions (art. 21), honoraris
+  d'agència (Llei 13/2023 + art. 20 LAU), CEE obligatori 10 anys (ICAEN),
+  Índex de Referencia de Arrendamiento de l'INE (2,54 % interanual set-2026),
+  empadronament com a dret, nul·litat de les prohibicions absolutes de
+  mascotes (jurisprudència majoritària) i «total per entrar» ≤ 4 mensualitats.
+- Enllaç amb el producte: referència de preu al mapa (gratuït), marca de zona
+  tensada i calculadora de fiança de la pròpia guia. Bilingüe ca/es i només
+  tokens de disseny (compatible amb dark mode v38.2). Fitxer de contingut
+  nou: `src/components/views/guia-vivienda.ts`; la vista només afegeix
+  l'acordió (estat `openBlock`, chevron, `aria-expanded`).
+- Sense migració ni canvis d'API.
+
 ## v37.1 — Passkeys (WebAuthn) + hub SEO /lloguer + tests TOTP — 2026-11-12
 
 **Passkeys completes** (@simplewebauthn v14, dependència nova):

@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import {
   BookOpen, Calculator, Coins, Receipt, CalendarClock, ListChecks,
-  HandHeart, ExternalLink, ShieldAlert, Info,
+  HandHeart, ExternalLink, ShieldAlert, Info, Home, ChevronDown,
 } from "lucide-react";
+import { GUIA_VIVIENDA } from "./guia-vivienda";
 
 /**
  * Fase 4 — Guia contextual (#/guia), contingut GRATUÏT per a tots els plans
@@ -209,9 +210,11 @@ export default function GuiaView() {
   const { locale, navigate } = useApp();
   const ca = locale === "ca";
   const t = S[ca ? "ca" : "es"];
+  const v = GUIA_VIVIENDA[ca ? "ca" : "es"];
   const [aids, setAids] = useState<Aid[] | null>(null);
   const [aidsError, setAidsError] = useState(false);
   const [rent, setRent] = useState("");
+  const [openBlock, setOpenBlock] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -366,6 +369,56 @@ export default function GuiaView() {
         </ul>
         <p className="mt-3 text-[11px] text-stone">
           {t.updated}: {new Date().toLocaleDateString(ca ? "ca-ES" : "es-ES")} · Preureal no presta assessorament jurídic; aquesta guia és contingut informatiu sobre normativa pública.
+        </p>
+      </Card>
+
+      {/* informació bàsica de l'habitatge (v38.4, acordió després de fonts) */}
+      <Card icon={<Home className="w-4 h-4 text-pine" />} title={v.title}>
+        <p className="text-sm text-moss">{v.intro}</p>
+        <div className="space-y-2">
+          {v.blocks.map((b, i) => {
+            const open = openBlock === i;
+            return (
+              <div
+                key={i}
+                className={`rounded-xl border border-line transition-colors ${open ? "bg-cream" : "bg-card"}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenBlock(open ? null : i)}
+                  aria-expanded={open}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                >
+                  <span className="w-6 h-6 rounded-full bg-pine text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="font-semibold text-sm text-pine flex-1">{b.title}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-moss transition-transform ${open ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {open && (
+                  <div className="px-4 pb-4 space-y-2.5">
+                    {b.qa.map(([q, a], j) => (
+                      <div key={j} className="text-sm leading-relaxed">
+                        <div className="font-semibold text-ink flex gap-1.5">
+                          <span className="text-ember shrink-0">·</span>
+                          <span>{q}</span>
+                        </div>
+                        <p className="text-ink2 mt-0.5 pl-4">{a}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <p className="mt-3 text-[11px] text-stone flex gap-1.5">
+          <Info className="w-3 h-3 mt-0.5 shrink-0" />
+          <span>
+            {v.note} {t.updated}: {new Date().toLocaleDateString(ca ? "ca-ES" : "es-ES")}
+          </span>
         </p>
       </Card>
     </div>
