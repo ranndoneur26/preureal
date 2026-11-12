@@ -49,7 +49,7 @@ jobs:
       - name: Auditoria de dependències de producció (high+ bloqueja)
         run: npm run audit
 
-      - name: Build de producció (sense migracions: les aplica Vercel)
+      - name: "Build de producció (sense migracions: les aplica Vercel)"
         run: npx prisma generate && npx next build
         env:
           DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
