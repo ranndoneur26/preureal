@@ -116,6 +116,32 @@ Operativa post-deploy: cap migració (cap canvi d'esquema). Opcional: definir
   l'acordió (estat `openBlock`, chevron, `aria-expanded`).
 - Sense migració ni canvis d'API.
 
+### v38.5 — Guia: acordeons «Drets i deures en un contracte de lloguer» i «Desnonaments»
+- Dos acordeons nous a `#/guia`, col·locats entre «Fonts oficials» i
+  «Informació bàsica de l'habitatge» (encàrrec explícit, contenidors
+  legals DAMUNT de l'acordió v38.4):
+  1. **Drets i deures en un contracte de lloguer**: introducció orientada a
+     l'habitatge habitual (LAU + normativa catalana) + 4 desplegables amb el
+     patró v38.4 (badge numerat, chevron, `aria-expanded`): «Drets de les
+     persones llogateres», «Deures de les persones llogateres», «Drets de les
+     persones propietàries» i «Deures de les persones propietàries», amb
+     nota «Informació legal important» (garanties mínimes irrenunciables) i
+     fonts oficials (Gencat drets i obligacions, Gencat contracte, BOE LAU).
+  2. **Desnonaments: drets i protecció de les persones llogateres**: qui pot
+     tenir protecció (vulnerabilitat econòmica, menors, monoparentals,
+     discapacitat/dependència, +65, violència de gènere, sense alternativa),
+     quan es pot suspendre (inclosa la mesura de 2 mesos per impagament amb
+     alternativa o pagament del deute per part de l'Administració), quan es
+     pot desnonar legalment, que la propietat NO pot fer mai (canvi de pany,
+     tall de subministraments) i els 4 passos davant d'una notificació
+     judicial; amb enllaç a Gencat «Estic en risc de perdre l'habitatge on
+     visc».
+- Contingut nou a `src/components/views/guia-drets.ts` (GUIA_DRETS +
+  GUIA_DESNONAMENT, bilingüe ca/es, blocs tipats p|ul|ol per als
+  desnonaments); la vista només afegeix els dos Cards (icones Scale i Gavel,
+  mateixos tokens de disseny i dark mode v38.2).
+- Sense migració ni canvis d'API.
+
 ## v37.1 — Passkeys (WebAuthn) + hub SEO /lloguer + tests TOTP — 2026-11-12
 
 **Passkeys completes** (@simplewebauthn v14, dependència nova):

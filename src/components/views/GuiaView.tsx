@@ -5,8 +5,10 @@ import { useApp } from "@/components/app-context";
 import {
   BookOpen, Calculator, Coins, Receipt, CalendarClock, ListChecks,
   HandHeart, ExternalLink, ShieldAlert, Info, Home, ChevronDown,
+  Scale, Gavel,
 } from "lucide-react";
 import { GUIA_VIVIENDA } from "./guia-vivienda";
+import { GUIA_DRETS, GUIA_DESNONAMENT } from "./guia-drets";
 
 /**
  * Fase 4 — Guia contextual (#/guia), contingut GRATUÏT per a tots els plans
@@ -211,10 +213,13 @@ export default function GuiaView() {
   const ca = locale === "ca";
   const t = S[ca ? "ca" : "es"];
   const v = GUIA_VIVIENDA[ca ? "ca" : "es"];
+  const dr = GUIA_DRETS[ca ? "ca" : "es"];
+  const dz = GUIA_DESNONAMENT[ca ? "ca" : "es"];
   const [aids, setAids] = useState<Aid[] | null>(null);
   const [aidsError, setAidsError] = useState(false);
   const [rent, setRent] = useState("");
   const [openBlock, setOpenBlock] = useState<number | null>(null);
+  const [openDrets, setOpenDrets] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -370,6 +375,116 @@ export default function GuiaView() {
         <p className="mt-3 text-[11px] text-stone">
           {t.updated}: {new Date().toLocaleDateString(ca ? "ca-ES" : "es-ES")} · Preureal no presta assessorament jurídic; aquesta guia és contingut informatiu sobre normativa pública.
         </p>
+      </Card>
+
+      {/* drets i deures (v38.5, acordió damunt de «Informació bàsica de l'habitatge») */}
+      <Card icon={<Scale className="w-4 h-4 text-pine" />} title={dr.title}>
+        <p className="text-sm text-moss leading-relaxed">{dr.intro}</p>
+        <div className="space-y-2">
+          {dr.sections.map((sec, i) => {
+            const open = openDrets === i;
+            return (
+              <div
+                key={i}
+                className={`rounded-xl border border-line transition-colors ${open ? "bg-cream" : "bg-card"}`}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenDrets(open ? null : i)}
+                  aria-expanded={open}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                >
+                  <span className="w-6 h-6 rounded-full bg-pine text-white text-[11px] font-bold flex items-center justify-center shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="font-semibold text-sm text-pine flex-1">{sec.title}</span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-moss transition-transform ${open ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {open && (
+                  <div className="px-4 pb-4 space-y-2.5">
+                    <p className="text-sm text-ink2 leading-relaxed">{sec.intro}</p>
+                    <Bullets items={sec.bullets} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 rounded-xl border border-line bg-cream p-4">
+          <div className="font-semibold text-sm text-pine mb-1.5">{dr.legalTitle}</div>
+          <p className="text-sm text-ink2 leading-relaxed">{dr.legalText}</p>
+          <p className="mt-2 text-sm text-stone">{dr.fontsLead}</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {dr.fonts.map((f) => (
+              <li key={f.u}>
+                <a
+                  href={f.u}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="text-pine font-medium hover:text-ember inline-flex items-center gap-1"
+                >
+                  {f.t} <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Card>
+
+      {/* desnonaments (v38.5, sota «Drets i deures en un contracte de lloguer») */}
+      <Card icon={<Gavel className="w-4 h-4 text-pine" />} title={dz.title}>
+        <p className="text-sm text-moss leading-relaxed">{dz.intro}</p>
+        <div className="space-y-4">
+          {dz.sections.map((sec, i) => (
+            <div key={i}>
+              <h3 className="font-semibold text-sm text-pine mb-2">{sec.heading}</h3>
+              <div className="space-y-2">
+                {sec.blocks.map((b, j) =>
+                  b.type === "p" ? (
+                    <p key={j} className="text-sm text-ink2 leading-relaxed">{b.text}</p>
+                  ) : b.type === "ul" ? (
+                    <Bullets key={j} items={b.items} />
+                  ) : (
+                    <ol key={j} className="space-y-2">
+                      {b.items.map((it, k) => (
+                        <li key={k} className="flex gap-2.5">
+                          <span className="w-5 h-5 rounded-full bg-sand text-pine text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                            {k + 1}
+                          </span>
+                          <span className="text-sm text-ink2 leading-relaxed">{it}</span>
+                        </li>
+                      ))}
+                    </ol>
+                  ),
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 rounded-xl border border-line bg-cream p-4">
+          <p className="text-[11px] text-stone flex gap-1.5">
+            <Info className="w-3 h-3 mt-0.5 shrink-0" />
+            <span>
+              {dz.note} {t.updated}: {new Date().toLocaleDateString(ca ? "ca-ES" : "es-ES")}
+            </span>
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {dz.fonts.map((f) => (
+              <li key={f.u}>
+                <a
+                  href={f.u}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="text-pine font-medium hover:text-ember inline-flex items-center gap-1"
+                >
+                  {f.t} <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
       </Card>
 
       {/* informació bàsica de l'habitatge (v38.4, acordió després de fonts) */}
