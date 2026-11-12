@@ -4,7 +4,8 @@ import { getSiteUrl } from "@/lib/site-url";
 
 /**
  * SEO: metadades bilingües (ca principal, es secundari), Open Graph i
- * JSON-LD. El sitemap i robots estan a public/.
+ * JSON-LD. El sitemap i robots es generen dinàmicament (src/app/sitemap.ts
+ * i src/app/robots.ts).
  * metadataBase usa el helper segur: un NEXT_PUBLIC_SITE_URL mal escrit
  * mai més no pot aturar el build (cau a la URL oficial per defecte).
  */

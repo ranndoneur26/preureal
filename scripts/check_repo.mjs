@@ -149,4 +149,51 @@ if (rutasSobrantes.length > 0) {
     python3 scripts/gen_api_dispatcher.py`);
 }
 
-console.log("✓ check_repo: estructura del repositorio correcta (src/app/, Prisma PostgreSQL, API consolidada).");
+// ── 6. Drift dispatcher ↔ _impl (v38.3) ──────────────────────────────
+// Cada ruta en src/app/api/_impl/**/route.ts DEBE estar registrada en la
+// TABLE del dispatcher generado. Si alguien añade un handler y olvida
+// regenerar (python3 scripts/gen_api_dispatcher.py), la ruta daría 404
+// en producción en silencio. Este check falla el build en ese caso.
+const DISPATCHER = join(API, "[[...path]]", "route.ts");
+if (existsSync(DISPATCHER)) {
+  const rutasImpl = [];
+  function escanearImpl(dir, segs) {
+    for (const n of readdirSync(dir)) {
+      const p = join(dir, n);
+      if (statSync(p).isDirectory()) {
+        escanearImpl(p, [...segs, n]);
+      } else if (n === "route.ts") {
+        rutasImpl.push(segs);
+      }
+    }
+  }
+  escanearImpl(join(API, "_impl"), []);
+
+  const dispatcherSrc = readFileSync(DISPATCHER, "utf8");
+  // extrae las entradas de la TABLE: { seg: ["a","b",":id"], h: ... }
+  const registradas = new Set();
+  for (const m of dispatcherSrc.matchAll(/\{\s*seg:\s*\[([^\]]*)\]/g)) {
+    const segs = m[1]
+      .split(",")
+      .map((s) => s.trim().replace(/^["'`]|["'`]$/g, ""))
+      .filter(Boolean);
+    // normaliza :param → * (los nombres del parámetro pueden variar)
+    registradas.add(segs.map((s) => (s.startsWith(":") ? "*" : s)).join("/"));
+  }
+
+  const faltantes = [];
+  for (const segs of rutasImpl) {
+    const key = segs.map((s) => (s.startsWith("[") ? "*" : s)).join("/");
+    if (!registradas.has(key)) faltantes.push("/api/" + key);
+  }
+
+  if (faltantes.length > 0) {
+    fallo(`✗ DRIFT del dispatcher: ${faltantes.length} rutas _impl NO están en la TABLE
+  del dispatcher (${faltantes.slice(0, 10).join(", ")}${faltantes.length > 10 ? "…" : ""}).
+  En producción darían 404 silenciosamente.
+  Solución: regenera y commitea el dispatcher:
+    python3 scripts/gen_api_dispatcher.py`);
+  }
+}
+
+console.log("✓ check_repo: estructura del repositorio correcta (src/app/, Prisma PostgreSQL, API consolidada, dispatcher sin drift).");

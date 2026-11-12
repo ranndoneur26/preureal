@@ -2,6 +2,95 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v38 — Transparència pública, design system, dark mode i CI — 2026-11-12
+
+Encàrrec: «revisa todos estos puntos e implementa las mejoras» (transparència
+de contingut, UX/UI i arquitectura/calitat). Tres commits: v38.1 contingut,
+v38.2 UX, v38.3 infra.
+
+### v38.1 — Transparència i contingut públic
+- **RUTES REALS sense 404**: /preus, /mapa, /comparador, /guia, /faq,
+  /metodologia, /estat, /usos, /avis-legal, /privacitat, /cookies, /entrada,
+  /registre, /design — 14 pàgines pont (`HashBridge`) que redirigeixen a
+  l'equivalent hash sense afegir historial (anar a www.preureal.com/preus ja
+  NO dóna 404).
+- **Pàgina Fonts i metodologia** (`#/metodologia`): consumeix l'API pública
+  `/api/provenance` (que existia des de Fase 9 però cap UI la mostrava):
+  10 datasets amb font/llicència/unitat/àmbit/periodicitat/metodologia,
+  badge de qualitat, principis, cicle d'actualització i 7 LIMITACIONS
+  conegudes explicades; últimes importacions INE amb data real.
+- **Pàgina d'estat del servei** (`#/estat`): sondes en directe contra
+  `/api/health` (BD+latència, ICGC, Cadastre, Stripe, correu, Google),
+  actualització de dades (municipis amb dada + última importació INE),
+  historial d'incidències (l'incident real del PDF/WinAnsi) i auto-refresc
+  cada 60 s. Sense dades inventades ni uptime % fictici.
+- **Casos d'ús** (`#/usos`): 3 perfils (inquilí, agent, periodista) amb
+  captures REALS de producció (`public/usos/*.jpg`, capturades amb navegador
+  real); explícitament sense testimonis inventats.
+- **Consentiment de cookies GRANULAR**: categories tècniques/analítica/
+  màrqueting amb interruptors, panell «Configura», «Només les necessàries»,
+  recordatori des del peu («Gestiona les cookies», event
+  `pr:open-cookie-settings`) i API exportable `getConsent()`. Compatibilitat
+  amb el banner antic (accepted/rejected).
+- **Legals LSSI/RGPD completats** sense inventar dades: titular i responsable
+  amb contacte real (admin@preureal.cat) i proveïdors (Vercel, BD, Stripe,
+  Resend); política de cookies reescrita amb les categories del nou banner.
+- **Domini canònic**: `src/middleware.ts` amb 301 de preureal.com (apex) i
+  preureal.cat → www.preureal.com; previews Vercel/localhost intactes
+  (WebAuthn en depèn).
+- **robots.ts dinàmic** (substitueix public/robots.txt amb URL hardcodejada).
+- Footer de 4 columnes (Producte / Recursos i transparència / Legal) amb
+  /preus, /faq, metodologia, estat i usos.
+- Marca unificada: comentaris i headers de codi «PreuReal.cat» → «Preureal»
+  (18 fitxers); el correu admin@preureal.cat es manté (és real).
+
+### v38.2 — UX/UI
+- **DARK MODE REAL**: 52 colors hardcodejats → tokens CSS amb valor clar i
+  fosc (1.258 substitucions en 24 fitxers). Nova paleta fosca de marca
+  (verd-pinya profund, accent ember intacte). Toggle al header
+  (`ThemeToggle`), anti-FOUC a layout.tsx i `prefers-color-scheme` per
+  defecte. Leaflet, popups i scrollbars adaptats al fosc.
+- **Pàgina de design system** (`#/design`): paleta amb ús de cada token,
+  escala tipogràfica, escala d'espaiat i galeria de components (botons,
+  badges, input, skeleton, targeta elevable).
+- **Skeletons** al panell del mapa (shimmer CSS `.pr-skeleton`) en lloc de
+  spinner: es veu l'estructura que arribarà.
+- **Bottom sheet mòbil amb gestos**: nansa sticky amb swipe cap avall per
+  tancar (>80 px), fons fosc tappable i animació d'entrada
+  (`pr-sheet-anim`/`pr-backdrop-anim`).
+- **Checklist d'onboarding persistent** (`FirstRunChecklist`): explora el
+  mapa → compara 2 municipis → descarrega un informe PDF; tracking a
+  localStorage (`lib/steps.ts` + event `pr:steps-changed`), completat per
+  visites reals (MapView, ComparadorView, descàrrega PDF).
+- **Microinteraccions**: transició d'entrada de vista (`pr-view`), targetes
+  elevables (`pr-lift`), transicions de tema suaus.
+- **Performance**: CSS de Leaflet fora del bundle JS (ara via `@import` de
+  Tailwind); `bg-white` → `bg-card` perquè les targetes siguin temàtiques.
+
+### v38.3 — Arquitectura i qualitat
+- **Anti-drift del dispatcher**: `check_repo.mjs §6` falla el build si una
+  ruta `_impl` no està a la TABLE del dispatcher (abans: 404 silenciosos).
+- **CI (GitHub Actions)**: lint + typecheck + guardia de repo/drift + tests
+  bun (bloquejants) + audit prod + build amb DATABASE_URL fictici. Scripts
+  nous: `test`, `test:e2e`, `typecheck`, `audit`.
+- **Observabilitat**: `lib/observability.ts` — request-ID (capçalera
+  X-Request-ID), access log JSON per petició i captura d'errors a Sentry via
+  Envelope API SENSE SDK (només cal `SENTRY_DSN`; sense ell, no canvia res).
+- **CSP completa en producció** (default-src 'self', frame-src Stripe,
+  object-src 'none', upgrade-insecure-requests) + X-Frame-Options; en dev es
+  manté la mínima per HMR.
+- **Playwright E2E** (`tests/e2e-ui/flows.spec.ts`): landing→preus, mapa
+  Leaflet amb cerca, ponts de ruta, metodologia/estat, legal des del peu,
+  fitxa SEO de Barcelona i validació de registre; projectes desktop+mòbil.
+- **Backups**: `scripts/backup_pg.sh` (dump comprimit, retenció 30 dies,
+  verificació de mida, comanda de restore provada) + documentació a README.
+- **Deps**: `@types/qrcode` a devDependencies; prisma/@prisma/client fixats a
+  6.11.1 (fuera del rango vulnerable de deepmerge-ts via @prisma/config —
+  `npm audit --omit=dev` ara net, 0 vulnerabilitats).
+
+Operativa post-deploy: cap migració (cap canvi d'esquema). Opcional: definir
+`SENTRY_DSN` a Vercel per activar l'enviament d'errors a Sentry.
+
 ## v37.1 — Passkeys (WebAuthn) + hub SEO /lloguer + tests TOTP — 2026-11-12
 
 **Passkeys completes** (@simplewebauthn v14, dependència nova):

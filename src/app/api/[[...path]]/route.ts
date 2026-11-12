@@ -5,6 +5,7 @@
 // Els handlers reals viuen a src/app/api/_impl/**/route.ts sense canvis;
 // /api/health i /api/stripe/webhook segueixen sent funcions pròpies.
 import { NextResponse, type NextRequest } from "next/server";
+import { captureError, logAccess, newRequestId } from "@/lib/observability";
 
 import * as h_account from "../_impl/account/route";
 import * as h_account_activity from "../_impl/account/activity/route";
@@ -204,8 +205,23 @@ async function handle(
   method: Method,
   ctx: { params: Promise<{ path?: string[] }> }
 ): Promise<Response> {
+  // v38.3 — observabilitat: request-ID + access log JSON + captura d'errors
+  const reqId = newRequestId(req);
+  const started = Date.now();
   const { path } = await ctx.params;
-  return dispatch(req, method, path ?? []);
+  const pathStr = "/" + (path ?? []).join("/");
+  try {
+    const res = await dispatch(req, method, path ?? []);
+    try { res.headers.set("X-Request-ID", reqId); } catch {}
+    logAccess({ reqId, method, path: pathStr, status: res.status, ms: Date.now() - started });
+    return res;
+  } catch (err) {
+    captureError(err, { reqId, method, path: pathStr });
+    return NextResponse.json(
+      { error: "internal_error", requestId: reqId },
+      { status: 500, headers: { "X-Request-ID": reqId } }
+    );
+  }
 }
 
 export const GET = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
