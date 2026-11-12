@@ -142,6 +142,44 @@ Operativa post-deploy: cap migració (cap canvi d'esquema). Opcional: definir
   mateixos tokens de disseny i dark mode v38.2).
 - Sense migració ni canvis d'API.
 
+### v38.6 — «Estàs pagant de més?»: m² amb efecte real + informes de la comunitat visibles
+Encàrrec: «la introducció dels m2 no afecta al preu… "Informe el preu que
+t'ofereixen" tampoc veig quina funció té si ho ha de validar l'administrador».
+
+- **Els m² ara ajusten la comparació** (mateix model que la valoració v2,
+  constants documentades VAL_REF_M2=85 / VAL_BETA_SUPERFICIE=0,8 de
+  `territorial.ts`): renda(m²) = base × (m²/85)^0,8 sobre l'habitatge típic.
+  Amb superfície, el TITULAR és el delta ajustat («+X% per sobre del típic
+  per a aquesta superfície (≈Y €/mes)»), amb la mitjana municipal (≈85 m²) i
+  l'€/m²·mes de l'oferta com a secundàries; sense renda però amb m² es mostra
+  «Renda típica estimada per a aquesta superfície»; nota de transparència amb
+  la fórmula i passarel·la a «Valoració orientativa» (Premium). La base
+  també accepta ref. de comarca (255 municipis sense sèrie), i per a naus no
+  s'aplica el model d'habitatges.
+- **Veredicte accionable**: desviació > +15% → consell de negociació (+ màxim
+  legal IRL i nul·litat de l'excés si el municipi ÉS zona tensada);
+  < −15% → avís de comprovar per què és tan barat (mai pagaments abans de
+  veure i signar).
+- **Els informes ciutadans ara serveixen per a alguna cosa**: nou endpoint
+  PÚBLIC i anònim `GET /api/reports/summary?mun=CODE` (dispatcher 76 rutes):
+  mediana d'ofertes + n dels últims 12 mesos (HABITATGE, no REJECTED),
+  PRIVACITAT n >= 3 per evitar reidentificació, sense edificis ni notes ni
+  res personal. La fitxa mostra «Ofertes de la comunitat (12 mesos): n
+  informes anònims · mediana ≈X €/mes · no verificat» (o invés a
+  contribuir si encara n'hi ha pocs) i es refresca just després d'enviar el
+  propi informe.
+- **Formulari d'informe honest**: botó «Comparteix el preu que t'han ofert
+  (anònim)» amb nota clara (es publica agregat, sense verificar, ningú no
+  valida el preu, sense dades personals); eliminat el camp de renda
+  DUPLICAT del formulari (usa el camp principal); validació client amb
+  missatge propi.
+- **Tests**: arreglats els 2 tests de computeValuation que estaven desfasats
+  de la v2 (esperaven central sense ajustos hedònics): ara asserten el model
+  v2 documentat (superfície β=0,8, OBRA_NOVA ×1,12, densitat clampada ±5%).
+  tests/funcionalitats.test.ts torna a 20/20 (total 83 pass, 0 fail) i el
+  `continue-on-error` del CI torna a ser innecessari.
+- Sense migració; una ruta pública nova de només lectura.
+
 ## v37.1 — Passkeys (WebAuthn) + hub SEO /lloguer + tests TOTP — 2026-11-12
 
 **Passkeys completes** (@simplewebauthn v14, dependència nova):

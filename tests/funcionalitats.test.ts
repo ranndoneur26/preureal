@@ -134,18 +134,22 @@ describe("computeValuation (motor F4 validat)", () => {
     provinciaValues: [],
   };
 
-  test("central = fiança municipal; banda = dispersió de comarca mesurada", () => {
+  test("central = fiança municipal ajustada per superfície (v2); banda = dispersió de comarca", () => {
     const out = computeValuation(base, { surfaceM2: 75 });
     expect(out.ok).toBe(true);
     if (!out.ok) return;
-    expect(out.result.central).toBe(1000);
+    // v2 (metodologia validada §5): ajust hedònic per superfície sobre la
+    // vivenda típica de 85 m², β = 0,8 — constants VAL_REF_M2/VAL_BETA_SUPERFICIE
+    const central = 1000 * Math.pow(75 / 85, 0.8);
+    expect(out.result.baseCentral).toBe(1000);
+    expect(out.result.central).toBeCloseTo(central, 1);
     expect(out.result.bandBasis).toBe("COMARCA");
     expect(out.result.bandN).toBe(8);
     expect(out.result.bandYear).toBe("2025");
     const disp = relativeIqr(base.comarcaValues)!;
-    expect(out.result.min).toBeCloseTo(1000 * (1 - disp / 2), 0);
-    expect(out.result.max).toBeCloseTo(1000 * (1 + disp / 2), 0);
-    expect(out.result.eurM2).toBeCloseTo(1000 / 75, 1);
+    expect(out.result.min).toBeCloseTo(central * (1 - disp / 2), 0);
+    expect(out.result.max).toBeCloseTo(central * (1 + disp / 2), 0);
+    expect(out.result.eurM2).toBeCloseTo(central / 75, 1);
   });
 
   test("confiança ALTA amb període recent, molts contractes i base comarca", () => {
@@ -176,15 +180,19 @@ describe("computeValuation (motor F4 validat)", () => {
     if (!out.ok) expect(out.reason).toBe("NO_RENT");
   });
 
-  test("notes qualitatives per habitacions i estat; sense coeficients", () => {
+  test("ajustos hedònics v2: superfície, estat i habitacions SÍ canvien els números", () => {
     const out = computeValuation(base, { rooms: 1, estat: "OBRA_NOVA", surfaceM2: 50 });
     expect(out.ok && out.result.notes.rooms).toBe("ROOMS_LOW");
     expect(out.ok && out.result.notes.estat).toBe("OBRA_NOVA");
     expect(out.ok && out.result.notes.surface).toBe("SURFACE_DERIVED");
-    // l'estat NO canvia els números (cap coeficient inventat)
+    // v2 (constants documentades a territorial.ts): superfície (β=0,8) →
+    // estat OBRA_NOVA ×1,12 → densitat d'habitacions clampada a ±5%.
+    const central = 1000 * Math.pow(50 / 85, 0.8) * 1.12 * Math.min(Math.pow(50 / 30, 0.1), 1.05);
+    expect(out.ok && out.result.central).toBeCloseTo(central, 1);
+    // i sense característiques, central = base (vivenda típica)
     const sense = computeValuation(base, {});
-    expect(out.ok && sense.ok && out.result.central === sense.result.central).toBe(true);
-    expect(out.ok && sense.ok && out.result.max === sense.result.max).toBe(true);
+    expect(out.ok && sense.ok && out.result.central !== sense.result.central).toBe(true);
+    expect(out.ok && sense.ok && sense.result.central === sense.result.baseCentral).toBe(true);
   });
 
   test("superfície fora de rang → eurM2 null (sense divisòries impossibles)", () => {

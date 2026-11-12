@@ -9,6 +9,7 @@ import ValuationPanel from "@/components/views/ValuationPanel";
 import OnboardingTour from "@/components/OnboardingTour";
 import FirstRunChecklist from "@/components/FirstRunChecklist";
 import { markStep } from "@/lib/steps";
+import { VAL_REF_M2, VAL_BETA_SUPERFICIE } from "@/lib/territorial";
 
 /** Resposta de GET /api/indicators/muni/:code (Fase 4, gating al servidor). */
 interface GatedIndicatorsResponse {
@@ -1559,6 +1560,18 @@ function FullPanel({
   const [reportSent, setReportSent] = useState(false);
   const [reportError, setReportError] = useState<string | null>(null);
 
+  // v38.6 — dades de la comunitat (agregat públic /api/reports/summary): els
+  // informes ciutadans ara es mostren com a mediana anònima (n >= 3) i el
+  // botó «Comparteix el preu» té un efecte visible real per a l'usuari.
+  const [community, setCommunity] = useState<{ code: string; n: number; median: number | null; medianEurM2: number | null } | null>(null);
+  const loadCommunity = useCallback(() => {
+    fetch(`/api/reports/summary?mun=${encodeURIComponent(mun.code)}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d) => setCommunity({ code: mun.code, n: Number(d?.n) || 0, median: d?.median ?? null, medianEurM2: d?.medianEurM2 ?? null }))
+      .catch(() => setCommunity({ code: mun.code, n: 0, median: null, medianEurM2: null }));
+  }, [mun.code]);
+  useEffect(() => { loadCommunity(); }, [loadCommunity]);
+
   // Fix 2026-11-11 — «Històric del municipi» sempre visible:
   //  a) les barres col·lapsaven (height en % dins d'una columna d'alçada
   //     automàtica no es resol: totes quedaven a min-h 3px) → ara alçada en px.
@@ -1598,13 +1611,19 @@ function FullPanel({
       : null;
 
   const yourRentNum = parseFloat(yourRent);
-  const delta =
-    isFinite(yourRentNum) && mun.rentLatest
-      ? ((yourRentNum - mun.rentLatest) / mun.rentLatest) * 100
-      : null;
+  const rentOk = isFinite(yourRentNum) && yourRentNum > 0;
+  // v38.6 — base de comparació: renda municipal vigent; si el municipi no té
+  // sèrie publicada (255 casos), referència de comarca (mateixa base que la fitxa).
+  const baseRent = mun.rentLatest ?? mun.comarcaRefLatest ?? null;
+  const baseIsRef = !mun.rentLatest && mun.comarcaRefLatest != null;
+  const delta = rentOk && baseRent ? ((yourRentNum - baseRent) / baseRent) * 100 : null;
 
   const submitReport = async () => {
     setReportError(null);
+    if (!rentOk) {
+      setReportError(t.map.panel.reportNeedRent);
+      return;
+    }
     // Fase 10 (E1): només s'informa d'èxit quan el servidor ho confirma
     try {
       const res = await fetch("/api/reports", {
@@ -1630,6 +1649,7 @@ function FullPanel({
       }
       setReportSent(true);
       setReportOpen(false);
+      loadCommunity(); // v38.6: la contribució és visible al bloc de la comunitat
     } catch {
       setReportError(locale === "ca" ? "Error de xarxa. Torna-ho a provar." : "Error de red. Inténtalo de nuevo.");
     }
@@ -1639,6 +1659,27 @@ function FullPanel({
   const bSamples = lookup.building?.sampleSize;
   // v33 — edifici industrial (nau): la fitxa ho indica i reetiqueta el preu
   const isNau = lookup.building?.tipus === "ind";
+
+  // v38.6 — comparació ajustada per superfície: mateix model que la valoració
+  // v2 (constants documentades a src/lib/territorial.ts): renda(m²) = base ×
+  // (m²/85)^0,8 sobre l'habitatge típic ≈85 m². Per a naus NO s'aplica (la
+  // base oficial és d'habitatges).
+  const m2Num = parseFloat(yourM2);
+  const hasM2 = isFinite(m2Num) && m2Num >= 10 && m2Num <= 1000;
+  const expectedRent =
+    !isNau && hasM2 && baseRent !== null && baseRent > 0
+      ? baseRent * Math.pow(Math.min(Math.max(m2Num, 20), 400) / VAL_REF_M2, VAL_BETA_SUPERFICIE)
+      : null;
+  const deltaExpected = expectedRent !== null && rentOk ? ((yourRentNum - expectedRent) / expectedRent) * 100 : null;
+  const headDelta = deltaExpected ?? delta;
+  const tip =
+    headDelta !== null && rentOk
+      ? headDelta > 15
+        ? t.map.panel.tipAbove + (mun.isTense ? t.map.panel.tipAboveTense : "")
+        : headDelta < -15
+          ? t.map.panel.tipBelow
+          : null
+      : null;
 
   // Fix 2026-11-11 — affordància de pla als botons PDF/CSV: el pla efectiu el
   // sap el client (auth.user.plan); si la feature no és inclosa es mostra un
@@ -1856,25 +1897,75 @@ function FullPanel({
             />
           </div>
         </div>
-        {delta !== null && (
-          <div className={`mt-3 rounded-lg p-3 text-center font-bold ${
-            delta > 5 ? "bg-embersoft text-ember3" : delta < -5 ? "bg-mintsoft text-green2" : "bg-sand text-moss"
-          }`}>
-            {delta > 0 ? "+" : ""}{delta.toFixed(1)}%{" "}
-            <span className="font-normal text-sm">
-              {delta > 5 ? t.map.panel.above : delta < -5 ? t.map.panel.below : t.map.panel.atMarket}
-            </span>
+        {/* v38.6 — resultat: amb superfície, el titular és la comparació ajustada
+            per m² (la mitjana municipal correspon a l'habitatge típic ≈85 m²) */}
+        {rentOk && deltaExpected !== null && expectedRent !== null && (
+          <>
+            <div className={`mt-3 rounded-lg p-3 text-center font-bold ${
+              deltaExpected > 5 ? "bg-embersoft text-ember3" : deltaExpected < -5 ? "bg-mintsoft text-green2" : "bg-sand text-moss"
+            }`}>
+              {deltaExpected > 0 ? "+" : ""}{deltaExpected.toFixed(1)}%{" "}
+              <span className="font-normal text-sm">
+                {deltaExpected > 5 ? t.map.panel.aboveSurface : deltaExpected < -5 ? t.map.panel.belowSurface : t.map.panel.atSurface}{" "}
+                ({locale === "ca" ? "renda típica" : "renta típica"} ≈{Math.round(expectedRent)} €/mes)
+              </span>
+            </div>
+            <div className="mt-1 text-[10px] text-stone text-center">
+              {t.map.panel.meanRef}: {delta !== null && delta > 0 ? "+" : ""}{delta !== null ? delta.toFixed(1) : "—"}%{" · "}
+              {t.map.panel.eurM2Offer}: {(yourRentNum / m2Num).toFixed(1)} €/m²·mes
+              {baseIsRef ? " · " + (locale === "ca" ? "base: ref. de comarca" : "base: ref. de comarca") : ""}
+            </div>
+            <div className="mt-2 text-[10px] text-stone leading-relaxed">
+              {t.map.panel.approxNote}
+            </div>
+          </>
+        )}
+        {/* sense superfície: comparació amb la mitjana municipal (com abans) */}
+        {rentOk && deltaExpected === null && delta !== null && (
+          <>
+            <div className={`mt-3 rounded-lg p-3 text-center font-bold ${
+              delta > 5 ? "bg-embersoft text-ember3" : delta < -5 ? "bg-mintsoft text-green2" : "bg-sand text-moss"
+            }`}>
+              {delta > 0 ? "+" : ""}{delta.toFixed(1)}%{" "}
+              <span className="font-normal text-sm">
+                {delta > 5 ? t.map.panel.above : delta < -5 ? t.map.panel.below : t.map.panel.atMarket}
+              </span>
+            </div>
+            <div className="mt-1 text-[10px] text-stone text-center">
+              {isNau && (
+                <div className="font-semibold" style={{ color: "#5d5480" }}>
+                  {t.map.panel.industrialDeltaNote}
+                </div>
+              )}
+              {locale === "ca" ? "Comparació amb la MITJANA municipal (dades agregades Incasòl); no és una valoració de l'immoble." : "Comparación con la MEDIA municipal (datos agregados Incasòl); no es una valoración del inmueble."}
+            </div>
+          </>
+        )}
+        {/* només superfície, sense renda: què sol costar aquest format aquí */}
+        {!rentOk && expectedRent !== null && (
+          <div className="mt-3 rounded-lg bg-sand text-moss p-3 text-center text-sm font-bold">
+            {t.map.panel.surfaceTypicalRent}: ≈{Math.round(expectedRent)} €/mes
           </div>
         )}
-        {delta !== null && (
-          <div className="mt-1 text-[10px] text-stone text-center">
-            {isNau && (
-              <div className="font-semibold" style={{ color: "#5d5480" }}>
-                {t.map.panel.industrialDeltaNote}
-              </div>
-            )}
-            {locale === "ca" ? "Comparació amb la MITJANA municipal (dades agregades Incasòl); no és una valoració de l'immoble." : "Comparación con la MEDIA municipal (datos agregados Incasòl); no es una valoración del inmueble."}
+        {/* v38.6 — veredicte accionable davant de desviacions grans */}
+        {tip && (
+          <div className="mt-2 rounded-lg border border-amberline2 bg-ambersoft2 p-2.5 text-[11px] text-amberdark leading-snug">
+            {tip}
           </div>
+        )}
+        {/* v38.6 — dades de la comunitat: agregat públic, privadesa n >= 3 */}
+        {community && community.n >= 3 && community.median !== null && (
+          <div className="mt-3 rounded-lg border border-line bg-cream p-3 text-xs text-moss">
+            <div className="font-semibold text-pine">{t.map.panel.communityTitle}</div>
+            <div className="mt-0.5">
+              {community.n} {t.map.panel.communityReports} · {locale === "ca" ? "mediana" : "mediana"} ≈{Math.round(community.median)} €/mes
+              {community.medianEurM2 !== null ? ` · ≈${community.medianEurM2.toFixed(1)} €/m²·mes` : ""}
+              {" · "}{t.map.panel.communityNotVerified}
+            </div>
+          </div>
+        )}
+        {community && community.n < 3 && (
+          <p className="mt-3 text-[10px] text-stone">{t.map.panel.communityEmpty}</p>
         )}
         <button
           onClick={() => setReportOpen((v) => !v)}
@@ -1885,6 +1976,7 @@ function FullPanel({
         </button>
         {reportOpen && !reportSent && (
           <div className="mt-2 space-y-2">
+            <p className="text-[11px] text-stone leading-relaxed">{t.map.panel.reportNote}</p>
             <select
               value={contractType}
               onChange={(e) => setContractType(e.target.value)}
@@ -1896,18 +1988,9 @@ function FullPanel({
               <option value="LOCAL">{locale === "ca" ? "Local comercial" : "Local comercial"}</option>
               <option value="ALTRE">{locale === "ca" ? "Altres" : "Otros"}</option>
             </select>
-            <div className="flex gap-2">
-              <input
-                autoFocus
-                value={yourRent}
-                onChange={(e) => setYourRent(e.target.value.replace(/[^0-9.]/g, ""))}
-                className="flex-1 px-3 py-2 rounded-lg border border-line text-sm"
-                placeholder={t.map.panel.yourRent}
-              />
-              <button onClick={submitReport} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold">
-                {t.map.panel.reportBtn}
-              </button>
-            </div>
+            <button onClick={submitReport} className="w-full px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold">
+              {t.map.panel.reportBtn}
+            </button>
             {reportError && <div className="text-xs text-ember3">{reportError}</div>}
           </div>
         )}
