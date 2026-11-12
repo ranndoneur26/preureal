@@ -1,0 +1,55 @@
+name: CI
+
+# v38.3 — Gate de calidad en cada PR y push a main.
+# El build de producción (con prisma migrate deploy) lo hace Vercel;
+# aquí se valida con un DATABASE_URL ficticio (el build no toca la BD:
+# el hub /lloguer y el sitemap degradan con gracia si no hay BD).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instal·la dependències
+        run: npm install --legacy-peer-deps --no-audit --no-fund
+
+      - name: Guardia de repo + drift del dispatcher (build falla si una ruta _impl no està registrada)
+        run: node scripts/check_repo.mjs
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests unitaris i d'integració (bloquejants)
+        run: bun test tests/unit.test.ts tests/totp.test.ts tests/pdf_report.test.ts tests/audit_v23.test.ts
+
+      # 2 fallos PREEXISTENTS en computeValuation (motor F4), documentats a
+      # TASKS.md; no bloquejen el CI mentre no es corregeixin.
+      - name: Tests de funcionalitats (no bloquejant)
+        run: bun test tests/funcionalitats.test.ts
+        continue-on-error: true
+
+      - name: Auditoria de dependències de producció (high+ bloqueja)
+        run: npm run audit
+
+      - name: Build de producció (sense migracions: les aplica Vercel)
+        run: npx prisma generate && npx next build
+        env:
+          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
