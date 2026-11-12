@@ -17,6 +17,7 @@ export async function GET() {
       plan: user.plan,
       locale: user.locale,
       alertsEnabled: user.alertsEnabled, // v24: resum mensual de preferits (opt-in)
+      totpEnabled: Boolean(user.totpEnabled), // v37: 2FA actiu (només l'estat, mai el secret)
       emailVerified: Boolean(user.emailVerifiedAt),
     },
     quota: { used: quota.used, limit: quota.limit },

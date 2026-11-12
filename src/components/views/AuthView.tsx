@@ -19,6 +19,10 @@ export default function AuthView({
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [resetDone, setResetDone] = useState(false);
+  // v37 — 2FA: challenge curt rebut del login quan el compte té TOTP actiu
+  const [totpChallenge, setTotpChallenge] = useState<string | null>(null);
+  const [totpCode, setTotpCode] = useState("");
+  const [totpUseRecovery, setTotpUseRecovery] = useState(false);
   // el botó de Google només es mostra si l'OAuth està configurat al servidor
   const [googleEnabled, setGoogleEnabled] = useState(false);
 
@@ -64,6 +68,11 @@ export default function AuthView({
           setError(d.error || "DEFAULT");
           return;
         }
+        // v37 — 2FA: contrasenya correcta != sessió; demanem el codi TOTP
+        if (d.totpRequired && d.challenge) {
+          setTotpChallenge(String(d.challenge));
+          return;
+        }
         await auth.refresh();
         // Fase 1: si el correu no està verificat, abans de res verificar-lo
         navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
@@ -90,6 +99,33 @@ export default function AuthView({
         // creat sessió nova i ha tancat les anteriors)
         setResetDone(true);
       }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // v37 — segon pas del login amb 2FA (codi TOTP o codi de recuperació)
+  const submitTotp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/2fa/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          totpUseRecovery
+            ? { challenge: totpChallenge, recoveryCode: totpCode }
+            : { challenge: totpChallenge, code: totpCode }
+        ),
+      });
+      const d = await res.json();
+      if (!res.ok) {
+        setError(d.message || d.error || "DEFAULT");
+        return;
+      }
+      await auth.refresh();
+      navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
     } finally {
       setBusy(false);
     }
@@ -140,6 +176,68 @@ export default function AuthView({
               {locale === "ca" ? "Anar al panell" : "Ir al panel"}
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // v37 — pantalla del segon factor (2FA): contrasenya ja validada pel servidor
+  if (totpChallenge) {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4 py-14">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-[#0f2e21] text-white flex items-center justify-center mx-auto">
+              <ShieldCheck className="w-6 h-6 text-[#7fd6a4]" />
+            </div>
+            <h1 className="mt-4 text-2xl font-extrabold">
+              {locale === "ca" ? "Verificació en dos passos" : "Verificación en dos pasos"}
+            </h1>
+            <p className="mt-2 text-sm text-[#6b6f68]">
+              {totpUseRecovery
+                ? (locale === "ca"
+                    ? "Introdueix un codi de recuperació d'un sol ús."
+                    : "Introduce un código de recuperación de un solo uso.")
+                : (locale === "ca"
+                    ? "Obre l'app d'autenticació i introdueix el codi de 6 dígits."
+                    : "Abre la app de autenticación e introduce el código de 6 dígitos.")}
+            </p>
+          </div>
+          <form onSubmit={submitTotp} className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4">
+            <input
+              type="text"
+              required
+              autoFocus
+              inputMode={totpUseRecovery ? "text" : "numeric"}
+              maxLength={totpUseRecovery ? 12 : 6}
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value)}
+              className="pr-input text-center text-2xl tracking-[0.3em] font-bold"
+              placeholder={totpUseRecovery ? "XXXXX-XXXXX" : "000000"}
+              autoComplete="one-time-code"
+            />
+            {errText && (
+              <div className="rounded-lg bg-[#fdeae2] border border-[#f2c4ac] text-[#b0431c] text-sm px-3 py-2">
+                {errText}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={busy}
+              className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors disabled:opacity-50"
+            >
+              {busy ? "…" : locale === "ca" ? "Verifica i entra" : "Verificar y entrar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTotpUseRecovery(!totpUseRecovery); setTotpCode(""); setError(null); }}
+              className="w-full text-xs text-[#6b6f68] underline"
+            >
+              {totpUseRecovery
+                ? (locale === "ca" ? "Fes servir el codi de l'app" : "Usar el código de la app")
+                : (locale === "ca" ? "No tinc l'app: fes servir un codi de recuperació" : "No tengo la app: usar un código de recuperación")}
+            </button>
+          </form>
         </div>
       </div>
     );

@@ -8,7 +8,7 @@ import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, 
 
 interface BillingData {
   subscriptions: Array<{ id: string; plan: string; status: string; demo: boolean; currentPeriodEnd: string | null; createdAt: string }>;
-  invoices: Array<{ id: string; date: string | null; amount: number | null; currency: string | null; status: string | null; hostedUrl: string | null }>;
+  invoices: Array<{ id: string; date: string | null; amount: number | null; currency: string | null; status: string | null; hostedUrl: string | null; pdfUrl?: string | null }>;
   stripeConfigured: boolean;
 }
 
@@ -44,6 +44,10 @@ export default function PanelView() {
   const [plansCfg, setPlansCfg] = useState<Array<PlanShapeLite & { id: string; priceEur: number }> | null>(null);
   const [changeTarget, setChangeTarget] = useState<PlanIdLite | null>(null);
   const [changeMsg, setChangeMsg] = useState<string | null>(null);
+  // v37 — retención antes de cancelar: modal con alternativas + motivo opcional
+  const [retentionOpen, setRetentionOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelFeedback, setCancelFeedback] = useState("");
 
   // seguretat
   const [currentPassword, setCurrentPassword] = useState("");
@@ -51,6 +55,13 @@ export default function PanelView() {
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [activity, setActivity] = useState<any[] | null>(null);
   const [lastLoginAt, setLastLoginAt] = useState<string | null>(null);
+  // v37 — 2FA TOTP: alta (QR + codi), codis de recuperació i baixa
+  const [totpEnabled, setTotpEnabled] = useState<boolean | null>(null);
+  const [totpQr, setTotpQr] = useState<string | null>(null);
+  const [totpSecretManual, setTotpSecretManual] = useState<string | null>(null);
+  const [totpCodeInput, setTotpCodeInput] = useState("");
+  const [totpRecoveryCodes, setTotpRecoveryCodes] = useState<string[] | null>(null);
+  const [totpPassword, setTotpPassword] = useState("");
 
   useEffect(() => {
     auth.refresh();
@@ -65,6 +76,7 @@ export default function PanelView() {
     setSyncedUser(auth.user);
     setName(auth.user.name || "");
     setAlertsOn(Boolean(auth.user.alertsEnabled)); // v24
+    setTotpEnabled(Boolean((auth.user as any).totpEnabled)); // v37
   }
 
   const loadTab = useCallback(async (tabId: string) => {
@@ -236,12 +248,24 @@ export default function PanelView() {
     }
   };
 
-  // v22: cancel·lació programada a final de període (manté l'accés fins llavors)
-  const cancelSubscription = async () => {
+  // v37 — cancel·lació amb RETENCIÓ: el botó obre el modal (alternatives +
+  // motiu); la cancel·lació real fa POST amb el motiu opcional.
+  const cancelSubscription = () => {
+    setCancelReason("");
+    setCancelFeedback("");
+    setRetentionOpen(true);
+  };
+
+  const confirmCancel = async () => {
     setBusy(true);
     setMsg(null);
+    setRetentionOpen(false);
     try {
-      const res = await fetch("/api/subscription/cancel", { method: "POST" });
+      const res = await fetch("/api/subscription/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: cancelReason || undefined, feedback: cancelFeedback.trim() || undefined }),
+      });
       const d = await res.json().catch(() => ({}));
       if (!res.ok) {
         setMsg(d.message || d.error || "Error");
@@ -251,8 +275,8 @@ export default function PanelView() {
       setBilling(null);
       loadTab("facturacio");
       setMsg(locale === "ca"
-        ? "Cancel·lació programada: mantindràs l'accés fins al final del període."
-        : "Cancelación programada: mantendrás el acceso hasta el final del período.");
+        ? "Cancel·lació programada: mantindràs l'accés fins al final del període. Si canvis d'idea, pots reactivar-la aquí mateix."
+        : "Cancelación programada: mantendrás el acceso hasta el final del período. Si cambias de idea, puedes reactivarla aquí mismo.");
     } finally {
       setBusy(false);
     }
@@ -318,6 +342,113 @@ export default function PanelView() {
       }
     } catch {
       setChangeMsg(locale === "ca" ? "Error de xarxa: torna-ho a provar." : "Error de red: inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ── v37 — 2FA TOTP ──────────────────────────────────────────────────────────
+  const totpSetup = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/2fa/setup", { method: "POST" });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(d.error === "ALREADY_ENABLED" ? (locale === "ca" ? "El 2FA ja està actiu." : "El 2FA ya está activo.") : (d.error || "Error"));
+        return;
+      }
+      setTotpSecretManual(d.secret);
+      const QR = (await import("qrcode")).default;
+      setTotpQr(await QR.toDataURL(d.uri, { width: 180, margin: 1 }));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const totpEnable = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/2fa/enable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: totpCodeInput }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(d.message || d.error || "Error");
+        return;
+      }
+      setTotpEnabled(true);
+      setTotpRecoveryCodes(d.recoveryCodes || []);
+      setTotpQr(null);
+      setTotpSecretManual(null);
+      setTotpCodeInput("");
+      await auth.refresh();
+      setMsg(locale === "ca" ? "Verificació en dos passos ACTIVADA. Guarda els codis de recuperació ara." : "Verificación en dos pasos ACTIVADA. Guarda los códigos de recuperación ahora.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const totpDisable = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/2fa/disable", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: totpPassword }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(d.message || d.error || "Error");
+        return;
+      }
+      setTotpEnabled(false);
+      setTotpRecoveryCodes(null);
+      setTotpPassword("");
+      await auth.refresh();
+      setMsg(locale === "ca" ? "Verificació en dos passos desactivada." : "Verificación en dos pasos desactivada.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // ── v37 — ALERTA DE PREU d'un favorit: PATCH { entityKey, alertPct } ──
+  const setFavAlert = async (entityKey: string, value: string) => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/favorites", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entityKey, alertPct: value === "" ? null : Number(value) }),
+      });
+      if (res.ok) {
+        const r = await fetch("/api/favorites").catch(() => null);
+        if (r?.ok) {
+          const d = await r.json().catch(() => null);
+          if (d?.favorites) setFavorites(d.favorites);
+        }
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const totpRecoveryRegen = async () => {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/auth/2fa/recovery", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: totpPassword }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMsg(d.message || d.error || "Error");
+        return;
+      }
+      setTotpRecoveryCodes(d.recoveryCodes || []);
+      setTotpPassword("");
     } finally {
       setBusy(false);
     }
@@ -704,6 +835,7 @@ export default function PanelView() {
                     <span>{inv.date ? new Date(inv.date).toLocaleDateString() : "—"} · {inv.amount?.toFixed(2)} {inv.currency?.toUpperCase()}</span>
                     <span className="flex items-center gap-2">
                       <span className="text-xs text-[#6b6f68]">{inv.status}</span>
+                      {inv.pdfUrl && <a href={inv.pdfUrl} target="_blank" rel="noreferrer" className="text-xs underline text-[#0f2e21]">PDF</a>}
                       {inv.hostedUrl && <a href={inv.hostedUrl} target="_blank" rel="noreferrer" className="text-xs underline text-[#0f2e21]">{locale === "ca" ? "Factura" : "Factura"}</a>}
                     </span>
                   </div>
@@ -717,6 +849,72 @@ export default function PanelView() {
               </p>
             )}
           </div>
+          {/* v37 — MODAL DE RETENCIÓ abans de confirmar la cancel·lació */}
+          {retentionOpen && (
+            <div className="fixed inset-0 z-[2000] bg-black/40 flex items-center justify-center p-4" onClick={() => !busy && setRetentionOpen(false)}>
+              <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <h3 className="font-bold text-lg">
+                  {locale === "ca" ? "Abans de marxar…" : "Antes de irte…"}
+                </h3>
+                <p className="mt-1 text-sm text-[#4b5349]">
+                  {locale === "ca"
+                    ? "Mantindràs l'accés fins al final del període pagat. Però potser no cal cancel·lar: mira aquestes alternatives."
+                    : "Mantendrás el acceso hasta el final del período pagado. Pero quizá no hace falta cancelar: mira estas alternativas."}
+                </p>
+                <div className="mt-4 space-y-2">
+                  {u.plan === "PRO" && (
+                    <button onClick={() => { setRetentionOpen(false); setChangeTarget("PREMIUM"); }} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                      <p className="text-sm font-bold">{locale === "ca" ? "Et passes a Premium i estalvies 12 €/mes (144 €/any)" : "Pásate a Premium y ahorras 12 €/mes (144 €/año)"}</p>
+                      <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Mateixos informes PDF municipals, consultes il·limitades, sense naves industrials." : "Mismos informes PDF municipales, consultas ilimitadas, sin naves industriales."}</p>
+                    </button>
+                  )}
+                  {u.plan === "PREMIUM" && (
+                    <button onClick={() => { setRetentionOpen(false); setChangeTarget("PRO"); }} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                      <p className="text-sm font-bold">{locale === "ca" ? "Prova Pro·Agents (pots tornar a Premium quan vulguis)" : "Prueba Pro·Agentes (puedes volver a Premium cuando quieras)"}</p>
+                      <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Si necessites CSV, PDF d'edifici i naus industrials. El canvi es prorrateja amb Stripe." : "Si necesitas CSV, PDF de edificio y naves industriales. El cambio se prorratea con Stripe."}</p>
+                    </button>
+                  )}
+                  <button onClick={openPortal} disabled={busy} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                    <p className="text-sm font-bold">{locale === "ca" ? "Només volia canviar la targeta / el mètode de pagament" : "Solo quería cambiar la tarjeta / el método de pago"}</p>
+                    <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Al Portal de Stripe pots actualitzar la targeta sense perdre el pla." : "En el Portal de Stripe puedes actualizar la tarjeta sin perder el plan."}</p>
+                  </button>
+                  <button onClick={() => { setRetentionOpen(false); navigate("/preus"); }} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                    <p className="text-sm font-bold">{locale === "ca" ? "Revisar què inclou cada pla" : "Revisar qué incluye cada plan"}</p>
+                    <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Comparació completa de Premium i Pro·Agents." : "Comparación completa de Premium y Pro·Agentes."}</p>
+                  </button>
+                </div>
+                <div className="mt-5 border-t border-[#e5e1da] pt-4">
+                  <p className="text-sm font-bold">{locale === "ca" ? "Vols continuar amb la cancel·lació?" : "¿Quieres continuar con la cancelación?"}</p>
+                  <label className="block mt-2 text-xs font-semibold text-[#4b5349]">
+                    {locale === "ca" ? "Motiu (opcional — ens ajuda a millorar)" : "Motivo (opcional — nos ayuda a mejorar)"}
+                  </label>
+                  <select value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className="mt-1 w-full rounded-lg border border-[#e5e1da] px-3 py-2 text-sm">
+                    <option value="">{locale === "ca" ? "— Tria un motiu —" : "— Elige un motivo —"}</option>
+                    <option value="CAR">{locale === "ca" ? "El preu / la targeta" : "El precio / la tarjeta"}</option>
+                    <option value="NO_USO">{locale === "ca" ? "No l'uso prou" : "No lo uso lo suficiente"}</option>
+                    <option value="PREU">{locale === "ca" ? "És car per al que em fa falta" : "Es caro para lo que necesito"}</option>
+                    <option value="FALTEN_DADES">{locale === "ca" ? "Falten dades que necessito" : "Faltan datos que necesito"}</option>
+                    <option value="UN_ALTRE">{locale === "ca" ? "Un altre motiu" : "Otro motivo"}</option>
+                  </select>
+                  <textarea
+                    value={cancelFeedback}
+                    onChange={(e) => setCancelFeedback(e.target.value.slice(0, 500))}
+                    placeholder={locale === "ca" ? "Explica'ns-ho (opcional, màx. 500 caràcters)…" : "Cuéntanos (opcional, máx. 500 caracteres)…"}
+                    rows={2}
+                    className="mt-2 w-full rounded-lg border border-[#e5e1da] px-3 py-2 text-sm"
+                  />
+                  <div className="mt-3 flex gap-2 flex-wrap">
+                    <button onClick={confirmCancel} disabled={busy} className="px-4 py-2 rounded-lg bg-[#b0431c] text-white text-sm font-bold hover:opacity-90 disabled:opacity-50">
+                      {locale === "ca" ? "Confirmar la cancel·lació" : "Confirmar la cancelación"}
+                    </button>
+                    <button onClick={() => setRetentionOpen(false)} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50">
+                      {locale === "ca" ? "Me queda" : "Me quedo"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -818,14 +1016,33 @@ export default function PanelView() {
             </div>
           ) : (
             <div className="space-y-2">
+              <p className="text-xs text-[#6b6f68]">
+                {locale === "ca"
+                  ? "Amb l'alerta activada, t'avisem per correu quan el preu vigent d'un preferit canviï el % que triïs (o passi a àrea tensada). L'avís arriba quan publiquem dades noves, màx. un per dia."
+                  : "Con la alerta activada, te avisamos por correo cuando el precio vigente de un favorito cambie el % que elijas (o pase a área tensionada). El aviso llega cuando publicamos datos nuevos, máx. uno al día."}
+              </p>
               {favorites.map((f) => (
-                <div key={f.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
+                <div key={f.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2 flex-wrap">
                   <span className="flex items-center gap-2">
                     <Star className="w-3.5 h-3.5 text-[#e8673c] fill-[#e8673c]" />
                     <b>{f.label || f.entityKey}</b>
                     <span className="text-xs text-[#6b6f68]">{f.buildingId ? "edifici" : "municipi"}</span>
                   </span>
-                  <span className="flex items-center gap-2 shrink-0">
+                  <span className="flex items-center gap-2 shrink-0 flex-wrap">
+                    {/* v37 — alerta de preu: llindar % per favorit */}
+                    <select
+                      value={f.alertPct != null ? String(f.alertPct) : ""}
+                      onChange={(e) => setFavAlert(f.entityKey, e.target.value)}
+                      disabled={busy}
+                      className="text-xs rounded-lg border border-[#e5e1da] px-2 py-1"
+                      title={locale === "ca" ? "Alerta de preu" : "Alerta de precio"}
+                    >
+                      <option value="">{locale === "ca" ? "Sense alerta" : "Sin alerta"}</option>
+                      <option value="3">±3%</option>
+                      <option value="5">±5%</option>
+                      <option value="10">±10%</option>
+                      <option value="15">±15%</option>
+                    </select>
                     {(f.buildingId || f.municipalityCode) && (
                       <button
                         onClick={() => navigate(favoriteMapHref(f))}
@@ -950,6 +1167,108 @@ export default function PanelView() {
                 ? "Invalida totes les sessions obertes en altres ordinadors o mòbils. Aquest dispositiu continua amb la sessió iniciada. També es tanquen automàticament en canviar la contrasenya."
                 : "Invalida todas las sesiones abiertas en otros ordenadores o móviles. Este dispositivo sigue con la sesión iniciada. También se cierran automáticamente al cambiar la contraseña."}
             </p>
+          </div>
+          {/* v37 — AUTENTICACIÓ EN DOS PASSOS (TOTP) */}
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+            <h3 className="font-bold flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              {locale === "ca" ? "Verificació en dos passos (2FA)" : "Verificación en dos pasos (2FA)"}
+              {totpEnabled !== null && (
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${totpEnabled ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#f0ede8] text-[#6b6f68]"}`}>
+                  {totpEnabled ? (locale === "ca" ? "Activada" : "Activada") : (locale === "ca" ? "Desactivada" : "Desactivada")}
+                </span>
+              )}
+            </h3>
+            {totpEnabled === false && (
+              <>
+                <p className="text-sm text-[#4b5349]">
+                  {locale === "ca"
+                    ? "Afegeix una segona capa de seguretat: a més de la contrasenya, caldrà un codi de l'app d'autenticació (Google Authenticator, Authy, Aegis…)."
+                    : "Añade una segunda capa de seguridad: además de la contraseña, hará falta un código de la app de autenticación (Google Authenticator, Authy, Aegis…)."}
+                </p>
+                {!totpQr ? (
+                  <button onClick={totpSetup} disabled={busy} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+                    {locale === "ca" ? "Activa la verificació en dos passos" : "Activar la verificación en dos pasos"}
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <ol className="text-sm text-[#4b5349] list-decimal pl-5 space-y-0.5">
+                      <li>{locale === "ca" ? "Obre l'app d'autenticació i escaneja aquest codi:" : "Abre la app de autenticación y escanea este código:"}</li>
+                      <li>{locale === "ca" ? "Introdueix el codi de 6 dígits que et mostra per confirmar." : "Introduce el código de 6 dígitos que te muestra para confirmar."}</li>
+                    </ol>
+                    <div className="flex flex-wrap items-center gap-4">
+                      {totpQr && <img src={totpQr} alt="QR 2FA" width={180} height={180} className="rounded-lg border border-[#e5e1da]" />}
+                      {totpSecretManual && (
+                        <div className="text-xs text-[#6b6f68]">
+                          <p className="font-semibold">{locale === "ca" ? "Alta manual (si no pots escanejar):" : "Alta manual (si no puedes escanear):"}</p>
+                          <code className="break-all">{totpSecretManual}</code>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <input
+                        value={totpCodeInput}
+                        onChange={(e) => setTotpCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="000000"
+                        inputMode="numeric"
+                        className="w-36 px-3 py-2 rounded-lg border border-[#e5e1da] text-center text-lg tracking-[0.2em] font-bold"
+                        autoComplete="one-time-code"
+                      />
+                      <button onClick={totpEnable} disabled={busy || totpCodeInput.length !== 6} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+                        {locale === "ca" ? "Confirma i activa" : "Confirmar y activar"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {totpEnabled === true && (
+              <div className="space-y-3">
+                <p className="text-sm text-[#4b5349]">
+                  {locale === "ca"
+                    ? "En entrar, després de la contrasenya, es demanarà el codi de l'app d'autenticació."
+                    : "Al entrar, después de la contraseña, se pedirá el código de la app de autenticación."}
+                </p>
+                {totpRecoveryCodes && (
+                  <div className="rounded-xl border border-[#e8b27c] bg-[#fdf6ec] p-4">
+                    <p className="text-sm font-bold">{locale === "ca" ? "Codis de recuperació (un sol ús)" : "Códigos de recuperación (un solo uso)"}</p>
+                    <p className="text-xs text-[#6b6f68] mt-0.5">
+                      {locale === "ca"
+                        ? "Cada codi funciona UNA vegada si no tens l'app a mà. No es tornaran a mostrar: fes-ne una captura o imprimeix-los."
+                        : "Cada código funciona UNA vez si no tienes la app a mano. No se volverán a mostrar: haz una captura o imprímelos."}
+                    </p>
+                    <div className="mt-2 grid grid-cols-2 gap-1 font-mono text-sm">
+                      {totpRecoveryCodes.map((c) => (
+                        <span key={c}>{c}</span>
+                      ))}
+                    </div>
+                    <button onClick={() => setTotpRecoveryCodes(null)} className="mt-2 text-xs underline text-[#0f2e21]">
+                      {locale === "ca" ? "Ja els he guardat" : "Ya los he guardado"}
+                    </button>
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input
+                    type="password"
+                    value={totpPassword}
+                    onChange={(e) => setTotpPassword(e.target.value)}
+                    placeholder={locale === "ca" ? "Contrasenya per confirmar" : "Contraseña para confirmar"}
+                    className="px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                  />
+                  <button onClick={totpRecoveryRegen} disabled={busy || !totpPassword} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold disabled:opacity-50">
+                    {locale === "ca" ? "Nous codis de recuperació" : "Nuevos códigos de recuperación"}
+                  </button>
+                  <button onClick={totpDisable} disabled={busy || !totpPassword} className="px-4 py-2 rounded-lg border border-[#b0431c] text-[#b0431c] text-sm font-semibold hover:bg-[#fdeae2] disabled:opacity-50">
+                    {locale === "ca" ? "Desactiva el 2FA" : "Desactivar el 2FA"}
+                  </button>
+                </div>
+                <p className="text-xs text-[#6b6f68]">
+                  {locale === "ca"
+                    ? "Les accions d'aquesta secció demanen la contrasenya: si algú té el telèfon robat, no podrà desactivar el 2FA ni regenerar els codis."
+                    : "Las acciones de esta sección piden la contraseña: si alguien tiene el teléfono robado, no podrá desactivar el 2FA ni regenerar los códigos."}
+                </p>
+              </div>
+            )}
           </div>
           <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
             <h3 className="font-bold">{locale === "ca" ? "Activitat recent del compte" : "Actividad reciente de la cuenta"}</h3>

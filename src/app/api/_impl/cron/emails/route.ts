@@ -7,10 +7,12 @@ import {
   RETRYABLE_TYPES,
   deliverWithResend,
   favoritesDigestMail,
+  priceAlertMail,
   mailProvider,
   redactSecrets,
   type DigestItem,
   type MailType,
+  type PriceAlertEntry,
 } from "@/lib/mail";
 
 /**
@@ -61,6 +63,9 @@ export async function GET(req: Request) {
   const summary = {
     provider: mailProvider(),
     digestsQueued: 0,
+    priceAlertsQueued: 0,
+    priceAlertEntries: 0,
+    priceBaselinesSet: 0,
     retried: 0,
     sent: 0,
     tokensPurged: 0,
@@ -167,6 +172,149 @@ export async function GET(req: Request) {
     }
   } catch (e) {
     console.error("cron emails: digest de preferits fallat", e);
+  }
+
+  // ── 0.5. v37: ALERTES DE PREU (favorits amb alertPct) + àrees tensades noves ──
+  // Semàntica: lastNotifiedValue és la LÍNIA BASE (l'últim valor usat en un avís
+  // o el primer valor conegut). El % es mesura SEMPRE des de la línia base, així
+  // que un canvi gradual s'acumula fins travessar el llindar (mai es reseteja
+  // amb variacions petites). Idempotència: PriceAlertLog únic per
+  // usuari+entitat+tipus+període → cap avís doble per la mateixa publicació.
+  try {
+    const users = await db.user.findMany({
+      where: {
+        active: true,
+        emailVerifiedAt: { not: null },
+        plan: { in: ["PREMIUM", "PRO"] },
+        favorites: { some: { alertPct: { not: null } } },
+      },
+      select: { id: true, email: true, locale: true },
+      take: 500,
+    });
+    for (const u of users) {
+      const favs = await db.favorite.findMany({
+        where: { userId: u.id, alertPct: { not: null } },
+        take: 50,
+      });
+      const muniCodes = favs.map((f) => f.municipalityCode).filter(Boolean) as string[];
+      const buildingIds = favs.map((f) => f.buildingId).filter(Boolean) as string[];
+      const muns = muniCodes.length
+        ? await db.municipality.findMany({
+            where: { code: { in: muniCodes } },
+            select: { code: true, name: true, rentLatest: true, rentPeriod: true, isTense: true },
+          })
+        : [];
+      const munMap = new Map(muns.map((m) => [m.code, m]));
+      const blds = buildingIds.length
+        ? await db.building.findMany({
+            where: { id: { in: buildingIds } },
+            select: { id: true, nom: true, refcat: true, avgRentEurMonth: true },
+          })
+        : [];
+      const bldMap = new Map(blds.map((b) => [b.id, b]));
+
+      const entries: PriceAlertEntry[] = [];
+      for (const f of favs) {
+        const threshold = f.alertPct ?? 0;
+        if (!threshold) continue;
+        const cur = f.buildingId
+          ? bldMap.get(f.buildingId)?.avgRentEurMonth ?? null
+          : munMap.get(f.municipalityCode || "")?.rentLatest ?? null;
+        const period = f.buildingId
+          ? null
+          : munMap.get(f.municipalityCode || "")?.rentPeriod ?? null;
+        const label =
+          f.label ||
+          (f.buildingId
+            ? bldMap.get(f.buildingId)?.nom || bldMap.get(f.buildingId)?.refcat || "Edifici"
+            : munMap.get(f.municipalityCode || "")?.name || f.municipalityCode || "Preferit");
+        const url = f.buildingId
+          ? `/#/mapa?edifici=${encodeURIComponent(f.buildingId)}`
+          : `/#/mapa?mun=${encodeURIComponent(f.municipalityCode || "")}`;
+
+        // línia base sense establir: la PRIMERA passada només l'ancla (mai avís)
+        if (cur != null && f.lastNotifiedValue == null) {
+          await db.favorite.update({ where: { id: f.id }, data: { lastNotifiedValue: cur } });
+          summary.priceBaselinesSet++;
+        } else if (cur != null && f.lastNotifiedValue != null && f.lastNotifiedValue > 0) {
+          const pct = ((cur - f.lastNotifiedValue) / f.lastNotifiedValue) * 100;
+          if (Math.abs(pct) >= threshold) {
+            // idempotència per període oficial (o "vigent" per a edificis)
+            const dedupeKey = { userId: u.id, entityKey: f.entityKey, kind: "PRICE", period: period || "vigent" };
+            const dup = await db.priceAlertLog.findUnique({ where: { userId_entityKey_kind_period: dedupeKey } });
+            if (!dup) {
+              await db.priceAlertLog.create({
+                data: {
+                  ...dedupeKey,
+                  prevValue: f.lastNotifiedValue,
+                  newValue: cur,
+                  pctChange: +pct.toFixed(2),
+                },
+              }).catch(() => null);
+              entries.push({
+                label,
+                kind: pct > 0 ? "PRICE_UP" : "PRICE_DOWN",
+                prevValue: f.lastNotifiedValue,
+                newValue: cur,
+                pct: +pct.toFixed(1),
+                period,
+                url,
+              });
+              await db.favorite.update({ where: { id: f.id }, data: { lastNotifiedValue: cur } });
+            }
+          }
+        }
+
+        // nova ÀREA TENSADA: només MUNI, només la primera vegada que isTense=true
+        if (!f.buildingId && f.municipalityCode) {
+          const m = munMap.get(f.municipalityCode);
+          if (m?.isTense && !f.tenseNoticed) {
+            const dedupeKey = { userId: u.id, entityKey: f.entityKey, kind: "TENSE", period: m.rentPeriod || "vigent" };
+            const dup = await db.priceAlertLog.findUnique({ where: { userId_entityKey_kind_period: dedupeKey } });
+            if (!dup) {
+              await db.priceAlertLog.create({ data: { ...dedupeKey, newValue: m.rentLatest } }).catch(() => null);
+              entries.push({
+                label: m.name || label,
+                kind: "TENSE",
+                prevValue: null,
+                newValue: m.rentLatest,
+                pct: null,
+                period: m.rentPeriod,
+                url,
+              });
+            }
+            await db.favorite.update({ where: { id: f.id }, data: { tenseNoticed: true } });
+          }
+        }
+      }
+
+      if (entries.length > 0) {
+        const dayKey = new Date().toISOString().slice(0, 10);
+        const mail = priceAlertMail(entries, u.locale === "es" ? "es" : "ca");
+        try {
+          await db.emailLog.create({
+            data: {
+              to: u.email,
+              subject: mail.subject,
+              body: redactSecrets(mail.html),
+              provider: summary.provider,
+              status: summary.provider === "resend" ? "pending" : "logged",
+              type: "ALERT",
+              userId: u.id,
+              attempts: 0,
+              nextRetryAt: summary.provider === "resend" ? new Date() : null,
+              idempotencyKey: `price-alerts:${u.id}:${dayKey}`,
+            },
+          });
+          summary.priceAlertsQueued++;
+          summary.priceAlertEntries += entries.length;
+        } catch {
+          // idempotència diària (P2002) o altre: mai bloqueja la resta
+        }
+      }
+    }
+  } catch (e) {
+    console.error("cron emails: alertes de preu fallades", e);
   }
 
   // ── 1. OUTBOX: reposar enviaments encallats (només tipus no sensibles) ──

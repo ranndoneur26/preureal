@@ -8,6 +8,7 @@ import { clientIp } from "@/lib/security";
 /**
  * GET  /api/favorites            — llista preferits de l'usuari
  * POST /api/favorites            — afegeix { entityKey, buildingId?, municipalityCode?, label? }
+ * PATCH /api/favorites           — alerta de preu: { entityKey, alertPct } (null = sense alerta; 1-50 = %)
  * DELETE /api/favorites?key=...  — elimina per entityKey
  * Requereix planAllows(features.preferits) → Premium/Pro (Fase 5/9).
  */
@@ -84,4 +85,50 @@ export async function DELETE(req: Request) {
   if (!key || key.length > 80) return NextResponse.json({ error: "BAD_INPUT" }, { status: 400 });
   await db.favorite.deleteMany({ where: { userId: user.id, entityKey: key } });
   return NextResponse.json({ ok: true });
+}
+
+/**
+ * v37 — PATCH: configura l'ALERTA DE PREU d'un favorit.
+ * alertPct null = sense alerta; 1..50 = avisa quan el valor vigent variï un
+ * >= N% respecte de l'últim valor notificat (el cron /api/cron/emails fixa la
+ * línia base i envia l'avís amb idempotència via PriceAlertLog).
+ */
+export async function PATCH(req: Request) {
+  let user;
+  try {
+    user = await requireVerifiedUser();
+  } catch (e) {
+    if (isEmailNotVerifiedError(e)) {
+      return NextResponse.json({ error: "EMAIL_NOT_VERIFIED" }, { status: 403 });
+    }
+    return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+  }
+  const rl = await rateLimit(`fav-alert:${user.id}`, 30, 60_000);
+  if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  const plan = (user.plan as "FREE" | "PREMIUM" | "PRO") || "FREE";
+  if (!(await planAllows(plan, "preferits"))) {
+    return NextResponse.json({ error: "PLAN_REQUIRED", plan: "PREMIUM" }, { status: 403 });
+  }
+
+  const body = await req.json().catch(() => null);
+  const entityKey = body?.entityKey ? String(body.entityKey).slice(0, 80) : "";
+  if (!entityKey || (entityKey.split(":")[0] !== "MUNI" && entityKey.split(":")[0] !== "BUILDING")) {
+    return NextResponse.json({ error: "BAD_INPUT" }, { status: 400 });
+  }
+  const raw = body?.alertPct;
+  let alertPct: number | null = null;
+  if (raw !== null && raw !== undefined && raw !== "") {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 1 || n > 50) {
+      return NextResponse.json({ error: "BAD_INPUT", message: "alertPct ha de ser un número d'1 a 50, o null per desactivar." }, { status: 400 });
+    }
+    alertPct = n;
+  }
+  const fav = await db.favorite.updateMany({
+    where: { userId: user.id, entityKey },
+    data: { alertPct },
+  });
+  if (fav.count === 0) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+  return NextResponse.json({ ok: true, alertPct });
 }

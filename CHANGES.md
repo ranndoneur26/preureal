@@ -2,6 +2,65 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v37 — Paquet «premium»: compte, 2FA, retenció, exports, alertes i SEO — 2026-11-12
+
+Encàrrec: «funcions que falten (prioritzades)». Fet per passos, una migració
+ADITIVA (`20261112100000_premium_retencion_2fa_alertas_seo`) i commits separats.
+
+**1. Gestió de compte completa** (la base ja existia: canvi de contrasenya,
+factures Stripe, portal, cancel·lació, export RGPD). Nou:
+- **Retenció abans de cancel·lar**: modal amb alternatives reals (baixar a
+  Premium amb l'estalvi real, portal de pagament, revisar plans) + motiu
+  opcional (whitelist) i feedback lliure (≤500 chars) → `Subscription.cancelReason`.
+- **PDF directe de cada factura** (`invoice_pdf`) a Facturació.
+- `POST /api/subscription/cancel` accepta `{reason, feedback}` (compat: body buit = igual que abans).
+
+**2. 2FA TOTP complet** (passkeys: pas posterior, necessita designdecisió separada):
+- `src/lib/totp.ts` — RFC 6238 SENSE dependències (node:crypto), secret
+  base32 de 160 bits, finestra ±1 pas, comparació en temps constant, secret
+  CIFRAT a la BD (AES-256-GCM amb clau SHA-256 d'AUTH_SECRET), 10 codis de
+  recuperació d'un sol ús (bcrypt). Dep `qrcode` (client, QR data-URL).
+- API: `auth/2fa/setup|enable|disable|recovery|verify` + CHALLENGE JWT de 5 min
+  (`createTotpChallenge`) — contrasenya correcta MAI crea sessió si hi ha 2FA.
+  Baixa i regeneració de codis exigeixen CONTRASENYA (mai només el telèfon).
+- UI: pantalla de 2n pas a l'entrada (6 dígits o codi de recuperació) i secció
+  completa a Panell → Seguretat (QR, alta manual, codis mostrats UNA vegada).
+- Nota: l'entrada amb Google OAuth no passa pel 2FA (el factor el gestiona Google).
+
+**3. Exportacions**: `POST /api/comparator/export` (pla Pro, mateixa política
+que export/[code]): una fila per entitat i any, valors vigents + sèrie
+completa, anti-CSV-injection. Botó «Exporta CSV» al comparador.
+
+**4. Alertes de preu** (per favorit):
+- `Favorite.alertPct` (null = sense alerta; 1-50 = %) + `lastNotifiedValue`
+  (LÍNIA BASE: el % es mesura sempre des de l'últim avís — un canvi gradual
+  s'acumula fins travessar el llindar) + `tenseNoticed`.
+- `PATCH /api/favorites {entityKey, alertPct}` + selector ±3/5/10/15% a Panell → Preferits.
+- Cron diari (secció 0.5 de /api/cron/emails): detecta canvis ≥ llindar i
+  àrees tensades NOVES; agrupa tots els canvis d'un usuari en UN correu
+  (`priceAlertMail`, tipus ALERT, reintentable); idempotència doble:
+  `PriceAlertLog` únic per usuari+entitat+tipus+període i
+  idempotencyKey `price-alerts:{user}:{dia}`. La primera passada només fixa la línia base (mai avís).
+- Noves taules: `PriceAlertLog`; camps nous a User (totp), Favorite, Subscription, Municipality.
+
+**5. Onboarding + estats buits**: tour de 3 passos a la 1a visita del mapa
+(localStorage `pr_onboarded`) amb «Prova amb Barcelona» (acció real,
+`/mapa?mun=080193`); estat buit del comparador amb 6 exemples d'un clic;
+el buit d'històric ja estava cobert (fix 2026-11-11) i el PDF té degradació.
+
+**6. SEO tècnic**: pàgines públiques `src/app/lloguer/[slug]/page.tsx`
+(ISR 24 h, server component sense JS de client): H1 amb el preu vigent,
+sèrie històrica completa, badge d'àrea tensada, JSON-LD (Place + Offer +
+Dataset), canonical + hreflang ca/es i meta descriptions generades.
+`src/app/sitemap.ts` dinàmic (substitueix public/sitemap.xml — ESBORRAT el
+estàtic; només llista slugs EXISTENTS, mai URLs que donarien 404; ISR 24 h).
+Slugs: `src/lib/slug.ts` + `POST /api/admin/backfill-slugs` (UNA sentència
+UPDATE…FROM jsonb_to_recordset, patró del seed; idempotent) + botó a l'admin
+«Genera els slugs municipals».
+
+**Operativa després del desplegament:** executar a #/admin → «Genera els slugs
+municipals» (amb això s'activen les 947 pàgines i el sitemap complet).
+
 ## Rebranding «PreuReal.cat» → «Preureal» a tota la superfície visible — 2026-11-12
 
 **Encàrrec:** llevat el «.cat» de tot el que veu l'usuari: web (front end),

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { createSessionFor, verifyPassword } from "@/lib/auth";
+import { createSessionFor, verifyPassword, createTotpChallenge } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { normalizeEmail } from "@/lib/email";
@@ -23,6 +23,14 @@ export async function POST(req: Request) {
   if (!user || !user.active) return NextResponse.json({ error: "BAD_CREDENTIALS" }, { status: 401 });
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) return NextResponse.json({ error: "BAD_CREDENTIALS" }, { status: 401 });
+
+  // v37 — 2FA TOTP: contrasenya correcta != sessió. Es torna un challenge
+  // curt (5 min) i el client crida /api/auth/2fa/verify per acabar. Mai es
+  // crea sessió aquí (el segon factor és obligatori, no opcional).
+  if (user.totpEnabled) {
+    const challenge = await createTotpChallenge(user.id, user.tokenVersion);
+    return NextResponse.json({ totpRequired: true, challenge });
+  }
 
   await createSessionFor(user);
   await db.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });

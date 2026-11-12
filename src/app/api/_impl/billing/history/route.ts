@@ -21,7 +21,7 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  let invoices: Array<{ id: string; date: string | null; amount: number | null; currency: string | null; status: string | null; hostedUrl: string | null }> = [];
+  let invoices: Array<{ id: string; date: string | null; amount: number | null; currency: string | null; status: string | null; hostedUrl: string | null; pdfUrl: string | null }> = [];
   const secret = process.env.STRIPE_SECRET_KEY;
   const customerId = subs.find((s) => s.stripeCustomerId)?.stripeCustomerId;
   if (secret && customerId) {
@@ -35,6 +35,7 @@ export async function GET() {
         currency: inv.currency || null,
         status: inv.status,
         hostedUrl: inv.hosted_invoice_url || null,
+        pdfUrl: inv.invoice_pdf || null,
       }));
     } catch (e) {
       console.error("billing/history stripe", e);

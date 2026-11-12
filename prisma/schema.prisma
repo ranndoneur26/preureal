@@ -26,6 +26,11 @@ model User {
   emailVerifiedAt    DateTime? // verificació de correu (Fase 6)
   tokenVersion       Int                 @default(0) // +1 invalida totes les sessions actives
   lastLoginAt        DateTime?
+  // v37 — 2FA TOTP (RFC 6238): el secret es guarda CIFRAT (AES-256-GCM amb
+  // clau derivada d'AUTH_SECRET); recovery codes com a JSON de hashes bcrypt.
+  totpSecret         String?
+  totpEnabled        Boolean             @default(false)
+  totpRecoveryCodes  String?
   // v24 — resum mensual per correu dels municipis/edificis preferits (opt-in
   // explícit a "Panell → Preferits": mai actiu per defecte, RGPD-friendly)
   alertsEnabled      Boolean             @default(false)
@@ -57,6 +62,7 @@ model Subscription {
   currentPeriodEnd     DateTime?
   billingInterval      String? // v22: month | year (recurrent del preu de Stripe)
   cancelAtPeriodEnd    Boolean   @default(false) // v22: cancelació programada a final de període
+  cancelReason         String? // v37: motiu declarat al flux de retenció (analytics)
   demo                 Boolean   @default(false) // suscripción creada en modo prueba (sin Stripe)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
@@ -132,6 +138,7 @@ model Municipality {
   tenseList         String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
   boundary          String? // GeoJSON del límite municipal (cache ICGC)
   boundaryFetchedAt DateTime?
+  slug              String? @unique // v37: slug públic per a /lloguer/[slug] (SEO)
   updatedAt         DateTime  @updatedAt
 
   @@index([name])
@@ -309,9 +316,32 @@ model Favorite {
   buildingId       String?
   municipalityCode String?
   label            String? // nom per mostrar (nom municipi / refcat)
+  // v37 — alertes de preu: alertPct null = sense alerta; en canviar el preu
+  // vigent un >= alertPct% (o el municipi passa a área tensada) el cron
+  // /api/cron/emails envia un avís (idempotent via PriceAlertLog).
+  alertPct         Float?
+  lastNotifiedValue Float?
+  tenseNoticed     Boolean  @default(false)
   createdAt        DateTime @default(now())
 
   @@unique([userId, entityKey])
+  @@index([userId])
+}
+
+// v37 — log d'idempotència de les alertes de preu: 1 avís per usuari/entitat/
+// tipus/període (mai dobles notificacions per la mateixa publicació oficial).
+model PriceAlertLog {
+  id        String   @id @default(cuid())
+  userId    String
+  entityKey String // "BUILDING:<id>" | "MUNI:<code>"
+  kind      String // PRICE | TENSE
+  period    String // període oficial de la dada que va disparar l'avís
+  prevValue Float?
+  newValue  Float?
+  pctChange Float?
+  notifiedAt DateTime @default(now())
+
+  @@unique([userId, entityKey, kind, period])
   @@index([userId])
 }
 

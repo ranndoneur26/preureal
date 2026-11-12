@@ -20,10 +20,16 @@ import * as h_admin_plan_settings from "../_impl/admin/plan-settings/route";
 import * as h_admin_reports from "../_impl/admin/reports/route";
 import * as h_admin_seed_aid from "../_impl/admin/seed-aid/route";
 import * as h_admin_seed_municipalities from "../_impl/admin/seed-municipalities/route";
+import * as h_admin_backfill_slugs from "../_impl/admin/backfill-slugs/route";
 import * as h_admin_stats from "../_impl/admin/stats/route";
 import * as h_admin_users from "../_impl/admin/users/route";
 import * as h_aid from "../_impl/aid/route";
 import * as h_auth_change_password from "../_impl/auth/change-password/route";
+import * as h_auth_2fa_setup from "../_impl/auth/2fa/setup/route";
+import * as h_auth_2fa_enable from "../_impl/auth/2fa/enable/route";
+import * as h_auth_2fa_disable from "../_impl/auth/2fa/disable/route";
+import * as h_auth_2fa_recovery from "../_impl/auth/2fa/recovery/route";
+import * as h_auth_2fa_verify from "../_impl/auth/2fa/verify/route";
 import * as h_auth_google from "../_impl/auth/google/route";
 import * as h_auth_google_callback from "../_impl/auth/google/callback/route";
 import * as h_auth_google_status from "../_impl/auth/google/status/route";
@@ -38,6 +44,7 @@ import * as h_auth_verify from "../_impl/auth/verify/route";
 import * as h_billing_history from "../_impl/billing/history/route";
 import * as h_buildings from "../_impl/buildings/route";
 import * as h_comparator from "../_impl/comparator/route";
+import * as h_comparator_export from "../_impl/comparator/export/route";
 import * as h_comparisons from "../_impl/comparisons/route";
 import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_cron_ine from "../_impl/cron/ine/route";
@@ -87,10 +94,16 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "reports"], h: h_admin_reports },
   { seg: ["admin", "seed-aid"], h: h_admin_seed_aid },
   { seg: ["admin", "seed-municipalities"], h: h_admin_seed_municipalities },
+  { seg: ["admin", "backfill-slugs"], h: h_admin_backfill_slugs },
   { seg: ["admin", "stats"], h: h_admin_stats },
   { seg: ["admin", "users"], h: h_admin_users },
   { seg: ["aid"], h: h_aid },
   { seg: ["auth", "change-password"], h: h_auth_change_password },
+  { seg: ["auth", "2fa", "setup"], h: h_auth_2fa_setup },
+  { seg: ["auth", "2fa", "enable"], h: h_auth_2fa_enable },
+  { seg: ["auth", "2fa", "disable"], h: h_auth_2fa_disable },
+  { seg: ["auth", "2fa", "recovery"], h: h_auth_2fa_recovery },
+  { seg: ["auth", "2fa", "verify"], h: h_auth_2fa_verify },
   { seg: ["auth", "google"], h: h_auth_google },
   { seg: ["auth", "google", "callback"], h: h_auth_google_callback },
   { seg: ["auth", "google", "status"], h: h_auth_google_status },
@@ -105,6 +118,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["billing", "history"], h: h_billing_history },
   { seg: ["buildings"], h: h_buildings },
   { seg: ["comparator"], h: h_comparator },
+  { seg: ["comparator", "export"], h: h_comparator_export },
   { seg: ["comparisons"], h: h_comparisons },
   { seg: ["cron", "emails"], h: h_cron_emails },
   { seg: ["cron", "ine"], h: h_cron_ine },

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { RefreshCw, Shield, Mail, Database, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown, HeartHandshake, MapPin } from "lucide-react";
+import { RefreshCw, Shield, Mail, Database, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown, HeartHandshake, MapPin, Globe } from "lucide-react";
 
 interface Stats {
   users: number;
@@ -47,6 +47,9 @@ export default function AdminView() {
   // v39 — sincronitza Municipality amb el seed empaquetat (255 munis + refs comarca)
   const [seedMunisMsg, setSeedMunisMsg] = useState<string | null>(null);
   const [seedingMunis, setSeedingMunis] = useState(false);
+  // v37 — genera els slugs públics dels municipis (pàgines SEO /lloguer/[slug])
+  const [seedingSlugs, setSeedingSlugs] = useState(false);
+  const [seedSlugsMsg, setSeedSlugsMsg] = useState<string | null>(null);
   const [modReports, setModReports] = useState<any[] | null>(null);
   const [modStats, setModStats] = useState<any>(null);
   const [planSettings, setPlanSettings] = useState<any>(null);
@@ -164,6 +167,21 @@ export default function AdminView() {
       setSeedMunisMsg("Error: " + e.message);
     } finally {
       setSeedingMunis(false);
+    }
+  };
+
+  // v37 — genera els slugs públics dels municipis (pàgines SEO /lloguer/[slug])
+  const doBackfillSlugs = async () => {
+    setSeedSlugsMsg(null);
+    setSeedingSlugs(true);
+    try {
+      const res = await fetch("/api/admin/backfill-slugs", { method: "POST" });
+      const d = await res.json();
+      setSeedSlugsMsg(res.ok ? (d.message || `OK: ${d.total} municipis`) : d.message || d.error);
+    } catch (e: any) {
+      setSeedSlugsMsg("Error: " + e.message);
+    } finally {
+      setSeedingSlugs(false);
     }
   };
 
@@ -491,6 +509,28 @@ export default function AdminView() {
                   : ca ? "Sincronitza les dades municipals" : "Sincronizar los datos municipales"}
               </button>
               {seedMunisMsg && <span className="text-sm text-[#4b5349]">{seedMunisMsg}</span>}
+            </div>
+          </div>
+
+          {/* v37 — slugs públics per a les pàgines SEO /lloguer/[slug] */}
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+            <h3 className="font-bold flex items-center gap-2"><Globe className="w-4 h-4 text-[#0f2e21]" />{ca ? "Pàgines públiques de municipi (SEO)" : "Páginas públicas de municipio (SEO)"}</h3>
+            <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+              {ca
+                ? "Genera el slug públic dels 947 municipis (ex.: /lloguer/barcelona) per a les pàgines indexables amb el preu mitjà i la sèrie històrica. Idempotent: només actualitza els slugs que canvien. Executa-ho després de cada sincronització de dades municipals."
+                : "Genera el slug público de los 947 municipios (ej.: /lloguer/barcelona) para las páginas indexables con el precio medio y la serie histórica. Idempotente: solo actualiza los slugs que cambian. Ejecútalo después de cada sincronización de datos municipales."}
+            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <button
+                onClick={doBackfillSlugs}
+                disabled={seedingSlugs}
+                className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+              >
+                {seedingSlugs
+                  ? ca ? "Generant slugs…" : "Generando slugs…"
+                  : ca ? "Genera els slugs municipals" : "Generar los slugs municipales"}
+              </button>
+              {seedSlugsMsg && <span className="text-sm text-[#4b5349]">{seedSlugsMsg}</span>}
             </div>
           </div>
 

@@ -7,6 +7,7 @@ import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, I
 import LineChart, { type LineSeries } from "@/components/charts/LineChart";
 import BarChart, { type BarRow } from "@/components/charts/BarChart";
 import ValuationPanel from "@/components/views/ValuationPanel";
+import OnboardingTour from "@/components/OnboardingTour";
 
 /** Resposta de GET /api/indicators/muni/:code (Fase 4, gating al servidor). */
 interface GatedIndicatorsResponse {
@@ -1105,6 +1106,8 @@ export default function MapView() {
 
   return (
     <div className="flex-1 flex flex-col md:flex-row relative md:h-[calc(100vh-4rem)] md:overflow-hidden">
+      {/* v37 — tour de benvinguda (només 1a visita al mapa) */}
+      <OnboardingTour navigate={navigate} />
       {/* MAPA */}
       <div className="relative flex-1 min-h-[55vh] md:h-full md:min-h-[520px] md:flex-none md:basis-auto md:grow">
         <div ref={mapDivRef} className="absolute inset-0 z-0" />

@@ -40,7 +40,7 @@ export function mailProvider(): "resend" | "sandbox" {
 }
 
 /** Tipo de correo (telemetría EmailLog). */
-export type MailType = "WELCOME" | "VERIFY" | "RESET" | "RECEIPT" | "GENERIC" | "DIGEST";
+export type MailType = "WELCOME" | "VERIFY" | "RESET" | "RECEIPT" | "GENERIC" | "DIGEST" | "ALERT";
 
 /**
  * P0: los correos de verificación/restablecimiento llevan el token en la URL
@@ -78,7 +78,7 @@ export const MAX_TOTAL_ATTEMPTS = 5;
  * uso): el usuario pide un enlace nuevo, que es la UX existente.
  */
 /** v31: única definición (el cron de reintentos la importa — antes había 2 copias que podían divergir). */
-export const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC", "DIGEST"];
+export const RETRYABLE_TYPES: MailType[] = ["WELCOME", "RECEIPT", "GENERIC", "DIGEST", "ALERT"];
 
 function retryDelayMs(totalAttempts: number): number {
   const hours = Math.min(2 ** Math.max(0, totalAttempts - 2), 24);
@@ -397,5 +397,51 @@ export function favoritesDigestMail(items: DigestItem[], locale: "ca" | "es") {
     ca
       ? `<p>Preu mitjà de lloguer (fiances Incasòl) dels municipis i edificis que tens desats als preferits:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Pots desactivar aquest avís al panell → Preferits.</p>`
       : `<p>Precio medio de alquiler (fianzas Incasòl) de los municipios y edificios que tienes guardados en favoritos:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Puedes desactivar este aviso en el panel → Favoritos.</p>`;
+  return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
+}
+
+// ── v37: alertes de preu i àrees tensades ───────────────────────────────────
+
+export interface PriceAlertEntry {
+  label: string;
+  kind: "PRICE_UP" | "PRICE_DOWN" | "TENSE";
+  prevValue: number | null;
+  newValue: number | null;
+  pct: number | null;
+  period: string | null;
+  url: string;
+}
+
+/**
+ * Avís d'alerta de preu (v37): el cron detecta que un preferit amb alerta
+ * activada ha canviat >= alertPct% (o el municipi ha passat a àrea tensada)
+ * i agrupa tots els canvis d'un usuari en UN correu. Dades només de la BD;
+ * els enllaços són ?mun=/?edifici= amb codis validats en origen.
+ */
+export function priceAlertMail(items: PriceAlertEntry[], locale: "ca" | "es") {
+  const ca = locale === "ca";
+  const title = ca ? "Avís: canvis als teus preferits" : "Aviso: cambios en tus favoritos";
+  const rows = items
+    .map((it) => {
+      const icon = it.kind === "PRICE_UP" ? "▲" : it.kind === "PRICE_DOWN" ? "▼" : "●";
+      const color = it.kind === "PRICE_UP" ? "#b0431c" : it.kind === "PRICE_DOWN" ? "#1e7a41" : "#8a5a00";
+      const pricePart =
+        it.kind === "TENSE"
+          ? ca
+            ? "Ara és <b>àrea de mercat residencial tensat</b>: els nous contractes poden quedar limitats per l'índex de referència."
+            : "Ahora es <b>área de mercado residencial tensionado</b>: los nuevos contratos pueden quedar limitados por el índice de referencia."
+          : [
+              it.prevValue != null ? `${it.prevValue.toFixed(0)} €` : "—",
+              " → ",
+              `<b>${it.newValue != null ? it.newValue.toFixed(0) + " €" : "—"}</b>`,
+              it.pct != null ? ` <span style="color:${color};font-weight:600">(${it.pct > 0 ? "+" : ""}${it.pct.toFixed(1)}%)</span>` : "",
+            ].join("");
+      const periodPart = it.period ? ` <span style="color:#777">· ${escapeHtml(it.period)}</span>` : "";
+      return `<tr><td style="padding:8px 0;border-bottom:1px solid #eee"><a href="${getSiteUrlOrigin()}${it.url}" style="color:#0f2e21;font-weight:600;text-decoration:none">${escapeHtml(it.label)}</a><br><span style="color:${color}">${icon}</span> ${pricePart}${periodPart}</td></tr>`;
+    })
+    .join("");
+  const body = ca
+    ? `<p>S'ha canviat el valor vigent de lloguer registrat (fiances Incasòl) d'algun dels teus preferits amb alerta activada:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Gestiona les alertes al panell → Preferits. Pots ajustar el llindar % o desactivar-les quan vulguis.</p>`
+    : `<p>Ha cambiado el valor vigente de alquiler registrado (fianzas Incasòl) de alguno de tus favoritos con alerta activada:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Gestiona las alertas en el panel → Favoritos. Puedes ajustar el umbral % o desactivarlas cuando quieras.</p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }

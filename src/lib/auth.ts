@@ -107,6 +107,30 @@ export async function revokeSessions(userId: string) {
   await db.user.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
 }
 
+/**
+ * v37 — CHALLENGE de 2FA: entre "contrasenya correcta" i "codi TOTP correcte"
+ * NO es crea sessió; s'emet un JWT curt (5 min) que només autoritza el segon
+ * pas (mai accés a res més). Incorpora `tv` perquè si es revoca la sessió
+ * (p. ex. canvi de contrasenya en un altre dispositiu) el challenge mor.
+ */
+export async function createTotpChallenge(userId: string, tv: number): Promise<string> {
+  return new SignJWT({ mfa: userId, tv })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuedAt()
+    .setExpirationTime("5m")
+    .sign(getSecretKey());
+}
+
+export async function verifyTotpChallenge(token: string): Promise<{ userId: string; tv: number } | null> {
+  try {
+    const { payload } = await jwtVerify(token, getSecretKey());
+    if (!payload.mfa) return null;
+    return { userId: String(payload.mfa), tv: Number(payload.tv || 0) };
+  } catch {
+    return null;
+  }
+}
+
 async function decodeToken(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, getSecretKey());

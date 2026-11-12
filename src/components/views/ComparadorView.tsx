@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info, Crown, BarChart3, Factory } from "lucide-react";
+import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info, Crown, BarChart3, Factory, Download } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 
 interface Entity {
@@ -71,6 +71,7 @@ export default function ComparadorView() {
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const [loadedMsg, setLoadedMsg] = useState<string | null>(null);
   const [planLimitMsg, setPlanLimitMsg] = useState<string | null>(null);
+  const [csvMsg, setCsvMsg] = useState<string | null>(null);
 
   // v25 — límit d'entitats per pla: gratuït 2, Premium i Pro (agents) 6.
   // El client el fa servir per a la UX; el límit real l'aplica sempre el servidor.
@@ -200,6 +201,35 @@ export default function ComparadorView() {
     });
     if (res.status === 401) { navigate("/entrada"); return; }
     setSaveMsg(res.ok ? (ca ? "Comparació desada al teu panell." : "Comparación guardada en tu panel.") : (ca ? "No s'ha pogut desar." : "No se pudo guardar."));
+  };
+
+  // v37 — exportació CSV de la comparació vigent (servidor, pla Pro)
+  const exportCsv = async () => {
+    if (!auth.user) { navigate("/entrada"); return; }
+    if (entities.length < 2) { setCsvMsg(ca ? "Selecciona almenys 2 entitats." : "Selecciona al menos 2 entidades."); return; }
+    setCsvMsg(null);
+    try {
+      const res = await fetch("/api/comparator/export", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entities }),
+      });
+      if (res.status === 403) {
+        setCsvMsg(ca ? "L'exportació CSV és del pla Pro·Agents (19,99 €/mes)." : "La exportación CSV es del plan Pro·Agentes (19,99 €/mes).");
+        return;
+      }
+      if (res.status === 401) { navigate("/entrada"); return; }
+      if (!res.ok) { setCsvMsg(ca ? "No s'ha pogut exportar." : "No se pudo exportar."); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `preureal_comparacio_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      setCsvMsg(ca ? "Error de xarxa." : "Error de red.");
+    }
   };
 
   const maxRent = result?.results ? Math.max(...result.results.map((r) => r.rentLatest || r.comarcaRefLatest || 0), 1) : 1;
@@ -507,9 +537,54 @@ export default function ComparadorView() {
             <button onClick={saveComparison} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold flex items-center gap-1.5">
               <Save className="w-4 h-4" /> {ca ? "Desar comparació" : "Guardar comparación"}
             </button>
+            {/* v37 — exportació CSV de la comparació (pla Pro, com la resta d'exports) */}
+            <button onClick={exportCsv} className="px-4 py-2 rounded-lg border border-[#0f2e21] text-[#0f2e21] text-sm font-bold flex items-center gap-1.5 hover:bg-[#f0ede8]">
+              <Download className="w-4 h-4" /> {ca ? "Exporta CSV" : "Exportar CSV"}
+            </button>
             {saveMsg && <span className="text-xs text-[#4b5349]">{saveMsg}</span>}
+            {csvMsg && <span className="text-xs text-[#4b5349]">{csvMsg}</span>}
           </div>
         </>
+      )}
+
+      {/* v37 — ESTAT BUIT: exemples d'un clic per començar (mai un buit mort) */}
+      {!busy && entities.length < 2 && (
+        <div className="mt-6 bg-white rounded-2xl border border-dashed border-[#cfc9bd] p-6">
+          <h2 className="font-bold flex items-center gap-2">
+            <Info className="w-4 h-4 text-[#0f2e21]" />
+            {ca ? "Comença amb una comparació d'exemple" : "Empieza con una comparación de ejemplo"}
+          </h2>
+          <p className="mt-1 text-sm text-[#4b5349]">
+            {ca
+              ? "Tria municipis amb el cercador de dalt o toca un dels exemples. Els preus són la mitjana oficial de fiances Incasòl, no una estimació."
+              : "Elige municipios con el buscador de arriba o toca uno de los ejemplos. Los precios son la media oficial de fianzas Incasòl, no una estimación."}
+          </p>
+          <div className="mt-3 flex gap-2 flex-wrap">
+            {[
+              { code: "080193", name: "Barcelona" },
+              { code: "170792", name: "Girona" },
+              { code: "431482", name: "Tarragona" },
+              { code: "251208", name: "Lleida" },
+              { code: "081877", name: "Sabadell" },
+              { code: "080015", name: "Badalona" },
+            ].map((m) => (
+              <button
+                key={m.code}
+                onClick={() => { if (!entities.some((e) => e.code === m.code)) setEntities([...entities, { type: "MUNI" as const, code: m.code, name: m.name }].slice(0, maxEntities)); }}
+                className="px-3 py-1.5 rounded-full border border-[#e5e1da] text-sm hover:bg-[#f0ede8] flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> {m.name}
+              </button>
+            ))}
+          </div>
+          {!isPaid && (
+            <p className="mt-3 text-xs text-[#6b6f68]">
+              {ca
+                ? "Amb el pla gratuït compares 2 municipis; amb Premium i Pro, fins a 6 amb indicadors avançats."
+                : "Con el plan gratuito comparas 2 municipios; con Premium y Pro, hasta 6 con indicadores avanzados."}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
