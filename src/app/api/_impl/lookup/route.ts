@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       .catch(() => {});
     return NextResponse.json({
       kind: "teaser",
-      municipality: { name: mun.name, comarca: mun.comarca, isTense: mun.isTense },
+      municipality: { name: mun.name, comarca: mun.comarca, isTense: mun.isTense, slug: mun.slug },
       teaser: {
         hasRent: !!mun.rentLatest,
         period: mun.rentPeriod,
@@ -158,6 +158,7 @@ export async function POST(req: Request) {
     municipality: {
       code: mun.code,
       name: mun.name,
+      slug: mun.slug, // v37: enllaç a la pàgina pública /lloguer/[slug]
       comarca: mun.comarca,
       province: mun.province,
       rentLatest: mun.rentLatest,

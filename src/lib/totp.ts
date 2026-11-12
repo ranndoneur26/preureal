@@ -61,6 +61,8 @@ export function verifyTotp(secretB32: string, code: string, atMs: number = Date.
   const given = Buffer.from(c);
   const counter = Math.floor(atMs / 1000 / 30);
   for (let w = -1; w <= 1; w++) {
+    // defensa: el contador mai pot ser negatiu (T<30 s — només possible en tests)
+    if (counter + w < 0) continue;
     const expected = Buffer.from(hotp(key, counter + w));
     if (given.length === expected.length && crypto.timingSafeEqual(given, expected)) return true;
   }

@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const entries: MetadataRoute.Sitemap = [
     { url: `${base}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
+    { url: `${base}/lloguer`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
   ];
   try {
     const muns = await db.municipality.findMany({

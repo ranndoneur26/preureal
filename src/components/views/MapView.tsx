@@ -408,6 +408,7 @@ interface LookupResult {
   building?: { id?: string; refcat?: string | null; yearBuilt?: { year: number; source: string } | null; tipus?: string | null; altura?: number | null; nom?: string | null; avgRentEurMonth?: number | null; sampleSize?: number | null };
   municipality?: {
     code: string; name: string; comarca: string | null; province: string | null;
+    slug?: string | null; // v37: pàgina pública /lloguer/[slug]
     rentLatest: number | null; rentPeriod: string | null;
     rentPrevYear: number | null; rentPrevPeriod: string | null;
     rentHistory: Record<string, number> | null;
@@ -1655,6 +1656,15 @@ function FullPanel({
             {t.map.panel.source}
             <ExternalLink className="w-3 h-3" />
           </div>
+          {/* v37 — pàgina pública indexable del municipi (SEO + compartir) */}
+          {mun.slug && (
+            <div>
+              <a href={`/lloguer/${mun.slug}`} target="_blank" rel="noreferrer" className="text-[#0f2e21] underline flex items-center gap-1">
+                {locale === "ca" ? "Pàgina pública del municipi" : "Página pública del municipio"}
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          )}
         </div>
       </div>
 

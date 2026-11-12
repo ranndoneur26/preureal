@@ -280,6 +280,7 @@ function Footer() {
                   <button onClick={() => navigate("/privacitat")} className="text-left hover:text-white">{t.legal.privacitat}</button>
                   <button onClick={() => navigate("/cookies")} className="text-left hover:text-white">{t.legal.cookies}</button>
                   <button onClick={() => navigate("/guia")} className="text-left hover:text-white">{ctx.locale === "ca" ? "Guia del lloguer" : "Guía del alquiler"}</button>
+                  <a href="/lloguer" className="text-left hover:text-white">{ctx.locale === "ca" ? "Lloguer per municipis" : "Alquiler por municipios"}</a>
                 </div>
               </div>
               <div className="text-sm">
