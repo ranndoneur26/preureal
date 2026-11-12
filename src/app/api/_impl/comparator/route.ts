@@ -5,6 +5,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { getPlanSettings, planAllows, type PlanId } from "@/lib/plans";
 import { getMuniIndicators } from "@/lib/indicators-data";
+import { getCommunitySummary } from "@/lib/reports-summary";
 
 /**
  * POST /api/comparator  { entities: [{type:"MUNI"|"BUILDING", code}] }
@@ -81,6 +82,12 @@ export async function POST(req: Request) {
       median: median != null ? +median.toFixed(2) : null,
       samples: hist ? values.length : 0,
     });
+  }
+  // v38.7 — ofertes de la comunitat (crowdsourcing v38.6, mateixes regles de
+  // privacitat: medianes només amb n >= 3, «no verificat» a la UI). Només per
+  // a MUNI: la comunitat no pot identificar edificis concrets de manera fiable.
+  for (const r of results.filter((x: any) => x.type === "MUNI")) {
+    r.community = await getCommunitySummary(r.code).catch(() => null);
   }
   for (const b of buildings) {
     results.push({

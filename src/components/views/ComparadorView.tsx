@@ -47,6 +47,9 @@ interface ComparatorResult {
   yearBuilt?: number | null;
   // Fase 4 — només amb pla pagant (la decisió és del servidor)
   indicators?: ComparatorIndicators | null;
+  // v38.7 — ofertes de la comunitat (mateix agregat que la fitxa; medianes
+  // només amb n >= 3, sempre «no verificat»). Null per a BUILDING.
+  community?: { n: number; median: number | null; medianEurM2: number | null } | null;
 }
 
 /**
@@ -416,6 +419,11 @@ export default function ComparadorView() {
                       )}
                       {r.contractsLatest != null && <span>{r.contractsLatest.toLocaleString()} {ca ? "contractes de mostra" : "contratos de muestra"}</span>}
                       {r.median != null && <span>{ca ? "mediana històrica" : "mediana histórica"}: {r.median.toFixed(0)} €</span>}
+                      {r.community?.median != null && (
+                        <span className="font-semibold text-moss">
+                          {ca ? "comunitat" : "comunidad"}: ≈{r.community.median.toFixed(0)} €/mes · {r.community.n} {ca ? "informes" : "informes"} · {ca ? "no verificat" : "no verificado"}
+                        </span>
+                      )}
                       {r.rentLatest == null && r.comarcaRefLatest != null && (
                         <span className="text-ambertext">{ca ? "≈ referència de comarca (estimació, sense dada municipal oficial)" : "≈ referencia de comarca (estimación, sin dato municipal oficial)"}</span>
                       )}
@@ -455,8 +463,8 @@ export default function ComparadorView() {
             <div className="mt-3 flex items-start gap-1.5 text-[10px] text-stone">
               <Info className="w-3 h-3 mt-0.5 shrink-0" />
               {ca
-                ? "Comparació estadística entre agregats oficials; no és una valoració individual. Font: Incasòl via habitatge.gencat.cat."
-                : "Comparación estadística entre agregados oficiales; no es una valoración individual. Fuente: Incasòl via habitatge.gencat.cat."}
+                ? "Comparació estadística entre agregats oficials; no és una valoració individual. Font: Incasòl via habitatge.gencat.cat. «Comunitat»: mediana anònima de preus enviats per usuaris des de la fitxa del mapa (no verificat; mediana només amb 3 informes o més, per privadesa)."
+                : "Comparación estadística entre agregados oficiales; no es una valoración individual. Fuente: Incasòl via habitatge.gencat.cat. «Comunidad»: mediana anónima de precios enviados por usuarios desde la ficha del mapa (no verificado; mediana solo con 3 informes o más, por privacidad)."}
             </div>
           </div>
 

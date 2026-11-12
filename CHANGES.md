@@ -180,6 +180,21 @@ t'ofereixen" tampoc veig quina funció té si ho ha de validar l'administrador»
   `continue-on-error` del CI torna a ser innecessari.
 - Sense migració; una ruta pública nova de només lectura.
 
+### v38.7 — Comparador: ofertes de la comunitat per municipi
+Pas natural de v38.6: la mediana comunitària ara també al comparador.
+- **Refactor**: la lògica d'agregació viu a `src/lib/reports-summary.ts`
+  (getCommunitySummary: 12 mesos, HABITATGE, no REJECTED, medianes només
+  n >= 3); `GET /api/reports/summary` queda com a wrapper fi — mateix
+  comportament garantit a les dues rutes per construcció.
+- **POST /api/comparator**: cada resultat MUNI porta `community: { n, median,
+  medianEurM2 }` (null per a BUILDING: la comunitat no pot identificar
+  edificis concrets de manera fiable). Màxim 6 consultes indexades extra.
+- **UI** (`ComparadorView`): xip a cada tarjeta de municipi — «comunitat:
+  ≈X €/mes · n informes · no verificat» — i nota de peu ampliada explicant
+  la font (preus enviats des de la fitxa del mapa) i el llindar de privadesa
+  (mínim 3 informes). Bilingüe inline com la resta de la vista.
+- Sense migració ni canvis de contracte trencadors (camp afegit).
+
 ## v37.1 — Passkeys (WebAuthn) + hub SEO /lloguer + tests TOTP — 2026-11-12
 
 **Passkeys completes** (@simplewebauthn v14, dependència nova):
