@@ -30,6 +30,12 @@ import * as h_auth_2fa_enable from "../_impl/auth/2fa/enable/route";
 import * as h_auth_2fa_disable from "../_impl/auth/2fa/disable/route";
 import * as h_auth_2fa_recovery from "../_impl/auth/2fa/recovery/route";
 import * as h_auth_2fa_verify from "../_impl/auth/2fa/verify/route";
+import * as h_auth_passkeys from "../_impl/auth/passkeys/route";
+import * as h_auth_passkeys_register_options from "../_impl/auth/passkeys/register-options/route";
+import * as h_auth_passkeys_register from "../_impl/auth/passkeys/register/route";
+import * as h_auth_passkeys_auth_options from "../_impl/auth/passkeys/auth-options/route";
+import * as h_auth_passkeys_auth_verify from "../_impl/auth/passkeys/auth-verify/route";
+import * as h_auth_passkeys_delete from "../_impl/auth/passkeys/delete/route";
 import * as h_auth_google from "../_impl/auth/google/route";
 import * as h_auth_google_callback from "../_impl/auth/google/callback/route";
 import * as h_auth_google_status from "../_impl/auth/google/status/route";
@@ -104,6 +110,12 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["auth", "2fa", "disable"], h: h_auth_2fa_disable },
   { seg: ["auth", "2fa", "recovery"], h: h_auth_2fa_recovery },
   { seg: ["auth", "2fa", "verify"], h: h_auth_2fa_verify },
+  { seg: ["auth", "passkeys"], h: h_auth_passkeys },
+  { seg: ["auth", "passkeys", "register-options"], h: h_auth_passkeys_register_options },
+  { seg: ["auth", "passkeys", "register"], h: h_auth_passkeys_register },
+  { seg: ["auth", "passkeys", "auth-options"], h: h_auth_passkeys_auth_options },
+  { seg: ["auth", "passkeys", "auth-verify"], h: h_auth_passkeys_auth_verify },
+  { seg: ["auth", "passkeys", "delete"], h: h_auth_passkeys_delete },
   { seg: ["auth", "google"], h: h_auth_google },
   { seg: ["auth", "google", "callback"], h: h_auth_google_callback },
   { seg: ["auth", "google", "status"], h: h_auth_google_status },

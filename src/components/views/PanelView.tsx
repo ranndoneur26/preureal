@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { useUserPlan } from "@/hooks/use-user-plan";
 import { diffPlanKeys, labelForDiffKey, dataNote, type PlanIdLite, type PlanShapeLite } from "@/lib/plan-change";
-import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen, Check, X as XIcon, AlertCircle, Lock } from "lucide-react";
+import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen, Check, X as XIcon, AlertCircle, Lock, Fingerprint } from "lucide-react";
 
 interface BillingData {
   subscriptions: Array<{ id: string; plan: string; status: string; demo: boolean; currentPeriodEnd: string | null; createdAt: string }>;
@@ -62,10 +62,25 @@ export default function PanelView() {
   const [totpCodeInput, setTotpCodeInput] = useState("");
   const [totpRecoveryCodes, setTotpRecoveryCodes] = useState<string[] | null>(null);
   const [totpPassword, setTotpPassword] = useState("");
+  // v37.1 — passkeys (WebAuthn)
+  const [passkeys, setPasskeys] = useState<any[] | null>(null);
+  const [pkMsg, setPkMsg] = useState<string | null>(null);
+  const [pkBusy, setPkBusy] = useState(false);
+  const [pkPassword, setPkPassword] = useState("");
 
   useEffect(() => {
     auth.refresh();
   }, []);
+
+  // v37.1 — carrega la llista de passkeys quan s'obre la pestanya Seguretat
+  useEffect(() => {
+    if (tab === "seguretat" && passkeys === null) {
+      fetch("/api/auth/passkeys")
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((d) => setPasskeys(d.passkeys || []))
+        .catch(() => setPasskeys([]));
+    }
+  }, [tab, passkeys]);
 
   // lint v2: sincronitza el formulari amb l'usuari carregat mitjançant l'ajust
   // d'estat durant el render (patró React recomanat), no un efecte. El sentinel
@@ -451,6 +466,56 @@ export default function PanelView() {
       setTotpPassword("");
     } finally {
       setBusy(false);
+    }
+  };
+
+  // ── v37.1 — PASSKEYS (WebAuthn) ───────────────────────────────────────
+  const passkeyAdd = async () => {
+    setPkMsg(null);
+    setPkBusy(true);
+    try {
+      const { startRegistration } = await import("@simplewebauthn/browser");
+      const o = await fetch("/api/auth/passkeys/register-options", { method: "POST" });
+      const od = await o.json();
+      if (!o.ok) { setPkMsg(od.message || od.error || "Error"); return; }
+      let attResp;
+      try {
+        attResp = await startRegistration({ optionsJSON: od.options });
+      } catch (e: any) {
+        setPkMsg(e?.name === "NotAllowedError"
+          ? (locale === "ca" ? "Has cancel·lat la petició del dispositiu." : "Has cancelado la petición del dispositivo.")
+          : (e?.message || (locale === "ca" ? "El dispositiu no ha pogut crear la passkey." : "El dispositivo no ha podido crear la passkey.")));
+        return;
+      }
+      const r = await fetch("/api/auth/passkeys/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: attResp }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setPkMsg(d.message || d.error || "Error"); return; }
+      setPkMsg(locale === "ca" ? "Passkey afegida. Ja pots entrar amb la petjada/cara/PIN." : "Passkey añadida. Ya puedes entrar con la huella/cara/PIN.");
+      setPasskeys(null); // força recàrrega
+    } finally {
+      setPkBusy(false);
+    }
+  };
+
+  const passkeyDelete = async (id: string) => {
+    setPkMsg(null);
+    setPkBusy(true);
+    try {
+      const r = await fetch("/api/auth/passkeys/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, password: pkPassword }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { setPkMsg(d.message || d.error || "Error"); return; }
+      setPkPassword("");
+      setPasskeys(null);
+    } finally {
+      setPkBusy(false);
     }
   };
 
@@ -1269,6 +1334,57 @@ export default function PanelView() {
                 </p>
               </div>
             )}
+          </div>
+          {/* v37.1 — PASSKEYS (claus d'accés, WebAuthn) */}
+          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+            <h3 className="font-bold flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              {locale === "ca" ? "Claus d'accés (passkeys)" : "Claves de acceso (passkeys)"}
+              {passkeys !== null && passkeys.length > 0 && (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#e6f4ea] text-[#1e7a41]">
+                  {passkeys.length}
+                </span>
+              )}
+            </h3>
+            <p className="text-sm text-[#4b5349]">
+              {locale === "ca"
+                ? "Entra amb la petjada, la cara o el PIN del dispositiu — sense escriure la contrasenya. Les passkeys queden lligades a aquest domini (a preureal.vercel.app i a www.preureal.com són independents)."
+                : "Entra con la huella, la cara o el PIN del dispositivo — sin escribir la contraseña. Las passkeys quedan ligadas a este dominio (en preureal.vercel.app y en www.preureal.com son independientes)."}
+            </p>
+            {passkeys !== null && passkeys.length > 0 && (
+              <div className="space-y-1.5">
+                {passkeys.map((p) => (
+                  <div key={p.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2 flex-wrap">
+                    <span className="flex items-center gap-2">
+                      <Fingerprint className="w-4 h-4 text-[#0f2e21]" />
+                      <b>{p.label || "Passkey"}</b>
+                      {p.backedUp && <span className="text-xs text-[#6b6f68]">{locale === "ca" ? "(sincronitzada)" : "(sincronizada)"}</span>}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {p.lastUsedAt && <span className="text-xs text-[#6b6f68]">{new Date(p.lastUsedAt).toLocaleDateString()}</span>}
+                      <button onClick={() => passkeyDelete(p.id)} disabled={pkBusy || !pkPassword} className="text-xs text-[#b0431c] underline disabled:opacity-40" title={locale === "ca" ? "Cal la contrasenya a sota per poder eliminar" : "Hace falta la contraseña de abajo para eliminar"}>
+                        {locale === "ca" ? "Elimina" : "Eliminar"}
+                      </button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2 flex-wrap items-center">
+              <button onClick={passkeyAdd} disabled={pkBusy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+                {pkBusy ? "…" : (locale === "ca" ? "Afegeix una passkey" : "Añadir una passkey")}
+              </button>
+              {(passkeys?.length || 0) > 0 && (
+                <input
+                  type="password"
+                  value={pkPassword}
+                  onChange={(e) => setPkPassword(e.target.value)}
+                  placeholder={locale === "ca" ? "Contrasenya per eliminar una passkey" : "Contraseña para eliminar una passkey"}
+                  className="px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                />
+              )}
+            </div>
+            {pkMsg && <p className="text-sm text-[#4b5349]">{pkMsg}</p>}
           </div>
           <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
             <h3 className="font-bold">{locale === "ca" ? "Activitat recent del compte" : "Actividad reciente de la cuenta"}</h3>

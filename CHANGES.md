@@ -2,6 +2,36 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v37.1 — Passkeys (WebAuthn) + hub SEO /lloguer + tests TOTP — 2026-11-12
+
+**Passkeys completes** (@simplewebauthn v14, dependència nova):
+- Taula `PasskeyCredential` (migració aditiva `20261112150000_passkeys`):
+  credential ID com a PK, publicKey base64url, comptador anti-clonatge,
+  transports, deviceType/backedUp, etiqueta amigable del dispositiu.
+- RP ID/origin derivats del Host REAL de la petició amb allowlist
+  (`lib/webauthn.ts`): les passkeys funcionen a preureal.vercel.app i a
+  www.preureal.com (ligades a cada domini per disseny de WebAuthn).
+- CHALLENGE en cookie httpOnly de 5 min (stateless en serverless).
+- API: `auth/passkeys` (GET llista), `register-options`, `register`,
+  `auth-options` (anti-enumeració: emails desconeguts reben opcions igualment),
+  `auth-verify` (comptador només pot avançar; si no, credencial eliminada),
+  `delete` (exigeix CONTRASENYA, com la baixa del 2FA).
+- UI: Panell → Seguretat «Claus d'accés» (llista + afegir + eliminar amb
+  contrasenya) i botó «Entra amb una passkey» a l'entrada (només navegadors
+  amb WebAuthn). Sessió de 30 dies idèntica al login normal.
+- NOTA OPERATIVA: requereix prova manual amb un dispositiu real (huella/cara/
+  PIN no és testejable des del sandbox). Registrar i entrar amb 1 passkey abans
+  de comunicar-ho.
+
+**Hub SEO**: pàgina pública `/lloguer` amb els 947 municipis per província
+(amb preu vigent i marcador d'àrea tensada) + enllaç al peu; `slug` al
+response de `/api/lookup` i enllaç «Pàgina pública del municipi» a la fitxa;
+`/lloguer` afegida al sitemap.
+
+**Tests TOTP (7/7)** amb els vectors OFICIALS del RFC 6238 (T=59s→287082,
+T=1111111109s→081804) + finestra ±1 pas + AES-GCM roundtrip. El test va
+destapar i corregir un rang negatiu del comptador amb finestra ±1.
+
 ## v37 — Paquet «premium»: compte, 2FA, retenció, exports, alertes i SEO — 2026-11-12
 
 Encàrrec: «funcions que falten (prioritzades)». Fet per passos, una migració

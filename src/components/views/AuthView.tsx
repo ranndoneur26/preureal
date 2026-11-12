@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { MapPin, ShieldCheck } from "lucide-react";
+import { MapPin, ShieldCheck, Fingerprint } from "lucide-react";
 
 export default function AuthView({
   mode,
@@ -23,6 +23,24 @@ export default function AuthView({
   const [totpChallenge, setTotpChallenge] = useState<string | null>(null);
   const [totpCode, setTotpCode] = useState("");
   const [totpUseRecovery, setTotpUseRecovery] = useState(false);
+  // v37.1 — passkeys: botó d'entrada sense contrasenya (només si el navegador
+  // suporta WebAuthn). La detecció és asíncrona (evita cascada de renders al
+  // muntar i mismatch d'hidratació: el servidor pinta sense el botó).
+  const [pkSupported, setPkSupported] = useState(false);
+  const [pkBusy, setPkBusy] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    Promise.resolve().then(() => {
+      if (alive) {
+        try {
+          setPkSupported(typeof window !== "undefined" && window.PublicKeyCredential !== undefined);
+        } catch {
+          if (alive) setPkSupported(false);
+        }
+      }
+    });
+    return () => { alive = false; };
+  }, []);
   // el botó de Google només es mostra si l'OAuth està configurat al servidor
   const [googleEnabled, setGoogleEnabled] = useState(false);
 
@@ -128,6 +146,40 @@ export default function AuthView({
       navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
     } finally {
       setBusy(false);
+    }
+  };
+
+  // v37.1 — entrada amb passkey (sense contrasenya): opcions → ceremony → verify
+  const submitPasskey = async () => {
+    setError(null);
+    setPkBusy(true);
+    try {
+      const { startAuthentication } = await import("@simplewebauthn/browser");
+      const o = await fetch("/api/auth/passkeys/auth-options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email || undefined }),
+      });
+      const od = await o.json();
+      if (!o.ok) { setError(od.message || od.error || "DEFAULT"); return; }
+      let cred;
+      try {
+        cred = await startAuthentication({ optionsJSON: od.options });
+      } catch {
+        setError("PASSKEY_CANCELLED");
+        return;
+      }
+      const r = await fetch("/api/auth/passkeys/auth-verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential: cred }),
+      });
+      const d = await r.json();
+      if (!r.ok) { setError(d.error || "DEFAULT"); return; }
+      await auth.refresh();
+      navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
+    } finally {
+      setPkBusy(false);
     }
   };
 
@@ -299,6 +351,19 @@ export default function AuthView({
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
               />
             </Field>
+          )}
+
+          {/* v37.1 — entrada amb passkey (només login i navegadors amb WebAuthn) */}
+          {mode === "login" && pkSupported && (
+            <button
+              type="button"
+              onClick={submitPasskey}
+              disabled={pkBusy}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#0f2e21] hover:bg-[#faf9f7] transition-colors disabled:opacity-50 text-sm"
+            >
+              <Fingerprint className="w-4 h-4" />
+              {locale === "ca" ? "Entra amb una passkey" : "Entrar con una passkey"}
+            </button>
           )}
 
           {errText && (

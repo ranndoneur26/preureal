@@ -44,6 +44,7 @@ model User {
   favorites          Favorite[]
   savedComparisons   SavedComparison[]
   subscriptionUsages SubscriptionUsage[]
+  passkeys           PasskeyCredential[]
 
   @@index([role])
   @@index([plan])
@@ -342,6 +343,25 @@ model PriceAlertLog {
   notifiedAt DateTime @default(now())
 
   @@unique([userId, entityKey, kind, period])
+  @@index([userId])
+}
+
+// v37.1 — Passkeys (WebAuthn): credencials d'accés sense contrasenya.
+// `id` és el credential ID base64url (PK). publicKey base64url (COSE).
+// counter: anti-clonatge (s'incrementa a cada ús i es compara amb la BD).
+model PasskeyCredential {
+  id          String   @id
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  publicKey   String
+  counter     Int      @default(0)
+  transports  String? // JSON ["internal","hybrid"...]
+  deviceType  String? // singleDevice | multiDevice
+  backedUp    Boolean  @default(false)
+  label       String? // nom amigable (navegador/OS)
+  createdAt   DateTime @default(now())
+  lastUsedAt  DateTime?
+
   @@index([userId])
 }
 
