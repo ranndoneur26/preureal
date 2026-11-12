@@ -45,9 +45,38 @@ model User {
   savedComparisons   SavedComparison[]
   subscriptionUsages SubscriptionUsage[]
   passkeys           PasskeyCredential[]
+  reportPurchases    ReportPurchase[]
 
   @@index([role])
   @@index([plan])
+}
+
+// v38.8 — informes individuals de PAGAMENT ÚNIC (Stripe mode "payment", sense
+// subscripció). Cada fila = una compra: es snapshoten el preu (cents) i els
+// paràmetres validats (params JSON) al moment de crear la sessió de Stripe,
+// perquè el PDF es pugui regenerar més tard EXACTAMENT com el que es va pagar
+// encara que els preus o les dades canvïin. El token de descàrrega es guarda
+// SEMPRE hashejat (SHA-256, hashToken): el cru només viatja al correu.
+model ReportPurchase {
+  id                  String    @id @default(cuid())
+  userId              String
+  user                User      @relation(fields: [userId], references: [id])
+  kind                String // INFORME_MUNICIPI | VALORACIO | COMPARATIVA
+  params              String // JSON validat: {mun} | {mun,surfaceM2,rooms,estat} | {muns[]}
+  priceCents          Int // preu cobrat en cents (snapshot al pagar)
+  currency            String    @default("eur")
+  status              String    @default("pending") // pending | paid | failed
+  stripeSessionId     String?   @unique
+  stripePaymentIntent String?
+  downloadTokenHash   String? // SHA-256 del token de descàrrega (mai cru)
+  downloadCount       Int       @default(0)
+  paidAt              DateTime?
+  deliveredAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model Subscription {
@@ -139,7 +168,7 @@ model Municipality {
   tenseList         String? // "A" (TER/3739/2026) | "C" (TER/3740/2026)
   boundary          String? // GeoJSON del límite municipal (cache ICGC)
   boundaryFetchedAt DateTime?
-  slug              String? @unique // v37: slug públic per a /lloguer/[slug] (SEO)
+  slug              String?   @unique // v37: slug públic per a /lloguer/[slug] (SEO)
   updatedAt         DateTime  @updatedAt
 
   @@index([name])
@@ -310,20 +339,20 @@ model PlanSetting {
 
 // Edificis i municipis preferits de l'usuari — Fase 9
 model Favorite {
-  id               String   @id @default(cuid())
-  userId           String
-  user             User     @relation(fields: [userId], references: [id])
-  entityKey        String // "BUILDING:<id>" | "MUNI:<code>"
-  buildingId       String?
-  municipalityCode String?
-  label            String? // nom per mostrar (nom municipi / refcat)
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  entityKey         String // "BUILDING:<id>" | "MUNI:<code>"
+  buildingId        String?
+  municipalityCode  String?
+  label             String? // nom per mostrar (nom municipi / refcat)
   // v37 — alertes de preu: alertPct null = sense alerta; en canviar el preu
   // vigent un >= alertPct% (o el municipi passa a área tensada) el cron
   // /api/cron/emails envia un avís (idempotent via PriceAlertLog).
-  alertPct         Float?
+  alertPct          Float?
   lastNotifiedValue Float?
-  tenseNoticed     Boolean  @default(false)
-  createdAt        DateTime @default(now())
+  tenseNoticed      Boolean  @default(false)
+  createdAt         DateTime @default(now())
 
   @@unique([userId, entityKey])
   @@index([userId])
@@ -332,14 +361,14 @@ model Favorite {
 // v37 — log d'idempotència de les alertes de preu: 1 avís per usuari/entitat/
 // tipus/període (mai dobles notificacions per la mateixa publicació oficial).
 model PriceAlertLog {
-  id        String   @id @default(cuid())
-  userId    String
-  entityKey String // "BUILDING:<id>" | "MUNI:<code>"
-  kind      String // PRICE | TENSE
-  period    String // període oficial de la dada que va disparar l'avís
-  prevValue Float?
-  newValue  Float?
-  pctChange Float?
+  id         String   @id @default(cuid())
+  userId     String
+  entityKey  String // "BUILDING:<id>" | "MUNI:<code>"
+  kind       String // PRICE | TENSE
+  period     String // període oficial de la dada que va disparar l'avís
+  prevValue  Float?
+  newValue   Float?
+  pctChange  Float?
   notifiedAt DateTime @default(now())
 
   @@unique([userId, entityKey, kind, period])
@@ -350,17 +379,17 @@ model PriceAlertLog {
 // `id` és el credential ID base64url (PK). publicKey base64url (COSE).
 // counter: anti-clonatge (s'incrementa a cada ús i es compara amb la BD).
 model PasskeyCredential {
-  id          String   @id
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  publicKey   String
-  counter     Int      @default(0)
-  transports  String? // JSON ["internal","hybrid"...]
-  deviceType  String? // singleDevice | multiDevice
-  backedUp    Boolean  @default(false)
-  label       String? // nom amigable (navegador/OS)
-  createdAt   DateTime @default(now())
-  lastUsedAt  DateTime?
+  id         String    @id
+  userId     String
+  user       User      @relation(fields: [userId], references: [id])
+  publicKey  String
+  counter    Int       @default(0)
+  transports String? // JSON ["internal","hybrid"...]
+  deviceType String? // singleDevice | multiDevice
+  backedUp   Boolean   @default(false)
+  label      String? // nom amigable (navegador/OS)
+  createdAt  DateTime  @default(now())
+  lastUsedAt DateTime?
 
   @@index([userId])
 }

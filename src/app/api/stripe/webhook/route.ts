@@ -10,6 +10,8 @@ import {
   planFromPriceId,
   subscriptionLocalData,
 } from "@/lib/subscription";
+// v38.8 — informes individuals de pagament únic (mode payment, sense subscripció)
+import { fulfillPurchase, notifyReportReady } from "@/lib/reports-fulfill";
 
 // El rebut per correu va EN BACKGROUND amb after(): Vercel manté la funció
 // viva fins que acaba l'enviament (ignorat fora de Vercel).
@@ -71,6 +73,35 @@ export async function POST(req: Request) {
     switch (event.type) {
       case "checkout.session.completed": {
         const cs = event.data.object as Stripe.Checkout.Session;
+        // ── v38.8 — INFORME INDIVIDUAL (mode payment): metadata.purchaseId
+        // els distingeix de les subscripcions; NO passen per la lògica de
+        // subscripció de sota (mai creen cap Subscription ni canvien el pla).
+        if (cs.metadata?.purchaseId && cs.mode === "payment") {
+          const purchaseId = cs.metadata.purchaseId;
+          const paid = cs.payment_status === "paid" || cs.payment_status === "no_payment_required";
+          if (!paid) {
+            // mètodes asíncrons (SEPA...): payment_intent.succeeded complirà la compra
+            await audit(null, "STRIPE_REPORT_UNPAID", String(cs.id), {
+              payment_status: cs.payment_status ?? null,
+              purchaseId,
+            });
+            break;
+          }
+          // idempotent: si ja estava pagada (per /shop/return) retorna tokenRaw null
+          const { purchase, tokenRaw } = await fulfillPurchase(purchaseId, {
+            paymentIntent: typeof cs.payment_intent === "string" ? cs.payment_intent : cs.payment_intent?.id ?? null,
+            event: "REPORT_PURCHASE_PAID",
+          });
+          await audit(purchase.userId, "STRIPE_REPORT_PAID", String(cs.id), {
+            purchaseId,
+            kind: purchase.kind,
+            amount: formatEurFromCents(cs.amount_total),
+          });
+          after(async () => {
+            await notifyReportReady(purchase, tokenRaw).catch(() => {});
+          });
+          break;
+        }
         const userId = cs.metadata?.userId;
         const plan = cs.metadata?.plan === "PRO" ? "PRO" : "PREMIUM";
         if (userId) {
@@ -284,6 +315,26 @@ export async function POST(req: Request) {
         if (sub) {
           await db.subscription.update({ where: { id: sub.id }, data: { status: "past_due" } });
           await audit(null, "STRIPE_PAYMENT_FAILED", String(inv.id), { customerId });
+        }
+        break;
+      }
+      // v38.8 — pagaments asíncrons d'informes individuals (SEPA, transferència):
+      // el checkout.session.completed va arribar amb payment_status "unpaid";
+      // quan el pagament es confirma, la compra es compleix aquí. Les
+      // subscripcions TAMBIÉ emeten aquest event però sense metadata.purchaseId
+      // (la seva metadata és userId+plan) → es cauen per aquesta rama.
+      case "payment_intent.succeeded": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const purchaseId = pi.metadata?.purchaseId;
+        if (purchaseId) {
+          const pending = await db.reportPurchase.findUnique({ where: { id: purchaseId } });
+          if (pending && pending.status !== "paid") {
+            const { purchase, tokenRaw } = await fulfillPurchase(purchaseId, { paymentIntent: pi.id, event: "REPORT_PURCHASE_PAID" });
+            await audit(purchase.userId, "STRIPE_REPORT_PAID", pi.id, { purchaseId, kind: purchase.kind });
+            after(async () => {
+              await notifyReportReady(purchase, tokenRaw).catch(() => {});
+            });
+          }
         }
         break;
       }

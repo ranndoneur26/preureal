@@ -67,6 +67,10 @@ import * as h_plans from "../_impl/plans/route";
 import * as h_provenance from "../_impl/provenance/route";
 import * as h_reports from "../_impl/reports/route";
 import * as h_reports_pdf from "../_impl/reports/pdf/route";
+import * as h_reports_shop_catalog from "../_impl/reports/shop/catalog/route";
+import * as h_reports_shop_checkout from "../_impl/reports/shop/checkout/route";
+import * as h_reports_shop_download from "../_impl/reports/shop/download/route";
+import * as h_reports_shop_return from "../_impl/reports/shop/return/route";
 import * as h_reports_summary from "../_impl/reports/summary/route";
 import * as h_root from "../_impl/root/route";
 import * as h_stripe_checkout from "../_impl/stripe/checkout/route";
@@ -148,6 +152,10 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["provenance"], h: h_provenance },
   { seg: ["reports"], h: h_reports },
   { seg: ["reports", "pdf"], h: h_reports_pdf },
+  { seg: ["reports", "shop", "catalog"], h: h_reports_shop_catalog },
+  { seg: ["reports", "shop", "checkout"], h: h_reports_shop_checkout },
+  { seg: ["reports", "shop", "download"], h: h_reports_shop_download },
+  { seg: ["reports", "shop", "return"], h: h_reports_shop_return },
   { seg: ["reports", "summary"], h: h_reports_summary },
   { seg: ["root"], h: h_root },
   { seg: ["stripe", "checkout"], h: h_stripe_checkout },

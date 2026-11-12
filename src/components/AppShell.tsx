@@ -18,6 +18,7 @@ import DesignView from "@/components/views/DesignView";
 import ComparadorView from "@/components/views/ComparadorView";
 import GuiaView from "@/components/views/GuiaView";
 import SubscriptionResultView from "@/components/views/SubscriptionResultView";
+import ReportResultView from "@/components/views/ReportResultView";
 import CookieConsent from "@/components/CookieConsent";
 import ThemeToggle from "@/components/ThemeToggle";
 import { AppContext, AppCtx, AuthUser } from "@/components/app-context";
@@ -117,6 +118,8 @@ export default function AppShell() {
           {view === "/preus" && <PricingView />}
           {view === "/subscripcio/exit" && <SubscriptionResultView mode="exit" />}
           {view === "/subscripcio/cancelat" && <SubscriptionResultView mode="cancelat" />}
+          {view === "/informes/exit" && <ReportResultView mode="exit" />}
+          {view === "/informes/cancelat" && <ReportResultView mode="cancelat" />}
           {(view === "/registre" || view === "/entrada" || view === "/oblidat") && (
             <AuthView
               mode={view === "/registre" ? "register" : view === "/entrada" ? "login" : "forgot"}

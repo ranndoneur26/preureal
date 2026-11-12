@@ -162,6 +162,9 @@ mock.module("@/lib/mail", () => ({
   }),
   welcomeMail: () => ({ subject: "s", html: "h" }),
   verifyMail: () => ({ subject: "s", html: "h" }),
+  // v38.8 — el webhook importa reports-fulfill → reportReadyMail del mock:
+  // sense aquesta entrada la càrrega del mòdul falla (export no trobat)
+  reportReadyMail: (productName: string) => ({ subject: `Informe ${productName}`, html: "<p></p>" }),
 }));
 
 mock.module("@/lib/plans", () => ({

@@ -337,6 +337,27 @@ export function receiptMail(planName: string, amount: string, locale: "ca" | "es
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
 
+/**
+ * v38.8 — correu d'entrega d'un informe individual de pagament únic. L'URL de
+ * descàrrega porta el TOKEN cru (256 bits, base64url): és l'única credencial
+ * de descàrrega sense login, per això a la BD només hi consta el seu SHA-256.
+ * El nom del producte ve del servidor i s'escapa (auditoria v19).
+ */
+export function reportReadyMail(productName: string, downloadUrl: string, locale: "ca" | "es") {
+  const safeName = escapeHtml(productName);
+  const safeUrl = escapeHtml(downloadUrl);
+  const title = locale === "ca" ? "El teu informe ja està a punt" : "Tu informe ya está listo";
+  const body =
+    locale === "ca"
+      ? `<p>La compra de l'informe <b>${safeName}</b> s'ha confirmat i el document ja està generat.</p>
+         <p><a href="${safeUrl}" style="display:inline-block;margin-top:8px;background:#e8673c;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">${locale === "ca" ? "Descarregar el PDF" : "Descargar el PDF"}</a></p>
+         <p>L'enllaç és personal: el PDF es pot descarregar sempre amb aquesta adreça (no caduca), i també des del teu compte a preureal.com.</p>`
+      : `<p>La compra del informe <b>${safeName}</b> se ha confirmado y el documento ya está generado.</p>
+         <p><a href="${safeUrl}" style="display:inline-block;margin-top:8px;background:#e8673c;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">Descargar el PDF</a></p>
+         <p>El enlace es personal: el PDF se puede descargar siempre con esta dirección (no caduca), y también desde tu cuenta en preureal.com.</p>`;
+  return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
+}
+
 export function verifyMail(token: string, locale: "ca" | "es") {
   // URL sempre absoluta i ben formada (mai relativa, mai env mal escrita)
   const url = `${getSiteUrlOrigin()}/#/verifica?token=${token}`;

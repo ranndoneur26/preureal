@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { Check, Flame, Sparkles, Building2, AlertCircle } from "lucide-react";
+import ReportsShopSection from "@/components/views/ReportsShopSection";
 
 export default function PricingView() {
   const { t, auth, navigate, locale } = useApp();
@@ -130,6 +131,9 @@ export default function PricingView() {
           icon={<Building2 className="w-4 h-4" />}
         />
       </div>
+
+      {/* v38.8 — informes individuals de pagament únic (Stripe mode payment) */}
+      <ReportsShopSection />
 
       <div className="mt-10 text-center text-xs text-stone max-w-xl mx-auto leading-relaxed">
         {locale === "ca"

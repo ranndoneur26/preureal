@@ -195,6 +195,48 @@ Pas natural de v38.6: la mediana comunitària ara també al comparador.
   (mínim 3 informes). Bilingüe inline com la resta de la vista.
 - Sense migració ni canvis de contracte trencadors (camp afegit).
 
+### v38.8 — Informes individuals de pagament únic (Stripe mode «payment»)
+Encàrrec: «dentro de "Preus" habría que añadir la opció de obtener 3 tipos de
+informe diferentes... un solo pago, sin suscripción» (model Tinsa/Evaluo a
+preus propis). 3 productes nous, cap subscripció, cap canvi als plans:
+- **Catàleg** (preus PROPOSTOS, retocables amb env REPORT_PRICE_*_CENTS sense
+  desplegar; cost de generació / llicències de redistribució de dades i IVA
+  pendents de verificar pel propietari): Informe municipal PDF 4,99 € (el
+  mateix document professional de 8 pàgines del pla Premium, reutilitzat via
+  src/lib/report-data.ts — reunió de dades compartida amb /api/reports/pdf),
+  Valoració d'habitatge 6,99 € (motor v2 computeValuation, PDF nou de 4
+  pàgines bilingüe: base oficial, ajustos visibles, horquilla, habitabilitat
+  Decret 141/2012, confiança) i Comparativa de municipis 7,99 € (2-6
+  municipis, PDF nou ~4 pàgines: taula, gràfic de barres, fitxa per municipi,
+  €/m² DERIVAT ÷ 85 m² amb nota explícita).
+- **Flux** (mateix patró que les subscripcions): POST /api/reports/shop/checkout
+  (auth + correu verificat + rate limit + validació PURA a reports-shop.ts +
+  VIABILITAT ABANS DE COBRAR: una valoració sense base oficial mai es cobra —
+  422 NO_DATA) → Stripe Checkout mode "payment" amb price_data inline i
+  metadata {userId, purchaseId, kind} → confirmació SEMPRE via webhook signat
+  (nova rama checkout.session.completed mode payment + payment_intent.succeeded
+  per a pagaments asíncrons SEPA) → ReportPurchase.status paid + token de
+  descàrrega (256 bits, a la BD NOMÉS el SHA-256) → correu Resend amb
+  l'enllaç (idempotent report-ready:<purchaseId>).
+- **Entrega doble via**: GET /api/reports/shop/download?p=<id>&t=<token> amb
+  token del correu (sense login) O sessió de l'usuari propietari (pantalla de
+  retorn /#/informes/exit via POST /api/reports/shop/return, fallback
+  idempotent del webhook). El PDF es REGENERA sempre des dels paràmetres
+  SNAPSHOT de la compra (el que es paga es regenera igual encara que les dades
+  o els preus canvïin després). DE MO no descàrrega sense pagar (409) ni sense
+  token/sessió (403).
+- **Model nou** ReportPurchase (migració 20261112180000_report_purchase; sense
+  cap canvi a taules existents) + pantalla ReportResultView + secció
+  «Informes individuals» a la pàgina de preus (3 tarjetes amb formulari
+  inline, cercador de municipis amb debounce, preus de /api/reports/shop/
+  catalog — mai durs al client). Bilingüe ca/es; l'idioma del PDF es decideix
+  a la compra (user.locale) i es guarda als params.
+- **Tests** nous (tests/reports_shop.test.ts, 15): validació de params, preus,
+  noms de fitxer, tokens, builders PDF (vàlids en ca i es, degradació sense
+  dada). Mock de reportReadyMail afegit a audit_v23 (el webhook ara l'usa via
+  reports-fulfill). NOTA per al propietari: afegir tests/reports_shop.test.ts
+  a la llista bloquejant del workflow CI (sense scope workflow al token).
+
 ## v37.1 — Passkeys (WebAuthn) + hub SEO /lloguer + tests TOTP — 2026-11-12
 
 **Passkeys completes** (@simplewebauthn v14, dependència nova):
