@@ -34,7 +34,7 @@ export async function GET() {
   function check(name: string, url: string, timeout = 6000) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeout);
-    return fetch(url, { signal: ctrl.signal, headers: { "User-Agent": "PreuReal.cat/1.0" } })
+    return fetch(url, { signal: ctrl.signal, headers: { "User-Agent": "Preureal/1.0" } })
       .then((r) => ({ name, ok: r.ok, status: r.status }))
       .catch((e) => ({ name, ok: false, status: String(e?.message || e) }))
       .finally(() => clearTimeout(t));
@@ -55,7 +55,7 @@ export async function GET() {
     const t = setTimeout(() => ctrl.abort(), 7000);
     const r = await fetch(
       "https://ovc.catastro.meh.es/ovcservweb/OVCSWLocalizacionRC/OVCCallejero.asmx/Consulta_DNPRC?Provincia=BARCELONA&Municipio=BARCELONA&RC=8110708DF2881A",
-      { signal: ctrl.signal, headers: { "User-Agent": "PreuReal.cat/1.0" }, cache: "no-store" }
+      { signal: ctrl.signal, headers: { "User-Agent": "Preureal/1.0" }, cache: "no-store" }
     ).finally(() => clearTimeout(t));
     const text = r.ok ? await r.text() : "";
     // ok només si el servei respon XML vàlid sense <err> (errors de negoci

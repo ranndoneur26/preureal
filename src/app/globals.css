@@ -123,7 +123,7 @@
   }
 }
 
-/* ---------- Leaflet per a PreuReal.cat ---------- */
+/* ---------- Leaflet per a Preureal ---------- */
 .leaflet-container { font-family: inherit; background: #eef0ec; }
 .leaflet-control-attribution { font-size: 10px !important; }
 .pr-popup .leaflet-popup-content-wrapper { border-radius: 12px; }

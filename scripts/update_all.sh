@@ -28,7 +28,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP_DIR="/tmp"
 URL_BASE="https://habitatge.gencat.cat/web/.content/home/dades/estadistiques/01_Estadistiques_de_construccio_i_mercat_immobiliari/03_Mercat_de_lloguer/02_Lloguers_per_ambits_geografics"
-UA="Mozilla/5.0 (compatible; PreuReal.cat update/1.0)"
+UA="Mozilla/5.0 (compatible; Preureal update/1.0)"
 
 LLOGUER_URL="$URL_BASE/Lloguer_mitja/municipis_anual_lloguer.xlsx"
 CONTRACTES_URL="$URL_BASE/Fitxers_contractes/municipis_anual_contractes.xlsx"

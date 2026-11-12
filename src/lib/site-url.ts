@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Resolució segura de la URL pública del lloc.
+ * Preureal — Resolució segura de la URL pública del lloc.
  *
  * NEXT_PUBLIC_SITE_URL es defineix a Vercel (Settings → Environment
  * Variables). Si el valor és inexistent, buit o està mal escrit

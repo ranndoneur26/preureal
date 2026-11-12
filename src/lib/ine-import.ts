@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Fase 2: importadors dels serveis Tempus3 de l'INE.
+ * Preureal — Fase 2: importadors dels serveis Tempus3 de l'INE.
  *
  * Baixa les taules verificades de l'IPVA i de l'Atlas de distribució de la
  * renda (ADRH), les parseja amb src/lib/ine-parse.ts i les desa a
@@ -44,7 +44,7 @@ export type IpvaScope = (typeof IPVA_SCOPES)[number];
 export const ATLAS_SCOPES = ["NACIONAL", "17", "25", "43", "08"] as const; // 08 al final: la més gran
 export type AtlasScope = (typeof ATLAS_SCOPES)[number];
 
-const UA = "PreuReal.cat/1.0 (dades oficials INE; +https://www.preureal.com)";
+const UA = "Preureal/1.0 (dades oficials INE; +https://www.preureal.com)";
 const API = "https://servicios.ine.es/wstempus/js/ES/DATOS_TABLA";
 const NULT = 12; // sèries anuals des de 2015: n'hi ha prou amb 12 punts
 

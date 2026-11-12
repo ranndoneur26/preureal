@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Fase 3: capa de LECTURA per al servei d'indicadors.
+ * Preureal — Fase 3: capa de LECTURA per al servei d'indicadors.
  *
  * Només consultes Prisma (findMany / groupBy / count): cap escriptura, cap
  * migració, cap taula nova. Les dades venen de les taules de la Fase 2

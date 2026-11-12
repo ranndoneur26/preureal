@@ -154,7 +154,7 @@ function Header({ route }: { route: string }) {
             <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
               <button onClick={() => navigate("/")} className="flex items-center gap-2 shrink-0">
                 <span className="w-8 h-8 rounded-lg bg-[#0f2e21] text-white flex items-center justify-center font-black text-sm">PR</span>
-                <span className="font-extrabold text-lg tracking-tight">PreuReal<span className="text-[#e8673c]">.cat</span></span>
+                <span className="font-extrabold text-lg tracking-tight">Preureal</span>
               </button>
               <nav className="hidden md:flex items-center gap-1">
                 {link("/mapa", t.nav.mapa)}
@@ -270,7 +270,7 @@ function Footer() {
           <footer className="mt-auto bg-[#0f2e21] text-[#c9d4cc] mt-16">
             <div className="max-w-6xl mx-auto px-4 py-10 grid gap-8 md:grid-cols-3">
               <div>
-                <div className="font-extrabold text-white text-lg">PreuReal<span className="text-[#e8673c]">.cat</span></div>
+                <div className="font-extrabold text-white text-lg">Preureal</div>
                 <p className="text-sm mt-2 opacity-80">{t.tagline}</p>
               </div>
               <div className="text-sm">
@@ -289,7 +289,7 @@ function Footer() {
               </div>
             </div>
             <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">
-              © {new Date().getFullYear()} PreuReal.cat · {t.footer.made}
+              © {new Date().getFullYear()} Preureal · {t.footer.made}
             </div>
           </footer>
         );

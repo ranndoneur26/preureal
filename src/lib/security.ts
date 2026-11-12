@@ -1,5 +1,5 @@
 /**
- * Utilitats de seguretat de PreuReal.cat (BLOC A de l'auditoria).
+ * Utilitats de seguretat de Preureal (BLOC A de l'auditoria).
  */
 
 import * as crypto from "crypto";

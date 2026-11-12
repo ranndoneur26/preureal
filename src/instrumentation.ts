@@ -1,4 +1,4 @@
-// PreuReal.cat — instrumentació d'arrencada (Next.js instrumentation hook).
+// Preureal — instrumentació d'arrencada (Next.js instrumentation hook).
 //
 // Log de connectivitat en cold start: indica quin tipus de BD s'ha configurat
 // (útil per diagnosticar el serverless de Vercel sense obrir els logs complets).

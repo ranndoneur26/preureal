@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PreuReal.cat — Noves funcionalitats (F1): gràfic de línies interactiu.
+ * Preureal — Noves funcionalitats (F1): gràfic de línies interactiu.
  *
  * SVG pur (0 dependències): identitat visual exacta, responsive (viewBox),
  * hover amb guia vertical i tooltip. Només dibuixa punts REALS (mai

@@ -12,7 +12,7 @@ import { db } from "@/lib/db";
  */
 
 const BASE = "https://api.icgc.cat/territorial";
-const UA = "PreuReal.cat/1.0 (dades obertes ICGC)";
+const UA = "Preureal/1.0 (dades obertes ICGC)";
 
 export async function icgcGet(pathAndQuery: string, timeoutMs = 15000) {
   const ctrl = new AbortController();

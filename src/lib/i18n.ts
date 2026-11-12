@@ -1,10 +1,10 @@
-/** Diccionari bilingüe PreuReal.cat — català (per defecte) i castellà */
+/** Diccionari bilingüe Preureal — català (per defecte) i castellà */
 
 export type Locale = "ca" | "es";
 
 export const STRINGS = {
   ca: {
-    brand: "PreuReal.cat",
+    brand: "Preureal",
     tagline: "El preu real del lloguer, illa a illa",
     nav: { mapa: "Mapa", preus: "Preus", panel: "El meu compte", admin: "Admin", entrada: "Entrar", registre: "Registra't", sortida: "Sortir", faq: "Preguntes" },
     hero: {
@@ -215,18 +215,18 @@ export const STRINGS = {
       title: "Preguntes freqüents",
       q1: { q: "D'on surten els preus?", a: "De l'explotació estadística oficial del registre de fiances de lloguer de l'Incasòl, publicada per habitatge.gencat.cat: el preu mitjà mensual per municipi i el nombre de contractes registrats. Són els mateixos preus que usa l'Administració per declarar zones tensades i calcular índexs de referència." },
       q2: { q: "És el preu del meu pis concret?", a: "No. És la mitjana oficial del municipi (i a nivell d'illa quan es tanqui el conveni de dades). Serveix per saber si el que et demanen està molt per sobre del mercat real registrat. Un pis concret pot valer més o menys segons estat, ascensor, terrassa..." },
-      q3: { q: "Què és una àrea de mercat residencial tensat?", a: "Un municipi declarat per la Generalitat on es regula el preu del lloguer (nous contractes limitats per l'índex de referència). PreuReal.cat marca els municipis segons les resolucions vigents del DOGC (TER/3739/2026 i TER/3740/2026, d'octubre de 2026), actualitzades cada cop que la Generalitat revisa les llistes." },
+      q3: { q: "Què és una àrea de mercat residencial tensat?", a: "Un municipi declarat per la Generalitat on es regula el preu del lloguer (nous contractes limitats per l'índex de referència). Preureal marca els municipis segons les resolucions vigents del DOGC (TER/3739/2026 i TER/3740/2026, d'octubre de 2026), actualitzades cada cop que la Generalitat revisa les llistes." },
       q4: { q: "Per què he de registrar-me?", a: "El mapa és lliure, però les consultes detallades consumeixen recursus (consultes a serveis públics i al nostre servidor). Amb el registre gratuït tens 3 consultes detallades al mes; Premium les fa il·limitades." },
       q5: { q: "Les dades són personals?", a: "No. Totes les dades mostrades són agregades i oficials (mitjanes per municipi). No exposem mai dades de contractes individuals. Pots demanar l'esborrament del teu compte quan vulguis." },
     },
     footer: {
       made: "Fet amb dades obertes de la Generalitat, Incasòl, ICGC i Cadastre",
-      disclaimer: "PreuReal.cat ofereix informació estadística oficial agregada. No és una estimació de preu d'un habitatge concret ni assessorament juridic.",
+      disclaimer: "Preureal ofereix informació estadística oficial agregada. No és una estimació de preu d'un habitatge concret ni assessorament juridic.",
     },
     common: { loading: "Carregant...", save: "Desar", cancel: "Cancel·lar", close: "Tancar", ok: "D'acord" },
   },
   es: {
-    brand: "PreuReal.cat",
+    brand: "Preureal",
     tagline: "El precio real del alquiler, manzana a manzana",
     nav: { mapa: "Mapa", preus: "Precios", panel: "Mi cuenta", admin: "Admin", entrada: "Entrar", registre: "Regístrate", sortida: "Salir", faq: "Preguntas" },
     hero: {
@@ -437,13 +437,13 @@ export const STRINGS = {
       title: "Preguntas frecuentes",
       q1: { q: "¿De dónde salen los precios?", a: "De la explotación estadística oficial del registro de fianzas de alquiler del Incasòl, publicada por habitatge.gencat.cat: el precio medio mensual por municipio y el número de contratos registrados. Son los mismos precios que usa la Administración para declarar zonas tensionadas y calcular índices de referencia." },
       q2: { q: "¿Es el precio de mi piso concreto?", a: "No. Es la media oficial del municipio (y a nivel de manzana cuando se cierre el convenio de datos). Sirve para saber si lo que te piden está muy por encima del mercado real registrado. Un piso concreto puede valer más o menos según estado, ascensor, terraza..." },
-      q3: { q: "¿Qué es un área de mercado residencial tensionado?", a: "Un municipio declarado por la Generalitat donde se regula el precio del alquiler (nuevos contratos limitados por el índice de referencia). PreuReal.cat marca los municipios según las resoluciones vigentes del DOGC (TER/3739/2026 y TER/3740/2026, de octubre de 2026), actualizadas cada vez que la Generalitat revisa las listas." },
+      q3: { q: "¿Qué es un área de mercado residencial tensionado?", a: "Un municipio declarado por la Generalitat donde se regula el precio del alquiler (nuevos contratos limitados por el índice de referencia). Preureal marca los municipios según las resoluciones vigentes del DOGC (TER/3739/2026 y TER/3740/2026, de octubre de 2026), actualizadas cada vez que la Generalitat revisa las listas." },
       q4: { q: "¿Por qué tengo que registrarme?", a: "El mapa es libre, pero las consultas detalladas consumen recursos (consultas a servicios públicos y a nuestro servidor). Con el registro gratuito tienes 3 consultas detalladas al mes; Premium las hace ilimitadas." },
       q5: { q: "¿Los datos son personales?", a: "No. Todos los datos mostrados son agregados y oficiales (medias por municipio). Nunca exponemos datos de contratos individuales. Puedes solicitar el borrado de tu cuenta cuando quieras." },
     },
     footer: {
       made: "Hecho con datos abiertos de la Generalitat, Incasòl, ICGC y Cadastre",
-      disclaimer: "PreuReal.cat ofrece información estadística oficial agregada. No es una estimación de precio de un vivienda concreto ni asesoramiento jurídico.",
+      disclaimer: "Preureal ofrece información estadística oficial agregada. No es una estimación de precio de un vivienda concreto ni asesoramiento jurídico.",
     },
     common: { loading: "Cargando...", save: "Guardar", cancel: "Cancelar", close: "Cerrar", ok: "De acuerdo" },
   },

@@ -1,4 +1,4 @@
-/** Definición de planes de PreuReal.cat (Fase 5: límits configurables des de l'admin). */
+/** Definición de planes de Preureal (Fase 5: límits configurables des de l'admin). */
 import { db } from "@/lib/db";
 import { VIGENT_STATUSES, PLAN_RANK, monthKey } from "@/lib/subscription";
 

@@ -365,7 +365,7 @@ export default function GuiaView() {
           ))}
         </ul>
         <p className="mt-3 text-[11px] text-[#6b6f68]">
-          {t.updated}: {new Date().toLocaleDateString(ca ? "ca-ES" : "es-ES")} · PreuReal.cat no presta assessorament jurídic; aquesta guia és contingut informatiu sobre normativa pública.
+          {t.updated}: {new Date().toLocaleDateString(ca ? "ca-ES" : "es-ES")} · Preureal no presta assessorament jurídic; aquesta guia és contingut informatiu sobre normativa pública.
         </p>
       </Card>
     </div>

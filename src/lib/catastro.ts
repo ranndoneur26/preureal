@@ -66,7 +66,7 @@ async function fetchWithTimeout(url: string, timeoutMs: number) {
   try {
     const res = await fetch(url, {
       signal: ctrl.signal,
-      headers: { "User-Agent": "PreuReal.cat/1.0 (consulta dades obertes)" },
+      headers: { "User-Agent": "Preureal/1.0 (consulta dades obertes)" },
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`catastro ${res.status}`);

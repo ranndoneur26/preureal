@@ -50,8 +50,8 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
             <Block title={ca ? "2. Objecte" : "2. Objeto"}>
               <p>
                 {ca
-                  ? "PreuReal.cat és una eina informativa que consulta i visualitza estadístiques oficials agregades sobre el mercat de lloguer a Catalunya: preu mitjà mensual per municipi (explotació estadística de les fiances de lloguer de l'Incasòl, publicada per la Generalitat), declaració d'àrees de mercat residencial tensat, cartografia d'edificis de l'ICGC i referències cadastrals."
-                  : "PreuReal.cat es una herramienta informativa que consulta y visualiza estadísticas oficiales agregadas sobre el mercado de alquiler en Cataluña: precio medio mensual por municipio (explotación estadística de las fianzas de alquiler del Incasòl, publicada por la Generalitat), declaración de áreas de mercado residencial tensionado, cartografía de edificios del ICGC y referencias catastrales."}
+                  ? "Preureal és una eina informativa que consulta i visualitza estadístiques oficials agregades sobre el mercat de lloguer a Catalunya: preu mitjà mensual per municipi (explotació estadística de les fiances de lloguer de l'Incasòl, publicada per la Generalitat), declaració d'àrees de mercat residencial tensat, cartografia d'edificis de l'ICGC i referències cadastrals."
+                  : "Preureal es una herramienta informativa que consulta y visualiza estadísticas oficiales agregadas sobre el mercado de alquiler en Cataluña: precio medio mensual por municipio (explotación estadística de las fianzas de alquiler del Incasòl, publicada por la Generalitat), declaración de áreas de mercado residencial tensionado, cartografía de edificios del ICGC y referencias catastrales."}
               </p>
               <p className="mt-2">
                 {ca

@@ -4,7 +4,7 @@ import { escapeHtml } from "@/lib/security";
 import { getSiteUrlOrigin } from "@/lib/site-url";
 
 /**
- * Correos automáticos de PreuReal.cat.
+ * Correos automáticos de Preureal.
  *
  * REGLA DE NEGOCIO: no se contrata ningún proveedor sin autorización del
  * propietario. Comportamiento:
@@ -131,7 +131,7 @@ export async function deliverWithResend(
   maxAttempts: number
 ): Promise<DeliverResult> {
   const payload = JSON.stringify({
-    from: process.env.MAIL_FROM || "PreuReal.cat <onboarding@resend.dev>",
+    from: process.env.MAIL_FROM || "Preureal <onboarding@resend.dev>",
     to: [mail.to],
     subject: mail.subject,
     html: mail.html,
@@ -280,13 +280,13 @@ export async function sendMail({
   }
 }
 
-const BRAND = "PreuReal.cat";
+const BRAND = "Preureal";
 
 function layout(title: string, body: string, locale: "ca" | "es") {
   const cta =
     locale === "ca"
-      ? "Obre el mapa de PreuReal.cat"
-      : "Abre el mapa de PreuReal.cat";
+      ? "Obre el mapa de Preureal"
+      : "Abre el mapa de Preureal";
   return `<!doctype html><html><body style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#faf9f7;padding:24px">
   <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #eee">
     <div style="background:#0f2e21;color:#fff;padding:20px 28px;font-size:20px;font-weight:700">${BRAND}</div>
@@ -296,7 +296,7 @@ function layout(title: string, body: string, locale: "ca" | "es") {
       <a href="${getSiteUrlOrigin()}" style="display:inline-block;margin-top:20px;background:#e8673c;color:#fff;text-decoration:none;padding:11px 20px;border-radius:8px;font-weight:600">${cta}</a>
     </div>
     <div style="padding:16px 28px;background:#f5f4f1;font-size:12px;color:#777">
-      ${locale === "ca" ? "Reps aquest correu perquè t'has registrat a PreuReal.cat." : "Recibes este correo porque te has registrado en PreuReal.cat."}
+      ${locale === "ca" ? "Reps aquest correu perquè t'has registrat a Preureal." : "Recibes este correo porque te has registrado en Preureal."}
     </div>
   </div></body></html>`;
 }
@@ -313,8 +313,8 @@ export function welcomeMail(
   const safeName = name ? escapeHtml(name) : "";
   const title =
     locale === "ca"
-      ? `Benvingut/da a PreuReal.cat${safeName ? ", " + safeName : ""}!`
-      : `Bienvenido/a a PreuReal.cat${safeName ? ", " + safeName : ""}`;
+      ? `Benvingut/da a Preureal${safeName ? ", " + safeName : ""}!`
+      : `Bienvenido/a a Preureal${safeName ? ", " + safeName : ""}`;
   const body =
     locale === "ca"
       ? `<p>Ja pots consultar el <b>preu mitjà real de lloguer registrat oficialment</b> (fiances Incasòl) als municipis de Catalunya, juntament amb l'estat d'àrea de mercat residencial tensat.</p>

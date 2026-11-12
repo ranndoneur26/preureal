@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Fase 4: gating dels indicadors oficials per pla.
+ * Preureal — Fase 4: gating dels indicadors oficials per pla.
  *
  * La Taula 8 de la proposta defineix el reparte gratuït/Premium:
  *  - GRATUÏT: mediana municipal de referència + teaser (avís de que la resta

@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Fase 3: servei de càlcul d'indicadors (fonts oficials).
+ * Preureal — Fase 3: servei de càlcul d'indicadors (fonts oficials).
  *
  * Funcions PURA: cap BD, cap xarxa → testables offline amb dades REALS
  * (fixtures INE de data/fixtures/ + snapshot real de fiances de

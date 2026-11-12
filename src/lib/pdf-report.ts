@@ -199,7 +199,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   };
   const footer = () => {
     page.drawRectangle({ x: 0, y: 0, width: W, height: 30, color: LIGHT });
-    page.drawText(`PreuReal.cat · generat el ${input.genDate} · dades: ${mun.rentPeriod || "—"}`, { x: 40, y: 11, size: 8, font, color: GRAY });
+    page.drawText(`Preureal · generat el ${input.genDate} · dades: ${mun.rentPeriod || "—"}`, { x: 40, y: 11, size: 8, font, color: GRAY });
     const pn = `Pàgina ${pageNo} de ${REPORT_PAGES}`;
     page.drawText(pn, { x: W - 40 - font.widthOfTextAtSize(pn, 8), y: 11, size: 8, font, color: GRAY });
   };
@@ -210,8 +210,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     y = H - 60;
     if (!first) {
       page.drawRectangle({ x: 0, y: H - 26, width: W, height: 26, color: DARK });
-      page.drawText("PreuReal.cat", { x: 40, y: H - 18, size: 10, font: bold, color: WHITE });
-      page.drawText(".cat", { x: 40 + bold.widthOfTextAtSize("PreuReal", 10), y: H - 18, size: 10, font: bold, color: ACCENT });
+      page.drawText("Preureal", { x: 40, y: H - 18, size: 10, font: bold, color: WHITE });
       page.drawText(`Informe de lloguer · ${mun.name}`, { x: 200, y: H - 18, size: 9, font, color: rgb(0.79, 0.83, 0.8) });
     }
   };
@@ -219,8 +218,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   // ---------- P1 · PORTADA ----------
   newPage(true);
   page.drawRectangle({ x: 0, y: H - 262, width: W, height: 262, color: DARK });
-  page.drawText("PreuReal.cat", { x: 40, y: H - 96, size: 34, font: bold, color: WHITE });
-  page.drawText(".cat", { x: 40 + bold.widthOfTextAtSize("PreuReal", 34), y: H - 96, size: 34, font: bold, color: ACCENT });
+  page.drawText("Preureal", { x: 40, y: H - 96, size: 34, font: bold, color: WHITE });
   page.drawText("Informe professional de lloguer · 8 pàgines", { x: 40, y: H - 126, size: 12, font, color: rgb(0.79, 0.83, 0.8) });
   page.drawText(`Generat el ${input.genDate}`, { x: 40, y: H - 146, size: 10, font, color: rgb(0.79, 0.83, 0.8) });
 
@@ -408,7 +406,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     y -= 10;
   }
   y -= 6;
-  line("Tots els indicadors d'aquesta pàgina provenen de fonts oficials citades (Incasòl, INE). PreuReal no els modifica ni els extrapola; on no hi ha dada, s'ho diu.", 8.5, GRAY);
+  line("Tots els indicadors d'aquesta pàgina provenen de fonts oficials citades (Incasòl, INE). Preureal no els modifica ni els extrapola; on no hi ha dada, s'ho diu.", 8.5, GRAY);
 
   // ---------- P5 · EDIFICI / LECTURA DEL MERCAT ----------
   newPage();
@@ -431,7 +429,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     }
     y -= 4;
     if (building.tipus === "ind") {
-      line("Nota (nau industrial): les estadístiques oficials de fiances cobreixen lloguer d'HABITATGES. El lloguer de naus i edificis industrials es pacta per €/m² i mes i NO està representat per la mitjana municipal d'aquest informe. PreuReal no publica encara estadística industrial oficial.", 9, GRAY);
+      line("Nota (nau industrial): les estadístiques oficials de fiances cobreixen lloguer d'HABITATGES. El lloguer de naus i edificis industrials es pacta per €/m² i mes i NO està representat per la mitjana municipal d'aquest informe. Preureal no publica encara estadística industrial oficial.", 9, GRAY);
       y -= 6;
     }
     line("Quan la dada municipal i la dada de l'illa divergeixen, la de l'illa descriu millor aquest immoble; la municipal resta com a context agregat. Cap de les dues és una valoració de l'immoble concret.", 9, GRAY);
@@ -517,7 +515,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   });
   y -= 6;
   section("Avís legal");
-  line("Informe generat automàticament per PreuReal.cat amb dades oficials públiques. Ús exclusivament informatiu: no constitueix valoració immobiliària formal, assessorament financer ni jurídic. Les fonts citades són els propietaris de les seves dades. Consulta l'avís legal i la política de privacitat a www.preureal.com.", 9);
+  line("Informe generat automàticament per Preureal amb dades oficials públiques. Ús exclusivament informatiu: no constitueix valoració immobiliària formal, assessorament financer ni jurídic. Les fonts citades són els propietaris de les seves dades. Consulta l'avís legal i la política de privacitat a www.preureal.com.", 9);
   y -= 10;
   text(`Informe v34 (Fase 6) · generat el ${input.genDate} · subscrit: ${input.subscriberMasked} · pla ${input.planLabel}`, 8.5, GRAY);
   footer();

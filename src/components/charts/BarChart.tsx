@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * PreuReal.cat — Noves funcionalitats (F2): gràfic de barres horitzontals
- * comparatiu (estil Tinsa adaptat a la identitat PreuReal).
+ * Preureal — Noves funcionalitats (F2): gràfic de barres horitzontals
+ * comparatiu (estil Tinsa adaptat a la identitat Preureal).
  *
  * CSS pur (0 dependències, responsive per disseny): cada fila = àmbit
  * territorial amb barra proporcional, valor €/mes i el seu període. El

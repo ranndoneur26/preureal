@@ -6,7 +6,7 @@ import { syncUserPlan } from "@/lib/plans";
 import type { User } from "@prisma/client";
 
 /**
- * Sessions de PreuReal.cat.
+ * Sessions de Preureal.
  *
  * JWT signat (HS256) dins d'una cookie httpOnly + SameSite=Lax + Secure en
  * producció. Millores de seguretat (BLOC A):

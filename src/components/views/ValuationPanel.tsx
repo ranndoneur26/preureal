@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PreuReal.cat — Noves funcionalitats (F4): panell de valoració orientativa
+ * Preureal — Noves funcionalitats (F4): panell de valoració orientativa
  * de la renta d'una vivenda concreta (Premium/Pro).
  *
  * El formulari només recull característiques (superfície, habitacions, estat);

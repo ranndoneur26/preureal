@@ -2,6 +2,28 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## Rebranding «PreuReal.cat» → «Preureal» a tota la superfície visible — 2026-11-12
+
+**Encàrrec:** llevat el «.cat» de tot el que veu l'usuari: web (front end),
+metadades SEO i textos dels correus. Revisió exhaustiva ca/es.
+
+**Canviat (només cadenes visibles):**
+- **UI (AppShell):** logotip de la capçalera i del peu (s'elimina el `<span>` taronja «.cat»), línia de copyright.
+- **i18n ca/es:** `brand`, FAQ q3 («Preureal marca els municipis…»), disclaimer del peu.
+- **SEO (layout.tsx):** títol per defecte i template, authors, Open Graph (títol + siteName), Twitter card i JSON-LD (`WebApplication.name`).
+- **Correus (mail.ts):** `BRAND`, capçalera i peu de totes les plantilles (benvinguda, verificació, restabliment, rebut, resum de preferits), CTA «Obre el mapa de Preureal», remitent per defecte `Preureal <onboarding@resend.dev>`.
+- **Informe PDF (pdf-report.ts):** logotip de portada i de capçalera (s'elimina el «.cat» accentuat), peu de pàgina, notes P4/P5 i clàusula final de l'avís legal.
+- **Textos legals:** avís legal (objecte, ca/es) i nota final de la guia.
+- **User-Agents** dels importadors/sondes (INE, ICGC, Cadastre, geocodificador, health, seed, update_all): `Preureal/1.0`.
+- **.env.production.example:** `MAIL_FROM="Preureal <hola@preureal.com>"`.
+
+**Intacte (funcional, deliberadament):** `www.preureal.com` (domini real),
+`admin@preureal.cat` (compte), lògica i notes de `site-url.ts`, noms de fitxers
+de descàrrega `preureal_*`, documentació històrica (CHANGES/AUDIT/DEPLOY/...).
+**Pendent per a l'usuari:** actualitzar a Vercel la variable `MAIL_FROM`
+(valors → `Preureal <hola@preureal.com>`) perquè el remitent real dels correus
+mostri la marca nova; el codi per defecte ja és correcte.
+
 ## CAUSA ARREL REAL del «No s'ha pogut generar l'informe»: WinAnsi cannot encode ≥/≤ — 2026-11-11
 
 **Correcció de l'entrada següent:** la hipòtesi del paywall era ERRÒNIA.

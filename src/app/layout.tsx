@@ -11,8 +11,8 @@ import { getSiteUrl } from "@/lib/site-url";
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
   title: {
-    default: "PreuReal.cat — Preu real del lloguer a Catalunya, illa a illa",
-    template: "%s | PreuReal.cat",
+    default: "Preureal — Preu real del lloguer a Catalunya, illa a illa",
+    template: "%s | Preureal",
   },
   description:
     "Consulta el preu mitjà real del lloguer registrat oficialment (fiances Incasòl) a qualsevol municipi de Catalunya, l'any de construcció de l'edifici i si la zona és àrea de mercat residencial tensat. Mapa interactiu amb dades oficials.",
@@ -27,24 +27,24 @@ export const metadata: Metadata = {
     "mapa lloguer Barcelona",
     "any de construcció edifici",
   ],
-  authors: [{ name: "PreuReal.cat" }],
+  authors: [{ name: "Preureal" }],
   alternates: {
     canonical: "/",
     languages: { "ca": "/", "es": "/" },
   },
   openGraph: {
-    title: "PreuReal.cat — Sap si et cobren de més de lloguer",
+    title: "Preureal — Sap si et cobren de més de lloguer",
     description:
       "El preu mitjà real del lloguer registrat oficialment (fiances Incasòl) sobre el mapa de Catalunya. 947 municipis, dades oficials.",
     url: "/",
-    siteName: "PreuReal.cat",
+    siteName: "Preureal",
     type: "website",
     locale: "ca_ES",
     alternateLocale: "es_ES",
   },
   twitter: {
     card: "summary_large_image",
-    title: "PreuReal.cat — Preu real del lloguer a Catalunya",
+    title: "Preureal — Preu real del lloguer a Catalunya",
     description:
       "Preu mitjà real (fiances Incasòl), àrees tensades i any de construcció, sobre el mapa.",
   },
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "PreuReal.cat",
+  name: "Preureal",
   applicationCategory: "RealEstateApplication",
   operatingSystem: "Web",
   description:

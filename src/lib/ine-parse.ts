@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Fase 2: parsers dels serveis de dades Tempus3 de l'INE.
+ * Preureal — Fase 2: parsers dels serveis de dades Tempus3 de l'INE.
  *
  * Funcions PURA: entren JSON cru de DATOS_TABLA i surten observacions
  * estadístiques normalitzades. Sense base de dades ni xarxa → testables
@@ -71,7 +71,7 @@ const UNIT_INDICE = "índex (base 2015=100)";
 const UNIT_TASA = "%";
 const UNIT_RENTA = "€/any (renda neta mitjana)";
 
-// Codis INE oficials de l'àmbit PreuReal
+// Codis INE oficials de l'àmbit Preureal
 const CCAA_CATALUNYA = "09";
 const PROV_CODES: Record<string, string> = {
   Barcelona: "08",
@@ -183,7 +183,7 @@ function pushUnmatched(res: ParseResult, name: string) {
 /**
  * Taula 59056 — «Índices nacionales y por comunidades autónomas: general».
  * Sèries del tipus «Cataluña. Total. Índice.» / «Total Nacional. Total. Índice.»
- * Només es prenen el Total Nacional i Catalunya (àmbit PreuReal); els
+ * Només es prenen el Total Nacional i Catalunya (àmbit Preureal); els
  * desglossos per tipus d'edificació es descarten.
  */
 export function parseIpvaNacCcaa(json: unknown): ParseResult {

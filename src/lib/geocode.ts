@@ -7,7 +7,7 @@
  */
 
 const BASE = "https://eines.icgc.cat/geocodificador";
-const UA = "PreuReal.cat/1.0 (geocodificació ICGC)";
+const UA = "Preureal/1.0 (geocodificació ICGC)";
 
 const cache = new Map<string, { at: number; data: GeocodeResult[] }>();
 const CACHE_MS = 3600_000;

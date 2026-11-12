@@ -6,7 +6,7 @@ import { useApp } from "@/components/app-context";
 
 /**
  * Banner de consentiment de cookies (Fase 15).
- * PreuReal.cat NOMÉS utilitza cookies estrictament necessàries (sessió) i
+ * Preureal NOMÉS utilitza cookies estrictament necessàries (sessió) i
  * localStorage funcional (idioma, consentiment). No hi ha cap cookie
  * analítica ni de tercers: sense consentiment no es carrega res no essencial.
  */

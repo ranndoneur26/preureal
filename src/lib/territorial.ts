@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Noves funcionalitats (F1-F4): agregacions territorials i
+ * Preureal — Noves funcionalitats (F1-F4): agregacions territorials i
  * motor de valoració de renta.
  *
  * Funcions PURA (cap BD, cap xarxa) seguint el patró indicators.ts /
