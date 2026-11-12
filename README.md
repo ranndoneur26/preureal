@@ -74,15 +74,24 @@ PLAYWRIGHT_BASE_URL=https://www.preureal.com npm run test:e2e
 
 ## CI/CD
 
-`.github/workflows/ci.yml` executa en cada PR i push a `main`:
-guardia de repo + **check anti-drift del dispatcher**, lint, typecheck,
-tests bun (bloquejants), audit de prod, i build de producció amb
-`DATABASE_URL` fictici (el build no toca la BD; el hub i el sitemap degraden
-amb gràcia). Les migracions les aplica Vercel amb `prisma migrate deploy`
-dins del script `build`.
+El pipeline completo está en **`docs/ci-workflow.yml`** (lint + typecheck +
+guardia de repo/drift + tests bun + audit de prod + build). Para activarlo
+falta un solo paso manual, porque GitHub exige que el token o la app que sube
+ficheros de workflow tenga permiso `workflow`:
 
-**Preview deployments:** en connectar el repo a Vercel, cada PR genera un
-preview automàtic (`*.vercel.app`); el middleware no redirigeix aquests hosts.
+```bash
+mkdir -p .github/workflows && cp docs/ci-workflow.yml .github/workflows/ci.yml
+git add .github && git commit -m "ci: activa el pipeline" && git push
+```
+
+(Alternativa: crear el fichero desde la web de GitHub → pestaña Actions.)
+
+Mientras tanto, la gate más importante ya corre en **cada deploy de Vercel**:
+`npm run build` ejecuta `check_repo.mjs`, que **falla si hay drift del
+dispatcher** o rutas API fuera del catch-all.
+
+**Preview deployments:** en conectar el repo a Vercel, cada PR genera un
+preview automático (`*.vercel.app`); el middleware no redirige aquests hosts.
 
 ## Arquitectura de l'API i anti-drift
 
@@ -159,7 +168,7 @@ scripts/update_all.sh              refresc trimestral de dades oficials
 scripts/backup_pg.sh               dump comprimit amb retenció 30 dies
 tests/                             bun test (unitaris, TOTP, PDF, subscripcions)
 tests/e2e-ui/                      Playwright (fluxos crítics)
-.github/workflows/ci.yml           lint + typecheck + tests + audit + build
+docs/ci-workflow.yml               pipeline CI listo (copiar a .github/workflows/)
 ```
 
 > Gestor de paquets: **npm** (`package-lock.json`). Neteja de les restes de Z.ai feta;

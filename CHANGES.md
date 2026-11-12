@@ -70,9 +70,13 @@ v38.2 UX, v38.3 infra.
 ### v38.3 — Arquitectura i qualitat
 - **Anti-drift del dispatcher**: `check_repo.mjs §6` falla el build si una
   ruta `_impl` no està a la TABLE del dispatcher (abans: 404 silenciosos).
-- **CI (GitHub Actions)**: lint + typecheck + guardia de repo/drift + tests
-  bun (bloquejants) + audit prod + build amb DATABASE_URL fictici. Scripts
-  nous: `test`, `test:e2e`, `typecheck`, `audit`.
+- **CI (GitHub Actions)**: pipeline completo en `docs/ci-workflow.yml` (lint +
+  typecheck + guardia de repo/drift + tests bun bloquejants + audit prod +
+  build amb DATABASE_URL fictici). No s'ha pogut commitejar a
+  `.github/workflows/` perquè el token actual no té scope `workflow` (regla:
+  no canviar-lo); activar-lo és copiar 1 fitxer (instruccions al README).
+  Mentrestant el check anti-drift ja bloqueja cada deploy de Vercel via build.
+  Scripts nous: `test`, `test:e2e`, `typecheck`, `audit`.
 - **Observabilitat**: `lib/observability.ts` — request-ID (capçalera
   X-Request-ID), access log JSON per petició i captura d'errors a Sentry via
   Envelope API SENSE SDK (només cal `SENTRY_DSN`; sense ell, no canvia res).
