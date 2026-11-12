@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PreuReal.cat — guardia anti-repositorio-mezclado/incompleto (falla rápido y claro).
+// Preureal — guardia anti-repositorio-mezclado/incompleto (falla rápido y claro).
 //
 // Diagnostica los 4 casos conocidos de repo roto ANTES de que Next.js falle
 // con errores crípticos:
@@ -27,7 +27,7 @@ const AYUDA_GIT = `
   falla silenciosamente a partir de ~100 ficheros por arrastre):
 
     unzip PreuReal-cat-Vercel-v12.zip -d preureal && cd preureal
-    git init && git add -A && git commit -m "PreuReal.cat v12"
+    git init && git add -A && git commit -m "Preureal v12"
     git branch -M main
     git remote add origin <URL-de-tu-repo>   # si aún no existe
     git push -uf origin main                 # -f sustituye el contenido viejo

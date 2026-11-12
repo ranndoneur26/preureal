@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /api/admin
-Disallow: /api/export
-
-Sitemap: https://www.preureal.com/sitemap.xml

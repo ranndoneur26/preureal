@@ -1,4 +1,4 @@
-# PreuReal.cat — El mapa del lloguer real de Catalunya
+# Preureal — El mapa del lloguer real de Catalunya
 
 Plataforma amb el **preu real del lloguer** dels 947 municipis de Catalunya
 (fiances Incasòl/Gencat), àrees de mercat tensat (DOGC), edificis reals ICGC,

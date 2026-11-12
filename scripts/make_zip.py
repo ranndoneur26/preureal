@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PreuReal.cat — genera el ZIP net per desplegar a Vercel (v24). Idempotent.
+Preureal — genera el ZIP net per desplegar a Vercel (v24). Idempotent.
 
 Paquet: codi font, configs, Prisma, dades de seed i guia de desplegament.
 Sense infraestructura local del sandbox (SQLite, Docker, PG incrustat,

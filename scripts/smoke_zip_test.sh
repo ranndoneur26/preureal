@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreuReal.cat — smoke test del servidor standalone (paquet Vercel v4).
+# Preureal — smoke test del servidor standalone (paquet Vercel v4).
 # Ús: bash scripts/smoke_zip_test.sh <dir_del_paquet> [port]
 set -u
 DIR="${1:?ús: smoke_zip_test.sh <dir> [port]}"

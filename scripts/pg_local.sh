@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreuReal.cat — PostgreSQL local del sandbox (usuari z, sense root).
+# Preureal — PostgreSQL local del sandbox (usuari z, sense root).
 #
 # Els binaris (PostgreSQL 17, paquet npm @embedded-postgres/linux-x64) i el
 # clúster de dades viuen DINS del projecte (.localpg/), perquè és l'única ruta

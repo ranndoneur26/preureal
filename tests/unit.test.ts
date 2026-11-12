@@ -1,5 +1,5 @@
 /**
- * Tests unitaris PreuReal.cat (bun test).
+ * Tests unitaris Preureal (bun test).
  * Execució: bun test tests/unit.test.ts
  */
 import { describe, expect, test } from "bun:test";

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreuReal.cat — puja el ZIP de lliurament a un host públic i torna la URL.
+# Preureal — puja el ZIP de lliurament a un host públic i torna la URL.
 # Ús: bash scripts/upload_zip.sh [fitxer.zip]
 # Prova en ordre: Litterbox (72h) → 0x0.st → tmpfiles.org (60 min).
 set -u

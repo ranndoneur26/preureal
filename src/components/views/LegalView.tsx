@@ -32,19 +32,19 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
     <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold">{titles[kind]}</h1>
 
-      <div className="mt-4 rounded-xl bg-[#fff7e8] border border-[#f2d9a4] text-[#8a6116] text-sm p-4">
-        {t.legal.completar}
-      </div>
-
       <div className="mt-8 space-y-6 text-[15px] leading-relaxed text-[#333]">
         {kind === "avis" && (
           <>
             <Block title={ca ? "1. Titular" : "1. Titularidad"}>
-              <Placeholder ca={ca} what={ca ? "raó social, NIF, domicili social, correu de contacte i telèfon de l'entitat titular de la web" : "razón social, NIF, domicilio social, correo de contacto y teléfono de la entidad titular de la web"} />
+              <p>
+                {ca
+                  ? "Titular: Preureal — projecte independent de dades obertes sobre el lloguer a Catalunya. Correu de contacte: admin@preureal.cat. No hi ha activitat comercial amb domicili físic diferent del contacte electrònic facilitat."
+                  : "Titular: Preureal — proyecto independiente de datos abiertos sobre el alquiler en Cataluña. Correo de contacto: admin@preureal.cat. No hay actividad comercial con domicilio físico distinto del contacto electrónico facilitado."}
+              </p>
               <p className="mt-2 text-xs text-[#6b6f68]">
                 {ca
-                  ? "Dades identificatives exigides per l'article 10 de la LSSI-CE (Llei 34/2002, de societats de la informació i de comerç electrònic). Es completaran quan el propietari les proporcioni; no s'inventen mai."
-                  : "Datos identificativos exigidos por el artículo 10 de la LSSI-CE (Ley 34/2002). Se completarán cuando el propietario los proporcione; nunca se inventan."}
+                  ? "Dades identificatives de l'article 10 de la LSSI-CE (Llei 34/2002). La raó social i el NIF es publicaran quan el titular els faciliti; no s'inventen mai."
+                  : "Datos identificativos del artículo 10 de la LSSI-CE (Ley 34/2002). La razón social y el NIF se publicarán cuando el titular los facilite; nunca se inventan."}
               </p>
             </Block>
             <Block title={ca ? "2. Objecte" : "2. Objeto"}>
@@ -88,7 +88,11 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
         {kind === "privacitat" && (
           <>
             <Block title={ca ? "1. Responsable del tractament" : "1. Responsable del tratamiento"}>
-              <Placeholder ca={ca} what={ca ? "dades del responsable (entitat, NIF, adreça, correu de privacitat)" : "datos del responsable (entidad, NIF, dirección, correo de privacidad)"} />
+              <p>
+                {ca
+                  ? "Responsable: el titular de Preureal (projecte independent). Correu de privacitat: admin@preureal.cat. No hi ha encarregats de tractament amb accés a dades personals més enllà dels proveïdors tècnics descrits a continuació (hosting Vercel, base de dades PostgreSQL gestionada, pagaments Stripe, correus transaccionals Resend)."
+                  : "Responsable: el titular de Preureal (proyecto independiente). Correo de privacidad: admin@preureal.cat. No hay encargados de tratamiento con acceso a datos personales más allá de los proveedores técnicos descritos a continuación (hosting Vercel, base de datos PostgreSQL gestionada, pagos Stripe, correos transaccionales Resend)."}
+              </p>
             </Block>
             <Block title={ca ? "2. Dades que tractem" : "2. Datos que tratamos"}>
               <ul className="list-disc pl-5 space-y-1.5">
@@ -123,20 +127,21 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
           <>
             <Block title={ca ? "Cookies que utilitzem" : "Cookies que utilizamos"}>
               <ul className="list-disc pl-5 space-y-1.5">
-                <li><b>pr_session</b> — {ca ? "cookie tècnica de sessió (httpOnly), imprescindible per iniciar la sessió. No requereix consentiment." : "cookie técnica de sesión (httpOnly), imprescindible para iniciar sesión. No requiere consentimiento."}</li>
-                <li>{ca ? "Preferències (localStorage): idioma escollit i la pròpia decisió de consentiment. No són cookies ni requereixen consentiment." : "Preferencias (localStorage): idioma elegido y la propia decisión de consentimiento. No son cookies ni requieren consentimiento."}</li>
+                <li><b>pr_session</b> — {ca ? "cookie tècnica de sessió (httpOnly, SameSite=Lax, Secure), imprescindible per iniciar la sessió. No requereix consentiment." : "cookie técnica de sesión (httpOnly, SameSite=Lax, Secure), imprescindible para iniciar sesión. No requiere consentimiento."}</li>
+                <li><b>pr_webauthn_challenge</b> — {ca ? "cookie tècnica temporal (httpOnly, 5 min) per al desafiament criptogràfic de les passkeys. No requereix consentiment." : "cookie técnica temporal (httpOnly, 5 min) para el desafío criptográfico de las passkeys. No requiere consentimiento."}</li>
+                <li>{ca ? "Preferències (localStorage): idioma escollit, consentiment de cookies, tema i estat de l'onboarding. No són cookies ni requereixen consentiment." : "Preferencias (localStorage): idioma elegido, consentimiento de cookies, tema y estado del onboarding. No son cookies ni requieren consentimiento."}</li>
               </ul>
               <p className="mt-2">
                 {ca
-                  ? "En la primera visita es mostra un banner de consentiment. Com que no carreguem cap tecnologia no essencial, el servei funciona completament tant si acceptes com si rebutges."
-                  : "En la primera visita se muestra un banner de consentimiento. Como no cargamos ninguna tecnología no esencial, el servicio funciona completamente tanto si aceptas como si rechazas."}
+                  ? "El banner de consentiment permet decidir per categories: tècniques (sempre actives, necessàries per al servei), analítica i màrqueting (ambdues desactivades per defecte). Pots canviar la decisió en qualsevol moment des de l'enllaç \u00abGestiona les cookies\u00bb del peu de pàgina."
+                  : "El banner de consentimiento permite decidir por categorías: técnicas (siempre activas, necesarias para el servicio), analítica y marketing (ambas desactivadas por defecto). Puedes cambiar la decisión en cualquier momento desde el enlace \u00abGestiona las cookies\u00bb del pie de página."}
               </p>
             </Block>
-            <Block title={ca ? "Analítica" : "Analítica"}>
+            <Block title={ca ? "Analítica i màrqueting" : "Analítica y marketing"}>
               <p>
                 {ca
-                  ? "Actualment no s'instal·len cookies d'analítica de tercers. L'analítica de conversió és pròpia i agregada (registres, consultes, subscripcions). Si en el futur s'instal·la analítica de tercers (p. ex. Google Analytics 4), es mostrarà un banner de consentiment abans de carregar-la."
-                  : "Actualmente no se instalan cookies de analítica de terceros. La analítica de conversión es propia y agregada (registros, consultas, suscripciones). Si en el futuro se instala analítica de terceros (p. ej. Google Analytics 4), se mostrará un banner de consentimiento antes de cargarla."}
+                  ? "Actualment no s'instal·la cap script d'analítica ni de màrqueting de tercers. L'analítica de conversió és pròpia i agregada (registres, consultes, subscripcions). Si en el futur s'instal·la analítica de tercers (p. ex. Google Analytics 4 o Plausible), només es carregarà si has activat la categoria \u00abAnalítica\u00bb al banner, i es desactivarà immediatament si la retireu."
+                  : "Actualmente no se instala ningún script de analítica ni de marketing de terceros. La analítica de conversión es propia y agregada (registros, consultas, suscripciones). Si en el futuro se instala analítica de terceros (p. ej. Google Analytics 4 o Plausible), solo se cargará si has activado la categoría \u00abAnalítica\u00bb en el banner, y se desactivará inmediatamente si la retiras."}
               </p>
             </Block>
           </>
@@ -152,13 +157,5 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
       <h2 className="font-bold text-lg">{title}</h2>
       <div className="mt-2 text-sm text-[#4b5349] leading-relaxed">{children}</div>
     </section>
-  );
-}
-
-function Placeholder({ ca, what }: { ca: boolean; what: string }) {
-  return (
-    <p className="rounded-lg border border-dashed border-[#e8673c] bg-[#fdeae2]/50 px-3 py-2 text-[#b0431c]">
-      【{ca ? "COMPLETAR" : "COMPLETAR"}】 {ca ? "Falta" : "Falta"}: {what}.
-    </p>
   );
 }

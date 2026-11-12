@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# PreuReal.cat — Suite E2E (Fase 17). Requereix:
+# Preureal — Suite E2E (Fase 17). Requereix:
 #   - servidor standalone en marxa a $BASE amb PostgreSQL real a DATABASE_URL
 #   - DEMO_CHECKOUT=true, sense RESEND_API_KEY (correus en sandbox = verificables)
 # Execució: bash tests/e2e.sh

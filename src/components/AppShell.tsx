@@ -11,6 +11,9 @@ import VerificaView from "@/components/views/VerificaView";
 import PanelView from "@/components/views/PanelView";
 import AdminView from "@/components/views/AdminView";
 import LegalView from "@/components/views/LegalView";
+import MetodologiaView from "@/components/views/MetodologiaView";
+import EstatView from "@/components/views/EstatView";
+import UsosView from "@/components/views/UsosView";
 import ComparadorView from "@/components/views/ComparadorView";
 import GuiaView from "@/components/views/GuiaView";
 import SubscriptionResultView from "@/components/views/SubscriptionResultView";
@@ -126,6 +129,9 @@ export default function AppShell() {
           {view === "/privacitat" && <LegalView kind="privacitat" />}
           {view === "/cookies" && <LegalView kind="cookies" />}
           {view === "/faq" && <LegalView kind="faq" />}
+          {view === "/metodologia" && <MetodologiaView />}
+          {view === "/estat" && <EstatView />}
+          {view === "/usos" && <UsosView />}
         </main>
         <Footer />
         <CookieConsent />
@@ -265,28 +271,51 @@ function Footer() {
   return (
     <AppContext.Consumer>
       {(ctx) => {
-        const { t, navigate } = ctx;
+        const { t, navigate, locale } = ctx;
+        const ca = locale === "ca";
+        const footLink = (to: string, label: string) => (
+          <button onClick={() => navigate(to)} className="text-left hover:text-white">{label}</button>
+        );
         return (
           <footer className="mt-auto bg-[#0f2e21] text-[#c9d4cc] mt-16">
-            <div className="max-w-6xl mx-auto px-4 py-10 grid gap-8 md:grid-cols-3">
+            <div className="max-w-6xl mx-auto px-4 py-10 grid gap-8 sm:grid-cols-2 md:grid-cols-4">
               <div>
                 <div className="font-extrabold text-white text-lg">Preureal</div>
                 <p className="text-sm mt-2 opacity-80">{t.tagline}</p>
+                <p className="text-xs mt-3 opacity-60 leading-relaxed">{t.footer.disclaimer}</p>
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold text-white mb-2">{ca ? "Producte" : "Producto"}</div>
+                <div className="flex flex-col gap-1.5">
+                  {footLink("/mapa", t.nav.mapa)}
+                  {footLink("/comparador", "Comparador")}
+                  {footLink("/preus", t.nav.preus)}
+                  {footLink("/faq", t.nav.faq)}
+                  <a href="/lloguer" className="text-left hover:text-white">{ca ? "Lloguer per municipis" : "Alquiler por municipios"}</a>
+                </div>
+              </div>
+              <div className="text-sm">
+                <div className="font-semibold text-white mb-2">{ca ? "Recursos i transparència" : "Recursos y transparencia"}</div>
+                <div className="flex flex-col gap-1.5">
+                  {footLink("/guia", ca ? "Guia del lloguer" : "Guía del alquiler")}
+                  {footLink("/metodologia", ca ? "Fonts i metodologia" : "Fuentes y metodología")}
+                  {footLink("/usos", ca ? "Casos d'ús" : "Casos de uso")}
+                  {footLink("/estat", ca ? "Estat del servei" : "Estado del servicio")}
+                </div>
               </div>
               <div className="text-sm">
                 <div className="font-semibold text-white mb-2">Legal</div>
                 <div className="flex flex-col gap-1.5">
-                  <button onClick={() => navigate("/avis-legal")} className="text-left hover:text-white">{t.legal.avis}</button>
-                  <button onClick={() => navigate("/privacitat")} className="text-left hover:text-white">{t.legal.privacitat}</button>
-                  <button onClick={() => navigate("/cookies")} className="text-left hover:text-white">{t.legal.cookies}</button>
-                  <button onClick={() => navigate("/guia")} className="text-left hover:text-white">{ctx.locale === "ca" ? "Guia del lloguer" : "Guía del alquiler"}</button>
-                  <a href="/lloguer" className="text-left hover:text-white">{ctx.locale === "ca" ? "Lloguer per municipis" : "Alquiler por municipios"}</a>
+                  {footLink("/avis-legal", t.legal.avis)}
+                  {footLink("/privacitat", t.legal.privacitat)}
+                  {footLink("/cookies", t.legal.cookies)}
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent("pr:open-cookie-settings"))}
+                    className="text-left hover:text-white"
+                  >
+                    {ca ? "Gestiona les cookies" : "Gestiona las cookies"}
+                  </button>
                 </div>
-              </div>
-              <div className="text-sm">
-                <div className="font-semibold text-white mb-2">{t.data.title}</div>
-                <p className="opacity-80 leading-relaxed">{t.footer.made}</p>
-                <p className="opacity-60 mt-2 text-xs leading-relaxed">{t.footer.disclaimer}</p>
               </div>
             </div>
             <div className="border-t border-white/10 py-4 text-center text-xs opacity-60">

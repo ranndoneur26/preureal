@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# PreuReal.cat — Actualización de datos oficiales en UN solo comando
+# Preureal — Actualización de datos oficiales en UN solo comando
 #
 # Uso:
 #   bash scripts/update_all.sh                 # descarga + pipeline + verificación
@@ -45,7 +45,7 @@ esac
 
 cd "$ROOT"
 echo "============================================================"
-echo " PreuReal.cat — actualización de datos  $(date '+%Y-%m-%d %H:%M %Z')"
+echo " Preureal — actualización de datos  $(date '+%Y-%m-%d %H:%M %Z')"
 echo "============================================================"
 
 # --- 0. Requisitos ----------------------------------------------------------

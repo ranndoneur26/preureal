@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreuReal.cat — Preparació de dades reals obertes.
+"""Preureal — Preparació de dades reals obertes.
 
 Fonts (totes oficials):
 - Municipis: dataset "Municipis Catalunya Geo" (analisi.transparenciacatalunya.cat, 9aju-tpwc),

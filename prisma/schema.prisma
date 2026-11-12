@@ -1,4 +1,4 @@
-// PreuReal.cat — Esquema de base de datos (PostgreSQL)
+// Preureal — Esquema de base de datos (PostgreSQL)
 // Datos reales: municipios (Idescat/Gencat), lloguer fiances Incasòl (Gencat),
 // àrees tensades (Resolucions TER/3739/2026 + TER/3740/2026), edificis ICGC (RTT).
 //

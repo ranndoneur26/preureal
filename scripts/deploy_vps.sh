@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# PreuReal.cat — bootstrap de un VPS Ubuntu 22.04/24.04 recién creado
+# Preureal — bootstrap de un VPS Ubuntu 22.04/24.04 recién creado
 #
 # Uso (EN el VPS, como root):
 #   ssh root@TU_IP

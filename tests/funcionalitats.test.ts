@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Noves funcionalitats (F1-F4): tests de les funcions pura de
+ * Preureal — Noves funcionalitats (F1-F4): tests de les funcions pura de
  * src/lib/territorial.ts (agregacions territorials + motor de valoració) i
  * del gating ampliat (src/lib/indicators-gating.ts).
  *

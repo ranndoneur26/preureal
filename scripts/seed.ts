@@ -1,5 +1,5 @@
 /**
- * PreuReal.cat — Seed de la base de datos con datos reales.
+ * Preureal — Seed de la base de datos con datos reales.
  *
  * 1. Municipios (947) con lloguer Incasòl real (data/municipalities.json)
  * 2. Edificios reales del Eixample de Barcelona (ICGC RTT, API Territorial)

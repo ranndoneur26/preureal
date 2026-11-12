@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreuReal.cat — dimoni keepalive del sandbox.
+# Preureal — dimoni keepalive del sandbox.
 #
 # Manté en marxa el PostgreSQL incrustat (.localpg) i el servidor de dev del
 # port 3000 (el preview de la plataforma apunta a aquest port). És idempotent:

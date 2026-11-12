@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PreuReal.cat — genera el dispatcher únic de l'API (src/app/api/[[...path]]/route.ts).
+Preureal — genera el dispatcher únic de l'API (src/app/api/[[...path]]/route.ts).
 
 Motiu: el pla Hobby de Vercel limita a 12 Serverless Functions per deployment i
 l'app té ~45 rutes API. Tots els handlers viuen ara a src/app/api/_impl/ (carpeta
