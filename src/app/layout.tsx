@@ -70,9 +70,13 @@ const jsonLd = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // Anti-FOUC del tema: aplica .dark abans del primer pintat seguint
+  // localStorage "pr_theme" o prefers-color-scheme (v38.2).
+  const themeInit = `(function(){try{var t=localStorage.getItem("pr_theme");var d=t==="dark"||(!t&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("dark");}catch(e){}})();`;
   return (
     <html lang="ca" suppressHydrationWarning>
       <body className="antialiased">
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

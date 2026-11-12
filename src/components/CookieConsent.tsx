@@ -101,9 +101,9 @@ export default function CookieConsent() {
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-[2000] p-3 md:p-4" role="dialog" aria-modal="false" aria-label={ca ? "Preferències de cookies" : "Preferencias de cookies"}>
-      <div className="max-w-3xl mx-auto bg-[#0f2e21] text-white rounded-2xl shadow-2xl p-4 md:p-5">
+      <div className="max-w-3xl mx-auto bg-pine text-white rounded-2xl shadow-2xl p-4 md:p-5">
         <div className="flex items-start gap-3">
-          <Cookie className="w-5 h-5 text-[#e8673c] shrink-0 mt-0.5" />
+          <Cookie className="w-5 h-5 text-ember shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-xs leading-relaxed">
               {ca ? (
@@ -151,7 +151,7 @@ export default function CookieConsent() {
           {!config && (
             <button
               onClick={() => setConfig(true)}
-              className="px-3.5 py-2 rounded-lg border border-white/30 text-xs font-semibold hover:bg-white/10 flex items-center gap-1.5"
+              className="px-3.5 py-2 rounded-lg border border-white/30 text-xs font-semibold hover:bg-card/10 flex items-center gap-1.5"
             >
               <Settings2 className="w-3.5 h-3.5" />
               {ca ? "Configura" : "Configura"}
@@ -159,22 +159,22 @@ export default function CookieConsent() {
           )}
           {config ? (
             <>
-              <button onClick={rejectAll} className="px-3.5 py-2 rounded-lg border border-white/30 text-xs font-semibold hover:bg-white/10">
+              <button onClick={rejectAll} className="px-3.5 py-2 rounded-lg border border-white/30 text-xs font-semibold hover:bg-card/10">
                 {ca ? "Només les necessàries" : "Solo las necesarias"}
               </button>
-              <button onClick={savePrefs} className="px-3.5 py-2 rounded-lg border border-[#e8673c] bg-[#e8673c]/20 text-xs font-bold hover:bg-[#e8673c]/30">
+              <button onClick={savePrefs} className="px-3.5 py-2 rounded-lg border border-ember bg-ember/20 text-xs font-bold hover:bg-ember/30">
                 {ca ? "Desa les preferències" : "Guarda las preferencias"}
               </button>
-              <button onClick={acceptAll} className="px-3.5 py-2 rounded-lg bg-[#e8673c] text-xs font-bold hover:bg-[#d95a31]">
+              <button onClick={acceptAll} className="px-3.5 py-2 rounded-lg bg-ember text-xs font-bold hover:bg-ember2">
                 {ca ? "Accepta-ho tot" : "Aceptar todo"}
               </button>
             </>
           ) : (
             <>
-              <button onClick={rejectAll} className="px-3.5 py-2 rounded-lg border border-white/30 text-xs font-semibold hover:bg-white/10">
+              <button onClick={rejectAll} className="px-3.5 py-2 rounded-lg border border-white/30 text-xs font-semibold hover:bg-card/10">
                 {ca ? "Rebutja les no essencials" : "Rechaza las no esenciales"}
               </button>
-              <button onClick={acceptAll} className="px-3.5 py-2 rounded-lg bg-[#e8673c] text-xs font-bold hover:bg-[#d95a31]">
+              <button onClick={acceptAll} className="px-3.5 py-2 rounded-lg bg-ember text-xs font-bold hover:bg-ember2">
                 {ca ? "D'acord" : "De acuerdo"}
               </button>
             </>
@@ -187,16 +187,16 @@ export default function CookieConsent() {
 
 function Toggle({ label, desc, checked, disabled, onChange }: { label: string; desc: string; checked: boolean; disabled?: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className={`flex items-start gap-3 rounded-xl bg-white/5 px-3 py-2.5 ${disabled ? "opacity-80" : "cursor-pointer"}`}>
+    <label className={`flex items-start gap-3 rounded-xl bg-card/5 px-3 py-2.5 ${disabled ? "opacity-80" : "cursor-pointer"}`}>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
-        className={`mt-0.5 w-9 h-5 rounded-full relative transition-colors shrink-0 ${checked ? "bg-[#e8673c]" : "bg-white/25"} ${disabled ? "cursor-not-allowed" : ""}`}
+        className={`mt-0.5 w-9 h-5 rounded-full relative transition-colors shrink-0 ${checked ? "bg-ember" : "bg-card/25"} ${disabled ? "cursor-not-allowed" : ""}`}
       >
-        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${checked ? "left-[18px]" : "left-0.5"}`} />
+        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-card transition-all ${checked ? "left-[18px]" : "left-0.5"}`} />
       </button>
       <span>
         <span className="text-xs font-bold">{label}</span>

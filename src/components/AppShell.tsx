@@ -14,10 +14,12 @@ import LegalView from "@/components/views/LegalView";
 import MetodologiaView from "@/components/views/MetodologiaView";
 import EstatView from "@/components/views/EstatView";
 import UsosView from "@/components/views/UsosView";
+import DesignView from "@/components/views/DesignView";
 import ComparadorView from "@/components/views/ComparadorView";
 import GuiaView from "@/components/views/GuiaView";
 import SubscriptionResultView from "@/components/views/SubscriptionResultView";
 import CookieConsent from "@/components/CookieConsent";
+import ThemeToggle from "@/components/ThemeToggle";
 import { AppContext, AppCtx, AuthUser } from "@/components/app-context";
 import { LogOut, Languages, User as UserIcon } from "lucide-react";
 
@@ -104,9 +106,10 @@ export default function AppShell() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <div className="min-h-screen flex flex-col bg-[#faf9f7] text-[#17241d]">
+      <div className="min-h-screen flex flex-col bg-cream text-ink">
         <Header route={view} />
         <main className="flex-1 flex flex-col">
+          <div key={view} className="pr-view flex-1 flex flex-col">
           {view === "/" && <LandingView />}
           {view === "/mapa" && <MapView />}
           {view === "/comparador" && <ComparadorView />}
@@ -132,6 +135,8 @@ export default function AppShell() {
           {view === "/metodologia" && <MetodologiaView />}
           {view === "/estat" && <EstatView />}
           {view === "/usos" && <UsosView />}
+          {view === "/design" && <DesignView />}
+          </div>
         </main>
         <Footer />
         <CookieConsent />
@@ -148,18 +153,18 @@ function Header({ route }: { route: string }) {
         const link = (to: string, label: string) => (
           <button
             onClick={() => { navigate(to); }}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-[#f0ede8] ${
-              route === to ? "text-[#0f2e21] bg-[#f0ede8]" : "text-[#4b5349]"
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-sand ${
+              route === to ? "text-pine bg-sand" : "text-moss"
             }`}
           >
             {label}
           </button>
         );
         return (
-          <header className="sticky top-0 z-[1000] bg-[#faf9f7]/95 backdrop-blur border-b border-[#e5e1da]">
+          <header className="sticky top-0 z-[1000] bg-cream/95 backdrop-blur border-b border-line">
             <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
               <button onClick={() => navigate("/")} className="flex items-center gap-2 shrink-0">
-                <span className="w-8 h-8 rounded-lg bg-[#0f2e21] text-white flex items-center justify-center font-black text-sm">PR</span>
+                <span className="w-8 h-8 rounded-lg bg-pine text-white flex items-center justify-center font-black text-sm">PR</span>
                 <span className="font-extrabold text-lg tracking-tight">Preureal</span>
               </button>
               <nav className="hidden md:flex items-center gap-1">
@@ -173,9 +178,10 @@ function Header({ route }: { route: string }) {
                 {link("/admin", t.nav.admin)}
               </nav>
               <div className="flex items-center gap-2">
+                <ThemeToggle />
                 <button
                   onClick={() => setLocale(locale === "ca" ? "es" : "ca")}
-                  className="px-2.5 py-2 rounded-lg text-sm font-semibold border border-[#e5e1da] hover:bg-[#f0ede8] flex items-center gap-1"
+                  className="px-2.5 py-2 rounded-lg text-sm font-semibold border border-line hover:bg-sand flex items-center gap-1"
                   aria-label="Canvia d'idioma"
                 >
                   <Languages className="w-4 h-4" />
@@ -185,7 +191,7 @@ function Header({ route }: { route: string }) {
                   <div className="hidden md:flex items-center gap-2">
                     <button
                       onClick={() => navigate("/panell")}
-                      className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#f0ede8] flex items-center gap-1.5"
+                      className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-sand flex items-center gap-1.5"
                     >
                       <UserIcon className="w-4 h-4" />
                       {t.nav.panel}
@@ -196,7 +202,7 @@ function Header({ route }: { route: string }) {
                         await auth.refresh();
                         navigate("/");
                       }}
-                      className="px-3 py-2 rounded-lg text-sm text-[#6b6f68] hover:bg-[#f0ede8] flex items-center gap-1.5"
+                      className="px-3 py-2 rounded-lg text-sm text-stone hover:bg-sand flex items-center gap-1.5"
                       title={t.nav.sortida}
                     >
                       <LogOut className="w-4 h-4" />
@@ -206,20 +212,20 @@ function Header({ route }: { route: string }) {
                   <div className="hidden md:flex items-center gap-2">
                     <button
                       onClick={() => navigate("/entrada")}
-                      className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#f0ede8]"
+                      className="px-3 py-2 rounded-lg text-sm font-medium hover:bg-sand"
                     >
                       {t.nav.entrada}
                     </button>
                     <button
                       onClick={() => navigate("/registre")}
-                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#e8673c] text-white hover:bg-[#d95a31] transition-colors"
+                      className="px-4 py-2 rounded-lg text-sm font-semibold bg-ember text-white hover:bg-ember2 transition-colors"
                     >
                       {t.nav.registre}
                     </button>
                   </div>
                 )}
                 <button
-                  className="md:hidden p-2 rounded-lg hover:bg-[#f0ede8]"
+                  className="md:hidden p-2 rounded-lg hover:bg-sand"
                   onClick={() => {
                     const el = document.getElementById("mobile-nav");
                     if (el) el.classList.toggle("hidden");
@@ -232,7 +238,7 @@ function Header({ route }: { route: string }) {
                 </button>
               </div>
             </div>
-            <div id="mobile-nav" className="hidden md:hidden border-t border-[#e5e1da] bg-[#faf9f7] px-4 py-3 flex-col gap-1">
+            <div id="mobile-nav" className="hidden md:hidden border-t border-line bg-cream px-4 py-3 flex-col gap-1">
               {link("/mapa", t.nav.mapa)}
               {link("/comparador", "Comparador")}
               {link("/guia", locale === "ca" ? "Guia" : "Guía")}
@@ -248,7 +254,7 @@ function Header({ route }: { route: string }) {
                       await auth.refresh();
                       navigate("/");
                     }}
-                    className="px-3 py-2 rounded-lg text-sm text-left text-[#6b6f68] hover:bg-[#f0ede8]"
+                    className="px-3 py-2 rounded-lg text-sm text-left text-stone hover:bg-sand"
                   >
                     {t.nav.sortida}
                   </button>
@@ -277,7 +283,7 @@ function Footer() {
           <button onClick={() => navigate(to)} className="text-left hover:text-white">{label}</button>
         );
         return (
-          <footer className="mt-auto bg-[#0f2e21] text-[#c9d4cc] mt-16">
+          <footer className="mt-auto bg-pine text-mist mt-16">
             <div className="max-w-6xl mx-auto px-4 py-10 grid gap-8 sm:grid-cols-2 md:grid-cols-4">
               <div>
                 <div className="font-extrabold text-white text-lg">Preureal</div>
@@ -301,6 +307,7 @@ function Footer() {
                   {footLink("/metodologia", ca ? "Fonts i metodologia" : "Fuentes y metodología")}
                   {footLink("/usos", ca ? "Casos d'ús" : "Casos de uso")}
                   {footLink("/estat", ca ? "Estat del servei" : "Estado del servicio")}
+                  {footLink("/design", ca ? "Sistema de disseny" : "Sistema de diseño")}
                 </div>
               </div>
               <div className="text-sm">

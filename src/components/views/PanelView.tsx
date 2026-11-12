@@ -153,8 +153,8 @@ export default function PanelView() {
     return (
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="text-center">
-          <p className="text-[#6b6f68] mb-4">{locale === "ca" ? "Has d'iniciar la sessió" : "Debes iniciar sesión"}</p>
-          <button onClick={() => navigate("/entrada")} className="px-5 py-2.5 rounded-xl bg-[#e8673c] text-white font-bold">
+          <p className="text-stone mb-4">{locale === "ca" ? "Has d'iniciar la sessió" : "Debes iniciar sesión"}</p>
+          <button onClick={() => navigate("/entrada")} className="px-5 py-2.5 rounded-xl bg-ember text-white font-bold">
             {t.nav.entrada}
           </button>
         </div>
@@ -598,7 +598,7 @@ export default function PanelView() {
       <h1 className="text-3xl font-extrabold">{t.panel.title}</h1>
 
       {verificacio && (
-        <div className={`mt-4 rounded-xl p-4 text-sm ${verificacio === "ok" ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#fdeae2] text-[#b0431c]"}`}>
+        <div className={`mt-4 rounded-xl p-4 text-sm ${verificacio === "ok" ? "bg-mintsoft text-green2" : "bg-embersoft text-ember3"}`}>
           {verificacio === "ok" &&
             (locale === "ca"
               ? "Correu verificat correctament. Ja pots fer consultes detallades!"
@@ -623,7 +623,7 @@ export default function PanelView() {
         </div>
       )}
       {msg && (
-        <div className="mt-4 rounded-xl bg-[#f0ede8] text-sm p-3">{msg}</div>
+        <div className="mt-4 rounded-xl bg-sand text-sm p-3">{msg}</div>
       )}
 
       {/* pestanyes */}
@@ -633,7 +633,7 @@ export default function PanelView() {
             key={id}
             onClick={() => setTab(id)}
             className={`px-3.5 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 ${
-              tab === id ? "bg-[#0f2e21] text-white" : "bg-white border border-[#e5e1da] hover:bg-[#f0ede8]"
+              tab === id ? "bg-pine text-white" : "bg-card border border-line hover:bg-sand"
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -648,18 +648,18 @@ export default function PanelView() {
 
       {/* RESUM */}
       {tab === "resum" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6 space-y-4">
           {/* Fase 4 — accés a la guia (contingut gratuït: drets, fiança, despeses, ajudes) */}
           <button
             onClick={() => navigate("/guia")}
-            className="w-full flex items-center gap-3 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-3 text-left hover:border-[#e8673c] transition-colors"
+            className="w-full flex items-center gap-3 rounded-xl border border-line bg-cream p-3 text-left hover:border-ember transition-colors"
           >
-            <BookOpen className="w-5 h-5 text-[#e8673c] shrink-0" />
+            <BookOpen className="w-5 h-5 text-ember shrink-0" />
             <span className="flex-1 text-sm">
-              <b className="text-[#0f2e21]">{locale === "ca" ? "Guia del lloguer" : "Guía del alquiler"}</b>
-              <span className="text-[#4b5349]"> — {locale === "ca" ? "drets, fiança amb calculadora, despeses, actualització de la renda i ajudes vigents" : "derechos, fianza con calculadora, gastos, actualización de la renta y ayudas vigentes"}</span>
+              <b className="text-pine">{locale === "ca" ? "Guia del lloguer" : "Guía del alquiler"}</b>
+              <span className="text-moss"> — {locale === "ca" ? "drets, fiança amb calculadora, despeses, actualització de la renda i ajudes vigents" : "derechos, fianza con calculadora, gastos, actualización de la renta y ayudas vigentes"}</span>
             </span>
-            <ExternalLink className="w-4 h-4 text-[#6b6f68] shrink-0" />
+            <ExternalLink className="w-4 h-4 text-stone shrink-0" />
           </button>
           <Row label={t.auth.email} value={u.email} />
           <Row label={t.panel.plan} value={planName} strong />
@@ -676,31 +676,31 @@ export default function PanelView() {
             </>
           )}
           <div className="flex items-center justify-between gap-2">
-            <span className="text-sm text-[#6b6f68]">{locale === "ca" ? "Correu verificat" : "Correo verificado"}</span>
+            <span className="text-sm text-stone">{locale === "ca" ? "Correu verificat" : "Correo verificado"}</span>
             {u.emailVerified ? (
-              <span className="text-xs font-bold text-[#1e7a41] flex items-center gap-1"><BadgeCheck className="w-4 h-4" /> OK</span>
+              <span className="text-xs font-bold text-green2 flex items-center gap-1"><BadgeCheck className="w-4 h-4" /> OK</span>
             ) : (
-              <button onClick={resendVerification} disabled={busy} className="text-xs text-[#b0431c] flex items-center gap-1 underline disabled:opacity-50">
+              <button onClick={resendVerification} disabled={busy} className="text-xs text-ember3 flex items-center gap-1 underline disabled:opacity-50">
                 <MailWarning className="w-4 h-4" /> {locale === "ca" ? "No verificat — reenviar" : "No verificado — reenviar"}
               </button>
             )}
           </div>
           {u.plan === "FREE" && (
             <div className="pt-2">
-              <button onClick={() => navigate("/preus")} className="px-5 py-2.5 rounded-xl bg-[#e8673c] text-white text-sm font-bold hover:bg-[#d95a31]">
+              <button onClick={() => navigate("/preus")} className="px-5 py-2.5 rounded-xl bg-ember text-white text-sm font-bold hover:bg-ember2">
                 {t.map.paywall.cta}
               </button>
             </div>
           )}
           {u.role === "ADMIN" && (
             <div className="pt-2">
-              <button onClick={() => navigate("/admin")} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e]">
+              <button onClick={() => navigate("/admin")} className="px-5 py-2.5 rounded-xl bg-pine text-white text-sm font-bold hover:bg-pine2">
                 {t.panel.adminLink}
               </button>
             </div>
           )}
           <div className="pt-2">
-            <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); await auth.refresh(); navigate("/"); }} className="text-sm text-[#6b6f68] hover:underline">
+            <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); await auth.refresh(); navigate("/"); }} className="text-sm text-stone hover:underline">
               {t.panel.logout}
             </button>
           </div>
@@ -709,23 +709,23 @@ export default function PanelView() {
 
       {/* PERFIL */}
       {tab === "perfil" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6 space-y-4">
           <div>
-            <label className="text-xs text-[#6b6f68]">{locale === "ca" ? "Nom (opcional)" : "Nombre (opcional)"}</label>
-            <input value={name} onChange={(e) => setName(e.target.value.slice(0, 80))} className="w-full mt-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm" />
+            <label className="text-xs text-stone">{locale === "ca" ? "Nom (opcional)" : "Nombre (opcional)"}</label>
+            <input value={name} onChange={(e) => setName(e.target.value.slice(0, 80))} className="w-full mt-1 px-3 py-2 rounded-lg border border-line text-sm" />
           </div>
           <div>
-            <label className="text-xs text-[#6b6f68]">{locale === "ca" ? "Idioma" : "Idioma"}</label>
-            <select value={locale} onChange={(e) => setLocale(e.target.value as "ca" | "es")} className="w-full mt-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm">
+            <label className="text-xs text-stone">{locale === "ca" ? "Idioma" : "Idioma"}</label>
+            <select value={locale} onChange={(e) => setLocale(e.target.value as "ca" | "es")} className="w-full mt-1 px-3 py-2 rounded-lg border border-line text-sm">
               <option value="ca">Català</option>
               <option value="es">Castellano</option>
             </select>
           </div>
-          <button onClick={saveProfile} disabled={busy} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+          <button onClick={saveProfile} disabled={busy} className="px-5 py-2.5 rounded-xl bg-pine text-white text-sm font-bold disabled:opacity-50">
             {locale === "ca" ? "Desar canvis" : "Guardar cambios"}
           </button>
-          <div className="pt-2 border-t border-[#f0ede8]">
-            <a href="/api/account/export" className="text-sm text-[#0f2e21] underline flex items-center gap-1.5">
+          <div className="pt-2 border-t border-sand">
+            <a href="/api/account/export" className="text-sm text-pine underline flex items-center gap-1.5">
               <Download className="w-4 h-4" /> {locale === "ca" ? "Descarrega les meves dades (RGPD)" : "Descarga mis datos (RGPD)"}
             </a>
           </div>
@@ -735,12 +735,12 @@ export default function PanelView() {
       {/* FACTURACIÓ */}
       {tab === "facturacio" && (
         <div className="mt-6 space-y-4">
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">
+          <div className="bg-card rounded-2xl border border-line p-6">
             <h3 className="font-bold mb-3">{locale === "ca" ? "Gestió de subscripció" : "Gestión de suscripción"}</h3>
             {billing === null ? (
-              <p className="text-sm text-[#6b6f68]">…</p>
+              <p className="text-sm text-stone">…</p>
             ) : billing.subscriptions.length === 0 ? (
-              <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Encara no tens cap subscripció." : "Aún no tienes ninguna suscripción."}</p>
+              <p className="text-sm text-stone">{locale === "ca" ? "Encara no tens cap subscripció." : "Aún no tienes ninguna suscripción."}</p>
             ) : (
               <div className="space-y-2 text-sm">
                 {billing.subscriptions.map((s) => (
@@ -750,12 +750,12 @@ export default function PanelView() {
             )}
             <div className="mt-4 flex gap-2 flex-wrap">
               {billing?.stripeConfigured && (
-                <button onClick={openPortal} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold flex items-center gap-1.5 disabled:opacity-50">
+                <button onClick={openPortal} disabled={busy} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold flex items-center gap-1.5 disabled:opacity-50">
                   <ExternalLink className="w-4 h-4" /> {locale === "ca" ? "Portal de client Stripe" : "Portal de cliente Stripe"}
                 </button>
               )}
               {(u.plan === "PREMIUM" || u.plan === "PRO") && billing?.subscriptions.some((s) => s.demo) && (
-                <button onClick={cancelDemo} disabled={busy} className="text-sm text-[#b0431c] underline disabled:opacity-50">
+                <button onClick={cancelDemo} disabled={busy} className="text-sm text-ember3 underline disabled:opacity-50">
                   {t.panel.cancelDemo}
                 </button>
               )}
@@ -764,25 +764,25 @@ export default function PanelView() {
 
           {/* v31 — CANVI DE PLA self-service amb avís de què es guanya/perd */}
           {(u.plan === "PREMIUM" || u.plan === "PRO") && plansCfg && (
-            <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">
+            <div className="bg-card rounded-2xl border border-line p-6">
               <h3 className="font-bold mb-1">{locale === "ca" ? "Canviar de pla" : "Cambiar de plan"}</h3>
-              <p className="text-sm text-[#4b5349]">
+              <p className="text-sm text-moss">
                 {locale === "ca"
                   ? "Canvia de pla quan vulguis des d'aquí. Abans de confirmar veuràs exactament què guanyes i què perds: les teves dades mai s'esborren."
                   : "Cambia de plan cuando quieras desde aquí. Antes de confirmar verás exactamente qué ganas y qué pierdes: tus datos nunca se borran."}
               </p>
               <div className="mt-3 flex gap-2 flex-wrap">
                 {u.plan === "PREMIUM" && (
-                  <button onClick={() => setChangeTarget("PRO")} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold hover:bg-[#16402e] disabled:opacity-50">
+                  <button onClick={() => setChangeTarget("PRO")} disabled={busy} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 disabled:opacity-50">
                     {locale === "ca" ? "Pasar a Pro·Agents" : "Pasar a Pro·Agentes"}{priceLabel("PRO")}
                   </button>
                 )}
                 {u.plan === "PRO" && (
-                  <button onClick={() => setChangeTarget("PREMIUM")} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold hover:bg-[#16402e] disabled:opacity-50">
+                  <button onClick={() => setChangeTarget("PREMIUM")} disabled={busy} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 disabled:opacity-50">
                     {locale === "ca" ? "Pasar a Premium" : "Pasar a Premium"}{priceLabel("PREMIUM")}
                   </button>
                 )}
-                <button onClick={() => setChangeTarget("FREE")} disabled={busy} className="px-4 py-2 rounded-lg border border-[#b0431c] text-[#b0431c] text-sm font-semibold hover:bg-[#fdeae2] disabled:opacity-50">
+                <button onClick={() => setChangeTarget("FREE")} disabled={busy} className="px-4 py-2 rounded-lg border border-ember3 text-ember3 text-sm font-semibold hover:bg-embersoft disabled:opacity-50">
                   {locale === "ca" ? "Pasar al pla gratuït" : "Pasar al plan gratuito"}
                 </button>
               </div>
@@ -798,33 +798,33 @@ export default function PanelView() {
                   ? (locale === "ca" ? "el pla gratuït" : "el plan gratuito")
                   : changeTarget === "PRO" ? "Pro·Agents" : "Premium";
                 return (
-                  <div className="mt-4 rounded-xl border border-[#e8b27c] bg-[#fdf6ec] p-4">
+                  <div className="mt-4 rounded-xl border border-ambergold bg-ambersoft2 p-4">
                     <p className="text-sm font-bold flex items-center gap-1.5">
-                      <AlertCircle className="w-4 h-4 text-[#b0431c]" />
+                      <AlertCircle className="w-4 h-4 text-ember3" />
                       {locale === "ca" ? `Confirmes el canvi a ${targetName}?` : `¿Confirmas el cambio a ${targetName}?`}
                     </p>
                     {d.gained.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-xs font-bold text-[#1e7a41] uppercase">{locale === "ca" ? "Guanyaràs" : "Ganarás"}</p>
+                        <p className="text-xs font-bold text-green2 uppercase">{locale === "ca" ? "Guanyaràs" : "Ganarás"}</p>
                         <ul className="mt-1 space-y-0.5">
                           {d.gained.map((k) => (
-                            <li key={k} className="text-sm text-[#1e7a41] flex items-start gap-1.5"><Check className="w-3.5 h-3.5 mt-0.5 shrink-0" />{labelForDiffKey(k, locale)}</li>
+                            <li key={k} className="text-sm text-green2 flex items-start gap-1.5"><Check className="w-3.5 h-3.5 mt-0.5 shrink-0" />{labelForDiffKey(k, locale)}</li>
                           ))}
                         </ul>
                       </div>
                     )}
                     {d.lost.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-xs font-bold text-[#b0431c] uppercase">{locale === "ca" ? "Perdràs accés a" : "Perderás acceso a"}</p>
+                        <p className="text-xs font-bold text-ember3 uppercase">{locale === "ca" ? "Perdràs accés a" : "Perderás acceso a"}</p>
                         <ul className="mt-1 space-y-0.5">
                           {d.lost.map((k) => (
-                            <li key={k} className="text-sm text-[#b0431c] flex items-start gap-1.5"><XIcon className="w-3.5 h-3.5 mt-0.5 shrink-0" />{labelForDiffKey(k, locale)}</li>
+                            <li key={k} className="text-sm text-ember3 flex items-start gap-1.5"><XIcon className="w-3.5 h-3.5 mt-0.5 shrink-0" />{labelForDiffKey(k, locale)}</li>
                           ))}
                         </ul>
                       </div>
                     )}
-                    <p className="mt-2 text-xs text-[#6b6f68]">{dataNote(locale)}</p>
-                    <p className="mt-1 text-xs text-[#6b6f68]">
+                    <p className="mt-2 text-xs text-stone">{dataNote(locale)}</p>
+                    <p className="mt-1 text-xs text-stone">
                       {isFreeTarget
                         ? (isStripeReal
                             ? (locale === "ca" ? "La baixa s'aplica al FINAL del període pagat: mantens l'accés fins llavors." : "La baja se aplica al FINAL del período pagado: mantienes el acceso hasta entonces.")
@@ -837,22 +837,22 @@ export default function PanelView() {
                         : ""}
                     </p>
                     <div className="mt-3 flex gap-2 flex-wrap">
-                      <button onClick={() => changePlan(changeTarget)} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50">
+                      <button onClick={() => changePlan(changeTarget)} disabled={busy} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2 disabled:opacity-50">
                         {busy ? "…" : (locale === "ca" ? "Sí, confirma el canvi" : "Sí, confirmar el cambio")}
                       </button>
-                      <button onClick={() => setChangeTarget(null)} disabled={busy} className="px-4 py-2 rounded-lg border border-[#e5e1da] text-sm font-semibold hover:bg-[#f0ede8] disabled:opacity-50">
+                      <button onClick={() => setChangeTarget(null)} disabled={busy} className="px-4 py-2 rounded-lg border border-line text-sm font-semibold hover:bg-sand disabled:opacity-50">
                         {locale === "ca" ? "Tornar" : "Volver"}
                       </button>
                     </div>
                   </div>
                 );
               })()}
-              {changeMsg && <p className="mt-3 text-sm font-semibold text-[#0f2e21]">{changeMsg}</p>}
+              {changeMsg && <p className="mt-3 text-sm font-semibold text-pine">{changeMsg}</p>}
             </div>
           )}
           {/* v22: estat de la subscripció vigent (dades del servidor via useUserPlan) */}
           {(plan.subscriptionStatus === "active" || plan.subscriptionStatus === "trialing") && (
-            <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">
+            <div className="bg-card rounded-2xl border border-line p-6">
               <h3 className="font-bold mb-3">{locale === "ca" ? "Subscripció vigent" : "Suscripción vigente"}</h3>
               <div className="space-y-2 text-sm">
                 <Row
@@ -875,15 +875,15 @@ export default function PanelView() {
               </div>
               <div className="mt-4 flex gap-3 items-center flex-wrap">
                 {!plan.cancelAtPeriodEnd ? (
-                  <button onClick={cancelSubscription} disabled={busy} className="text-sm text-[#b0431c] underline disabled:opacity-50">
+                  <button onClick={cancelSubscription} disabled={busy} className="text-sm text-ember3 underline disabled:opacity-50">
                     {locale === "ca" ? "Cancel·lar (al final del període)" : "Cancelar (al final del período)"}
                   </button>
                 ) : (
-                  <button onClick={reactivateSubscription} disabled={busy} className="text-sm text-[#1e7a41] underline disabled:opacity-50">
+                  <button onClick={reactivateSubscription} disabled={busy} className="text-sm text-green2 underline disabled:opacity-50">
                     {locale === "ca" ? "Reactivar la subscripció" : "Reactivar la suscripción"}
                   </button>
                 )}
-                <span className="text-xs text-[#6b6f68]">
+                <span className="text-xs text-stone">
                   {plan.stripeConfigured
                     ? (locale === "ca" ? "Gestionada amb Stripe." : "Gestionada con Stripe.")
                     : (locale === "ca" ? "Mode proves (sense Stripe)." : "Modo pruebas (sin Stripe).")}
@@ -891,23 +891,23 @@ export default function PanelView() {
               </div>
             </div>
           )}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6">
+          <div className="bg-card rounded-2xl border border-line p-6">
             <h3 className="font-bold mb-3">{locale === "ca" ? "Historial de pagaments i factures" : "Historial de pagos y facturas"}</h3>
             {billing?.invoices.length ? (
               <div className="space-y-2">
                 {billing.invoices.map((inv) => (
-                  <div key={inv.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
+                  <div key={inv.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2">
                     <span>{inv.date ? new Date(inv.date).toLocaleDateString() : "—"} · {inv.amount?.toFixed(2)} {inv.currency?.toUpperCase()}</span>
                     <span className="flex items-center gap-2">
-                      <span className="text-xs text-[#6b6f68]">{inv.status}</span>
-                      {inv.pdfUrl && <a href={inv.pdfUrl} target="_blank" rel="noreferrer" className="text-xs underline text-[#0f2e21]">PDF</a>}
-                      {inv.hostedUrl && <a href={inv.hostedUrl} target="_blank" rel="noreferrer" className="text-xs underline text-[#0f2e21]">{locale === "ca" ? "Factura" : "Factura"}</a>}
+                      <span className="text-xs text-stone">{inv.status}</span>
+                      {inv.pdfUrl && <a href={inv.pdfUrl} target="_blank" rel="noreferrer" className="text-xs underline text-pine">PDF</a>}
+                      {inv.hostedUrl && <a href={inv.hostedUrl} target="_blank" rel="noreferrer" className="text-xs underline text-pine">{locale === "ca" ? "Factura" : "Factura"}</a>}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-[#6b6f68]">
+              <p className="text-sm text-stone">
                 {billing?.stripeConfigured
                   ? (locale === "ca" ? "Cap factura encara." : "Ninguna factura todavía.")
                   : (locale === "ca" ? "Les factures de Stripe apareixeran aquí quan el propietari connecti el compte de Stripe." : "Las facturas de Stripe aparecerán aquí cuando el propietario conecte la cuenta de Stripe.")}
@@ -917,43 +917,43 @@ export default function PanelView() {
           {/* v37 — MODAL DE RETENCIÓ abans de confirmar la cancel·lació */}
           {retentionOpen && (
             <div className="fixed inset-0 z-[2000] bg-black/40 flex items-center justify-center p-4" onClick={() => !busy && setRetentionOpen(false)}>
-              <div className="bg-white rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-card rounded-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <h3 className="font-bold text-lg">
                   {locale === "ca" ? "Abans de marxar…" : "Antes de irte…"}
                 </h3>
-                <p className="mt-1 text-sm text-[#4b5349]">
+                <p className="mt-1 text-sm text-moss">
                   {locale === "ca"
                     ? "Mantindràs l'accés fins al final del període pagat. Però potser no cal cancel·lar: mira aquestes alternatives."
                     : "Mantendrás el acceso hasta el final del período pagado. Pero quizá no hace falta cancelar: mira estas alternativas."}
                 </p>
                 <div className="mt-4 space-y-2">
                   {u.plan === "PRO" && (
-                    <button onClick={() => { setRetentionOpen(false); setChangeTarget("PREMIUM"); }} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                    <button onClick={() => { setRetentionOpen(false); setChangeTarget("PREMIUM"); }} className="w-full text-left rounded-xl border border-line hover:bg-sand p-3">
                       <p className="text-sm font-bold">{locale === "ca" ? "Et passes a Premium i estalvies 12 €/mes (144 €/any)" : "Pásate a Premium y ahorras 12 €/mes (144 €/año)"}</p>
-                      <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Mateixos informes PDF municipals, consultes il·limitades, sense naves industrials." : "Mismos informes PDF municipales, consultas ilimitadas, sin naves industriales."}</p>
+                      <p className="text-xs text-stone">{locale === "ca" ? "Mateixos informes PDF municipals, consultes il·limitades, sense naves industrials." : "Mismos informes PDF municipales, consultas ilimitadas, sin naves industriales."}</p>
                     </button>
                   )}
                   {u.plan === "PREMIUM" && (
-                    <button onClick={() => { setRetentionOpen(false); setChangeTarget("PRO"); }} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                    <button onClick={() => { setRetentionOpen(false); setChangeTarget("PRO"); }} className="w-full text-left rounded-xl border border-line hover:bg-sand p-3">
                       <p className="text-sm font-bold">{locale === "ca" ? "Prova Pro·Agents (pots tornar a Premium quan vulguis)" : "Prueba Pro·Agentes (puedes volver a Premium cuando quieras)"}</p>
-                      <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Si necessites CSV, PDF d'edifici i naus industrials. El canvi es prorrateja amb Stripe." : "Si necesitas CSV, PDF de edificio y naves industriales. El cambio se prorratea con Stripe."}</p>
+                      <p className="text-xs text-stone">{locale === "ca" ? "Si necessites CSV, PDF d'edifici i naus industrials. El canvi es prorrateja amb Stripe." : "Si necesitas CSV, PDF de edificio y naves industriales. El cambio se prorratea con Stripe."}</p>
                     </button>
                   )}
-                  <button onClick={openPortal} disabled={busy} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                  <button onClick={openPortal} disabled={busy} className="w-full text-left rounded-xl border border-line hover:bg-sand p-3">
                     <p className="text-sm font-bold">{locale === "ca" ? "Només volia canviar la targeta / el mètode de pagament" : "Solo quería cambiar la tarjeta / el método de pago"}</p>
-                    <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Al Portal de Stripe pots actualitzar la targeta sense perdre el pla." : "En el Portal de Stripe puedes actualizar la tarjeta sin perder el plan."}</p>
+                    <p className="text-xs text-stone">{locale === "ca" ? "Al Portal de Stripe pots actualitzar la targeta sense perdre el pla." : "En el Portal de Stripe puedes actualizar la tarjeta sin perder el plan."}</p>
                   </button>
-                  <button onClick={() => { setRetentionOpen(false); navigate("/preus"); }} className="w-full text-left rounded-xl border border-[#e5e1da] hover:bg-[#f0ede8] p-3">
+                  <button onClick={() => { setRetentionOpen(false); navigate("/preus"); }} className="w-full text-left rounded-xl border border-line hover:bg-sand p-3">
                     <p className="text-sm font-bold">{locale === "ca" ? "Revisar què inclou cada pla" : "Revisar qué incluye cada plan"}</p>
-                    <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Comparació completa de Premium i Pro·Agents." : "Comparación completa de Premium y Pro·Agentes."}</p>
+                    <p className="text-xs text-stone">{locale === "ca" ? "Comparació completa de Premium i Pro·Agents." : "Comparación completa de Premium y Pro·Agentes."}</p>
                   </button>
                 </div>
-                <div className="mt-5 border-t border-[#e5e1da] pt-4">
+                <div className="mt-5 border-t border-line pt-4">
                   <p className="text-sm font-bold">{locale === "ca" ? "Vols continuar amb la cancel·lació?" : "¿Quieres continuar con la cancelación?"}</p>
-                  <label className="block mt-2 text-xs font-semibold text-[#4b5349]">
+                  <label className="block mt-2 text-xs font-semibold text-moss">
                     {locale === "ca" ? "Motiu (opcional — ens ajuda a millorar)" : "Motivo (opcional — nos ayuda a mejorar)"}
                   </label>
-                  <select value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className="mt-1 w-full rounded-lg border border-[#e5e1da] px-3 py-2 text-sm">
+                  <select value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} className="mt-1 w-full rounded-lg border border-line px-3 py-2 text-sm">
                     <option value="">{locale === "ca" ? "— Tria un motiu —" : "— Elige un motivo —"}</option>
                     <option value="CAR">{locale === "ca" ? "El preu / la targeta" : "El precio / la tarjeta"}</option>
                     <option value="NO_USO">{locale === "ca" ? "No l'uso prou" : "No lo uso lo suficiente"}</option>
@@ -966,13 +966,13 @@ export default function PanelView() {
                     onChange={(e) => setCancelFeedback(e.target.value.slice(0, 500))}
                     placeholder={locale === "ca" ? "Explica'ns-ho (opcional, màx. 500 caràcters)…" : "Cuéntanos (opcional, máx. 500 caracteres)…"}
                     rows={2}
-                    className="mt-2 w-full rounded-lg border border-[#e5e1da] px-3 py-2 text-sm"
+                    className="mt-2 w-full rounded-lg border border-line px-3 py-2 text-sm"
                   />
                   <div className="mt-3 flex gap-2 flex-wrap">
-                    <button onClick={confirmCancel} disabled={busy} className="px-4 py-2 rounded-lg bg-[#b0431c] text-white text-sm font-bold hover:opacity-90 disabled:opacity-50">
+                    <button onClick={confirmCancel} disabled={busy} className="px-4 py-2 rounded-lg bg-ember3 text-white text-sm font-bold hover:opacity-90 disabled:opacity-50">
                       {locale === "ca" ? "Confirmar la cancel·lació" : "Confirmar la cancelación"}
                     </button>
-                    <button onClick={() => setRetentionOpen(false)} disabled={busy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50">
+                    <button onClick={() => setRetentionOpen(false)} disabled={busy} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2 disabled:opacity-50">
                       {locale === "ca" ? "Me queda" : "Me quedo"}
                     </button>
                   </div>
@@ -985,61 +985,61 @@ export default function PanelView() {
 
       {/* HISTORIAL */}
       {tab === "historial" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold">{locale === "ca" ? "Historial de consultes (Premium)" : "Historial de consultas (Premium)"}</h3>
             {history && history.length > 0 && (
-              <button onClick={() => deleteHistory()} className="text-xs text-[#b0431c] underline">{locale === "ca" ? "Buida-ho tot" : "Vaciar todo"}</button>
+              <button onClick={() => deleteHistory()} className="text-xs text-ember3 underline">{locale === "ca" ? "Buida-ho tot" : "Vaciar todo"}</button>
             )}
           </div>
           {/* Fase 5 — pla gratuït: pestanya blocada amb teaser (la API torna 403 PLAN_REQUIRED) */}
           {historyLocked ? (
             <div className="text-center py-5">
-              <div className="mx-auto w-10 h-10 rounded-full bg-[#fdf6ec] border border-[#f3d9b0] flex items-center justify-center">
-                <Lock className="w-5 h-5 text-[#b0431c]" />
+              <div className="mx-auto w-10 h-10 rounded-full bg-ambersoft2 border border-amberline2 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-ember3" />
               </div>
-              <p className="mt-3 text-sm font-semibold text-[#0f2e21]">
+              <p className="mt-3 text-sm font-semibold text-pine">
                 {locale === "ca" ? "L'historial és del pla Premium" : "El historial es del plan Premium"}
               </p>
-              <p className="mt-1 text-sm text-[#4b5349] max-w-md mx-auto leading-relaxed">
+              <p className="mt-1 text-sm text-moss max-w-md mx-auto leading-relaxed">
                 {locale === "ca"
                   ? "Amb Premium, cada consulta queda desada perquè puguis tornar-la a obrir i veure l'evolució del municipi. Les teves dades no s'esborren mai: si actives Premium, hi tornaràs a tenir accés."
                   : "Con Premium, cada consulta queda guardada para que puedas volver a abrirla y ver la evolución del municipio. Tus datos no se borran nunca: si activas Premium, volverás a tener acceso."}
               </p>
-              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-[#e8673c] text-white text-xs font-bold hover:bg-[#d95a31]">
+              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-ember text-white text-xs font-bold hover:bg-ember2">
                 {locale === "ca" ? "Veure Premium" : "Ver Premium"}
               </button>
             </div>
           ) : history === null ? (
-            <p className="text-sm text-[#6b6f68]">…</p>
+            <p className="text-sm text-stone">…</p>
           ) : history.length === 0 ? (
             <div className="text-center py-4">
-              <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Cap consulta registrada (el pla gratuït no desa historial)." : "Ninguna consulta registrada (el plan gratuito no guarda historial)."}</p>
-              <button onClick={() => navigate("/mapa")} className="mt-3 px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-xs font-bold">
+              <p className="text-sm text-stone">{locale === "ca" ? "Cap consulta registrada (el pla gratuït no desa historial)." : "Ninguna consulta registrada (el plan gratuito no guarda historial)."}</p>
+              <button onClick={() => navigate("/mapa")} className="mt-3 px-4 py-2 rounded-lg bg-pine text-white text-xs font-bold">
                 {locale === "ca" ? "Explora el mapa" : "Explora el mapa"}
               </button>
             </div>
           ) : (
             <div className="space-y-2">
               {history.map((h) => (
-                <div key={h.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
+                <div key={h.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2">
                   <span>
                     <b>{h.municipalityName || h.municipalityCode}</b>
-                    {h.rentLatest != null && <span className="text-[#6b6f68]"> · {h.rentLatest.toFixed(0)} €/mes ({h.rentPeriod})</span>}
-                    <span className="block text-xs text-[#6b6f68]">{new Date(h.createdAt).toLocaleString()}</span>
+                    {h.rentLatest != null && <span className="text-stone"> · {h.rentLatest.toFixed(0)} €/mes ({h.rentPeriod})</span>}
+                    <span className="block text-xs text-stone">{new Date(h.createdAt).toLocaleString()}</span>
                   </span>
                   <span className="flex items-center gap-2 shrink-0">
                     {h.municipalityCode && (
                       <button
                         onClick={() => navigate(`/mapa?mun=${encodeURIComponent(h.municipalityCode)}${h.buildingId ? `&edifici=${encodeURIComponent(h.buildingId)}` : ""}`)}
-                        className="text-xs text-[#0f2e21] underline flex items-center gap-1"
+                        className="text-xs text-pine underline flex items-center gap-1"
                         title={locale === "ca" ? "Torna a obrir aquesta consulta al mapa" : "Vuelve a abrir esta consulta en el mapa"}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
                         {locale === "ca" ? "Al mapa" : "Al mapa"}
                       </button>
                     )}
-                    <button onClick={() => deleteHistory(h.id)} className="text-xs text-[#6b6f68] underline">{locale === "ca" ? "Esborra" : "Borra"}</button>
+                    <button onClick={() => deleteHistory(h.id)} className="text-xs text-stone underline">{locale === "ca" ? "Esborra" : "Borra"}</button>
                   </span>
                 </div>
               ))}
@@ -1050,48 +1050,48 @@ export default function PanelView() {
 
       {/* PREFERITS */}
       {tab === "preferits" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6">
           <h3 className="font-bold mb-3">{locale === "ca" ? "Edificis i municipis preferits (Premium)" : "Edificios y municipios favoritos (Premium)"}</h3>
           {/* Fase 5 — pla gratuït: pestanya blocada amb teaser (la API torna 403 PLAN_REQUIRED) */}
           {favoritesLocked ? (
             <div className="text-center py-5">
-              <div className="mx-auto w-10 h-10 rounded-full bg-[#fdf6ec] border border-[#f3d9b0] flex items-center justify-center">
-                <Lock className="w-5 h-5 text-[#b0431c]" />
+              <div className="mx-auto w-10 h-10 rounded-full bg-ambersoft2 border border-amberline2 flex items-center justify-center">
+                <Lock className="w-5 h-5 text-ember3" />
               </div>
-              <p className="mt-3 text-sm font-semibold text-[#0f2e21]">
+              <p className="mt-3 text-sm font-semibold text-pine">
                 {locale === "ca" ? "Els preferits són del pla Premium" : "Los favoritos son del plan Premium"}
               </p>
-              <p className="mt-1 text-sm text-[#4b5349] max-w-md mx-auto leading-relaxed">
+              <p className="mt-1 text-sm text-moss max-w-md mx-auto leading-relaxed">
                 {locale === "ca"
                   ? "Desa municipis i edificis amb l'estrella del mapa i segueix-los amb un resum mensual per correu. Les teves dades no s'esborren mai: si actives Premium, els recuperaràs tal com els vas desar."
                   : "Guarda municipios y edificios con la estrella del mapa y síguelos con un resumen mensual por correo. Tus datos no se borran nunca: si activas Premium, los recuperarás tal como los guardaste."}
               </p>
-              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-[#e8673c] text-white text-xs font-bold hover:bg-[#d95a31]">
+              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-ember text-white text-xs font-bold hover:bg-ember2">
                 {locale === "ca" ? "Veure Premium" : "Ver Premium"}
               </button>
             </div>
           ) : favorites === null ? (
-            <p className="text-sm text-[#6b6f68]">…</p>
+            <p className="text-sm text-stone">…</p>
           ) : favorites.length === 0 ? (
             <div className="text-center py-4">
-              <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Encara no n'has desat cap. Desa'ls amb l'estrella del panell del mapa." : "Aún no has guardado ninguno. Guárdalos con la estrella del panel del mapa."}</p>
-              <button onClick={() => navigate("/mapa")} className="mt-3 px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-xs font-bold">
+              <p className="text-sm text-stone">{locale === "ca" ? "Encara no n'has desat cap. Desa'ls amb l'estrella del panell del mapa." : "Aún no has guardado ninguno. Guárdalos con la estrella del panel del mapa."}</p>
+              <button onClick={() => navigate("/mapa")} className="mt-3 px-4 py-2 rounded-lg bg-pine text-white text-xs font-bold">
                 {locale === "ca" ? "Explora el mapa" : "Explora el mapa"}
               </button>
             </div>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-[#6b6f68]">
+              <p className="text-xs text-stone">
                 {locale === "ca"
                   ? "Amb l'alerta activada, t'avisem per correu quan el preu vigent d'un preferit canviï el % que triïs (o passi a àrea tensada). L'avís arriba quan publiquem dades noves, màx. un per dia."
                   : "Con la alerta activada, te avisamos por correo cuando el precio vigente de un favorito cambie el % que elijas (o pase a área tensionada). El aviso llega cuando publicamos datos nuevos, máx. uno al día."}
               </p>
               {favorites.map((f) => (
-                <div key={f.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2 flex-wrap">
+                <div key={f.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2 flex-wrap">
                   <span className="flex items-center gap-2">
-                    <Star className="w-3.5 h-3.5 text-[#e8673c] fill-[#e8673c]" />
+                    <Star className="w-3.5 h-3.5 text-ember fill-ember" />
                     <b>{f.label || f.entityKey}</b>
-                    <span className="text-xs text-[#6b6f68]">{f.buildingId ? "edifici" : "municipi"}</span>
+                    <span className="text-xs text-stone">{f.buildingId ? "edifici" : "municipi"}</span>
                   </span>
                   <span className="flex items-center gap-2 shrink-0 flex-wrap">
                     {/* v37 — alerta de preu: llindar % per favorit */}
@@ -1099,7 +1099,7 @@ export default function PanelView() {
                       value={f.alertPct != null ? String(f.alertPct) : ""}
                       onChange={(e) => setFavAlert(f.entityKey, e.target.value)}
                       disabled={busy}
-                      className="text-xs rounded-lg border border-[#e5e1da] px-2 py-1"
+                      className="text-xs rounded-lg border border-line px-2 py-1"
                       title={locale === "ca" ? "Alerta de preu" : "Alerta de precio"}
                     >
                       <option value="">{locale === "ca" ? "Sense alerta" : "Sin alerta"}</option>
@@ -1111,7 +1111,7 @@ export default function PanelView() {
                     {(f.buildingId || f.municipalityCode) && (
                       <button
                         onClick={() => navigate(favoriteMapHref(f))}
-                        className="text-xs text-[#0f2e21] underline flex items-center gap-1"
+                        className="text-xs text-pine underline flex items-center gap-1"
                         title={locale === "ca" ? "Obre al mapa" : "Abre en el mapa"}
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -1120,7 +1120,7 @@ export default function PanelView() {
                     )}
                     <button
                       onClick={async () => { await fetch(`/api/favorites?key=${encodeURIComponent(f.entityKey)}`, { method: "DELETE" }); setFavorites(null); loadTab("preferits"); }}
-                      className="text-xs text-[#6b6f68] underline"
+                      className="text-xs text-stone underline"
                     >
                       {locale === "ca" ? "Esborra" : "Borra"}
                     </button>
@@ -1131,18 +1131,18 @@ export default function PanelView() {
           )}
           {/* v24 — resum mensual de preferits per correu (opt-in, només plans de pagament) */}
           {(u.plan === "PREMIUM" || u.plan === "PRO") && (
-            <div className="mt-4 pt-4 border-t border-[#f0ede8] space-y-2">
+            <div className="mt-4 pt-4 border-t border-sand space-y-2">
               <label className="flex items-center gap-2 text-sm font-semibold">
                 <input
                   type="checkbox"
                   checked={alertsOn === true}
                   onChange={toggleAlerts}
                   disabled={busy || alertsOn === null}
-                  className="w-4 h-4 accent-[#e8673c]"
+                  className="w-4 h-4 accent-ember"
                 />
                 {locale === "ca" ? "Avisa'm per correu cada mes dels meus preferits" : "Avísame por correo cada mes de mis favoritos"}
               </label>
-              <p className="text-xs text-[#6b6f68] leading-relaxed">
+              <p className="text-xs text-stone leading-relaxed">
                 {locale === "ca"
                   ? "Un resum mensual amb el preu mitjà vigent de cada municipi o edifici desat i l'enllaç directe per obrir-lo al mapa. Pots desactivar-ho quan vulguis."
                   : "Un resumen mensual con el precio medio vigente de cada municipio o edificio guardado y el enlace directo para abrirlo en el mapa. Puedes desactivarlo cuando quieras."}
@@ -1154,24 +1154,24 @@ export default function PanelView() {
 
       {/* COMPARACIONS */}
       {tab === "comparacions" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold">{locale === "ca" ? "Comparacions desades" : "Comparaciones guardadas"}</h3>
-            <button onClick={() => navigate("/comparador")} className="text-xs text-[#0f2e21] underline">{locale === "ca" ? "Obrir comparador" : "Abrir comparador"}</button>
+            <button onClick={() => navigate("/comparador")} className="text-xs text-pine underline">{locale === "ca" ? "Obrir comparador" : "Abrir comparador"}</button>
           </div>
           {comparisons === null ? (
-            <p className="text-sm text-[#6b6f68]">…</p>
+            <p className="text-sm text-stone">…</p>
           ) : comparisons.length === 0 ? (
-            <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Encara no n'has desat cap des del comparador." : "Aún no has guardado ninguna desde el comparador."}</p>
+            <p className="text-sm text-stone">{locale === "ca" ? "Encara no n'has desat cap des del comparador." : "Aún no has guardado ninguna desde el comparador."}</p>
           ) : (
             <div className="space-y-2">
               {comparisons.map((c) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
-                  <span><b>{c.name}</b> <span className="text-xs text-[#6b6f68]">· {c.entities.length} entitats · {new Date(c.createdAt).toLocaleDateString()}</span></span>
+                <div key={c.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2">
+                  <span><b>{c.name}</b> <span className="text-xs text-stone">· {c.entities.length} entitats · {new Date(c.createdAt).toLocaleDateString()}</span></span>
                   <span className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => navigate(`/comparador?id=${encodeURIComponent(c.id)}`)}
-                      className="text-xs text-[#0f2e21] underline flex items-center gap-1"
+                      className="text-xs text-pine underline flex items-center gap-1"
                       title={locale === "ca" ? "Carrega aquesta comparació al comparador" : "Carga esta comparación en el comparador"}
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -1179,7 +1179,7 @@ export default function PanelView() {
                     </button>
                     <button
                       onClick={async () => { await fetch(`/api/comparisons?id=${c.id}`, { method: "DELETE" }); setComparisons(null); loadTab("comparacions"); }}
-                      className="text-xs text-[#6b6f68] underline"
+                      className="text-xs text-stone underline"
                     >
                       {locale === "ca" ? "Esborra" : "Borra"}
                     </button>
@@ -1193,21 +1193,21 @@ export default function PanelView() {
 
       {/* INFORMES MEUS */}
       {tab === "informes" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-6">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6">
           <h3 className="font-bold mb-3">{locale === "ca" ? "Informes de preu enviats" : "Informes de precio enviados"}</h3>
           {myReports === null ? (
-            <p className="text-sm text-[#6b6f68]">…</p>
+            <p className="text-sm text-stone">…</p>
           ) : myReports.length === 0 ? (
-            <p className="text-sm text-[#6b6f68]">{locale === "ca" ? "Encara no n'has enviat cap des del mapa." : "Aún no has enviado ninguno desde el mapa."}</p>
+            <p className="text-sm text-stone">{locale === "ca" ? "Encara no n'has enviat cap des del mapa." : "Aún no has enviado ninguno desde el mapa."}</p>
           ) : (
             <div className="space-y-2">
               {myReports.map((r) => (
-                <div key={r.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
-                  <span>{r.municipalityCode} · <b>{r.offerEurMonth} €/mes</b> {r.offerEurM2 && <span className="text-xs text-[#6b6f68]">({r.offerEurM2} €/m²)</span>}</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">{r.status}</span>
+                <div key={r.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2">
+                  <span>{r.municipalityCode} · <b>{r.offerEurMonth} €/mes</b> {r.offerEurM2 && <span className="text-xs text-stone">({r.offerEurM2} €/m²)</span>}</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-sand">{r.status}</span>
                 </div>
               ))}
-              <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "Els informes passen per moderació abans de ser útils estadísticament." : "Los informes pasan por moderación antes de ser útiles estadísticamente."}</p>
+              <p className="text-xs text-stone">{locale === "ca" ? "Els informes passen per moderació abans de ser útils estadísticament." : "Los informes pasan por moderación antes de ser útiles estadísticamente."}</p>
             </div>
           )}
         </div>
@@ -1216,55 +1216,55 @@ export default function PanelView() {
       {/* SEGURETAT */}
       {tab === "seguretat" && (
         <div className="mt-6 space-y-4">
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+          <div className="bg-card rounded-2xl border border-line p-6 space-y-3">
             <h3 className="font-bold">{locale === "ca" ? "Sessions" : "Sesiones"}</h3>
             {lastLoginAt && (
-              <p className="text-sm text-[#6b6f68]">
+              <p className="text-sm text-stone">
                 {locale === "ca" ? "Últim inici de sessió:" : "Último inicio de sesión:"}{" "}
                 <b>{new Date(lastLoginAt).toLocaleString()}</b>
               </p>
             )}
-            <button onClick={revokeOtherSessions} disabled={busy} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+            <button onClick={revokeOtherSessions} disabled={busy} className="px-5 py-2.5 rounded-xl bg-pine text-white text-sm font-bold disabled:opacity-50">
               {locale === "ca" ? "Tanca les sessions d'altres dispositius" : "Cierra las sesiones de otros dispositivos"}
             </button>
-            <p className="text-xs text-[#6b6f68]">
+            <p className="text-xs text-stone">
               {locale === "ca"
                 ? "Invalida totes les sessions obertes en altres ordinadors o mòbils. Aquest dispositiu continua amb la sessió iniciada. També es tanquen automàticament en canviar la contrasenya."
                 : "Invalida todas las sesiones abiertas en otros ordenadores o móviles. Este dispositivo sigue con la sesión iniciada. También se cierran automáticamente al cambiar la contraseña."}
             </p>
           </div>
           {/* v37 — AUTENTICACIÓ EN DOS PASSOS (TOTP) */}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+          <div className="bg-card rounded-2xl border border-line p-6 space-y-3">
             <h3 className="font-bold flex items-center gap-2">
               <Shield className="w-4 h-4" />
               {locale === "ca" ? "Verificació en dos passos (2FA)" : "Verificación en dos pasos (2FA)"}
               {totpEnabled !== null && (
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${totpEnabled ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#f0ede8] text-[#6b6f68]"}`}>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${totpEnabled ? "bg-mintsoft text-green2" : "bg-sand text-stone"}`}>
                   {totpEnabled ? (locale === "ca" ? "Activada" : "Activada") : (locale === "ca" ? "Desactivada" : "Desactivada")}
                 </span>
               )}
             </h3>
             {totpEnabled === false && (
               <>
-                <p className="text-sm text-[#4b5349]">
+                <p className="text-sm text-moss">
                   {locale === "ca"
                     ? "Afegeix una segona capa de seguretat: a més de la contrasenya, caldrà un codi de l'app d'autenticació (Google Authenticator, Authy, Aegis…)."
                     : "Añade una segunda capa de seguridad: además de la contraseña, hará falta un código de la app de autenticación (Google Authenticator, Authy, Aegis…)."}
                 </p>
                 {!totpQr ? (
-                  <button onClick={totpSetup} disabled={busy} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+                  <button onClick={totpSetup} disabled={busy} className="px-5 py-2.5 rounded-xl bg-pine text-white text-sm font-bold disabled:opacity-50">
                     {locale === "ca" ? "Activa la verificació en dos passos" : "Activar la verificación en dos pasos"}
                   </button>
                 ) : (
                   <div className="space-y-3">
-                    <ol className="text-sm text-[#4b5349] list-decimal pl-5 space-y-0.5">
+                    <ol className="text-sm text-moss list-decimal pl-5 space-y-0.5">
                       <li>{locale === "ca" ? "Obre l'app d'autenticació i escaneja aquest codi:" : "Abre la app de autenticación y escanea este código:"}</li>
                       <li>{locale === "ca" ? "Introdueix el codi de 6 dígits que et mostra per confirmar." : "Introduce el código de 6 dígitos que te muestra para confirmar."}</li>
                     </ol>
                     <div className="flex flex-wrap items-center gap-4">
-                      {totpQr && <img src={totpQr} alt="QR 2FA" width={180} height={180} className="rounded-lg border border-[#e5e1da]" />}
+                      {totpQr && <img src={totpQr} alt="QR 2FA" width={180} height={180} className="rounded-lg border border-line" />}
                       {totpSecretManual && (
-                        <div className="text-xs text-[#6b6f68]">
+                        <div className="text-xs text-stone">
                           <p className="font-semibold">{locale === "ca" ? "Alta manual (si no pots escanejar):" : "Alta manual (si no puedes escanear):"}</p>
                           <code className="break-all">{totpSecretManual}</code>
                         </div>
@@ -1276,10 +1276,10 @@ export default function PanelView() {
                         onChange={(e) => setTotpCodeInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
                         placeholder="000000"
                         inputMode="numeric"
-                        className="w-36 px-3 py-2 rounded-lg border border-[#e5e1da] text-center text-lg tracking-[0.2em] font-bold"
+                        className="w-36 px-3 py-2 rounded-lg border border-line text-center text-lg tracking-[0.2em] font-bold"
                         autoComplete="one-time-code"
                       />
-                      <button onClick={totpEnable} disabled={busy || totpCodeInput.length !== 6} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+                      <button onClick={totpEnable} disabled={busy || totpCodeInput.length !== 6} className="px-5 py-2.5 rounded-xl bg-pine text-white text-sm font-bold disabled:opacity-50">
                         {locale === "ca" ? "Confirma i activa" : "Confirmar y activar"}
                       </button>
                     </div>
@@ -1289,15 +1289,15 @@ export default function PanelView() {
             )}
             {totpEnabled === true && (
               <div className="space-y-3">
-                <p className="text-sm text-[#4b5349]">
+                <p className="text-sm text-moss">
                   {locale === "ca"
                     ? "En entrar, després de la contrasenya, es demanarà el codi de l'app d'autenticació."
                     : "Al entrar, después de la contraseña, se pedirá el código de la app de autenticación."}
                 </p>
                 {totpRecoveryCodes && (
-                  <div className="rounded-xl border border-[#e8b27c] bg-[#fdf6ec] p-4">
+                  <div className="rounded-xl border border-ambergold bg-ambersoft2 p-4">
                     <p className="text-sm font-bold">{locale === "ca" ? "Codis de recuperació (un sol ús)" : "Códigos de recuperación (un solo uso)"}</p>
-                    <p className="text-xs text-[#6b6f68] mt-0.5">
+                    <p className="text-xs text-stone mt-0.5">
                       {locale === "ca"
                         ? "Cada codi funciona UNA vegada si no tens l'app a mà. No es tornaran a mostrar: fes-ne una captura o imprimeix-los."
                         : "Cada código funciona UNA vez si no tienes la app a mano. No se volverán a mostrar: haz una captura o imprímelos."}
@@ -1307,7 +1307,7 @@ export default function PanelView() {
                         <span key={c}>{c}</span>
                       ))}
                     </div>
-                    <button onClick={() => setTotpRecoveryCodes(null)} className="mt-2 text-xs underline text-[#0f2e21]">
+                    <button onClick={() => setTotpRecoveryCodes(null)} className="mt-2 text-xs underline text-pine">
                       {locale === "ca" ? "Ja els he guardat" : "Ya los he guardado"}
                     </button>
                   </div>
@@ -1318,16 +1318,16 @@ export default function PanelView() {
                     value={totpPassword}
                     onChange={(e) => setTotpPassword(e.target.value)}
                     placeholder={locale === "ca" ? "Contrasenya per confirmar" : "Contraseña para confirmar"}
-                    className="px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                    className="px-3 py-2 rounded-lg border border-line text-sm"
                   />
-                  <button onClick={totpRecoveryRegen} disabled={busy || !totpPassword} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold disabled:opacity-50">
+                  <button onClick={totpRecoveryRegen} disabled={busy || !totpPassword} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold disabled:opacity-50">
                     {locale === "ca" ? "Nous codis de recuperació" : "Nuevos códigos de recuperación"}
                   </button>
-                  <button onClick={totpDisable} disabled={busy || !totpPassword} className="px-4 py-2 rounded-lg border border-[#b0431c] text-[#b0431c] text-sm font-semibold hover:bg-[#fdeae2] disabled:opacity-50">
+                  <button onClick={totpDisable} disabled={busy || !totpPassword} className="px-4 py-2 rounded-lg border border-ember3 text-ember3 text-sm font-semibold hover:bg-embersoft disabled:opacity-50">
                     {locale === "ca" ? "Desactiva el 2FA" : "Desactivar el 2FA"}
                   </button>
                 </div>
-                <p className="text-xs text-[#6b6f68]">
+                <p className="text-xs text-stone">
                   {locale === "ca"
                     ? "Les accions d'aquesta secció demanen la contrasenya: si algú té el telèfon robat, no podrà desactivar el 2FA ni regenerar els codis."
                     : "Las acciones de esta sección piden la contraseña: si alguien tiene el teléfono robado, no podrá desactivar el 2FA ni regenerar los códigos."}
@@ -1336,17 +1336,17 @@ export default function PanelView() {
             )}
           </div>
           {/* v37.1 — PASSKEYS (claus d'accés, WebAuthn) */}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+          <div className="bg-card rounded-2xl border border-line p-6 space-y-3">
             <h3 className="font-bold flex items-center gap-2">
               <Shield className="w-4 h-4" />
               {locale === "ca" ? "Claus d'accés (passkeys)" : "Claves de acceso (passkeys)"}
               {passkeys !== null && passkeys.length > 0 && (
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#e6f4ea] text-[#1e7a41]">
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
                   {passkeys.length}
                 </span>
               )}
             </h3>
-            <p className="text-sm text-[#4b5349]">
+            <p className="text-sm text-moss">
               {locale === "ca"
                 ? "Entra amb la petjada, la cara o el PIN del dispositiu — sense escriure la contrasenya. Les passkeys queden lligades a aquest domini (a preureal.vercel.app i a www.preureal.com són independents)."
                 : "Entra con la huella, la cara o el PIN del dispositivo — sin escribir la contraseña. Las passkeys quedan ligadas a este dominio (en preureal.vercel.app y en www.preureal.com son independientes)."}
@@ -1354,15 +1354,15 @@ export default function PanelView() {
             {passkeys !== null && passkeys.length > 0 && (
               <div className="space-y-1.5">
                 {passkeys.map((p) => (
-                  <div key={p.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2 flex-wrap">
+                  <div key={p.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2 flex-wrap">
                     <span className="flex items-center gap-2">
-                      <Fingerprint className="w-4 h-4 text-[#0f2e21]" />
+                      <Fingerprint className="w-4 h-4 text-pine" />
                       <b>{p.label || "Passkey"}</b>
-                      {p.backedUp && <span className="text-xs text-[#6b6f68]">{locale === "ca" ? "(sincronitzada)" : "(sincronizada)"}</span>}
+                      {p.backedUp && <span className="text-xs text-stone">{locale === "ca" ? "(sincronitzada)" : "(sincronizada)"}</span>}
                     </span>
                     <span className="flex items-center gap-2">
-                      {p.lastUsedAt && <span className="text-xs text-[#6b6f68]">{new Date(p.lastUsedAt).toLocaleDateString()}</span>}
-                      <button onClick={() => passkeyDelete(p.id)} disabled={pkBusy || !pkPassword} className="text-xs text-[#b0431c] underline disabled:opacity-40" title={locale === "ca" ? "Cal la contrasenya a sota per poder eliminar" : "Hace falta la contraseña de abajo para eliminar"}>
+                      {p.lastUsedAt && <span className="text-xs text-stone">{new Date(p.lastUsedAt).toLocaleDateString()}</span>}
+                      <button onClick={() => passkeyDelete(p.id)} disabled={pkBusy || !pkPassword} className="text-xs text-ember3 underline disabled:opacity-40" title={locale === "ca" ? "Cal la contrasenya a sota per poder eliminar" : "Hace falta la contraseña de abajo para eliminar"}>
                         {locale === "ca" ? "Elimina" : "Eliminar"}
                       </button>
                     </span>
@@ -1371,7 +1371,7 @@ export default function PanelView() {
               </div>
             )}
             <div className="flex gap-2 flex-wrap items-center">
-              <button onClick={passkeyAdd} disabled={pkBusy} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+              <button onClick={passkeyAdd} disabled={pkBusy} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold disabled:opacity-50">
                 {pkBusy ? "…" : (locale === "ca" ? "Afegeix una passkey" : "Añadir una passkey")}
               </button>
               {(passkeys?.length || 0) > 0 && (
@@ -1380,45 +1380,45 @@ export default function PanelView() {
                   value={pkPassword}
                   onChange={(e) => setPkPassword(e.target.value)}
                   placeholder={locale === "ca" ? "Contrasenya per eliminar una passkey" : "Contraseña para eliminar una passkey"}
-                  className="px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                  className="px-3 py-2 rounded-lg border border-line text-sm"
                 />
               )}
             </div>
-            {pkMsg && <p className="text-sm text-[#4b5349]">{pkMsg}</p>}
+            {pkMsg && <p className="text-sm text-moss">{pkMsg}</p>}
           </div>
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+          <div className="bg-card rounded-2xl border border-line p-6 space-y-3">
             <h3 className="font-bold">{locale === "ca" ? "Activitat recent del compte" : "Actividad reciente de la cuenta"}</h3>
             {activity === null ? (
-              <p className="text-sm text-[#6b6f68]">…</p>
+              <p className="text-sm text-stone">…</p>
             ) : activity.length === 0 ? (
-              <p className="text-sm text-[#6b6f68]">
+              <p className="text-sm text-stone">
                 {locale === "ca" ? "Encara no hi ha activitat registrada." : "Aún no hay actividad registrada."}
               </p>
             ) : (
               <div className="space-y-1.5">
                 {activity.map((e) => (
-                  <div key={e.id} className="flex items-center justify-between gap-2 text-sm border border-[#f2efe9] rounded-lg px-3 py-2">
-                    <b className="text-[#0f2e21]">{activityLabel(e.type, locale)}</b>
-                    <span className="text-xs text-[#6b6f68]">{new Date(e.createdAt).toLocaleString()}</span>
+                  <div key={e.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2">
+                    <b className="text-pine">{activityLabel(e.type, locale)}</b>
+                    <span className="text-xs text-stone">{new Date(e.createdAt).toLocaleString()}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-3">
+          <div className="bg-card rounded-2xl border border-line p-6 space-y-3">
             <h3 className="font-bold">{locale === "ca" ? "Canvi de contrasenya" : "Cambio de contraseña"}</h3>
-            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder={locale === "ca" ? "Contrasenya actual" : "Contraseña actual"} className="w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm" />
-            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={locale === "ca" ? "Contrasenya nova (mín. 8)" : "Contraseña nueva (mín. 8)"} className="w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm" />
-            <button onClick={changePassword} disabled={busy || !currentPassword || !newPassword} className="px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold disabled:opacity-50">
+            <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder={locale === "ca" ? "Contrasenya actual" : "Contraseña actual"} className="w-full px-3 py-2 rounded-lg border border-line text-sm" />
+            <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={locale === "ca" ? "Contrasenya nova (mín. 8)" : "Contraseña nueva (mín. 8)"} className="w-full px-3 py-2 rounded-lg border border-line text-sm" />
+            <button onClick={changePassword} disabled={busy || !currentPassword || !newPassword} className="px-5 py-2.5 rounded-xl bg-pine text-white text-sm font-bold disabled:opacity-50">
               {locale === "ca" ? "Canvia la contrasenya" : "Cambiar la contraseña"}
             </button>
-            <p className="text-xs text-[#6b6f68]">{locale === "ca" ? "En canviar-la es tanquen totes les sessions obertes en altres dispositius." : "Al cambiarla se cierran todas las sesiones abiertas en otros dispositivos."}</p>
+            <p className="text-xs text-stone">{locale === "ca" ? "En canviar-la es tanquen totes les sessions obertes en altres dispositius." : "Al cambiarla se cierran todas las sesiones abiertas en otros dispositivos."}</p>
           </div>
-          <div className="bg-white rounded-2xl border border-[#f2c4ac] p-6 space-y-3">
-            <h3 className="font-bold text-[#b0431c] flex items-center gap-2"><Trash2 className="w-4 h-4" />{locale === "ca" ? "Eliminació del compte (RGPD)" : "Eliminación de la cuenta (RGPD)"}</h3>
-            <p className="text-sm text-[#4b5349]">{locale === "ca" ? "S'esborren les teves dades personals, preferits i informes. Els registres agregats i anonimitzats d'ús es conserven per estadística. Aquesta acció és irreversible." : "Se borran tus datos personales, favoritos e informes. Los registros agregados y anonimizados de uso se conservan con fines estadísticos. Esta acción es irreversible."}</p>
-            <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value.toUpperCase())} placeholder={locale === "ca" ? 'Escriu "ESBORRA" per confirmar' : 'Escribe "ESBORRA" para confirmar'} className="w-full px-3 py-2 rounded-lg border border-[#f2c4ac] text-sm" />
-            <button onClick={deleteAccount} disabled={busy || deleteConfirm !== "ESBORRA"} className="px-5 py-2.5 rounded-xl bg-[#b0431c] text-white text-sm font-bold disabled:opacity-40">
+          <div className="bg-card rounded-2xl border border-emberline p-6 space-y-3">
+            <h3 className="font-bold text-ember3 flex items-center gap-2"><Trash2 className="w-4 h-4" />{locale === "ca" ? "Eliminació del compte (RGPD)" : "Eliminación de la cuenta (RGPD)"}</h3>
+            <p className="text-sm text-moss">{locale === "ca" ? "S'esborren les teves dades personals, preferits i informes. Els registres agregats i anonimitzats d'ús es conserven per estadística. Aquesta acció és irreversible." : "Se borran tus datos personales, favoritos e informes. Los registros agregados y anonimizados de uso se conservan con fines estadísticos. Esta acción es irreversible."}</p>
+            <input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value.toUpperCase())} placeholder={locale === "ca" ? 'Escriu "ESBORRA" per confirmar' : 'Escribe "ESBORRA" para confirmar'} className="w-full px-3 py-2 rounded-lg border border-emberline text-sm" />
+            <button onClick={deleteAccount} disabled={busy || deleteConfirm !== "ESBORRA"} className="px-5 py-2.5 rounded-xl bg-ember3 text-white text-sm font-bold disabled:opacity-40">
               {locale === "ca" ? "Elimina el meu compte definitivament" : "Elimina mi cuenta definitivamente"}
             </button>
           </div>
@@ -1431,7 +1431,7 @@ export default function PanelView() {
 function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
     <div className="flex justify-between items-center gap-4">
-      <span className="text-sm text-[#6b6f68]">{label}</span>
+      <span className="text-sm text-stone">{label}</span>
       <span className={`text-sm ${strong ? "font-bold" : ""}`}>{value}</span>
     </div>
   );

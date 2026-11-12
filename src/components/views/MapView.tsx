@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import "leaflet/dist/leaflet.css";
 import { useApp } from "@/components/app-context";
 import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock, Factory, Calculator, Hash } from "lucide-react";
 import LineChart, { type LineSeries } from "@/components/charts/LineChart";
 import BarChart, { type BarRow } from "@/components/charts/BarChart";
 import ValuationPanel from "@/components/views/ValuationPanel";
 import OnboardingTour from "@/components/OnboardingTour";
+import FirstRunChecklist from "@/components/FirstRunChecklist";
+import { markStep } from "@/lib/steps";
 
 /** Resposta de GET /api/indicators/muni/:code (Fase 4, gating al servidor). */
 interface GatedIndicatorsResponse {
@@ -89,7 +90,7 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
   if (failed) return null; // degradació elegant: el bloc no és crític
   if (!data || data.code !== muniCode) {
     return (
-      <div className="rounded-xl border border-[#e5e1da] p-4 text-xs text-[#6b6f68]">
+      <div className="rounded-xl border border-line p-4 text-xs text-stone">
         {ca ? "Carregant referència oficial…" : "Cargando referencia oficial…"}
       </div>
     );
@@ -123,30 +124,30 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
   const effort = resp.effort?.hogar ?? null;
 
   return (
-    <div className="rounded-xl border border-[#e5e1da] p-4 space-y-3">
-      <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide">
+    <div className="rounded-xl border border-line p-4 space-y-3">
+      <div className="text-xs font-semibold text-stone uppercase tracking-wide">
         {ca ? "Referència oficial i context" : "Referencia oficial y contexto"}
       </div>
 
       {/* — gratuït: mediana municipal de referència — */}
       {resp.medianaMunicipal && (
         <div className="text-sm">
-          <span className="text-[#6b6f68]">{ca ? "Mediana municipal (mercat registrat)" : "Mediana municipal (mercado registrado)"}: </span>
+          <span className="text-stone">{ca ? "Mediana municipal (mercat registrat)" : "Mediana municipal (mercado registrado)"}: </span>
           <b>{resp.medianaMunicipal.p50.toFixed(0)} €/mes</b>
-          <span className="text-xs text-[#6b6f68]"> · {resp.medianaMunicipal.n} {ca ? "illes amb dades" : "manzanas con datos"}</span>
+          <span className="text-xs text-stone"> · {resp.medianaMunicipal.n} {ca ? "illes amb dades" : "manzanas con datos"}</span>
         </div>
       )}
 
       {/* — teaser gratuït (només si la dada existeix de debò) — */}
       {resp.teaser && (resp.teaser.bandaDisponible || resp.teaser.esforcDisponible) && (
-        <div className="rounded-lg border border-[#f3d9b0] bg-[#fdf6ec] p-3 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-[#b0431c] shrink-0" />
-          <p className="text-xs text-[#7a4a1c] flex-1">
+        <div className="rounded-lg border border-amberline2 bg-ambersoft2 p-3 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-ember3 shrink-0" />
+          <p className="text-xs text-amberdark flex-1">
             {ca
               ? "Amb Premium: banda completa P25–P75, posició del teu preu, evolució del lloguer any a any, comparativa comarca/província, renda mitjana i esforç econòmic amb dades oficials."
               : "Con Premium: banda completa P25–P75, posición de tu precio, evolución del alquiler año a año, comparativa comarca/provincia, renta media y esfuerzo económico con datos oficiales."}
           </p>
-          <button onClick={() => navigate("/preus")} className="px-3 py-1.5 rounded-lg bg-[#e8673c] text-white text-[11px] font-bold shrink-0 hover:bg-[#d95a31]">
+          <button onClick={() => navigate("/preus")} className="px-3 py-1.5 rounded-lg bg-ember text-white text-[11px] font-bold shrink-0 hover:bg-ember2">
             {ca ? "Veure Premium" : "Ver Premium"}
           </button>
         </div>
@@ -155,7 +156,7 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
       {/* — PREMIUM: banda + posició — */}
       {banda && (
         <div className="space-y-2">
-          <div className="flex justify-between text-[11px] text-[#6b6f68] font-semibold">
+          <div className="flex justify-between text-[11px] text-stone font-semibold">
             <span>P25 · {banda.p25.toFixed(0)} €</span>
             <span>{ca ? "mediana" : "mediana"} · {banda.p50.toFixed(0)} €</span>
             <span>P75 · {banda.p75.toFixed(0)} €</span>
@@ -163,52 +164,52 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
           <div className="relative h-3 rounded-full" style={{ background: "linear-gradient(90deg,#63b57c,#e5c46a,#dd5a35)" }}>
             {markerPct !== null && (
               <div
-                className="absolute -top-1 w-5 h-5 rounded-full bg-[#0f2e21] border-2 border-white shadow"
+                className="absolute -top-1 w-5 h-5 rounded-full bg-pine border-2 border-white shadow"
                 style={{ left: `calc(${markerPct}% - 10px)` }}
                 title={price ? `${price.toFixed(0)} €/mes` : ""}
               />
             )}
           </div>
           {bandPos && (
-            <div className="text-xs font-semibold text-[#0f2e21]">{bandPos}</div>
+            <div className="text-xs font-semibold text-pine">{bandPos}</div>
           )}
           {pos !== null && (
-            <div className="text-xs text-[#4b5349] flex items-center gap-1">
-              {pos.direction === "ABOVE" ? <TrendingUp className="w-3.5 h-3.5 text-[#b0431c]" /> : pos.direction === "BELOW" ? <TrendingDown className="w-3.5 h-3.5 text-[#1e7a41]" /> : <Minus className="w-3.5 h-3.5" />}
+            <div className="text-xs text-moss flex items-center gap-1">
+              {pos.direction === "ABOVE" ? <TrendingUp className="w-3.5 h-3.5 text-ember3" /> : pos.direction === "BELOW" ? <TrendingDown className="w-3.5 h-3.5 text-green2" /> : <Minus className="w-3.5 h-3.5" />}
               {pos.pctDiff > 0 ? "+" : ""}{pos.pctDiff.toFixed(1).replace(".", ",")} % {ca ? "respecte a la mediana de l'entorn" : "respecto a la mediana del entorno"}
             </div>
           )}
-          <div className="text-[10px] text-[#6b6f68]">{banda.basis} · n={banda.n}</div>
+          <div className="text-[10px] text-stone">{banda.basis} · n={banda.n}</div>
         </div>
       )}
 
       {/* — PREMIUM: IPVA — */}
       {resp.ipva?.catalunya && (
         <div className="text-sm">
-          <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Evolució del mercat (IPVA INE)" : "Evolución del mercado (IPVA INE)"}</div>
+          <div className="text-[11px] font-semibold text-stone uppercase">{ca ? "Evolució del mercat (IPVA INE)" : "Evolución del mercado (IPVA INE)"}</div>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {resp.ipva.catalunya.latestAnual && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sand">
                 CAT {resp.ipva.catalunya.latestAnual.value > 0 ? "+" : ""}{resp.ipva.catalunya.latestAnual.value.toFixed(1).replace(".", ",")} % ({resp.ipva.catalunya.latestAnual.period})
               </span>
             )}
             {resp.ipva.catalunya.acum2015 && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sand">
                 {ca ? "acum." : "acum."} +{resp.ipva.catalunya.acum2015.value.toFixed(1).replace(".", ",")} % {ca ? "des de 2015" : "desde 2015"}
               </span>
             )}
             {resp.ipva.provincia?.latestAnual && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sand">
                 {resp.ipva.provincia.geoName ?? (ca ? "Província" : "Provincia")} {resp.ipva.provincia.latestAnual.value > 0 ? "+" : ""}{resp.ipva.provincia.latestAnual.value.toFixed(1).replace(".", ",")} %
               </span>
             )}
             {resp.ipva.municipi?.latestAnual && (
-              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#f0ede8]">
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sand">
                 {ca ? "Municipi" : "Municipio"} {resp.ipva.municipi.latestAnual.value > 0 ? "+" : ""}{resp.ipva.municipi.latestAnual.value.toFixed(1).replace(".", ",")} %
               </span>
             )}
           </div>
-          <div className="mt-1 text-[10px] text-[#6b6f68]">
+          <div className="mt-1 text-[10px] text-stone">
             {ca ? "És un índex d'evolució (base 2015=100): no és un preu en euros." : "Es un índice de evolución (base 2015=100): no es un precio en euros."}
           </div>
         </div>
@@ -217,21 +218,21 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
       {/* — PREMIUM: renda + esforç — */}
       {resp.renta?.municipi.hogar?.latest && (
         <div className="text-sm">
-          <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Renda i esforç econòmic (INE)" : "Renta y esfuerzo económico (INE)"}</div>
+          <div className="text-[11px] font-semibold text-stone uppercase">{ca ? "Renda i esforç econòmic (INE)" : "Renta y esfuerzo económico (INE)"}</div>
           <div className="mt-1 text-sm">
-            <span className="text-[#6b6f68]">{ca ? "Renda neta mitjana per llar" : "Renta neta media por hogar"}: </span>
+            <span className="text-stone">{ca ? "Renda neta mitjana per llar" : "Renta neta media por hogar"}: </span>
             <b>{resp.renta.municipi.hogar.latest.value.toLocaleString(ca ? "ca-ES" : "es-ES")} €/any</b>
-            <span className="text-xs text-[#6b6f68]"> ({resp.renta.municipi.hogar.latest.period})</span>
+            <span className="text-xs text-stone"> ({resp.renta.municipi.hogar.latest.period})</span>
           </div>
           {effort && (
-            <div className="mt-1.5 rounded-lg bg-[#faf9f7] border border-[#e5e1da] p-2.5">
-              <div className="font-black text-lg text-[#0f2e21]">{effort.pct.toFixed(1).replace(".", ",")} %</div>
-              <div className="text-[11px] text-[#4b5349]">
+            <div className="mt-1.5 rounded-lg bg-cream border border-line p-2.5">
+              <div className="font-black text-lg text-pine">{effort.pct.toFixed(1).replace(".", ",")} %</div>
+              <div className="text-[11px] text-moss">
                 {ca
                   ? `una llar amb la renda mitjana del municipi destinaria aquest % a un lloguer mitjà (${effort.rentEurMonth.toFixed(0)} €/mes × 12 ÷ ${effort.rentaAnual.toLocaleString(ca ? "ca-ES" : "es-ES")} €/any)`
                   : `un hogar con la renta media del municipio destinaría este % a un alquiler medio (${effort.rentEurMonth.toFixed(0)} €/mes × 12 ÷ ${effort.rentaAnual.toLocaleString(ca ? "ca-ES" : "es-ES")} €/año)`}
               </div>
-              <div className="mt-1 text-[10px] text-[#6b6f68]">
+              <div className="mt-1 text-[10px] text-stone">
                 {ca
                   ? "Indicador TERRITORIAL (renda per llar de l'Atlas INE): no mesura la teva situació personal. Fiances: " + (effort.rentPeriod ?? "—") + "."
                   : "Indicador TERRITORIAL (renta por hogar del Atlas INE): no mide tu situación personal. Fianzas: " + (effort.rentPeriod ?? "—") + "."}
@@ -240,18 +241,18 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
               <div className="mt-2">
                 <div className="relative h-3 rounded-full" style={{ background: "linear-gradient(90deg,#63b57c 0%,#e5c46a 42%,#dd5a35 75%)" }}>
                   <div
-                    className="absolute -top-1 w-5 h-5 rounded-full bg-[#0f2e21] border-2 border-white shadow"
+                    className="absolute -top-1 w-5 h-5 rounded-full bg-pine border-2 border-white shadow"
                     style={{ left: `calc(${Math.min(100, Math.max(0, (effort.pct / 60) * 100))}% - 10px)` }}
                     title={`${effort.pct.toFixed(1).replace(".", ",")} %`}
                   />
                 </div>
-                <div className="flex justify-between text-[9px] text-[#6b6f68] mt-0.5">
+                <div className="flex justify-between text-[9px] text-stone mt-0.5">
                   <span>0 %</span>
                   <span>60 %</span>
                 </div>
               </div>
               {resp.effortCatalunya && (
-                <div className="mt-1.5 text-[11px] text-[#4b5349]">
+                <div className="mt-1.5 text-[11px] text-moss">
                   {ca ? "Catalunya amb el mateix lloguer medianà: " : "Cataluña con el mismo alquiler mediano: "}
                   <b>{resp.effortCatalunya.pct.toFixed(1).replace(".", ",")} %</b>
                   {resp.catalunyaRentYear?.median ? (
@@ -280,27 +281,27 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
             : []),
         ];
         return (
-          <div className="pt-2.5 border-t border-[#e5e1da]">
-            <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Evolució del lloguer (fiances Incasòl)" : "Evolución del alquiler (fianzas Incasòl)"}</div>
+          <div className="pt-2.5 border-t border-line">
+            <div className="text-[11px] font-semibold text-stone uppercase">{ca ? "Evolució del lloguer (fiances Incasòl)" : "Evolución del alquiler (fianzas Incasòl)"}</div>
             <div className="mt-1.5">
               <LineChart locale={ca ? "ca" : "es"} series={evoSeries} />
             </div>
             {evo.interanual.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {evo.interanual.slice(-4).map((p) => (
-                  <span key={p.year} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${p.pct > 0 ? "bg-[#fbe9e2] text-[#b0431c]" : p.pct < 0 ? "bg-[#e4f2e8] text-[#1e7a41]" : "bg-[#f0ede8] text-[#4b5349]"}`}>
+                  <span key={p.year} className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${p.pct > 0 ? "bg-embersoft2 text-ember3" : p.pct < 0 ? "bg-mintsoft text-green2" : "bg-sand text-moss"}`}>
                     {p.year}: {p.pct > 0 ? "+" : ""}{p.pct.toFixed(1).replace(".", ",")} %
                   </span>
                 ))}
               </div>
             )}
             {evo.volatileJump && (
-              <div className="mt-1 text-[10px] text-[#9a6a1a] flex items-center gap-1">
+              <div className="mt-1 text-[10px] text-amberdark flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3 shrink-0" />
                 {ca ? "Alguns salts interanuals són grans: municipi amb pocs contractes (mostra petita)." : "Algunos saltos interanuales son grandes: municipio con pocos contratos (muestra pequeña)."}
               </div>
             )}
-            <div className="mt-1 text-[10px] text-[#6b6f68]">
+            <div className="mt-1 text-[10px] text-stone">
               {ca ? "Només anys amb dada publicada (sense interpolació). Mitjana de fiances per habitatge · període vigent: " : "Solo años con dato publicado (sin interpolación). Media de fianzas por vivienda · período vigente: "}
               {evo.muniPeriod ?? "—"}
             </div>
@@ -317,34 +318,34 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
         if (comp.comarca) compRows.push({ label: comp.comarca.name ?? (ca ? "Comarca" : "Comarca"), value: comp.comarca.median, period: comp.year, sub: `mediana · n=${comp.comarca.n} ${ca ? "munis" : "munis."}` });
         if (comp.provincia) compRows.push({ label: comp.provincia.name ?? (ca ? "Província" : "Provincia"), value: comp.provincia.median, period: comp.year, sub: `mediana · n=${comp.provincia.n} ${ca ? "munis" : "munis."}` });
         return (
-          <div className="pt-2.5 border-t border-[#e5e1da]">
-            <div className="text-[11px] font-semibold text-[#6b6f68] uppercase">{ca ? "Comparativa territorial" : "Comparativa territorial"}</div>
+          <div className="pt-2.5 border-t border-line">
+            <div className="text-[11px] font-semibold text-stone uppercase">{ca ? "Comparativa territorial" : "Comparativa territorial"}</div>
             <div className="mt-2">
               <BarChart locale={ca ? "ca" : "es"} rows={compRows} />
             </div>
             {(comp.deltaComarcaPct !== null || comp.deltaProvinciaPct !== null) && (
-              <div className="mt-1.5 text-[11px] text-[#4b5349]">
+              <div className="mt-1.5 text-[11px] text-moss">
                 {comp.deltaComarcaPct !== null && (
                   <>
                     {ca ? "Respecte a la comarca: " : "Respecto a la comarca: "}
-                    <b className={comp.deltaComarcaPct > 0 ? "text-[#b0431c]" : "text-[#1e7a41]"}>{comp.deltaComarcaPct > 0 ? "+" : ""}{comp.deltaComarcaPct.toFixed(1).replace(".", ",")} %</b>
+                    <b className={comp.deltaComarcaPct > 0 ? "text-ember3" : "text-green2"}>{comp.deltaComarcaPct > 0 ? "+" : ""}{comp.deltaComarcaPct.toFixed(1).replace(".", ",")} %</b>
                     {comp.deltaProvinciaPct !== null ? " · " : ""}
                   </>
                 )}
                 {comp.deltaProvinciaPct !== null && (
                   <>
                     {ca ? "respecte a la província: " : "respecto a la provincia: "}
-                    <b className={comp.deltaProvinciaPct > 0 ? "text-[#b0431c]" : "text-[#1e7a41]"}>{comp.deltaProvinciaPct > 0 ? "+" : ""}{comp.deltaProvinciaPct.toFixed(1).replace(".", ",")} %</b>
+                    <b className={comp.deltaProvinciaPct > 0 ? "text-ember3" : "text-green2"}>{comp.deltaProvinciaPct > 0 ? "+" : ""}{comp.deltaProvinciaPct.toFixed(1).replace(".", ",")} %</b>
                   </>
                 )}
               </div>
             )}
             {comp.extremes?.car && comp.extremes?.barat && (
-              <div className="mt-1 text-[10px] text-[#6b6f68]">
+              <div className="mt-1 text-[10px] text-stone">
                 {ca ? "A la comarca" : "En la comarca"} ({comp.year}): {ca ? "més car" : "más caro"} <b>{comp.extremes.car.name}</b> ({comp.extremes.car.value.toFixed(0)} €) · {ca ? "més barat" : "más barato"} <b>{comp.extremes.barat.name}</b> ({comp.extremes.barat.value.toFixed(0)} €)
               </div>
             )}
-            <div className="mt-1 text-[10px] text-[#6b6f68]">
+            <div className="mt-1 text-[10px] text-stone">
               {ca ? "Mediana dels municipis amb dada el mateix any (comparabilitat de períodes garantida). Secció censal i districte: no disponibles — la font oficial no els publica." : "Mediana de los municipios con dato el mismo año (comparabilidad de períodos garantida). Sección censal y distrito: no disponibles — la fuente oficial no los publica."}
             </div>
           </div>
@@ -353,9 +354,9 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
 
       {/* — fonts + enllaç a la guia — */}
       {resp.fontsUsed.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[#6b6f68]">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-stone">
           <span>Font: {resp.fontsUsed.includes("INE_ATLAS_RENTA") ? "INE (IPVA + Atlas de renda)" : "INE (IPVA)"}</span>
-          <button onClick={() => navigate("/guia")} className="underline font-semibold text-[#0f2e21] hover:text-[#e8673c]">
+          <button onClick={() => navigate("/guia")} className="underline font-semibold text-pine hover:text-ember">
             {ca ? "Guia del lloguer i ajudes →" : "Guía del alquiler y ayudas →"}
           </button>
         </div>
@@ -1048,6 +1049,8 @@ export default function MapView() {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+      // v38.2 — onboarding: pas 3 (informe descarregat)
+      markStep("informe");
     }).catch(() => setPdfMsg(locale === "ca" ? "Error de xarxa" : "Error de red"));
   };
 
@@ -1105,10 +1108,32 @@ export default function MapView() {
     }).catch(() => setCsvMsg(locale === "ca" ? "Error de xarxa" : "Error de red"));
   };
 
+  // v38.2 — onboarding: el pas 1 (explorar el mapa) es completa en obrir-lo
+  useEffect(() => { markStep("mapa"); }, []);
+
+  // v38.2 — bottom sheet en mòbil: la nansa es pot arrossegar cap avall per tancar
+  const sheetTouchY = useRef<number | null>(null);
+  const closePanel = () => {
+    setPanelState("closed");
+    if (selectedRef.current) {
+      selectedRef.current.setStyle({ color: "#3d4a42", weight: 0.7, fillOpacity: 0.55 });
+      selectedRef.current = null;
+    }
+  };
+  const onSheetTouchStart = (e: React.TouchEvent) => { sheetTouchY.current = e.touches[0]?.clientY ?? null; };
+  const onSheetTouchEnd = (e: React.TouchEvent) => {
+    const y0 = sheetTouchY.current;
+    sheetTouchY.current = null;
+    const y1 = e.changedTouches[0]?.clientY ?? 0;
+    if (y0 !== null && y1 - y0 > 80) closePanel();
+  };
+
   return (
     <div className="flex-1 flex flex-col md:flex-row relative md:h-[calc(100vh-4rem)] md:overflow-hidden">
       {/* v37 — tour de benvinguda (només 1a visita al mapa) */}
       <OnboardingTour navigate={navigate} />
+      {/* v38.2 — checklist de primeres passes (mapa → comparador → informe) */}
+      <FirstRunChecklist />
       {/* MAPA */}
       <div className="relative flex-1 min-h-[55vh] md:h-full md:min-h-[520px] md:flex-none md:basis-auto md:grow">
         <div ref={mapDivRef} className="absolute inset-0 z-0" />
@@ -1116,8 +1141,8 @@ export default function MapView() {
         {/* Cercador + buscador per referència catastral */}
         <div className="absolute top-3 left-3 right-3 z-[500] max-w-md">
           <div className="relative z-10">
-            <div className="bg-white rounded-xl shadow-lg border border-[#e5e1da] flex items-center px-3">
-              <Search className="w-4 h-4 text-[#6b6f68] shrink-0" />
+            <div className="bg-card rounded-xl shadow-lg border border-line flex items-center px-3">
+              <Search className="w-4 h-4 text-stone shrink-0" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -1129,14 +1154,14 @@ export default function MapView() {
               />
               {query && (
                 <button onClick={() => { setQuery(""); setAddresses([]); boundaryRef.current?.clearLayers(); }}>
-                  <X className="w-4 h-4 text-[#6b6f68]" />
+                  <X className="w-4 h-4 text-stone" />
                 </button>
               )}
             </div>
             {showResults && (results.length > 0 || addresses.length > 0) && (
-              <div className="absolute mt-1 w-full bg-white rounded-xl shadow-xl border border-[#e5e1da] overflow-hidden max-h-80 overflow-y-auto pr-scroll">
+              <div className="absolute mt-1 w-full bg-card rounded-xl shadow-xl border border-line overflow-hidden max-h-80 overflow-y-auto pr-scroll">
                 {results.length > 0 && (
-                  <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-[#6b6f68]">
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-stone">
                     {locale === "ca" ? "Municipis" : "Municipios"}
                   </div>
                 )}
@@ -1145,25 +1170,25 @@ export default function MapView() {
                     key={`mun-${m.code}`}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectMunicipality(m)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#f0ede8] flex items-center justify-between gap-2"
+                    className="w-full text-left px-4 py-2.5 hover:bg-sand flex items-center justify-between gap-2"
                   >
                     <span className="text-sm font-medium">{m.name}</span>
-                    <span className="text-xs text-[#6b6f68] flex items-center gap-1.5">
+                    <span className="text-xs text-stone flex items-center gap-1.5">
                       {m.rentLatest ? (
-                        <span className="font-bold text-[#0f2e21]">{Math.round(m.rentLatest)} €/mes</span>
+                        <span className="font-bold text-pine">{Math.round(m.rentLatest)} €/mes</span>
                       ) : m.comarcaRefLatest ? (
-                        <span className="italic text-[#8a6116]" title={locale === "ca" ? "Referència de comarca (estimació)" : "Referencia de comarca (estimación)"}>
+                        <span className="italic text-ambertext" title={locale === "ca" ? "Referència de comarca (estimació)" : "Referencia de comarca (estimación)"}>
                           ≈{Math.round(m.comarcaRefLatest)} €
                         </span>
                       ) : (
                         <span>—</span>
                       )}
-                      {m.isTense && <Flame className="w-3.5 h-3.5 text-[#e8673c]" />}
+                      {m.isTense && <Flame className="w-3.5 h-3.5 text-ember" />}
                     </span>
                   </button>
                 ))}
                 {addresses.length > 0 && (
-                  <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-[#6b6f68]">
+                  <div className="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-stone">
                     {locale === "ca" ? "Adreces i referències cadastrals" : "Direcciones y referencias catastrales"}
                   </div>
                 )}
@@ -1172,20 +1197,20 @@ export default function MapView() {
                     key={`addr-${i}`}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => selectAddress(a)}
-                    className="w-full text-left px-4 py-2.5 hover:bg-[#f0ede8] flex items-start justify-between gap-2"
+                    className="w-full text-left px-4 py-2.5 hover:bg-sand flex items-start justify-between gap-2"
                   >
                     <span className="text-sm flex items-start gap-1.5">
-                      <Home className="w-3.5 h-3.5 mt-0.5 text-[#6b6f68] shrink-0" />
+                      <Home className="w-3.5 h-3.5 mt-0.5 text-stone shrink-0" />
                       <span>
                         {a.label}
-                        {a.postalCode && <span className="text-xs text-[#6b6f68]"> · CP {a.postalCode}</span>}
+                        {a.postalCode && <span className="text-xs text-stone"> · CP {a.postalCode}</span>}
                       </span>
                     </span>
-                    {a.municipalityCode && <span className="text-[10px] text-[#6b6f68] shrink-0">{a.municipalityName}</span>}
+                    {a.municipalityCode && <span className="text-[10px] text-stone shrink-0">{a.municipalityName}</span>}
                   </button>
                 ))}
                 {results.length === 0 && addresses.length === 0 && (
-                  <div className="px-4 py-3 text-xs text-[#6b6f68]">
+                  <div className="px-4 py-3 text-xs text-stone">
                     {locale === "ca" ? "Cap resultat. Prova el nom d'un municipi, una adreça amb número o una referència catastral." : "Ningún resultado. Prueba el nombre de un municipio, una dirección con número o una referencia catastral."}
                   </div>
                 )}
@@ -1197,8 +1222,8 @@ export default function MapView() {
               sota el cercador. Localitza qualsevol parcel·la de Catalunya
               (ICGC) i en mostra els detalls públics del Cadastre. */}
           <div className="relative z-0 mt-2">
-            <div className="bg-white rounded-xl shadow-lg border border-[#e5e1da] flex items-center px-3 gap-1.5">
-              <Hash className="w-4 h-4 text-[#6b6f68] shrink-0" />
+            <div className="bg-card rounded-xl shadow-lg border border-line flex items-center px-3 gap-1.5">
+              <Hash className="w-4 h-4 text-stone shrink-0" />
               <input
                 value={rcInput}
                 onChange={(e) => {
@@ -1213,7 +1238,7 @@ export default function MapView() {
               <button
                 onClick={searchRefcat}
                 disabled={rcBusy || rcInput.trim().length < 14}
-                className="shrink-0 px-3 py-1.5 rounded-lg bg-[#0f2e21] text-white text-xs font-bold hover:bg-[#16402e] disabled:opacity-40"
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-pine text-white text-xs font-bold hover:bg-pine2 disabled:opacity-40"
               >
                 {rcBusy ? (
                   <span className="block w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -1223,44 +1248,44 @@ export default function MapView() {
               </button>
             </div>
             {rcError && (
-              <div className="mt-1 rounded-lg px-3 py-2 text-xs shadow border bg-[#fdeae2] border-[#f2c4ac] text-[#b0431c]">
+              <div className="mt-1 rounded-lg px-3 py-2 text-xs shadow border bg-embersoft border-emberline text-ember3">
                 {rcError}
               </div>
             )}
             {rcResult && (
-              <div className="mt-1 bg-white rounded-xl shadow-xl border border-[#e5e1da] overflow-hidden">
-                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#faf9f7] border-b border-[#e5e1da]">
-                  <div className="text-[11px] font-bold uppercase tracking-wide text-[#0f2e21] flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#e8673c]" />
+              <div className="mt-1 bg-card rounded-xl shadow-xl border border-line overflow-hidden">
+                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-cream border-b border-line">
+                  <div className="text-[11px] font-bold uppercase tracking-wide text-pine flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-ember" />
                     {t.map.rc.found}
                   </div>
                   <button onClick={clearParcel} aria-label={t.map.rc.clear}>
-                    <X className="w-3.5 h-3.5 text-[#6b6f68]" />
+                    <X className="w-3.5 h-3.5 text-stone" />
                   </button>
                 </div>
                 <div className="px-3 py-2">
-                  <div className="font-mono text-xs font-bold text-[#0f2e21]">{rcResult.refcat}</div>
+                  <div className="font-mono text-xs font-bold text-pine">{rcResult.refcat}</div>
                   {rcResult.details?.address && (
-                    <div className="text-xs mt-1 text-[#0f2e21]">{rcResult.details.address}</div>
+                    <div className="text-xs mt-1 text-pine">{rcResult.details.address}</div>
                   )}
                   <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                    <span className="text-[#6b6f68]">{t.map.rc.surface}</span>
+                    <span className="text-stone">{t.map.rc.surface}</span>
                     <b>{rcResult.details?.surfaceM2 ? `${rcResult.details.surfaceM2} m²` : "—"}</b>
-                    <span className="text-[#6b6f68]">{t.map.rc.year}</span>
+                    <span className="text-stone">{t.map.rc.year}</span>
                     <b>{rcResult.details?.yearBuilt ?? "—"}</b>
-                    <span className="text-[#6b6f68]">{t.map.rc.uso}</span>
+                    <span className="text-stone">{t.map.rc.uso}</span>
                     <b>{rcResult.details?.uso || "—"}</b>
-                    <span className="text-[#6b6f68]">{t.map.rc.postal}</span>
+                    <span className="text-stone">{t.map.rc.postal}</span>
                     <b>{rcResult.details?.postalCode || "—"}</b>
                   </div>
-                  <div className="text-[10px] text-[#6b6f68] mt-2">{t.map.rc.fonts}</div>
+                  <div className="text-[10px] text-stone mt-2">{t.map.rc.fonts}</div>
                 </div>
               </div>
             )}
           </div>
 
           {demoNotice && (
-            <div className="mt-2 bg-[#0f2e21] text-white text-xs rounded-xl p-3 shadow-lg flex justify-between gap-2">
+            <div className="mt-2 bg-pine text-white text-xs rounded-xl p-3 shadow-lg flex justify-between gap-2">
               <span>{demoNotice}</span>
               <button onClick={() => setDemoNotice(null)}><X className="w-3.5 h-3.5" /></button>
             </div>
@@ -1270,32 +1295,32 @@ export default function MapView() {
         {/* Estats */}
         <div className="absolute bottom-3 left-3 z-[500] flex flex-col gap-2 max-w-[85%]">
           {(zoomHint || buildingsError === "zoom") && (
-            <div className="bg-white/95 rounded-lg px-3 py-2 text-xs shadow border border-[#e5e1da] flex items-center gap-2">
-              <Info className="w-3.5 h-3.5 text-[#e8673c]" /> {t.map.zoomHint}
+            <div className="bg-card/95 rounded-lg px-3 py-2 text-xs shadow border border-line flex items-center gap-2">
+              <Info className="w-3.5 h-3.5 text-ember" /> {t.map.zoomHint}
             </div>
           )}
           {loadingBuildings && (
-            <div className="bg-white/95 rounded-lg px-3 py-2 text-xs shadow border border-[#e5e1da] flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full border-2 border-[#e8673c] border-t-transparent animate-spin" />
+            <div className="bg-card/95 rounded-lg px-3 py-2 text-xs shadow border border-line flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full border-2 border-ember border-t-transparent animate-spin" />
               {t.map.loadingBuildings}
             </div>
           )}
           {buildingsError === "service" && (
-            <div className="bg-[#fdeae2] rounded-lg px-3 py-2 text-xs shadow border border-[#f2c4ac] text-[#b0431c]">
+            <div className="bg-embersoft rounded-lg px-3 py-2 text-xs shadow border border-emberline text-ember3">
               {locale === "ca"
                 ? "El servei de cartografia no està disponible ara mateix. Torna-ho a provar."
                 : "El servicio de cartografía no está disponible ahora mismo. Inténtalo de nuevo."}
             </div>
           )}
           {coverageWarn && !buildingsError && (
-            <div className="bg-[#fff7e8] rounded-lg px-3 py-2 text-xs shadow border border-[#f2d9a4] text-[#8a6116] flex items-center gap-2">
+            <div className="bg-ambersoft rounded-lg px-3 py-2 text-xs shadow border border-amberline text-ambertext flex items-center gap-2">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {coverageWarn}
             </div>
           )}
         </div>
 
         {/* Llegenda */}
-        <div className="absolute bottom-3 right-3 z-[500] bg-white/95 rounded-lg px-3 py-2 text-[10px] shadow border border-[#e5e1da] hidden sm:block">
+        <div className="absolute bottom-3 right-3 z-[500] bg-card/95 rounded-lg px-3 py-2 text-[10px] shadow border border-line hidden sm:block">
           <div className="font-semibold mb-1">{t.map.legend.low} → {t.map.legend.high}</div>
           <div className="flex gap-1 items-center">
             {["#63b57c", "#93c47d", "#e5c46a", "#e89a4b", "#dd5a35"].map((c) => (
@@ -1303,7 +1328,7 @@ export default function MapView() {
             ))}
           </div>
           {/* v33 — naus industrials: fora de l'escala de lloguer d'habitatges */}
-          <div className="mt-1 flex items-center gap-1 text-[#6b6f68]">
+          <div className="mt-1 flex items-center gap-1 text-stone">
             <span
               className="w-5 h-3 rounded-sm inline-block shrink-0"
               style={{ background: NAU_FILL, border: `1px dashed ${NAU_BORDER}` }}
@@ -1311,39 +1336,59 @@ export default function MapView() {
             {t.map.legend.industrial}
           </div>
           {/* v39 — referència de comarca (municipis sense dada oficial) */}
-          <div className="mt-1 flex items-center gap-1 text-[#6b6f68]">
+          <div className="mt-1 flex items-center gap-1 text-stone">
             <span
               className="w-5 h-3 rounded-sm inline-block shrink-0"
               style={{ background: "#e5c46a99", border: "1px dashed #3d4a42" }}
             />
             {t.map.legend.refComarca}
           </div>
-          <div className="mt-1 flex items-center gap-1 text-[#6b6f68]">
-            <Flame className="w-3 h-3 text-[#e8673c]" /> {t.map.legend.tense}
+          <div className="mt-1 flex items-center gap-1 text-stone">
+            <Flame className="w-3 h-3 text-ember" /> {t.map.legend.tense}
           </div>
         </div>
       </div>
 
-      {/* PANELL DETALL — desktop lateral, mobile fulla inferior */}
+      {/* PANELL DETALL — desktop lateral, mòbil bottom sheet amb nansa i gestos */}
       {panelState !== "closed" && (
-        <div className="md:w-[400px] md:h-full w-full max-h-[70vh] md:max-h-full bg-white border-t md:border-t-0 md:border-l border-[#e5e1da] shadow-2xl z-[600] overflow-y-auto pr-scroll shrink-0 fixed bottom-0 left-0 right-0 md:static">
+        <>
+          {/* fons tappable en mòbil */}
+          <div
+            className="fixed inset-0 bg-black/30 z-[590] md:hidden pr-backdrop-anim"
+            onClick={closePanel}
+            aria-hidden="true"
+          />
+          <div className="md:w-[400px] md:h-full w-full max-h-[75vh] md:max-h-full bg-card border-t md:border-t-0 md:border-l border-line shadow-2xl z-[600] overflow-y-auto pr-scroll shrink-0 fixed bottom-0 left-0 right-0 md:static rounded-t-2xl md:rounded-none pr-sheet-anim">
+            {/* nansa (només mòbil): clic o swipe cap avall per tancar */}
+            <div
+              className="md:hidden sticky top-0 z-10 pt-2.5 pb-1.5 bg-card touch-none"
+              onTouchStart={onSheetTouchStart}
+              onTouchEnd={onSheetTouchEnd}
+            >
+              <button aria-label="Tanca" onClick={closePanel} className="mx-auto block w-10 h-1.5 rounded-full bg-line" />
+            </div>
           <div className="p-4 md:p-5">
             <div className="flex items-start justify-between gap-2 mb-3">
               <h2 className="font-extrabold text-lg leading-tight">
                 {panelState === "loading" && t.common.loading}
                 {lookup?.municipality?.name || "—"}
                 {lookup?.municipality?.comarca && (
-                  <span className="block text-xs font-normal text-[#6b6f68]">{lookup.municipality.comarca}</span>
+                  <span className="block text-xs font-normal text-stone">{lookup.municipality.comarca}</span>
                 )}
               </h2>
-              <button onClick={() => { setPanelState("closed"); if (selectedRef.current) { selectedRef.current.setStyle({ color: "#3d4a42", weight: 0.7, fillOpacity: 0.55 }); selectedRef.current = null; } }} className="p-1.5 rounded-lg hover:bg-[#f0ede8]">
+              <button onClick={closePanel} className="p-1.5 rounded-lg hover:bg-sand">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {panelState === "loading" && (
-              <div className="py-10 flex justify-center">
-                <span className="w-8 h-8 rounded-full border-4 border-[#e8673c] border-t-transparent animate-spin" />
+              <div className="space-y-3 py-2" aria-busy="true" role="status">
+                {/* v38.2 — skeletons en lloc de spinner: es veu l'estructura que arribarà */}
+                <div className="pr-skeleton h-7 w-2/3" />
+                <div className="pr-skeleton h-16 w-full" />
+                <div className="pr-skeleton h-24 w-full" />
+                <div className="pr-skeleton h-10 w-full" />
+                <div className="pr-skeleton h-10 w-5/6" />
               </div>
             )}
 
@@ -1355,19 +1400,19 @@ export default function MapView() {
                 )}
                 {/* v33 — nau industrial clicada: l'avís també enregistrat sense sessió */}
                 {clickedNau && <IndustrialBadge t={t} />}
-                <div className="rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
-                  <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide">{t.map.panel.avgRent}</div>
-                  <div className="mt-2 select-none blur-[7px] text-4xl font-black text-[#0f2e21]">1.134 €</div>
-                  <div className="mt-1 text-xs text-[#6b6f68]">Incasòl · {lookup?.teaser?.period ?? ""}</div>
+                <div className="rounded-xl border border-line bg-cream p-4">
+                  <div className="text-xs font-semibold text-stone uppercase tracking-wide">{t.map.panel.avgRent}</div>
+                  <div className="mt-2 select-none blur-[7px] text-4xl font-black text-pine">1.134 €</div>
+                  <div className="mt-1 text-xs text-stone">Incasòl · {lookup?.teaser?.period ?? ""}</div>
                 </div>
-                <div className="rounded-xl bg-[#0f2e21] text-white p-4">
+                <div className="rounded-xl bg-pine text-white p-4">
                   <div className="font-bold">{t.map.teaser.title}</div>
                   <p className="text-sm mt-1 opacity-90 leading-relaxed">{t.map.teaser.desc}</p>
                   <div className="mt-3 flex flex-col gap-2">
-                    <button onClick={() => navigate("/registre")} className="w-full py-2.5 rounded-lg bg-[#e8673c] font-bold text-sm hover:bg-[#d95a31]">
+                    <button onClick={() => navigate("/registre")} className="w-full py-2.5 rounded-lg bg-ember font-bold text-sm hover:bg-ember2">
                       {t.map.teaser.cta}
                     </button>
-                    <button onClick={() => navigate("/entrada")} className="w-full py-2 rounded-lg border border-white/30 text-sm hover:bg-white/10">
+                    <button onClick={() => navigate("/entrada")} className="w-full py-2 rounded-lg border border-white/30 text-sm hover:bg-card/10">
                       {t.map.teaser.login}
                     </button>
                   </div>
@@ -1378,12 +1423,12 @@ export default function MapView() {
             {/* PAYWALL (quota exhaurida) */}
             {panelState === "paywall" && (
               <div className="space-y-4">
-                <div className="rounded-xl bg-[#fdeae2] border border-[#f2c4ac] p-4 text-center">
-                  <Building2 className="w-8 h-8 text-[#b0431c] mx-auto" />
-                  <div className="font-bold mt-2 text-[#b0431c]">{t.map.paywall.title}</div>
-                  <p className="text-sm mt-1 text-[#4b5349]">{t.map.paywall.desc}</p>
+                <div className="rounded-xl bg-embersoft border border-emberline p-4 text-center">
+                  <Building2 className="w-8 h-8 text-ember3 mx-auto" />
+                  <div className="font-bold mt-2 text-ember3">{t.map.paywall.title}</div>
+                  <p className="text-sm mt-1 text-moss">{t.map.paywall.desc}</p>
                 </div>
-                <button onClick={() => navigate("/preus")} className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31]">
+                <button onClick={() => navigate("/preus")} className="w-full py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2">
                   {t.map.paywall.cta}
                 </button>
               </div>
@@ -1392,12 +1437,12 @@ export default function MapView() {
             {/* VERIFICACIÓ DE CORREU (Fase 1: bloqueig fins verificar) */}
             {panelState === "verificacio" && (
               <div className="space-y-4">
-                <div className="rounded-xl bg-[#fdeae2] border border-[#f2c4ac] p-4 text-center">
-                  <MailCheck className="w-8 h-8 text-[#b0431c] mx-auto" />
-                  <div className="font-bold mt-2 text-[#b0431c]">{t.map.verify.title}</div>
-                  <p className="text-sm mt-1 text-[#4b5349]">{t.map.verify.desc}</p>
-                  {lookup?.email && <p className="text-sm mt-1 font-semibold text-[#0f2e21]">{lookup.email}</p>}
-                  <p className="text-xs mt-2 text-[#8a6d1a]">{t.map.verify.note}</p>
+                <div className="rounded-xl bg-embersoft border border-emberline p-4 text-center">
+                  <MailCheck className="w-8 h-8 text-ember3 mx-auto" />
+                  <div className="font-bold mt-2 text-ember3">{t.map.verify.title}</div>
+                  <p className="text-sm mt-1 text-moss">{t.map.verify.desc}</p>
+                  {lookup?.email && <p className="text-sm mt-1 font-semibold text-pine">{lookup.email}</p>}
+                  <p className="text-xs mt-2 text-ambertext2">{t.map.verify.note}</p>
                 </div>
                 {/* si l'usuari ja ha verificat (potser en una altra pestanya), un clic
                     torna a llançar la MATEIXA consulta i desbloqueja el panell */}
@@ -1406,7 +1451,7 @@ export default function MapView() {
                     const q = lastClickRef.current;
                     if (q) onSelectBuilding(q.b, q.lat, q.lng, q.poly);
                   }}
-                  className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors"
+                  className="w-full py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2 transition-colors"
                 >
                   {t.map.verify.recheck}
                 </button>
@@ -1417,11 +1462,11 @@ export default function MapView() {
                     else navigate("/revisa-correu");
                   }}
                   disabled={verifySent}
-                  className="w-full py-3 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#0f2e21] hover:bg-[#faf9f7] transition-colors disabled:opacity-50"
+                  className="w-full py-3 rounded-xl border border-line bg-card font-semibold text-pine hover:bg-cream transition-colors disabled:opacity-50"
                 >
                   {verifySent ? t.map.verify.sent : t.map.verify.resend}
                 </button>
-                <button onClick={() => navigate("/panell")} className="w-full py-3 rounded-xl bg-[#0f2e21] text-white font-bold hover:bg-[#16402e]">
+                <button onClick={() => navigate("/panell")} className="w-full py-3 rounded-xl bg-pine text-white font-bold hover:bg-pine2">
                   {t.map.verify.goToPanel}
                 </button>
               </div>
@@ -1446,7 +1491,8 @@ export default function MapView() {
               />
             )}
           </div>
-        </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -1455,11 +1501,11 @@ export default function MapView() {
 function TenseBadge({ note }: { note: string }) {
   const { t } = useApp();
   return (
-    <div className="rounded-xl bg-[#fdeae2] border border-[#f2c4ac] px-3 py-2.5 flex items-start gap-2">
-      <Flame className="w-4 h-4 text-[#b0431c] mt-0.5 shrink-0" />
+    <div className="rounded-xl bg-embersoft border border-emberline px-3 py-2.5 flex items-start gap-2">
+      <Flame className="w-4 h-4 text-ember3 mt-0.5 shrink-0" />
       <div>
-        <div className="text-sm font-bold text-[#b0431c]">{t.tense.badgeFull}</div>
-        <div className="text-xs text-[#b0431c]/80">{note}</div>
+        <div className="text-sm font-bold text-ember3">{t.tense.badgeFull}</div>
+        <div className="text-xs text-ember3/80">{note}</div>
       </div>
     </div>
   );
@@ -1610,27 +1656,27 @@ function FullPanel({
       {isNau && <IndustrialBadge t={t} />}
 
       {/* PREU MITJÀ REAL */}
-      <div className="rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
-        <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide">
+      <div className="rounded-xl border border-line bg-cream p-4">
+        <div className="text-xs font-semibold text-stone uppercase tracking-wide">
           {isNau ? t.map.panel.avgRentHousing : t.map.panel.avgRent}
         </div>
         <div className="mt-1 flex items-end gap-2">
-          <span className="text-4xl font-black text-[#0f2e21]">
+          <span className="text-4xl font-black text-pine">
             {mun.rentLatest
               ? `${mun.rentLatest.toFixed(0)} €`
               : mun.comarcaRefLatest
                 ? `≈ ${mun.comarcaRefLatest.toFixed(0)} €`
                 : "—"}
           </span>
-          <span className="text-sm text-[#6b6f68] mb-1">{t.map.panel.perMonth}</span>
+          <span className="text-sm text-stone mb-1">{t.map.panel.perMonth}</span>
           {!mun.rentLatest && mun.comarcaRefLatest ? (
-            <span className="mb-1.5 ml-auto text-[10px] font-bold px-2 py-1 rounded-md bg-[#fdf3e0] text-[#8a6116] italic">
+            <span className="mb-1.5 ml-auto text-[10px] font-bold px-2 py-1 rounded-md bg-ambersoft2 text-ambertext italic">
               {t.map.panel.refComarcaLabel}
             </span>
           ) : null}
           {trend !== null && (
             <span className={`mb-1.5 ml-auto text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1 ${
-              trend > 0 ? "bg-[#fdeae2] text-[#b0431c]" : trend < 0 ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#f0ede8]"
+              trend > 0 ? "bg-embersoft text-ember3" : trend < 0 ? "bg-mintsoft text-green2" : "bg-sand"
             }`}>
               {trend > 0 ? <TrendingUp className="w-3 h-3" /> : trend < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
               {trend > 0 ? "+" : ""}{trend.toFixed(1)}%
@@ -1638,16 +1684,16 @@ function FullPanel({
           )}
         </div>
         {mun.rentLatest === null && mun.comarcaRefLatest != null && (
-          <div className="mt-2 text-xs text-[#8a6116] leading-snug">
+          <div className="mt-2 text-xs text-ambertext leading-snug">
             {t.map.panel.refComarcaNote}
           </div>
         )}
         {mun.rentLatest === null && mun.comarcaRefLatest == null && (
-          <div className="mt-2 text-xs text-[#b0431c]">
+          <div className="mt-2 text-xs text-ember3">
             {locale === "ca" ? "Aquest municipi no té lloguer registrat al període actual (sense dades oficials; no s'inventa cap xifra)." : "Este municipio no tiene alquiler registrado en el período actual (sin datos oficiales; no se inventa ninguna cifra)."}
           </div>
         )}
-        <div className="mt-2 text-xs text-[#6b6f68] space-y-0.5">
+        <div className="mt-2 text-xs text-stone space-y-0.5">
           <div>{t.map.panel.period}: <b>{mun.rentPeriod || mun.comarcaRefPeriod || "—"}</b></div>
           {mun.contractsLatest !== null && (
             <div>{t.map.panel.contracts}: <b>{mun.contractsLatest.toLocaleString(locale === "ca" ? "ca-ES" : "es-ES")}</b></div>
@@ -1659,7 +1705,7 @@ function FullPanel({
           {/* v37 — pàgina pública indexable del municipi (SEO + compartir) */}
           {mun.slug && (
             <div>
-              <a href={`/lloguer/${mun.slug}`} target="_blank" rel="noreferrer" className="text-[#0f2e21] underline flex items-center gap-1">
+              <a href={`/lloguer/${mun.slug}`} target="_blank" rel="noreferrer" className="text-pine underline flex items-center gap-1">
                 {locale === "ca" ? "Pàgina pública del municipi" : "Página pública del municipio"}
                 <ExternalLink className="w-3 h-3" />
               </a>
@@ -1670,13 +1716,13 @@ function FullPanel({
 
       {/* EDIFICI */}
       {(lookup.building?.yearBuilt || lookup.building?.refcat || bAvg) && (
-        <div className="rounded-xl border border-[#e5e1da] p-4">
-          <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide mb-2">
+        <div className="rounded-xl border border-line p-4">
+          <div className="text-xs font-semibold text-stone uppercase tracking-wide mb-2">
             {locale === "ca" ? "Edifici" : "Edificio"}
           </div>
           {isNau && (
             <div className="flex justify-between text-sm py-1">
-              <span className="text-[#6b6f68]">{locale === "ca" ? "Tipus" : "Tipo"}</span>
+              <span className="text-stone">{locale === "ca" ? "Tipus" : "Tipo"}</span>
               <b className="flex items-center gap-1.5" style={{ color: "#5d5480" }}>
                 <Factory className="w-3.5 h-3.5" />
                 {locale === "ca" ? "Nau industrial" : "Nave industrial"}
@@ -1684,7 +1730,7 @@ function FullPanel({
             </div>
           )}
           <div className="flex justify-between text-sm py-1">
-            <span className="text-[#6b6f68]">{t.map.panel.yearBuilt}</span>
+            <span className="text-stone">{t.map.panel.yearBuilt}</span>
             <b>
               {lookup.building?.yearBuilt
                 ? `${lookup.building.yearBuilt.year} (${lookup.building.yearBuilt.source === "CADASTRE_DNP" ? "Cadastre" : lookup.building.yearBuilt.source})`
@@ -1693,13 +1739,13 @@ function FullPanel({
           </div>
           {lookup.building?.refcat && (
             <div className="flex justify-between text-sm py-1">
-              <span className="text-[#6b6f68]">{t.map.panel.refcat}</span>
+              <span className="text-stone">{t.map.panel.refcat}</span>
               <b className="font-mono text-xs">{lookup.building.refcat}</b>
             </div>
           )}
           {/* Fase 9: dada a nivell d'edifici SI EXISTEIX importació; si no, es diu clar */}
           <div className="flex justify-between text-sm py-1">
-            <span className="text-[#6b6f68]">{locale === "ca" ? "Preu real de l'illa" : "Precio real de la manzana"}</span>
+            <span className="text-stone">{locale === "ca" ? "Preu real de l'illa" : "Precio real de la manzana"}</span>
             <b>
               {bAvg
                 ? `${bAvg.toFixed(0)} €/mes (${bSamples ?? "?"} ${locale === "ca" ? "mostres" : "muestras"})`
@@ -1716,59 +1762,59 @@ function FullPanel({
       <ValuationPanel muniCode={mun.code} muniName={mun.name} />
 
       {/* COMPARADOR + ACCIONS */}
-      <div className="rounded-xl border-2 border-[#0f2e21] p-4">
+      <div className="rounded-xl border-2 border-pine p-4">
         <div className="flex items-center justify-between gap-2">
-          <div className="font-bold text-[#0f2e21]">{t.map.panel.compare}</div>
+          <div className="font-bold text-pine">{t.map.panel.compare}</div>
           <div className="flex items-center gap-1">
             <button
               onClick={toggleFavorite}
               title={locale === "ca" ? "Desa als preferits (Premium)" : "Guarda en favoritos (Premium)"}
-              className={`p-1.5 rounded-lg hover:bg-[#f0ede8] ${favState === "saved" ? "text-[#e8673c]" : "text-[#6b6f68]"}`}
+              className={`p-1.5 rounded-lg hover:bg-sand ${favState === "saved" ? "text-ember" : "text-stone"}`}
             >
-              <Star className={`w-4 h-4 ${favState === "saved" ? "fill-[#e8673c]" : ""}`} />
+              <Star className={`w-4 h-4 ${favState === "saved" ? "fill-ember" : ""}`} />
             </button>
             <button
               onClick={downloadPdf}
               title={locale === "ca"
                 ? (pdfNeedsProHere ? "Descarrega l'informe PDF d'edifici (Pro · agents)" : "Descarrega l'informe PDF (Premium)")
                 : (pdfNeedsProHere ? "Descarga el informe PDF de edificio (Pro · agentes)" : "Descarga el informe PDF (Premium)")}
-              className={`relative p-1.5 rounded-lg hover:bg-[#f0ede8] ${pdfNeedsProHere ? "text-[#8a6116]" : "text-[#6b6f68]"}`}
+              className={`relative p-1.5 rounded-lg hover:bg-sand ${pdfNeedsProHere ? "text-ambertext" : "text-stone"}`}
             >
               <FileDown className="w-4 h-4" />
               {/* Fix 2026-11-11 — affordància: si el pla actual no inclou aquest
                   informe, es veu un candau ABANS de clicar (abans només apareixia
                   el missatge després, i semblava que «no funcionava»). */}
               {pdfNeedsProHere && (
-                <Lock className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 fill-[#faf9f7] text-[#8a6116]" />
+                <Lock className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 fill-cream text-ambertext" />
               )}
             </button>
             {/* Fase 5 — exportació CSV (Pro · agents) ara visible a la fitxa */}
             <button
               onClick={downloadCsv}
               title={locale === "ca" ? "Exporta les dades en CSV (Pro · agents)" : "Exporta los datos en CSV (Pro · agentes)"}
-              className={`relative p-1.5 rounded-lg hover:bg-[#f0ede8] ${csvNeedsPro ? "text-[#8a6116]" : "text-[#6b6f68]"}`}
+              className={`relative p-1.5 rounded-lg hover:bg-sand ${csvNeedsPro ? "text-ambertext" : "text-stone"}`}
             >
               <FileSpreadsheet className="w-4 h-4" />
               {csvNeedsPro && (
-                <Lock className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 fill-[#faf9f7] text-[#8a6116]" />
+                <Lock className="absolute -right-0.5 -top-0.5 w-2.5 h-2.5 fill-cream text-ambertext" />
               )}
             </button>
           </div>
         </div>
         {favState === "saved" && (
-          <div className="mt-2 text-xs text-[#1e7a41]">{locale === "ca" ? "Desat als preferits." : "Guardado en favoritos."}</div>
+          <div className="mt-2 text-xs text-green2">{locale === "ca" ? "Desat als preferits." : "Guardado en favoritos."}</div>
         )}
         {favState === "plan" && (
-          <div className="mt-2 text-xs text-[#8a6116]">
+          <div className="mt-2 text-xs text-ambertext">
             {locale === "ca" ? "Els preferits són del pla Premium." : "Los favoritos son del plan Premium."}{" "}
             <button onClick={() => navigate("/preus")} className="underline">{t.map.panel.upgrade}</button>
           </div>
         )}
         {favState === "error" && (
-          <div className="mt-2 text-xs text-[#b0431c]">{locale === "ca" ? "No s'ha pogut desar ara mateix." : "No se pudo guardar ahora mismo."}</div>
+          <div className="mt-2 text-xs text-ember3">{locale === "ca" ? "No s'ha pogut desar ara mateix." : "No se pudo guardar ahora mismo."}</div>
         )}
         {pdfMsg && (
-          <div className="mt-2 text-xs text-[#8a6116]">
+          <div className="mt-2 text-xs text-ambertext">
             {pdfMsg}{" "}
             {pdfLocked && (
               <button onClick={() => navigate("/preus")} className="underline font-semibold">
@@ -1779,7 +1825,7 @@ function FullPanel({
         )}
         {/* Fase 5 — exportació CSV (Pro · agents): resultat o bloqueig visible */}
         {csvMsg && (
-          <div className="mt-2 text-xs text-[#8a6116]">
+          <div className="mt-2 text-xs text-ambertext">
             {csvMsg}{" "}
             {csvLocked && (
               <button onClick={() => navigate("/preus")} className="underline font-semibold">
@@ -1790,29 +1836,29 @@ function FullPanel({
         )}
         <div className="mt-3 grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs text-[#6b6f68]">{t.map.panel.yourRent}</label>
+            <label className="text-xs text-stone">{t.map.panel.yourRent}</label>
             <input
               value={yourRent}
               onChange={(e) => setYourRent(e.target.value.replace(/[^0-9.]/g, ""))}
               inputMode="decimal"
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember"
               placeholder="950"
             />
           </div>
           <div>
-            <label className="text-xs text-[#6b6f68]">{t.map.panel.yourSurface}</label>
+            <label className="text-xs text-stone">{t.map.panel.yourSurface}</label>
             <input
               value={yourM2}
               onChange={(e) => setYourM2(e.target.value.replace(/[^0-9.]/g, ""))}
               inputMode="decimal"
-              className="w-full mt-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+              className="w-full mt-1 px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember"
               placeholder="65"
             />
           </div>
         </div>
         {delta !== null && (
           <div className={`mt-3 rounded-lg p-3 text-center font-bold ${
-            delta > 5 ? "bg-[#fdeae2] text-[#b0431c]" : delta < -5 ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#f0ede8] text-[#4b5349]"
+            delta > 5 ? "bg-embersoft text-ember3" : delta < -5 ? "bg-mintsoft text-green2" : "bg-sand text-moss"
           }`}>
             {delta > 0 ? "+" : ""}{delta.toFixed(1)}%{" "}
             <span className="font-normal text-sm">
@@ -1821,7 +1867,7 @@ function FullPanel({
           </div>
         )}
         {delta !== null && (
-          <div className="mt-1 text-[10px] text-[#6b6f68] text-center">
+          <div className="mt-1 text-[10px] text-stone text-center">
             {isNau && (
               <div className="font-semibold" style={{ color: "#5d5480" }}>
                 {t.map.panel.industrialDeltaNote}
@@ -1832,7 +1878,7 @@ function FullPanel({
         )}
         <button
           onClick={() => setReportOpen((v) => !v)}
-          className="mt-3 w-full py-2 rounded-lg border border-[#e5e1da] text-xs font-semibold hover:bg-[#f0ede8] flex items-center justify-center gap-1.5"
+          className="mt-3 w-full py-2 rounded-lg border border-line text-xs font-semibold hover:bg-sand flex items-center justify-center gap-1.5"
         >
           <MapPin className="w-3.5 h-3.5" />
           {reportSent ? t.map.panel.reportThanks : t.map.panel.report}
@@ -1842,7 +1888,7 @@ function FullPanel({
             <select
               value={contractType}
               onChange={(e) => setContractType(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-line text-sm"
               aria-label={locale === "ca" ? "Tipus de contracte" : "Tipo de contrato"}
             >
               <option value="HABITATGE">{locale === "ca" ? "Habitatge" : "Vivienda"}</option>
@@ -1855,55 +1901,55 @@ function FullPanel({
                 autoFocus
                 value={yourRent}
                 onChange={(e) => setYourRent(e.target.value.replace(/[^0-9.]/g, ""))}
-                className="flex-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                className="flex-1 px-3 py-2 rounded-lg border border-line text-sm"
                 placeholder={t.map.panel.yourRent}
               />
-              <button onClick={submitReport} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold">
+              <button onClick={submitReport} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold">
                 {t.map.panel.reportBtn}
               </button>
             </div>
-            {reportError && <div className="text-xs text-[#b0431c]">{reportError}</div>}
+            {reportError && <div className="text-xs text-ember3">{reportError}</div>}
           </div>
         )}
       </div>
 
       {/* HISTÒRIC — bloc sempre visible (barres reals o missatge clar) */}
-      <div className="rounded-xl border border-[#e5e1da] p-4">
-        <div className="text-xs font-semibold text-[#6b6f68] uppercase tracking-wide mb-3">{t.map.panel.history}</div>
+      <div className="rounded-xl border border-line p-4">
+        <div className="text-xs font-semibold text-stone uppercase tracking-wide mb-3">{t.map.panel.history}</div>
         {histShow.length > 0 ? (
           <>
             <div className={`flex items-end gap-1.5 h-24 ${histRefFallback ? "opacity-80" : ""}`}>
               {histShow.map(([year, v]) => (
                 <div key={year} className="flex-1 flex flex-col items-center justify-end gap-1 h-full">
                   <div
-                    className={`w-full rounded-t min-h-[3px] ${histRefFallback ? "bg-[#8a6116]/70" : "bg-[#0f2e21]/85"}`}
+                    className={`w-full rounded-t min-h-[3px] ${histRefFallback ? "bg-ambertext/70" : "bg-pine/85"}`}
                     style={{ height: `${Math.max(3, Math.round((Number(v) / maxVal) * 72))}px` }}
                     title={`${year}: ${Number(v).toFixed(0)} €`}
                   />
-                  <span className="text-[9px] text-[#6b6f68] whitespace-nowrap">{year.slice(-2)}</span>
+                  <span className="text-[9px] text-stone whitespace-nowrap">{year.slice(-2)}</span>
                 </div>
               ))}
             </div>
             {histRefFallback && (
-              <div className="text-[10px] text-[#8a6116] mt-1.5">{t.map.panel.historyRefNote}</div>
+              <div className="text-[10px] text-ambertext mt-1.5">{t.map.panel.historyRefNote}</div>
             )}
             {histPairFallback && (
-              <div className="text-[10px] text-[#6b6f68] mt-1.5">{t.map.panel.historyPairNote}</div>
+              <div className="text-[10px] text-stone mt-1.5">{t.map.panel.historyPairNote}</div>
             )}
-            <div className="text-[10px] text-[#6b6f68] mt-2">{t.map.panel.source}</div>
+            <div className="text-[10px] text-stone mt-2">{t.map.panel.source}</div>
           </>
         ) : (
-          <div className="text-xs text-[#6b6f68] py-4 text-center">{t.map.panel.historyNoSeries}</div>
+          <div className="text-xs text-stone py-4 text-center">{t.map.panel.historyNoSeries}</div>
         )}
       </div>
 
       {/* QUOTA + UPGRADE */}
       {auth.user?.plan === "FREE" && quota && (
-        <div className="rounded-xl bg-[#f0ede8] p-4 flex items-center justify-between gap-3">
+        <div className="rounded-xl bg-sand p-4 flex items-center justify-between gap-3">
           <div className="text-sm">
             <b>{quota.limit - quota.used}</b> {t.map.panel.quotaLeft}
           </div>
-          <button onClick={() => navigate("/preus")} className="px-3 py-2 rounded-lg bg-[#e8673c] text-white text-sm font-bold hover:bg-[#d95a31] whitespace-nowrap">
+          <button onClick={() => navigate("/preus")} className="px-3 py-2 rounded-lg bg-ember text-white text-sm font-bold hover:bg-ember2 whitespace-nowrap">
             {t.map.panel.upgrade}
           </button>
         </div>

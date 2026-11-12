@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
+import { markStep } from "@/lib/steps";
 import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info, Crown, BarChart3, Factory, Download } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
 
@@ -241,32 +242,35 @@ export default function ComparadorView() {
   const ranked = [...sortedByRent, ...noData];
   const minRent = sortedByRent.length ? sortedByRent[sortedByRent.length - 1].rentLatest || 0 : 0;
 
+  // v38.2 — onboarding: pas 2 (comparar) es completa en obrir el comparador
+  useEffect(() => { markStep("comparador"); }, []);
+
   return (
     <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold flex items-center gap-2">
-        <GitCompare className="w-7 h-7 text-[#0f2e21]" />
+        <GitCompare className="w-7 h-7 text-pine" />
         {ca ? "Comparador immobiliari" : "Comparador inmobiliario"}
       </h1>
-      <p className="mt-2 text-sm text-[#4b5349]">
+      <p className="mt-2 text-sm text-moss">
         {ca
           ? "Compara municipis amb dades oficials reals (fiances Incasòl): fins a 2 amb el pla gratuït i fins a 6 amb Premium o Pro. Les mitjanes són agregats municipals: no descriuen immobles concrets."
           : "Compara municipios con datos oficiales reales (fianzas Incasòl): hasta 2 con el plan gratuito y hasta 6 con Premium o Pro. Las medias son agregados municipales: no describen inmuebles concretos."}
       </p>
 
       {/* selector */}
-      <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-5">
+      <div className="mt-6 bg-card rounded-2xl border border-line p-5">
         <div className="relative">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={ca ? "Afegeix un municipi (ex. Girona, Badalona…)" : "Añade un municipio (ej. Girona, Badalona…)"}
-            className="w-full px-4 py-3 rounded-xl border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+            className="w-full px-4 py-3 rounded-xl border border-line text-sm outline-none focus:border-ember"
           />
           {candidates.length > 0 && (
-            <div className="absolute mt-1 w-full bg-white rounded-xl shadow-xl border border-[#e5e1da] overflow-hidden z-10">
+            <div className="absolute mt-1 w-full bg-card rounded-xl shadow-xl border border-line overflow-hidden z-10">
               {candidates.map((c) => (
-                <button key={c.code} onClick={() => addEntity(c)} className="w-full text-left px-4 py-2.5 hover:bg-[#f0ede8] text-sm flex items-center gap-2">
-                  <Plus className="w-3.5 h-3.5 text-[#e8673c]" /> {c.name}
+                <button key={c.code} onClick={() => addEntity(c)} className="w-full text-left px-4 py-2.5 hover:bg-sand text-sm flex items-center gap-2">
+                  <Plus className="w-3.5 h-3.5 text-ember" /> {c.name}
                 </button>
               ))}
             </div>
@@ -274,55 +278,55 @@ export default function ComparadorView() {
         </div>
         <div className="mt-3 flex gap-2 flex-wrap">
           {entities.map((e) => (
-            <span key={e.code} className="px-3 py-1.5 rounded-full bg-[#0f2e21] text-white text-xs font-semibold flex items-center gap-1.5">
+            <span key={e.code} className="px-3 py-1.5 rounded-full bg-pine text-white text-xs font-semibold flex items-center gap-1.5">
               {e.name || e.code}
               <button onClick={() => { setEntities(entities.filter((x) => x.code !== e.code)); setPlanLimitMsg(null); }}><X className="w-3 h-3" /></button>
             </span>
           ))}
           {entities.length < 2 && (
-            <span className="text-xs text-[#6b6f68] self-center">{ca ? `Trieu-ne ${2 - entities.length} més per comparar` : `Elige ${2 - entities.length} más para comparar`}</span>
+            <span className="text-xs text-stone self-center">{ca ? `Trieu-ne ${2 - entities.length} més per comparar` : `Elige ${2 - entities.length} más para comparar`}</span>
           )}
           {entities.length >= 2 && entities.length < maxEntities && (
-            <span className="text-xs text-[#6b6f68] self-center">{ca ? `Fins a ${maxEntities} municipis` : `Hasta ${maxEntities} municipios`}</span>
+            <span className="text-xs text-stone self-center">{ca ? `Fins a ${maxEntities} municipis` : `Hasta ${maxEntities} municipios`}</span>
           )}
           {!isPaid && entities.length >= 2 && (
-            <span className="text-xs text-[#b0431c] self-center">{ca ? "Gratuït: màx. 2" : "Gratuito: máx. 2"}</span>
+            <span className="text-xs text-ember3 self-center">{ca ? "Gratuït: màx. 2" : "Gratuito: máx. 2"}</span>
           )}
         </div>
       </div>
 
       {/* v25 — upsell: el pla gratuït arriba al seu límit (2 municipis) */}
       {!isPaid && entities.length >= maxEntities && (
-        <div className="mt-4 rounded-2xl border border-[#f3d9b0] bg-[#fdf6ec] p-4 flex flex-wrap items-center gap-3">
-          <Crown className="w-5 h-5 text-[#b0431c] shrink-0" />
-          <p className="text-xs text-[#7a4a1c] flex-1 min-w-[220px]">
+        <div className="mt-4 rounded-2xl border border-amberline2 bg-ambersoft2 p-4 flex flex-wrap items-center gap-3">
+          <Crown className="w-5 h-5 text-ember3 shrink-0" />
+          <p className="text-xs text-amberdark flex-1 min-w-[220px]">
             {ca
               ? `El pla gratuït compara ${maxEntities} municipis. Amb Premium o Pro compares fins a 6 alhora, amb gràfica avançada i % de diferència detallat.`
               : `El plan gratuito compara ${maxEntities} municipios. Con Premium o Pro comparas hasta 6 a la vez, con gráfica avanzada y % de diferencia detallado.`}
           </p>
-          <button onClick={() => navigate("/preus")} className="px-4 py-2 rounded-xl bg-[#e8673c] text-white text-xs font-bold hover:bg-[#d95a31]">
+          <button onClick={() => navigate("/preus")} className="px-4 py-2 rounded-xl bg-ember text-white text-xs font-bold hover:bg-ember2">
             {ca ? "Fes-te Premium" : "Hazte Premium"}
           </button>
         </div>
       )}
       {planLimitMsg && (
-        <p className="mt-4 text-sm text-[#b0431c] bg-[#fdece4] border border-[#f3d9b0] rounded-xl px-4 py-3">{planLimitMsg}</p>
+        <p className="mt-4 text-sm text-ember3 bg-embersoft2 border border-amberline2 rounded-xl px-4 py-3">{planLimitMsg}</p>
       )}
 
       {loadedMsg && (
-        <p className="mt-4 text-sm text-[#1e7a41] bg-[#e6f4ea] border border-[#bfe3cc] rounded-xl px-4 py-3">{loadedMsg}</p>
+        <p className="mt-4 text-sm text-green2 bg-mintsoft border border-mintline rounded-xl px-4 py-3">{loadedMsg}</p>
       )}
-      {busy && <p className="mt-4 text-sm text-[#6b6f68]">…</p>}
+      {busy && <p className="mt-4 text-sm text-stone">…</p>}
 
       {/* resultats */}
       {result && result.results.length > 0 && (
         <>
-          <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-5">
+          <div className="mt-6 bg-card rounded-2xl border border-line p-5">
             <h2 className="font-bold flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-[#0f2e21]" />
+              <BarChart3 className="w-4 h-4 text-pine" />
               {ca ? "Gràfica comparativa · Preu mitjà mensual (Incasòl, fiances)" : "Gráfica comparativa · Precio medio mensual (Incasòl, fianzas)"}
             </h2>
-            <p className="mt-1 mb-4 text-xs text-[#6b6f68]">
+            <p className="mt-1 mb-4 text-xs text-stone">
               {ca
                 ? "Ordenats del més car al més barat. El % indica la diferència de cada municipi respecte al més barat de la selecció."
                 : "Ordenados del más caro al más barato. El % indica la diferencia de cada municipio respecto al más barato de la selección."}
@@ -350,7 +354,7 @@ export default function ComparadorView() {
                   <div key={`${r.type}-${r.code}`}>
                     <div className="flex items-center justify-between gap-2 text-sm mb-1.5">
                       <span className="font-semibold flex items-center gap-1.5 min-w-0">
-                        <span className="w-5 h-5 rounded-full bg-[#f0ede8] text-[#0f2e21] text-[10px] font-black flex items-center justify-center shrink-0">{idx + 1}</span>
+                        <span className="w-5 h-5 rounded-full bg-sand text-pine text-[10px] font-black flex items-center justify-center shrink-0">{idx + 1}</span>
                         <span className="truncate">{r.name}</span>
                         {/* v33 — naus industrials: fora de l'estadística d'habitatges */}
                         {r.type === "BUILDING" && (r as any).tipus === "ind" && (
@@ -362,21 +366,21 @@ export default function ComparadorView() {
                             {ca ? "nau industrial" : "nave industrial"}
                           </span>
                         )}
-                        {r.isTense && <Flame className="w-3.5 h-3.5 text-[#e8673c] shrink-0" />}
+                        {r.isTense && <Flame className="w-3.5 h-3.5 text-ember shrink-0" />}
                         {isMin && (
-                          <span className="text-[10px] font-bold text-[#1e7a41] bg-[#e6f4ea] border border-[#bfe3cc] rounded-full px-2 py-0.5 shrink-0">
+                          <span className="text-[10px] font-bold text-green2 bg-mintsoft border border-mintline rounded-full px-2 py-0.5 shrink-0">
                             {ca ? "el més barat" : "el más barato"}
                           </span>
                         )}
-                        {r.rentPeriod && <span className="text-xs text-[#6b6f68] shrink-0">· {r.rentPeriod}</span>}
+                        {r.rentPeriod && <span className="text-xs text-stone shrink-0">· {r.rentPeriod}</span>}
                       </span>
                       <span className="flex items-center gap-2 shrink-0">
                         {pct != null && pct > 0.05 && (
-                          <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${pct >= 25 ? "bg-[#fdece4] text-[#b0431c]" : "bg-[#f0ede8] text-[#4b5349]"}`}>
+                          <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 ${pct >= 25 ? "bg-embersoft2 text-ember3" : "bg-sand text-moss"}`}>
                             +{pct.toFixed(1).replace(".", ",")}%
                           </span>
                         )}
-                        <span className="font-black text-[#0f2e21]">
+                        <span className="font-black text-pine">
                           {r.rentLatest != null
                             ? `${r.rentLatest.toFixed(0)} €/mes`
                             : r.comarcaRefLatest != null
@@ -384,13 +388,13 @@ export default function ComparadorView() {
                               : ca ? "sense dades" : "sin datos"}
                         </span>
                         {r.rentLatest == null && r.comarcaRefLatest != null && (
-                          <span className="text-[10px] font-bold italic rounded-full px-2 py-0.5 bg-[#fdf3e0] text-[#8a6116]">
+                          <span className="text-[10px] font-bold italic rounded-full px-2 py-0.5 bg-ambersoft2 text-ambertext">
                             {ca ? "ref. comarca" : "ref. comarca"}
                           </span>
                         )}
                       </span>
                     </div>
-                    <div className="h-3.5 rounded-full bg-[#f0ede8] overflow-hidden">
+                    <div className="h-3.5 rounded-full bg-sand overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all duration-700 ease-out"
                         style={{
@@ -403,7 +407,7 @@ export default function ComparadorView() {
                         }}
                       />
                     </div>
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[#6b6f68]">
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-stone">
                       {r.vsMean !== null && (
                         <span className="flex items-center gap-1">
                           {r.vsMean > 0 ? <TrendingUp className="w-3 h-3" /> : r.vsMean < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
@@ -413,25 +417,25 @@ export default function ComparadorView() {
                       {r.contractsLatest != null && <span>{r.contractsLatest.toLocaleString()} {ca ? "contractes de mostra" : "contratos de muestra"}</span>}
                       {r.median != null && <span>{ca ? "mediana històrica" : "mediana histórica"}: {r.median.toFixed(0)} €</span>}
                       {r.rentLatest == null && r.comarcaRefLatest != null && (
-                        <span className="text-[#8a6116]">{ca ? "≈ referència de comarca (estimació, sense dada municipal oficial)" : "≈ referencia de comarca (estimación, sin dato municipal oficial)"}</span>
+                        <span className="text-ambertext">{ca ? "≈ referència de comarca (estimació, sense dada municipal oficial)" : "≈ referencia de comarca (estimación, sin dato municipal oficial)"}</span>
                       )}
-                      {r.rentLatest == null && r.comarcaRefLatest == null && <span className="text-[#b0431c]">{ca ? "sense dades oficials per aquest municipi (no s'inventa)" : "sin datos oficiales para este municipio (no se inventa)"}</span>}
+                      {r.rentLatest == null && r.comarcaRefLatest == null && <span className="text-ember3">{ca ? "sense dades oficials per aquest municipi (no s'inventa)" : "sin datos oficiales para este municipio (no se inventa)"}</span>}
                     </div>
                     {/* Fase 4 — xips avançats (Premium/Pro: la decisió és del servidor) */}
                     {result.advanced && r.indicators && (r.indicators.effortHogarPct != null || r.indicators.rentaHogar != null || r.indicators.ipvaCatAcum != null) && (
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {r.indicators.rentaHogar != null && (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f0ede8] text-[#0f2e21]">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sand text-pine">
                             {ca ? "renda llar" : "renta hogar"} {r.indicators.rentaHogar.toLocaleString(ca ? "ca-ES" : "es-ES")} €/any ({r.indicators.rentaHogarYear ?? "—"})
                           </span>
                         )}
                         {r.indicators.effortHogarPct != null && (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f0ede8] text-[#0f2e21]">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sand text-pine">
                             {ca ? "esforç" : "esfuerzo"} {r.indicators.effortHogarPct.toFixed(1).replace(".", ",")} %
                           </span>
                         )}
                         {r.indicators.ipvaCatAcum != null && (
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#f0ede8] text-[#0f2e21]">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sand text-pine">
                             IPVA +{r.indicators.ipvaCatAcum.toFixed(1).replace(".", ",")} % {ca ? "acum. des de 2015" : "acum. desde 2015"}
                           </span>
                         )}
@@ -442,13 +446,13 @@ export default function ComparadorView() {
               })}
             </div>
             {result.stats && (
-              <div className="mt-4 pt-4 border-t border-[#f2efe9] grid grid-cols-3 gap-3 text-center text-sm">
-                <div><div className="font-black text-[#0f2e21]">{result.stats.mean.toFixed(0)} €</div><div className="text-xs text-[#6b6f68]">{ca ? "mitjana del conjunt" : "media del conjunto"}</div></div>
-                <div><div className="font-black text-[#0f2e21]">{result.stats.median.toFixed(0)} €</div><div className="text-xs text-[#6b6f68]">{ca ? "mediana del conjunt" : "mediana del conjunto"}</div></div>
-                <div><div className="font-black text-[#0f2e21]">{((result.stats.max - result.stats.min) / result.stats.min * 100).toFixed(0)}%</div><div className="text-xs text-[#6b6f68]">{ca ? "bretxa max-mín" : "brecha max-mín"}</div></div>
+              <div className="mt-4 pt-4 border-t border-sand2 grid grid-cols-3 gap-3 text-center text-sm">
+                <div><div className="font-black text-pine">{result.stats.mean.toFixed(0)} €</div><div className="text-xs text-stone">{ca ? "mitjana del conjunt" : "media del conjunto"}</div></div>
+                <div><div className="font-black text-pine">{result.stats.median.toFixed(0)} €</div><div className="text-xs text-stone">{ca ? "mediana del conjunt" : "mediana del conjunto"}</div></div>
+                <div><div className="font-black text-pine">{((result.stats.max - result.stats.min) / result.stats.min * 100).toFixed(0)}%</div><div className="text-xs text-stone">{ca ? "bretxa max-mín" : "brecha max-mín"}</div></div>
               </div>
             )}
-            <div className="mt-3 flex items-start gap-1.5 text-[10px] text-[#6b6f68]">
+            <div className="mt-3 flex items-start gap-1.5 text-[10px] text-stone">
               <Info className="w-3 h-3 mt-0.5 shrink-0" />
               {ca
                 ? "Comparació estadística entre agregats oficials; no és una valoració individual. Font: Incasòl via habitatge.gencat.cat."
@@ -458,14 +462,14 @@ export default function ComparadorView() {
 
           {/* Fase 4 — teaser de columnes avançades per al pla gratuït */}
           {result && result.advanced === false && (
-            <div className="mt-4 rounded-2xl border border-[#f3d9b0] bg-[#fdf6ec] p-4 flex flex-wrap items-center gap-3">
-              <Crown className="w-5 h-5 text-[#b0431c] shrink-0" />
-              <p className="text-xs text-[#7a4a1c] flex-1 min-w-[220px]">
+            <div className="mt-4 rounded-2xl border border-amberline2 bg-ambersoft2 p-4 flex flex-wrap items-center gap-3">
+              <Crown className="w-5 h-5 text-ember3 shrink-0" />
+              <p className="text-xs text-amberdark flex-1 min-w-[220px]">
                 {ca
                   ? "Amb Premium o Pro: renda mitjana per llar (INE), esforç econòmic i evolució IPVA de cada municipi, directament al comparador."
                   : "Con Premium o Pro: renta media por hogar (INE), esfuerzo económico y evolución IPVA de cada municipio, directamente en el comparador."}
               </p>
-              <button onClick={() => navigate("/preus")} className="px-4 py-2 rounded-xl bg-[#e8673c] text-white text-xs font-bold hover:bg-[#d95a31]">
+              <button onClick={() => navigate("/preus")} className="px-4 py-2 rounded-xl bg-ember text-white text-xs font-bold hover:bg-ember2">
                 {ca ? "Fes-te Premium" : "Hazte Premium"}
               </button>
             </div>
@@ -473,7 +477,7 @@ export default function ComparadorView() {
 
           {/* evolució temporal */}
           {result.results.some((r) => r.rentHistory) && (
-            <div className="mt-4 bg-white rounded-2xl border border-[#e5e1da] p-5">
+            <div className="mt-4 bg-card rounded-2xl border border-line p-5">
               <h2 className="font-bold mb-4">{ca ? "Evolució temporal" : "Evolución temporal"}</h2>
               {/* Noves funcionalitats (F1): gràfic interactiu multi-municipi — només
                   amb historial del servidor (les fiances ja arriben gatejades pel pla) */}
@@ -493,7 +497,7 @@ export default function ComparadorView() {
                 return series.length >= 2 ? (
                   <div className="mb-4">
                     <LineChart locale={ca ? "ca" : "es"} series={series} />
-                    <p className="mt-1 text-[10px] text-[#6b6f68]">
+                    <p className="mt-1 text-[10px] text-stone">
                       {ca ? "Mitjana de fiances per habitatge (Incasòl). Només anys amb dada publicada, sense interpolació." : "Media de fianzas por vivienda (Incasòl). Solo años con dato publicado, sin interpolación."}
                     </p>
                   </div>
@@ -501,7 +505,7 @@ export default function ComparadorView() {
               })()}
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-[#6b6f68]">
+                  <tr className="text-stone">
                     <th className="text-left py-1">{ca ? "Municipi" : "Municipio"}</th>
                     {result.results[0]?.rentHistory &&
                       Object.entries(result.results[0].rentHistory).sort().slice(-8).map(([y]) => (
@@ -513,7 +517,7 @@ export default function ComparadorView() {
                   {result.results.filter((r) => r.rentHistory).map((r) => {
                     const hist = Object.entries(r.rentHistory!).sort().slice(-8);
                     return (
-                      <tr key={r.code} className="border-t border-[#f2efe9]">
+                      <tr key={r.code} className="border-t border-sand2">
                         <td className="py-1.5 font-semibold">{r.name}</td>
                         {hist.map(([y, v]) => (
                           <td key={y} className="text-center py-1.5">{Number(v).toFixed(0)}</td>
@@ -527,34 +531,34 @@ export default function ComparadorView() {
           )}
 
           {/* desar */}
-          <div className="mt-4 bg-white rounded-2xl border border-[#e5e1da] p-5 flex items-center gap-2 flex-wrap">
+          <div className="mt-4 bg-card rounded-2xl border border-line p-5 flex items-center gap-2 flex-wrap">
             <input
               value={saveName}
               onChange={(e) => setSaveName(e.target.value.slice(0, 80))}
               placeholder={ca ? "Nom per desar la comparació (opcional)" : "Nombre para guardar la comparación (opcional)"}
-              className="flex-1 min-w-[220px] px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+              className="flex-1 min-w-[220px] px-3 py-2 rounded-lg border border-line text-sm"
             />
-            <button onClick={saveComparison} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold flex items-center gap-1.5">
+            <button onClick={saveComparison} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold flex items-center gap-1.5">
               <Save className="w-4 h-4" /> {ca ? "Desar comparació" : "Guardar comparación"}
             </button>
             {/* v37 — exportació CSV de la comparació (pla Pro, com la resta d'exports) */}
-            <button onClick={exportCsv} className="px-4 py-2 rounded-lg border border-[#0f2e21] text-[#0f2e21] text-sm font-bold flex items-center gap-1.5 hover:bg-[#f0ede8]">
+            <button onClick={exportCsv} className="px-4 py-2 rounded-lg border border-pine text-pine text-sm font-bold flex items-center gap-1.5 hover:bg-sand">
               <Download className="w-4 h-4" /> {ca ? "Exporta CSV" : "Exportar CSV"}
             </button>
-            {saveMsg && <span className="text-xs text-[#4b5349]">{saveMsg}</span>}
-            {csvMsg && <span className="text-xs text-[#4b5349]">{csvMsg}</span>}
+            {saveMsg && <span className="text-xs text-moss">{saveMsg}</span>}
+            {csvMsg && <span className="text-xs text-moss">{csvMsg}</span>}
           </div>
         </>
       )}
 
       {/* v37 — ESTAT BUIT: exemples d'un clic per començar (mai un buit mort) */}
       {!busy && entities.length < 2 && (
-        <div className="mt-6 bg-white rounded-2xl border border-dashed border-[#cfc9bd] p-6">
+        <div className="mt-6 bg-card rounded-2xl border border-dashed border-line p-6">
           <h2 className="font-bold flex items-center gap-2">
-            <Info className="w-4 h-4 text-[#0f2e21]" />
+            <Info className="w-4 h-4 text-pine" />
             {ca ? "Comença amb una comparació d'exemple" : "Empieza con una comparación de ejemplo"}
           </h2>
-          <p className="mt-1 text-sm text-[#4b5349]">
+          <p className="mt-1 text-sm text-moss">
             {ca
               ? "Tria municipis amb el cercador de dalt o toca un dels exemples. Els preus són la mitjana oficial de fiances Incasòl, no una estimació."
               : "Elige municipios con el buscador de arriba o toca uno de los ejemplos. Los precios son la media oficial de fianzas Incasòl, no una estimación."}
@@ -571,14 +575,14 @@ export default function ComparadorView() {
               <button
                 key={m.code}
                 onClick={() => { if (!entities.some((e) => e.code === m.code)) setEntities([...entities, { type: "MUNI" as const, code: m.code, name: m.name }].slice(0, maxEntities)); }}
-                className="px-3 py-1.5 rounded-full border border-[#e5e1da] text-sm hover:bg-[#f0ede8] flex items-center gap-1"
+                className="px-3 py-1.5 rounded-full border border-line text-sm hover:bg-sand flex items-center gap-1"
               >
                 <Plus className="w-3 h-3" /> {m.name}
               </button>
             ))}
           </div>
           {!isPaid && (
-            <p className="mt-3 text-xs text-[#6b6f68]">
+            <p className="mt-3 text-xs text-stone">
               {ca
                 ? "Amb el pla gratuït compares 2 municipis; amb Premium i Pro, fins a 6 amb indicadors avançats."
                 : "Con el plan gratuito comparas 2 municipios; con Premium y Pro, hasta 6 con indicadores avanzados."}

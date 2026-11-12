@@ -202,28 +202,28 @@ export default function AuthView({
       <div className="flex-1 flex items-center justify-center px-4 py-14">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-[#0f2e21] text-white flex items-center justify-center mx-auto">
-              <ShieldCheck className="w-6 h-6 text-[#7fd6a4]" />
+            <div className="w-12 h-12 rounded-2xl bg-pine text-white flex items-center justify-center mx-auto">
+              <ShieldCheck className="w-6 h-6 text-mint" />
             </div>
             <h1 className="mt-4 text-2xl font-extrabold">
               {locale === "ca" ? "Contrasenya canviada" : "Contraseña cambiada"}
             </h1>
           </div>
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4 text-center">
-            <div className="rounded-lg bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm px-3 py-2">
+          <div className="bg-card rounded-2xl border border-line p-6 space-y-4 text-center">
+            <div className="rounded-lg bg-mintsoft border border-mintline text-green2 text-sm px-3 py-2">
               {locale === "ca"
                 ? "La teva contrasenya s'ha canviat correctament. Les sessions obertes en altres dispositius s'han tancat per seguretat."
                 : "Tu contraseña se ha cambiado correctamente. Las sesiones abiertas en otros dispositivos se han cerrado por seguridad."}
             </div>
             <button
               onClick={() => navigate("/mapa")}
-              className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors"
+              className="w-full py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2 transition-colors"
             >
               {locale === "ca" ? "Continua al mapa" : "Continuar al mapa"}
             </button>
             <button
               onClick={() => navigate("/panell")}
-              className="w-full py-2.5 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#0f2e21] hover:bg-[#faf9f7] transition-colors text-sm"
+              className="w-full py-2.5 rounded-xl border border-line bg-card font-semibold text-pine hover:bg-cream transition-colors text-sm"
             >
               {locale === "ca" ? "Anar al panell" : "Ir al panel"}
             </button>
@@ -239,13 +239,13 @@ export default function AuthView({
       <div className="flex-1 flex items-center justify-center px-4 py-14">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-12 h-12 rounded-2xl bg-[#0f2e21] text-white flex items-center justify-center mx-auto">
-              <ShieldCheck className="w-6 h-6 text-[#7fd6a4]" />
+            <div className="w-12 h-12 rounded-2xl bg-pine text-white flex items-center justify-center mx-auto">
+              <ShieldCheck className="w-6 h-6 text-mint" />
             </div>
             <h1 className="mt-4 text-2xl font-extrabold">
               {locale === "ca" ? "Verificació en dos passos" : "Verificación en dos pasos"}
             </h1>
-            <p className="mt-2 text-sm text-[#6b6f68]">
+            <p className="mt-2 text-sm text-stone">
               {totpUseRecovery
                 ? (locale === "ca"
                     ? "Introdueix un codi de recuperació d'un sol ús."
@@ -255,7 +255,7 @@ export default function AuthView({
                     : "Abre la app de autenticación e introduce el código de 6 dígitos.")}
             </p>
           </div>
-          <form onSubmit={submitTotp} className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4">
+          <form onSubmit={submitTotp} className="bg-card rounded-2xl border border-line p-6 space-y-4">
             <input
               type="text"
               required
@@ -269,21 +269,21 @@ export default function AuthView({
               autoComplete="one-time-code"
             />
             {errText && (
-              <div className="rounded-lg bg-[#fdeae2] border border-[#f2c4ac] text-[#b0431c] text-sm px-3 py-2">
+              <div className="rounded-lg bg-embersoft border border-emberline text-ember3 text-sm px-3 py-2">
                 {errText}
               </div>
             )}
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2 transition-colors disabled:opacity-50"
             >
               {busy ? "…" : locale === "ca" ? "Verifica i entra" : "Verificar y entrar"}
             </button>
             <button
               type="button"
               onClick={() => { setTotpUseRecovery(!totpUseRecovery); setTotpCode(""); setError(null); }}
-              className="w-full text-xs text-[#6b6f68] underline"
+              className="w-full text-xs text-stone underline"
             >
               {totpUseRecovery
                 ? (locale === "ca" ? "Fes servir el codi de l'app" : "Usar el código de la app")
@@ -299,26 +299,26 @@ export default function AuthView({
     <div className="flex-1 flex items-center justify-center px-4 py-14">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-2xl bg-[#0f2e21] text-white flex items-center justify-center mx-auto">
-            <MapPin className="w-6 h-6 text-[#7fd6a4]" />
+          <div className="w-12 h-12 rounded-2xl bg-pine text-white flex items-center justify-center mx-auto">
+            <MapPin className="w-6 h-6 text-mint" />
           </div>
           <h1 className="mt-4 text-2xl font-extrabold">{titles.h}</h1>
         </div>
 
-        <form onSubmit={submit} className="bg-white rounded-2xl border border-[#e5e1da] p-6 space-y-4">
+        <form onSubmit={submit} className="bg-card rounded-2xl border border-line p-6 space-y-4">
           {googleEnabled && (mode === "login" || mode === "register") && (
             <>
               <a
                 href="/api/auth/google"
-                className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#3c4043] hover:bg-[#faf9f7] transition-colors"
+                className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl border border-line bg-card font-semibold text-moss hover:bg-cream transition-colors"
               >
                 <GoogleIcon />
                 {t.auth.googleCta}
               </a>
-              <div className="flex items-center gap-3 text-xs text-[#9aa094]">
-                <span className="h-px flex-1 bg-[#e5e1da]" />
+              <div className="flex items-center gap-3 text-xs text-graydot">
+                <span className="h-px flex-1 bg-line" />
                 {t.auth.orEmail}
-                <span className="h-px flex-1 bg-[#e5e1da]" />
+                <span className="h-px flex-1 bg-line" />
               </div>
             </>
           )}
@@ -359,7 +359,7 @@ export default function AuthView({
               type="button"
               onClick={submitPasskey}
               disabled={pkBusy}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-[#e5e1da] bg-white font-semibold text-[#0f2e21] hover:bg-[#faf9f7] transition-colors disabled:opacity-50 text-sm"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-line bg-card font-semibold text-pine hover:bg-cream transition-colors disabled:opacity-50 text-sm"
             >
               <Fingerprint className="w-4 h-4" />
               {locale === "ca" ? "Entra amb una passkey" : "Entrar con una passkey"}
@@ -367,12 +367,12 @@ export default function AuthView({
           )}
 
           {errText && (
-            <div className="rounded-lg bg-[#fdeae2] border border-[#f2c4ac] text-[#b0431c] text-sm px-3 py-2">
+            <div className="rounded-lg bg-embersoft border border-emberline text-ember3 text-sm px-3 py-2">
               {errText}
             </div>
           )}
           {info && (
-            <div className="rounded-lg bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm px-3 py-2">
+            <div className="rounded-lg bg-mintsoft border border-mintline text-green2 text-sm px-3 py-2">
               {info}
             </div>
           )}
@@ -380,7 +380,7 @@ export default function AuthView({
           <button
             type="submit"
             disabled={busy}
-            className="w-full py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31] transition-colors disabled:opacity-60"
+            className="w-full py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2 transition-colors disabled:opacity-60"
           >
             {busy ? "..." : titles.btn}
           </button>
@@ -388,30 +388,30 @@ export default function AuthView({
           <div className="text-sm text-center space-y-1.5 pt-2">
             {mode === "login" && (
               <>
-                <div className="text-[#6b6f68]">
+                <div className="text-stone">
                   {t.auth.noAccount}{" "}
-                  <button onClick={() => navigate("/registre")} className="text-[#e8673c] font-semibold">
+                  <button onClick={() => navigate("/registre")} className="text-ember font-semibold">
                     {t.nav.registre}
                   </button>
                 </div>
                 <div>
-                  <button onClick={() => navigate("/oblidat")} className="text-[#6b6f68] hover:underline">
+                  <button onClick={() => navigate("/oblidat")} className="text-stone hover:underline">
                     {t.auth.forgot}
                   </button>
                 </div>
               </>
             )}
             {mode === "register" && (
-              <div className="text-[#6b6f68]">
+              <div className="text-stone">
                 {t.auth.haveAccount}{" "}
-                <button onClick={() => navigate("/entrada")} className="text-[#e8673c] font-semibold">
+                <button onClick={() => navigate("/entrada")} className="text-ember font-semibold">
                   {t.nav.entrada}
                 </button>
               </div>
             )}
             {(mode === "forgot" || mode === "reset") && (
               <div>
-                <button onClick={() => navigate("/entrada")} className="text-[#6b6f68] hover:underline">
+                <button onClick={() => navigate("/entrada")} className="text-stone hover:underline">
                   {t.nav.entrada}
                 </button>
               </div>
@@ -441,7 +441,7 @@ export default function AuthView({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs font-semibold text-[#4b5349] mb-1 block">{label}</label>
+      <label className="text-xs font-semibold text-moss mb-1 block">{label}</label>
       {children}
     </div>
   );

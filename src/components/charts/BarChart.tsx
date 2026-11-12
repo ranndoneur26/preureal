@@ -37,12 +37,12 @@ export default function BarChart({ rows, locale }: Props) {
       {usable.map((r) => (
         <div key={r.label} className="flex items-center gap-2">
           <div className="w-[92px] shrink-0">
-            <div className={`text-[11px] leading-tight truncate ${r.highlight ? "font-bold text-[#0f2e21]" : "text-[#4b5349]"}`} title={r.label}>
+            <div className={`text-[11px] leading-tight truncate ${r.highlight ? "font-bold text-pine" : "text-moss"}`} title={r.label}>
               {r.label}
             </div>
-            {r.sub && <div className="text-[9px] text-[#6b6f68] leading-tight">{r.sub}</div>}
+            {r.sub && <div className="text-[9px] text-stone leading-tight">{r.sub}</div>}
           </div>
-          <div className="relative flex-1 h-5 rounded-md bg-[#f0ede8] overflow-hidden">
+          <div className="relative flex-1 h-5 rounded-md bg-sand overflow-hidden">
             <div
               className="absolute inset-y-0 left-0 rounded-md transition-all"
               style={{
@@ -51,7 +51,7 @@ export default function BarChart({ rows, locale }: Props) {
                 opacity: r.highlight ? 1 : 0.82,
               }}
             />
-            <div className={`absolute inset-y-0 right-2 flex items-center text-[10px] font-bold ${r.value / max > 0.75 ? "text-white drop-shadow" : "text-[#0f2e21]"}`}>
+            <div className={`absolute inset-y-0 right-2 flex items-center text-[10px] font-bold ${r.value / max > 0.75 ? "text-white drop-shadow" : "text-pine"}`}>
               {fmt(r.value)} €/mes{r.period ? <span className="ml-1 font-normal opacity-80">· {r.period}</span> : null}
             </div>
           </div>

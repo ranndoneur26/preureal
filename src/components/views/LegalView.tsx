@@ -12,12 +12,12 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
         <h1 className="text-3xl font-extrabold">{t.faq.title}</h1>
         <div className="mt-8 space-y-4">
           {faqs.map((f, i) => (
-            <details key={i} className="bg-white rounded-xl border border-[#e5e1da] p-5 group">
+            <details key={i} className="bg-card rounded-xl border border-line p-5 group">
               <summary className="font-bold cursor-pointer list-none flex justify-between items-center gap-3">
                 {f.q}
-                <span className="text-[#e8673c] text-xl group-open:rotate-45 transition-transform">+</span>
+                <span className="text-ember text-xl group-open:rotate-45 transition-transform">+</span>
               </summary>
-              <p className="mt-3 text-sm text-[#4b5349] leading-relaxed">{f.a}</p>
+              <p className="mt-3 text-sm text-moss leading-relaxed">{f.a}</p>
             </details>
           ))}
         </div>
@@ -32,7 +32,7 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
     <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold">{titles[kind]}</h1>
 
-      <div className="mt-8 space-y-6 text-[15px] leading-relaxed text-[#333]">
+      <div className="mt-8 space-y-6 text-[15px] leading-relaxed text-ink">
         {kind === "avis" && (
           <>
             <Block title={ca ? "1. Titular" : "1. Titularidad"}>
@@ -41,7 +41,7 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
                   ? "Titular: Preureal — projecte independent de dades obertes sobre el lloguer a Catalunya. Correu de contacte: admin@preureal.cat. No hi ha activitat comercial amb domicili físic diferent del contacte electrònic facilitat."
                   : "Titular: Preureal — proyecto independiente de datos abiertos sobre el alquiler en Cataluña. Correo de contacto: admin@preureal.cat. No hay actividad comercial con domicilio físico distinto del contacto electrónico facilitado."}
               </p>
-              <p className="mt-2 text-xs text-[#6b6f68]">
+              <p className="mt-2 text-xs text-stone">
                 {ca
                   ? "Dades identificatives de l'article 10 de la LSSI-CE (Llei 34/2002). La raó social i el NIF es publicaran quan el titular els faciliti; no s'inventen mai."
                   : "Datos identificativos del artículo 10 de la LSSI-CE (Ley 34/2002). La razón social y el NIF se publicarán cuando el titular los facilite; nunca se inventan."}
@@ -155,7 +155,7 @@ function Block({ title, children }: { title: string; children: React.ReactNode }
   return (
     <section>
       <h2 className="font-bold text-lg">{title}</h2>
-      <div className="mt-2 text-sm text-[#4b5349] leading-relaxed">{children}</div>
+      <div className="mt-2 text-sm text-moss leading-relaxed">{children}</div>
     </section>
   );
 }

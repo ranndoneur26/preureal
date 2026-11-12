@@ -228,10 +228,10 @@ export default function AdminView() {
     <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-10">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-3xl font-extrabold flex items-center gap-2">
-          <Shield className="w-7 h-7 text-[#0f2e21]" />
+          <Shield className="w-7 h-7 text-pine" />
           {t.admin.title}
         </h1>
-        <button onClick={loadAll} className="p-2 rounded-lg border border-[#e5e1da] hover:bg-[#f0ede8]" title="Refrescar">
+        <button onClick={loadAll} className="p-2 rounded-lg border border-line hover:bg-sand" title="Refrescar">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -252,7 +252,7 @@ export default function AdminView() {
             key={id}
             onClick={() => setTab(id as TabId)}
             className={`px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5 ${
-              tab === id ? "bg-[#0f2e21] text-white" : "bg-white border border-[#e5e1da] hover:bg-[#f0ede8]"
+              tab === id ? "bg-pine text-white" : "bg-card border border-line hover:bg-sand"
             }`}
           >
             <Icon className="w-4 h-4" />
@@ -275,7 +275,7 @@ export default function AdminView() {
             <Card label={ca ? "Informes ciutadans" : "Informes ciudadanos"} value={stats.reports} />
           </div>
 
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+          <div className="bg-card rounded-2xl border border-line p-5">
             <h3 className="font-bold mb-4">{t.admin.funnel}</h3>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <Card small label={t.admin.teasers} value={stats.funnel30.teasers} />
@@ -287,20 +287,20 @@ export default function AdminView() {
             <div className="mt-6 flex items-end gap-[3px] h-28">
               {stats.series.map((s) => (
                 <div key={s.day} className="flex-1 flex flex-col justify-end gap-[2px]" title={`${s.day}: ${s.MAP_QUERY} consultes, ${s.SIGNUP} registres`}>
-                  <div className="bg-[#e8673c] rounded-t-sm" style={{ height: `${(s.SUBSCRIBE_SUCCESS / maxSeries) * 100}%`, minHeight: s.SUBSCRIBE_SUCCESS ? 3 : 0 }} />
-                  <div className="bg-[#0f2e21] rounded-b-sm" style={{ height: `${(s.MAP_QUERY / maxSeries) * 100}%`, minHeight: s.MAP_QUERY ? 2 : 0 }} />
+                  <div className="bg-ember rounded-t-sm" style={{ height: `${(s.SUBSCRIBE_SUCCESS / maxSeries) * 100}%`, minHeight: s.SUBSCRIBE_SUCCESS ? 3 : 0 }} />
+                  <div className="bg-pine rounded-b-sm" style={{ height: `${(s.MAP_QUERY / maxSeries) * 100}%`, minHeight: s.MAP_QUERY ? 2 : 0 }} />
                 </div>
               ))}
-              {stats.series.length === 0 && <div className="text-sm text-[#6b6f68]">—</div>}
+              {stats.series.length === 0 && <div className="text-sm text-stone">—</div>}
             </div>
-            <div className="mt-2 flex gap-4 text-xs text-[#6b6f68]">
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#0f2e21] inline-block rounded-sm" /> MAP_QUERY</span>
-              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-[#e8673c] inline-block rounded-sm" /> SUBSCRIBE_SUCCESS</span>
+            <div className="mt-2 flex gap-4 text-xs text-stone">
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-pine inline-block rounded-sm" /> MAP_QUERY</span>
+              <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 bg-ember inline-block rounded-sm" /> SUBSCRIBE_SUCCESS</span>
             </div>
           </div>
 
           {/* Integracions + estat BD */}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+          <div className="bg-card rounded-2xl border border-line p-5">
             <h3 className="font-bold mb-3 flex items-center gap-2"><Plug className="w-4 h-4" />{t.admin.integrations}</h3>
             {health && (
               <div className="grid md:grid-cols-2 gap-3 text-sm">
@@ -322,7 +322,7 @@ export default function AdminView() {
                 ["subscriptions", "Subscripcions CSV"],
                 ["audit", "Auditoria CSV"],
               ].map(([ty, label]) => (
-                <a key={ty} href={`/api/admin/export-csv?type=${ty}`} className="px-3 py-2 rounded-lg border border-[#e5e1da] text-xs font-semibold hover:bg-[#f0ede8] flex items-center gap-1.5">
+                <a key={ty} href={`/api/admin/export-csv?type=${ty}`} className="px-3 py-2 rounded-lg border border-line text-xs font-semibold hover:bg-sand flex items-center gap-1.5">
                   <FileDown className="w-3.5 h-3.5" /> {label}
                 </a>
               ))}
@@ -333,15 +333,15 @@ export default function AdminView() {
 
       {/* USUARIS */}
       {tab === "users" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] overflow-hidden">
-          <div className="p-4 border-b border-[#eee9e1] flex gap-2 flex-wrap items-center">
+        <div className="mt-6 bg-card rounded-2xl border border-line overflow-hidden">
+          <div className="p-4 border-b border-sand3 flex gap-2 flex-wrap items-center">
             <input
               value={userQuery}
               onChange={(e) => setUserQuery(e.target.value)}
               placeholder={t.admin.search}
-              className="w-full max-w-xs px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+              className="w-full max-w-xs px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember"
             />
-            <select value={userPlanFilter} onChange={(e) => setUserPlanFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-[#e5e1da] text-sm">
+            <select value={userPlanFilter} onChange={(e) => setUserPlanFilter(e.target.value)} className="px-3 py-2 rounded-lg border border-line text-sm">
               <option value="">{ca ? "Tots els plans" : "Todos los planes"}</option>
               <option value="FREE">FREE</option>
               <option value="PREMIUM">PREMIUM</option>
@@ -350,7 +350,7 @@ export default function AdminView() {
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#faf9f7] text-left">
+              <thead className="bg-cream text-left">
                 <tr>
                   <th className="px-4 py-2.5 font-semibold">{t.admin.usersTable.email}</th>
                   <th className="px-4 py-2.5 font-semibold">{t.admin.usersTable.plan}</th>
@@ -362,20 +362,20 @@ export default function AdminView() {
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id} className={`border-t border-[#f2efe9] ${u.active ? "" : "opacity-50"}`}>
+                  <tr key={u.id} className={`border-t border-sand2 ${u.active ? "" : "opacity-50"}`}>
                     <td className="px-4 py-2.5">
                       {u.email}
-                      <span className="block text-xs text-[#6b6f68]">{u.name || "—"}</span>
+                      <span className="block text-xs text-stone">{u.name || "—"}</span>
                     </td>
                     <td className="px-4 py-2.5">
-                      <select value={u.plan} onChange={async (e) => patchUser(u.id, { plan: e.target.value })} className="border border-[#e5e1da] rounded-md px-2 py-1 text-xs">
+                      <select value={u.plan} onChange={async (e) => patchUser(u.id, { plan: e.target.value })} className="border border-line rounded-md px-2 py-1 text-xs">
                         <option>FREE</option>
                         <option>PREMIUM</option>
                         <option>PRO</option>
                       </select>
                     </td>
                     <td className="px-4 py-2.5">
-                      <select value={u.role} onChange={async (e) => patchUser(u.id, { role: e.target.value })} className="border border-[#e5e1da] rounded-md px-2 py-1 text-xs">
+                      <select value={u.role} onChange={async (e) => patchUser(u.id, { role: e.target.value })} className="border border-line rounded-md px-2 py-1 text-xs">
                         <option>USER</option>
                         <option>ADMIN</option>
                       </select>
@@ -383,17 +383,17 @@ export default function AdminView() {
                     <td className="px-4 py-2.5">
                       <button
                         onClick={() => patchUser(u.id, { active: !u.active })}
-                        className={`text-xs font-bold px-2 py-1 rounded-full ${u.active ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#fdeae2] text-[#b0431c]"}`}
+                        className={`text-xs font-bold px-2 py-1 rounded-full ${u.active ? "bg-mintsoft text-green2" : "bg-embersoft text-ember3"}`}
                       >
                         {u.active ? (ca ? "Actiu" : "Activo") : (ca ? "Desactivat" : "Desactivado")}
                       </button>
                     </td>
                     <td className="px-4 py-2.5 text-xs">{u.emailVerifiedAt ? "✓" : "—"}</td>
-                    <td className="px-4 py-2.5 text-[#6b6f68]">{new Date(u.createdAt).toLocaleDateString()}</td>
+                    <td className="px-4 py-2.5 text-stone">{new Date(u.createdAt).toLocaleDateString()}</td>
                   </tr>
                 ))}
                 {users.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-8 text-center text-[#6b6f68]">—</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-stone">—</td></tr>
                 )}
               </tbody>
             </table>
@@ -405,15 +405,15 @@ export default function AdminView() {
       {tab === "emails" && (
         <div className="mt-6 space-y-3">
           {emails.length === 0 && (
-            <div className="bg-white rounded-2xl border border-[#e5e1da] p-8 text-center text-[#6b6f68] text-sm">
+            <div className="bg-card rounded-2xl border border-line p-8 text-center text-stone text-sm">
               {t.admin.noEmails}
             </div>
           )}
           {emails.map((e) => (
-            <div key={e.id} className="bg-white rounded-xl border border-[#e5e1da] p-4">
+            <div key={e.id} className="bg-card rounded-xl border border-line p-4">
               <div className="flex justify-between gap-2 flex-wrap">
                 <div className="font-semibold text-sm">{e.subject}</div>
-                <div className="text-xs text-[#6b6f68]">
+                <div className="text-xs text-stone">
                   {e.provider} · {e.status}
                   {e.type && e.type !== "GENERIC" ? ` · ${e.type}` : ""}
                   {e.attempts > 1 ? ` · ${e.attempts} intents` : ""}
@@ -422,7 +422,7 @@ export default function AdminView() {
                   {new Date(e.createdAt).toLocaleString()}
                 </div>
               </div>
-              <div className="text-xs text-[#6b6f68] mt-1">→ {e.to}</div>
+              <div className="text-xs text-stone mt-1">→ {e.to}</div>
               {/* Diagnòstic: error real retornat pel proveïdor (Resend) quan status === "error" */}
               {e.error ? (
                 <div className="mt-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg p-2 whitespace-pre-wrap break-all">
@@ -430,7 +430,7 @@ export default function AdminView() {
                 </div>
               ) : null}
               {/* text net (htmlToText al servidor) — sense dangerouslySetInnerHTML */}
-              <pre className="mt-2 text-xs bg-[#faf9f7] rounded-lg p-3 max-h-40 overflow-y-auto pr-scroll whitespace-pre-wrap font-sans">{e.bodyText}</pre>
+              <pre className="mt-2 text-xs bg-cream rounded-lg p-3 max-h-40 overflow-y-auto pr-scroll whitespace-pre-wrap font-sans">{e.bodyText}</pre>
             </div>
           ))}
         </div>
@@ -439,10 +439,10 @@ export default function AdminView() {
       {/* DADES / IMPORTACIÓ */}
       {tab === "data" && (
         <div className="mt-6 space-y-4">
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
-            <h3 className="font-bold flex items-center gap-2"><FileWarning className="w-4 h-4 text-[#e8673c]" />{t.admin.importTitle}</h3>
-            <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">{t.admin.importDesc}</p>
-            <pre className="mt-3 bg-[#faf9f7] border border-[#eee9e1] rounded-lg p-3 text-xs overflow-x-auto">{`[
+          <div className="bg-card rounded-2xl border border-line p-5">
+            <h3 className="font-bold flex items-center gap-2"><FileWarning className="w-4 h-4 text-ember" />{t.admin.importTitle}</h3>
+            <p className="text-sm text-moss mt-2 leading-relaxed">{t.admin.importDesc}</p>
+            <pre className="mt-3 bg-cream border border-sand3 rounded-lg p-3 text-xs overflow-x-auto">{`[
   {
     "refcat": "0801901DF3851E",
     "municipalityCode": "080193",
@@ -458,20 +458,20 @@ export default function AdminView() {
               onChange={(e) => setImportJson(e.target.value)}
               rows={6}
               placeholder="[ ... ]"
-              className="mt-3 w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm font-mono outline-none focus:border-[#e8673c]"
+              className="mt-3 w-full px-3 py-2 rounded-lg border border-line text-sm font-mono outline-none focus:border-ember"
             />
             <div className="mt-3 flex items-center gap-3">
-              <button onClick={doImport} className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e]">
+              <button onClick={doImport} className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2">
                 {t.admin.importBtn}
               </button>
-              {importMsg && <span className="text-sm text-[#4b5349]">{importMsg}</span>}
+              {importMsg && <span className="text-sm text-moss">{importMsg}</span>}
             </div>
           </div>
 
           {/* Fase 4 — catàleg d'ajudes al lloguer (seed editorial) */}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
-            <h3 className="font-bold flex items-center gap-2"><HeartHandshake className="w-4 h-4 text-[#0f2e21]" />{ca ? "Ajudes al lloguer — catàleg editorial" : "Ayudas al alquiler — catálogo editorial"}</h3>
-            <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+          <div className="bg-card rounded-2xl border border-line p-5">
+            <h3 className="font-bold flex items-center gap-2"><HeartHandshake className="w-4 h-4 text-pine" />{ca ? "Ajudes al lloguer — catàleg editorial" : "Ayudas al alquiler — catálogo editorial"}</h3>
+            <p className="text-sm text-moss mt-2 leading-relaxed">
               {ca
                 ? "Sincronitza a la base de dades el catàleg d'ajudes al lloguer (font: src/data/rental_aid_seed.json, revisió 2026-11-10). Idempotent: pot executar-se tantes vegades com calgui sense duplicar files. Només escriu a la taula RentalAid."
                 : "Sincroniza en la base de datos el catálogo de ayudas al alquiler (fuente: src/data/rental_aid_seed.json, revisión 2026-11-10). Idempotente: puede ejecutarse tantas veces como haga falta sin duplicar filas. Solo escribe en la tabla RentalAid."}
@@ -480,20 +480,20 @@ export default function AdminView() {
               <button
                 onClick={doSeedAid}
                 disabled={seedingAid}
-                className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2 disabled:opacity-50"
               >
                 {seedingAid
                   ? ca ? "Sincronitzant…" : "Sincronizando…"
                   : ca ? "Sincronitza el catàleg" : "Sincronizar el catálogo"}
               </button>
-              {seedAidMsg && <span className="text-sm text-[#4b5349]">{seedAidMsg}</span>}
+              {seedAidMsg && <span className="text-sm text-moss">{seedAidMsg}</span>}
             </div>
           </div>
 
           {/* v39 — dades municipals (fiances Incasòl + ref. comarca) */}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
-            <h3 className="font-bold flex items-center gap-2"><MapPin className="w-4 h-4 text-[#0f2e21]" />{ca ? "Dades municipals — fiances i referències de comarca" : "Datos municipales — fianzas y referencias de comarca"}</h3>
-            <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+          <div className="bg-card rounded-2xl border border-line p-5">
+            <h3 className="font-bold flex items-center gap-2"><MapPin className="w-4 h-4 text-pine" />{ca ? "Dades municipals — fiances i referències de comarca" : "Datos municipales — fianzas y referencias de comarca"}</h3>
+            <p className="text-sm text-moss mt-2 leading-relaxed">
               {ca
                 ? "Sincronitza la taula Municipality amb el seed empaquetat (src/data/municipalities.json): fiances Incasòl oficials vigents, Palamós recuperat i la referència de comarca dels 254 municipis sense renda publicada. Idempotent (upsert per codi): no duplica files i només escriu a Municipality."
                 : "Sincroniza la tabla Municipality con el seed empaquetado (src/data/municipalities.json): fianzas Incasòl oficiales vigentes, Palamós recuperado y la referencia de comarca de los 254 municipios sin renta publicada. Idempotente (upsert por código): no duplica filas y solo escribe en Municipality."}
@@ -502,20 +502,20 @@ export default function AdminView() {
               <button
                 onClick={doSeedMunis}
                 disabled={seedingMunis}
-                className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2 disabled:opacity-50"
               >
                 {seedingMunis
                   ? ca ? "Sincronitzant…" : "Sincronizando…"
                   : ca ? "Sincronitza les dades municipals" : "Sincronizar los datos municipales"}
               </button>
-              {seedMunisMsg && <span className="text-sm text-[#4b5349]">{seedMunisMsg}</span>}
+              {seedMunisMsg && <span className="text-sm text-moss">{seedMunisMsg}</span>}
             </div>
           </div>
 
           {/* v37 — slugs públics per a les pàgines SEO /lloguer/[slug] */}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
-            <h3 className="font-bold flex items-center gap-2"><Globe className="w-4 h-4 text-[#0f2e21]" />{ca ? "Pàgines públiques de municipi (SEO)" : "Páginas públicas de municipio (SEO)"}</h3>
-            <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+          <div className="bg-card rounded-2xl border border-line p-5">
+            <h3 className="font-bold flex items-center gap-2"><Globe className="w-4 h-4 text-pine" />{ca ? "Pàgines públiques de municipi (SEO)" : "Páginas públicas de municipio (SEO)"}</h3>
+            <p className="text-sm text-moss mt-2 leading-relaxed">
               {ca
                 ? "Genera el slug públic dels 947 municipis (ex.: /lloguer/barcelona) per a les pàgines indexables amb el preu mitjà i la sèrie històrica. Idempotent: només actualitza els slugs que canvien. Executa-ho després de cada sincronització de dades municipals."
                 : "Genera el slug público de los 947 municipios (ej.: /lloguer/barcelona) para las páginas indexables con el precio medio y la serie histórica. Idempotente: solo actualiza los slugs que cambian. Ejecútalo después de cada sincronización de datos municipales."}
@@ -524,32 +524,32 @@ export default function AdminView() {
               <button
                 onClick={doBackfillSlugs}
                 disabled={seedingSlugs}
-                className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+                className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2 disabled:opacity-50"
               >
                 {seedingSlugs
                   ? ca ? "Generant slugs…" : "Generando slugs…"
                   : ca ? "Genera els slugs municipals" : "Generar los slugs municipales"}
               </button>
-              {seedSlugsMsg && <span className="text-sm text-[#4b5349]">{seedSlugsMsg}</span>}
+              {seedSlugsMsg && <span className="text-sm text-moss">{seedSlugsMsg}</span>}
             </div>
           </div>
 
           {/* Historial d'importacions (Fase 9.2) */}
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+          <div className="bg-card rounded-2xl border border-line p-5">
             <h3 className="font-bold mb-3">{ca ? "Historial d'importacions" : "Historial de importaciones"}</h3>
             {importRuns && importRuns.length > 0 ? (
               <div className="space-y-2 text-sm">
                 {importRuns.map((r) => (
-                  <div key={r.id} className="flex items-center justify-between gap-2 border border-[#f2efe9] rounded-lg px-3 py-2">
+                  <div key={r.id} className="flex items-center justify-between gap-2 border border-sand2 rounded-lg px-3 py-2">
                     <span>
                       <b>{r.source}</b> · {r.created} nous / {r.updated} act. / {r.skipped} ignorats de {r.rowsTotal}
-                      <span className="block text-xs text-[#6b6f68]">{new Date(r.createdAt).toLocaleString()} · estat {r.status}{r.error ? ` — ${r.error}` : ""}</span>
+                      <span className="block text-xs text-stone">{new Date(r.createdAt).toLocaleString()} · estat {r.status}{r.error ? ` — ${r.error}` : ""}</span>
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-[#6b6f68]">{ca ? "Cap importació registrada encara." : "Ninguna importación registrada todavía."}</p>
+              <p className="text-sm text-stone">{ca ? "Cap importació registrada encara." : "Ninguna importación registrada todavía."}</p>
             )}
           </div>
         </div>
@@ -563,27 +563,27 @@ export default function AdminView() {
             <Card label="Acceptats" value={modStats?.ACCEPTED ?? "—"} />
             <Card label="Rebutjats" value={modStats?.REJECTED ?? "—"} />
           </div>
-          <div className="bg-white rounded-2xl border border-[#e5e1da] p-5 space-y-2">
-            {modReports === null && <p className="text-sm text-[#6b6f68]">…</p>}
-            {modReports?.length === 0 && <p className="text-sm text-[#6b6f68]">{ca ? "Cap informe." : "Ningún informe."}</p>}
+          <div className="bg-card rounded-2xl border border-line p-5 space-y-2">
+            {modReports === null && <p className="text-sm text-stone">…</p>}
+            {modReports?.length === 0 && <p className="text-sm text-stone">{ca ? "Cap informe." : "Ningún informe."}</p>}
             {modReports?.map((r) => (
-              <div key={r.id} className="border border-[#f2efe9] rounded-lg px-3 py-2.5 text-sm flex items-start justify-between gap-3 flex-wrap">
+              <div key={r.id} className="border border-sand2 rounded-lg px-3 py-2.5 text-sm flex items-start justify-between gap-3 flex-wrap">
                 <div>
-                  <b>{r.offerEurMonth} €/mes</b> {r.offerEurM2 && <span className="text-xs text-[#6b6f68]">({r.offerEurM2} €/m²)</span>}
-                  <span className="block text-xs text-[#6b6f68]">
+                  <b>{r.offerEurMonth} €/mes</b> {r.offerEurM2 && <span className="text-xs text-stone">({r.offerEurM2} €/m²)</span>}
+                  <span className="block text-xs text-stone">
                     mun {r.municipalityCode} · {r.contractType || "—"} · {r.surfaceM2 ? `${r.surfaceM2} m²` : "—"} · {r.userEmail || "anònim"} · {new Date(r.createdAt).toLocaleString()}
                     {r.note && <span className="block">nota: {r.note}</span>}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.status === "ACCEPTED" ? "bg-[#e6f4ea] text-[#1e7a41]" : r.status === "REJECTED" ? "bg-[#fdeae2] text-[#b0431c]" : "bg-[#f0ede8]"}`}>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${r.status === "ACCEPTED" ? "bg-mintsoft text-green2" : r.status === "REJECTED" ? "bg-embersoft text-ember3" : "bg-sand"}`}>
                     {r.status}
                   </span>
                   {r.status !== "ACCEPTED" && (
-                    <button onClick={() => moderate(r.id, "ACCEPTED")} className="px-2.5 py-1 rounded-md bg-[#e6f4ea] text-[#1e7a41] text-xs font-semibold">Acceptar</button>
+                    <button onClick={() => moderate(r.id, "ACCEPTED")} className="px-2.5 py-1 rounded-md bg-mintsoft text-green2 text-xs font-semibold">Acceptar</button>
                   )}
                   {r.status !== "REJECTED" && (
-                    <button onClick={() => moderate(r.id, "REJECTED")} className="px-2.5 py-1 rounded-md bg-[#fdeae2] text-[#b0431c] text-xs font-semibold">Rebutjar</button>
+                    <button onClick={() => moderate(r.id, "REJECTED")} className="px-2.5 py-1 rounded-md bg-embersoft text-ember3 text-xs font-semibold">Rebutjar</button>
                   )}
                 </div>
               </div>
@@ -594,32 +594,32 @@ export default function AdminView() {
 
       {/* PLANS I LÍMITS */}
       {tab === "plans" && planSettings && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-5">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-5">
           <h3 className="font-bold mb-3">{ca ? "Configuració dels plans (efectiva al servidor)" : "Configuración de los planes (efectiva en el servidor)"}</h3>
           <div className="grid md:grid-cols-3 gap-4">
             {(["FREE", "PREMIUM", "PRO"] as const).map((p) => (
-              <div key={p} className="border border-[#f2efe9] rounded-xl p-4 space-y-2">
+              <div key={p} className="border border-sand2 rounded-xl p-4 space-y-2">
                 <div className="font-bold">{p}</div>
                 <div>
-                  <label className="text-xs text-[#6b6f68]">{ca ? "Consultes/mes (-1 = il·limitades)" : "Consultas/mes (-1 = ilimitadas)"}</label>
+                  <label className="text-xs text-stone">{ca ? "Consultes/mes (-1 = il·limitades)" : "Consultas/mes (-1 = ilimitadas)"}</label>
                   <input
                     type="number"
                     value={planSettings[p].quotaMonth}
                     onChange={(e) => setPlanSettings({ ...planSettings, [p]: { ...planSettings[p], quotaMonth: parseInt(e.target.value, 10) } })}
-                    className="w-full mt-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                    className="w-full mt-1 px-3 py-2 rounded-lg border border-line text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-[#6b6f68]">{ca ? "Preu (€/mes)" : "Precio (€/mes)"}</label>
+                  <label className="text-xs text-stone">{ca ? "Preu (€/mes)" : "Precio (€/mes)"}</label>
                   <input
                     type="number"
                     step="0.01"
                     value={planSettings[p].priceEur}
                     onChange={(e) => setPlanSettings({ ...planSettings, [p]: { ...planSettings[p], priceEur: parseFloat(e.target.value) } })}
-                    className="w-full mt-1 px-3 py-2 rounded-lg border border-[#e5e1da] text-sm"
+                    className="w-full mt-1 px-3 py-2 rounded-lg border border-line text-sm"
                   />
                 </div>
-                <div className="text-xs text-[#6b6f68] space-y-1">
+                <div className="text-xs text-stone space-y-1">
                   {Object.entries(planSettings[p].features || {}).map(([k, v]: any) => (
                     <label key={k} className="flex items-center gap-1.5">
                       <input
@@ -637,30 +637,30 @@ export default function AdminView() {
               </div>
             ))}
           </div>
-          <button onClick={savePlanSettings} className="mt-4 px-5 py-2.5 rounded-xl bg-[#0f2e21] text-white text-sm font-bold">
+          <button onClick={savePlanSettings} className="mt-4 px-5 py-2.5 rounded-xl bg-pine text-white text-sm font-bold">
             {ca ? "Desar configuració" : "Guardar configuración"}
           </button>
-          <p className="text-xs text-[#6b6f68] mt-2">{ca ? "Els canvis s'apliquen al cap de 30 s (cau) i queden registrats a l'auditoria." : "Los cambios se aplican en 30 s (caché) y quedan registrados en la auditoría."}</p>
+          <p className="text-xs text-stone mt-2">{ca ? "Els canvis s'apliquen al cap de 30 s (cau) i queden registrats a l'auditoria." : "Los cambios se aplican en 30 s (caché) y quedan registrados en la auditoría."}</p>
         </div>
       )}
 
       {/* AUDITORIA */}
       {tab === "audit" && (
-        <div className="mt-6 bg-white rounded-2xl border border-[#e5e1da] p-5">
+        <div className="mt-6 bg-card rounded-2xl border border-line p-5">
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold">{ca ? "Historial d'auditoria (accions sensibles)" : "Historial de auditoría (acciones sensibles)"}</h3>
             <a href="/api/admin/export-csv?type=audit" className="text-xs underline flex items-center gap-1"><Download className="w-3 h-3" /> CSV</a>
           </div>
-          {auditLogs === null && <p className="text-sm text-[#6b6f68]">…</p>}
-          {auditLogs?.length === 0 && <p className="text-sm text-[#6b6f68]">{ca ? "Cap acció registrada encara." : "Ninguna acción registrada todavía."}</p>}
+          {auditLogs === null && <p className="text-sm text-stone">…</p>}
+          {auditLogs?.length === 0 && <p className="text-sm text-stone">{ca ? "Cap acció registrada encara." : "Ninguna acción registrada todavía."}</p>}
           <div className="space-y-1.5">
             {auditLogs?.map((l) => (
-              <div key={l.id} className="text-xs border border-[#f2efe9] rounded-lg px-3 py-2 flex items-start justify-between gap-2 flex-wrap">
+              <div key={l.id} className="text-xs border border-sand2 rounded-lg px-3 py-2 flex items-start justify-between gap-2 flex-wrap">
                 <span>
-                  <b className="font-mono">{l.action}</b> {l.target && <span className="text-[#6b6f68]">→ {l.target}</span>}
-                  {l.meta && <span className="block text-[#6b6f68] max-w-2xl truncate">{JSON.stringify(l.meta)}</span>}
+                  <b className="font-mono">{l.action}</b> {l.target && <span className="text-stone">→ {l.target}</span>}
+                  {l.meta && <span className="block text-stone max-w-2xl truncate">{JSON.stringify(l.meta)}</span>}
                 </span>
-                <span className="text-[#6b6f68] shrink-0">{l.actorEmail || "sistema"} · {new Date(l.createdAt).toLocaleString()}</span>
+                <span className="text-stone shrink-0">{l.actorEmail || "sistema"} · {new Date(l.createdAt).toLocaleString()}</span>
               </div>
             ))}
           </div>
@@ -672,21 +672,21 @@ export default function AdminView() {
 
 function Card({ label, value, small }: { label: string; value: any; small?: boolean }) {
   return (
-    <div className={`rounded-xl bg-white border border-[#e5e1da] ${small ? "p-3" : "p-4"}`}>
-      <div className={`font-black text-[#0f2e21] ${small ? "text-xl" : "text-2xl"}`}>{value}</div>
-      <div className={`text-[#6b6f68] mt-0.5 ${small ? "text-[10px]" : "text-xs"}`}>{label}</div>
+    <div className={`rounded-xl bg-card border border-line ${small ? "p-3" : "p-4"}`}>
+      <div className={`font-black text-pine ${small ? "text-xl" : "text-2xl"}`}>{value}</div>
+      <div className={`text-stone mt-0.5 ${small ? "text-[10px]" : "text-xs"}`}>{label}</div>
     </div>
   );
 }
 
 function IntRow({ name, ok, detail }: { name: string; ok: boolean; detail?: string }) {
   return (
-    <div className="flex items-center justify-between gap-2 border border-[#eee9e1] rounded-lg px-3 py-2">
+    <div className="flex items-center justify-between gap-2 border border-sand3 rounded-lg px-3 py-2">
       <span>
         {name}
-        {detail && <span className="block text-xs text-[#6b6f68]">{detail}</span>}
+        {detail && <span className="block text-xs text-stone">{detail}</span>}
       </span>
-      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ok ? "bg-[#e6f4ea] text-[#1e7a41]" : "bg-[#fdeae2] text-[#b0431c]"}`}>
+      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${ok ? "bg-mintsoft text-green2" : "bg-embersoft text-ember3"}`}>
         {ok ? "OK" : "KO"}
       </span>
     </div>
@@ -739,13 +739,13 @@ function LoginRequired() {
     <div className="flex-1 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-md space-y-4">
         <div className="flex justify-center">
-          <button onClick={() => navigate("/entrada")} className="px-5 py-2.5 rounded-xl bg-[#e8673c] text-white font-bold">
+          <button onClick={() => navigate("/entrada")} className="px-5 py-2.5 rounded-xl bg-ember text-white font-bold">
             {t.nav.entrada}
           </button>
         </div>
-        <div className="bg-white rounded-2xl border border-[#e5e1da] p-5">
+        <div className="bg-card rounded-2xl border border-line p-5">
           <h3 className="font-bold">{ca ? "Recupera l'accés d'administració" : "Recupera el acceso de administración"}</h3>
-          <p className="text-sm text-[#4b5349] mt-2 leading-relaxed">
+          <p className="text-sm text-moss mt-2 leading-relaxed">
             {ca
               ? "Només per al propietari: defineix ADMIN_BOOTSTRAP_CODE a Vercel (Settings → Environment Variables, després Redeploy) i introdueix aquí el codi amb el teu email i una contrasenya nova (mínim 8 caràcters). Si ja tens compte, se't dona el rol admin; si no, es crea."
               : "Solo para el propietario: define ADMIN_BOOTSTRAP_CODE en Vercel (Settings → Environment Variables, después Redeploy) e introduce aquí el código con tu email y una contraseña nueva (mínimo 8 caracteres). Si ya tienes cuenta, se te da el rol admin; si no, se crea."}
@@ -754,30 +754,30 @@ function LoginRequired() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={ca ? "El teu email" : "Tu email"}
-            className="mt-3 w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+            className="mt-3 w-full px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember"
           />
           <input
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"
             placeholder={ca ? "Contrasenya nova (mín. 8)" : "Contraseña nueva (mín. 8)"}
-            className="mt-2 w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+            className="mt-2 w-full px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember"
           />
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
             placeholder={ca ? "Codi de recuperació (ADMIN_BOOTSTRAP_CODE)" : "Código de recuperación (ADMIN_BOOTSTRAP_CODE)"}
-            className="mt-2 w-full px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+            className="mt-2 w-full px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember"
           />
           <div className="mt-3 flex items-center gap-3 flex-wrap">
             <button
               onClick={recover}
               disabled={busy}
-              className="px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-bold hover:bg-[#16402e] disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2 disabled:opacity-50"
             >
               {busy ? (ca ? "Recuperant…" : "Recuperando…") : ca ? "Recupera l'accés" : "Recuperar el acceso"}
             </button>
-            {msg && <span className="text-sm text-[#4b5349] flex-1 min-w-[12rem]">{msg}</span>}
+            {msg && <span className="text-sm text-moss flex-1 min-w-[12rem]">{msg}</span>}
           </div>
         </div>
       </div>
@@ -788,7 +788,7 @@ function LoginRequired() {
 function NoAccess() {
   const { locale } = useApp();
   return (
-    <div className="flex-1 flex items-center justify-center px-4 text-[#6b6f68]">
+    <div className="flex-1 flex items-center justify-center px-4 text-stone">
       {locale === "ca" ? "Accés restringit a administradors" : "Acceso restringido a administradores"}
     </div>
   );

@@ -35,17 +35,17 @@ type IneStatus = {
 };
 
 const QUALITY_STYLES: Record<string, string> = {
-  ALTA: "bg-[#e7f5ec] text-[#1d5c38] border-[#bfe3cd]",
-  MITJANA: "bg-[#fff7e8] text-[#8a6116] border-[#f2d9a4]",
-  DECLARATIU: "bg-[#f0ede8] text-[#6b6f68] border-[#e5e1da]",
-  EDITORIAL: "bg-[#f0ede8] text-[#6b6f68] border-[#e5e1da]",
+  ALTA: "bg-mintsoft text-mossdeep border-mintline",
+  MITJANA: "bg-ambersoft text-ambertext border-amberline",
+  DECLARATIU: "bg-sand text-stone border-line",
+  EDITORIAL: "bg-sand text-stone border-line",
 };
 
 function qualityStyle(q: string): string {
   if (q.startsWith("ALTA")) return QUALITY_STYLES.ALTA;
   if (q.startsWith("MITJANA")) return QUALITY_STYLES.MITJANA;
   if (q.startsWith("EDITORIAL") || q.startsWith("DECLARATIU")) return QUALITY_STYLES.EDITORIAL;
-  return "bg-[#fdeae2] text-[#b0431c] border-[#f5cdbd]"; // SEGONS FONT / altres
+  return "bg-embersoft text-ember3 border-emberline"; // SEGONS FONT / altres
 }
 
 export default function MetodologiaView() {
@@ -113,28 +113,28 @@ export default function MetodologiaView() {
   return (
     <div className="flex-1 w-full max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold flex items-center gap-3">
-        <Scale className="w-7 h-7 text-[#e8673c]" />
+        <Scale className="w-7 h-7 text-ember" />
         {ca ? "Fonts i metodologia" : "Fuentes y metodología"}
       </h1>
-      <p className="mt-3 text-[15px] text-[#4b5349] leading-relaxed max-w-3xl">
+      <p className="mt-3 text-[15px] text-moss leading-relaxed max-w-3xl">
         {ca
           ? "Cada xifra de Preureal ve d'una font oficial amb llicència coneguda. Aquí expliquem d'on surt cada dada, amb quina metodologia, amb quines limitacions i quan s'actualitza. La transparència metodològica no és un annex: és la base per poder comparar amb criteri."
           : "Cada cifra de Preureal viene de una fuente oficial con licencia conocida. Aquí explicamos de dónde sale cada dato, con qué metodología, con qué limitaciones y cuándo se actualiza. La transparencia metodológica no es un anexo: es la base para poder comparar con criterio."}
       </p>
 
       {/* Principis */}
-      <div className="mt-8 rounded-2xl border border-[#e5e1da] bg-[#f0ede8]/60 p-5">
+      <div className="mt-8 rounded-2xl border border-line bg-sand/60 p-5">
         <h2 className="font-bold text-lg flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-[#0f2e21]" />
+          <ShieldCheck className="w-5 h-5 text-pine" />
           {ca ? "Principis" : "Principios"}
         </h2>
-        <ul className="mt-3 space-y-1.5 text-sm text-[#4b5349]">
+        <ul className="mt-3 space-y-1.5 text-sm text-moss">
           {(principis.length > 0
             ? principis.map((p) => (locale === "ca" ? p : translatePrincipi(p)))
             : fallbackPrincipis(ca)
           ).map((p, i) => (
             <li key={i} className="flex gap-2">
-              <span className="text-[#e8673c] font-bold">•</span>
+              <span className="text-ember font-bold">•</span>
               <span>{p}</span>
             </li>
           ))}
@@ -143,21 +143,21 @@ export default function MetodologiaView() {
 
       {/* Datasets */}
       <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
-        <Database className="w-5 h-5 text-[#0f2e21]" />
+        <Database className="w-5 h-5 text-pine" />
         {ca ? "Datasets, un a un" : "Conjuntos de datos, uno a uno"}
       </h2>
       {error && (
-        <p className="mt-3 text-sm text-[#b0431c]">
+        <p className="mt-3 text-sm text-ember3">
           {ca ? "No s'ha pogut carregar el registre de proveniència ara mateix." : "No se ha podido cargar el registro de procedencia ahora mismo."}
         </p>
       )}
       {datasets === null && !error && (
         <div className="mt-4 grid gap-4 md:grid-cols-2" aria-busy="true">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="rounded-2xl border border-[#e5e1da] p-5 animate-pulse">
-              <div className="h-4 w-2/3 rounded bg-[#e5e1da]" />
-              <div className="mt-3 h-3 w-full rounded bg-[#f0ede8]" />
-              <div className="mt-2 h-3 w-5/6 rounded bg-[#f0ede8]" />
+            <div key={i} className="rounded-2xl border border-line p-5 animate-pulse">
+              <div className="h-4 w-2/3 rounded bg-line" />
+              <div className="mt-3 h-3 w-full rounded bg-sand" />
+              <div className="mt-2 h-3 w-5/6 rounded bg-sand" />
             </div>
           ))}
         </div>
@@ -165,22 +165,22 @@ export default function MetodologiaView() {
       {datasets && (
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           {datasets.map((d) => (
-            <article key={d.id} className="rounded-2xl border border-[#e5e1da] bg-white p-5 flex flex-col gap-2">
+            <article key={d.id} className="rounded-2xl border border-line bg-card p-5 flex flex-col gap-2">
               <div className="flex items-start justify-between gap-3">
                 <h3 className="font-bold leading-snug">{d.nom}</h3>
                 <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${qualityStyle(d.qualitat)}`}>
                   {d.qualitat.split("—")[0].trim()}
                 </span>
               </div>
-              <dl className="text-sm text-[#4b5349] space-y-1">
+              <dl className="text-sm text-moss space-y-1">
                 <Row k={ca ? "Font" : "Fuente"} v={d.font} />
                 <Row k={ca ? "Llicència" : "Licencia"} v={d.llicencia} />
                 <Row k={ca ? "Unitat" : "Unidad"} v={d.unitat} />
                 <Row k={ca ? "Àmbit" : "Ámbito"} v={d.ambit} />
                 <Row k={ca ? "Periodicitat" : "Periodicidad"} v={d.periodicitat} />
               </dl>
-              <p className="text-[13px] text-[#6b6f68] leading-relaxed border-t border-[#e5e1da] pt-2">
-                <b className="text-[#4b5349]">{ca ? "Metodologia: " : "Metodología: "}</b>
+              <p className="text-[13px] text-stone leading-relaxed border-t border-line pt-2">
+                <b className="text-moss">{ca ? "Metodologia: " : "Metodología: "}</b>
                 {d.metodologia}
               </p>
             </article>
@@ -190,15 +190,15 @@ export default function MetodologiaView() {
 
       {/* Últimes importacions INE (data real de refresc) */}
       {ine?.ultimasImportaciones && ine.ultimasImportaciones.length > 0 && (
-        <div className="mt-8 rounded-2xl border border-[#e5e1da] bg-white p-5">
+        <div className="mt-8 rounded-2xl border border-line bg-card p-5">
           <h2 className="font-bold text-lg">{ca ? "Últimes importacions INE" : "Últimas importaciones INE"}</h2>
           <ul className="mt-3 space-y-2 text-sm">
             {ine.ultimasImportaciones.slice(0, 4).map((r, i) => (
               <li key={i} className="flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.status === "ok" || r.status === "success" ? "bg-[#e7f5ec] text-[#1d5c38]" : "bg-[#fff7e8] text-[#8a6116]"}`}>
+                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${r.status === "ok" || r.status === "success" ? "bg-mintsoft text-mossdeep" : "bg-ambersoft text-ambertext"}`}>
                   {r.source}
                 </span>
-                <span className="text-[#4b5349]">
+                <span className="text-moss">
                   {r.status} · {r.rowsTotal ?? 0} {ca ? "files" : "filas"} ·{" "}
                   {new Date(r.createdAt).toLocaleDateString(ca ? "ca-ES" : "es-ES")}
                 </span>
@@ -210,35 +210,35 @@ export default function MetodologiaView() {
 
       {/* Cicle d'actualització */}
       <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
-        <FileText className="w-5 h-5 text-[#0f2e21]" />
+        <FileText className="w-5 h-5 text-pine" />
         {ca ? "Cicle d'actualització" : "Ciclo de actualización"}
       </h2>
       <div className="mt-4 grid gap-4 md:grid-cols-3">
         {cicle.map((c, i) => (
-          <div key={i} className="rounded-2xl border border-[#e5e1da] bg-[#f0ede8]/50 p-4">
+          <div key={i} className="rounded-2xl border border-line bg-sand/50 p-4">
             <div className="font-semibold text-sm">{c.t}</div>
-            <p className="mt-1.5 text-[13px] text-[#4b5349] leading-relaxed">{c.d}</p>
+            <p className="mt-1.5 text-[13px] text-moss leading-relaxed">{c.d}</p>
           </div>
         ))}
       </div>
 
       {/* Limitacions */}
       <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
-        <AlertTriangle className="w-5 h-5 text-[#e8673c]" />
+        <AlertTriangle className="w-5 h-5 text-ember" />
         {ca ? "Limitacions conegudes" : "Limitaciones conocidas"}
       </h2>
       <ul className="mt-4 space-y-2.5">
         {limitacions.map((l, i) => (
-          <li key={i} className="flex gap-2.5 text-sm text-[#4b5349] leading-relaxed">
-            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#e8673c] shrink-0" />
+          <li key={i} className="flex gap-2.5 text-sm text-moss leading-relaxed">
+            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-ember shrink-0" />
             <span>{l}</span>
           </li>
         ))}
       </ul>
 
-      <p className="mt-8 text-sm text-[#6b6f68]">
+      <p className="mt-8 text-sm text-stone">
         {ca ? "Vols veure les dades en directe? " : "¿Quieres ver los datos en directo? "}
-        <button onClick={() => navigate("/mapa")} className="text-[#e8673c] font-semibold hover:underline">
+        <button onClick={() => navigate("/mapa")} className="text-ember font-semibold hover:underline">
           {ca ? "Obre el mapa" : "Abre el mapa"}
         </button>
       </p>
@@ -249,7 +249,7 @@ export default function MetodologiaView() {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex gap-2">
-      <dt className="text-[#6b6f68] shrink-0 w-24">{k}</dt>
+      <dt className="text-stone shrink-0 w-24">{k}</dt>
       <dd className="flex-1">{v}</dd>
     </div>
   );

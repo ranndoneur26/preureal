@@ -110,44 +110,44 @@ export default function EstatView() {
     <div className="flex-1 w-full max-w-3xl mx-auto px-4 py-12">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <h1 className="text-3xl font-extrabold flex items-center gap-3">
-          <Activity className="w-7 h-7 text-[#e8673c]" />
+          <Activity className="w-7 h-7 text-ember" />
           {ca ? "Estat del servei" : "Estado del servicio"}
         </h1>
         <button
           onClick={load}
           disabled={busy}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-[#e5e1da] text-sm font-semibold hover:bg-[#f0ede8] disabled:opacity-50"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-lg border border-line text-sm font-semibold hover:bg-sand disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${busy ? "animate-spin" : ""}`} />
           {ca ? "Comprova ara" : "Comprobar ahora"}
         </button>
       </div>
 
-      <div className={`mt-5 rounded-2xl border p-5 flex items-center gap-4 ${health === null ? "border-[#f2d9a4] bg-[#fff7e8]" : allOk ? "border-[#bfe3cd] bg-[#e7f5ec]" : "border-[#f5cdbd] bg-[#fdeae2]"}`}>
+      <div className={`mt-5 rounded-2xl border p-5 flex items-center gap-4 ${health === null ? "border-amberline bg-ambersoft" : allOk ? "border-mintline bg-mintsoft" : "border-emberline bg-embersoft"}`}>
         {health === null ? (
           <>
-            <Clock className="w-8 h-8 text-[#8a6116] shrink-0" />
+            <Clock className="w-8 h-8 text-ambertext shrink-0" />
             <div>
-              <div className="font-bold text-[#8a6116]">{ca ? "Comprovant l'estat…" : "Comprobando el estado…"}</div>
-              <p className="text-sm text-[#8a6116] mt-0.5">{ca ? "Si no apareix res en uns segons, hi pot haver una incidència temporal." : "Si no aparece nada en unos segundos, puede haber una incidencia temporal."}</p>
+              <div className="font-bold text-ambertext">{ca ? "Comprovant l'estat…" : "Comprobando el estado…"}</div>
+              <p className="text-sm text-ambertext mt-0.5">{ca ? "Si no apareix res en uns segons, hi pot haver una incidència temporal." : "Si no aparece nada en unos segundos, puede haber una incidencia temporal."}</p>
             </div>
           </>
         ) : allOk ? (
           <>
-            <CheckCircle2 className="w-8 h-8 text-[#1d5c38] shrink-0" />
+            <CheckCircle2 className="w-8 h-8 text-mossdeep shrink-0" />
             <div>
-              <div className="font-bold text-[#1d5c38]">{ca ? "Tots els sistemes operatius" : "Todos los sistemas operativos"}</div>
-              <p className="text-sm text-[#1d5c38]/80 mt-0.5">
+              <div className="font-bold text-mossdeep">{ca ? "Tots els sistemes operatius" : "Todos los sistemas operativos"}</div>
+              <p className="text-sm text-mossdeep/80 mt-0.5">
                 {checkedAt && (ca ? `Última comprovació: ${checkedAt.toLocaleTimeString("ca-ES")} · auto-refresc cada minut` : `Última comprobación: ${checkedAt.toLocaleTimeString("es-ES")} · autorrefresco cada minuto`)}
               </p>
             </div>
           </>
         ) : (
           <>
-            <AlertTriangle className="w-8 h-8 text-[#b0431c] shrink-0" />
+            <AlertTriangle className="w-8 h-8 text-ember3 shrink-0" />
             <div>
-              <div className="font-bold text-[#b0431c]">{ca ? "Rendiment degradat" : "Rendimiento degradado"}</div>
-              <p className="text-sm text-[#b0431c]/80 mt-0.5">{ca ? "Alguns components no responen correctament." : "Algunos componentes no responden correctamente."}</p>
+              <div className="font-bold text-ember3">{ca ? "Rendiment degradat" : "Rendimiento degradado"}</div>
+              <p className="text-sm text-ember3/80 mt-0.5">{ca ? "Alguns components no responen correctament." : "Algunos componentes no responden correctamente."}</p>
             </div>
           </>
         )}
@@ -157,19 +157,19 @@ export default function EstatView() {
       <h2 className="mt-8 font-bold text-lg">{ca ? "Components" : "Componentes"}</h2>
       <div className="mt-3 grid gap-2.5">
         {rows.length === 0 && (
-          <p className="text-sm text-[#6b6f68]">{ca ? "Carregant sondes…" : "Cargando sondas…"}</p>
+          <p className="text-sm text-stone">{ca ? "Carregant sondes…" : "Cargando sondas…"}</p>
         )}
         {rows.map((r) => {
           const Icon = ICONS[r.key] ?? Globe;
           return (
-            <div key={r.key} className="rounded-xl border border-[#e5e1da] bg-white px-4 py-3 flex items-center gap-3">
-              <Icon className="w-5 h-5 text-[#4b5349] shrink-0" />
+            <div key={r.key} className="rounded-xl border border-line bg-card px-4 py-3 flex items-center gap-3">
+              <Icon className="w-5 h-5 text-moss shrink-0" />
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold">{r.nom}</div>
-                <div className="text-xs text-[#6b6f68] truncate">{r.detail}</div>
+                <div className="text-xs text-stone truncate">{r.detail}</div>
               </div>
-              <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${r.ok === true ? "bg-[#e7f5ec] text-[#1d5c38]" : r.ok === false ? "bg-[#fdeae2] text-[#b0431c]" : "bg-[#f0ede8] text-[#6b6f68]"}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${r.ok === true ? "bg-[#2e9e5b]" : r.ok === false ? "bg-[#e8673c]" : "bg-[#9aa098]"}`} />
+              <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${r.ok === true ? "bg-mintsoft text-mossdeep" : r.ok === false ? "bg-embersoft text-ember3" : "bg-sand text-stone"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${r.ok === true ? "bg-green" : r.ok === false ? "bg-ember" : "bg-graydot"}`} />
                 {r.ok === true ? (ca ? "Operatiu" : "Operativo") : r.ok === false ? (ca ? "Error" : "Error") : ca ? "Opcional" : "Opcional"}
               </span>
             </div>
@@ -181,8 +181,8 @@ export default function EstatView() {
       <h2 className="mt-8 font-bold text-lg">{ca ? "Actualització de dades" : "Actualización de datos"}</h2>
       <div className="mt-3 grid gap-2.5">
         {health?.municipalities && (
-          <div className="rounded-xl border border-[#e5e1da] bg-white px-4 py-3 flex items-center gap-3">
-            <MapPin className="w-5 h-5 text-[#4b5349] shrink-0" />
+          <div className="rounded-xl border border-line bg-card px-4 py-3 flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-moss shrink-0" />
             <div className="flex-1 text-sm">
               <b>{health.municipalities.total ?? "—"}</b> {ca ? "municipis carregats ·" : "municipios cargados ·"}{" "}
               <b>{health.municipalities.withRent ?? "—"}</b> {ca ? "amb mitjana oficial de fiances ·" : "con media oficial de fianzas ·"}{" "}
@@ -191,43 +191,43 @@ export default function EstatView() {
           </div>
         )}
         {lastImport ? (
-          <div className="rounded-xl border border-[#e5e1da] bg-white px-4 py-3 flex items-center gap-3">
-            <Database className="w-5 h-5 text-[#4b5349] shrink-0" />
+          <div className="rounded-xl border border-line bg-card px-4 py-3 flex items-center gap-3">
+            <Database className="w-5 h-5 text-moss shrink-0" />
             <div className="flex-1 text-sm">
               <b>{ca ? "Última importació INE:" : "Última importación INE:"}</b>{" "}
               {lastImport.source} · {lastImport.rowsTotal ?? 0} {ca ? "files" : "filas"} ·{" "}
               {new Date(lastImport.createdAt).toLocaleString(ca ? "ca-ES" : "es-ES")}
             </div>
-            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${lastImport.status === "ok" ? "bg-[#e7f5ec] text-[#1d5c38]" : "bg-[#fff7e8] text-[#8a6116]"}`}>
+            <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${lastImport.status === "ok" ? "bg-mintsoft text-mossdeep" : "bg-ambersoft text-ambertext"}`}>
               {lastImport.status}
             </span>
           </div>
         ) : (
-          <p className="text-sm text-[#6b6f68]">{ca ? "Carregant historial d'importacions…" : "Cargando historial de importaciones…"}</p>
+          <p className="text-sm text-stone">{ca ? "Carregant historial d'importacions…" : "Cargando historial de importaciones…"}</p>
         )}
       </div>
 
       {/* Incidències */}
       <h2 className="mt-8 font-bold text-lg">{ca ? "Incidències" : "Incidencias"}</h2>
-      <p className="mt-1 text-sm text-[#6b6f68]">
+      <p className="mt-1 text-sm text-stone">
         {ca
           ? "Historial d'incidències rellevants publicades. Si ara mateix tot és operatiu, no n'hi ha cap d'activa."
           : "Historial de incidencias relevantes publicadas. Si ahora mismo todo está operativo, no hay ninguna activa."}
       </p>
-      <div className="mt-3 rounded-xl border border-[#e5e1da] bg-white divide-y divide-[#e5e1da]">
+      <div className="mt-3 rounded-xl border border-line bg-card divide-y divide-line">
         {INCIDENTS.map((inc, i) => (
           <div key={i} className="px-4 py-3 flex items-start gap-3">
-            <CheckCircle2 className="w-4 h-4 text-[#2e9e5b] shrink-0 mt-0.5" />
+            <CheckCircle2 className="w-4 h-4 text-green shrink-0 mt-0.5" />
             <div className="flex-1 text-sm">
               <b>{ca ? inc.titolCa : inc.titolEs}</b>
-              <p className="text-[13px] text-[#6b6f68] mt-0.5 leading-relaxed">{ca ? inc.detallCa : inc.detallEs}</p>
+              <p className="text-[13px] text-stone mt-0.5 leading-relaxed">{ca ? inc.detallCa : inc.detallEs}</p>
             </div>
-            <span className="shrink-0 text-xs text-[#6b6f68]">{inc.data}</span>
+            <span className="shrink-0 text-xs text-stone">{inc.data}</span>
           </div>
         ))}
       </div>
 
-      <p className="mt-8 text-xs text-[#6b6f68] leading-relaxed">
+      <p className="mt-8 text-xs text-stone leading-relaxed">
         {ca
           ? "Aquesta pàgina fa sondes en directe contra els mateixos endpoints que usa la web (cap dada inventada). El percentatge d'uptime continu requereix monitoratge extern; les sondes d'aquesta pàgina s'executen des del teu navegador cada 60 segons."
           : "Esta página hace sondas en directo contra los mismos endpoints que usa la web (ningún dato inventado). El porcentaje de uptime continuo requiere monitorización externa; las sondas de esta página se ejecutan desde tu navegador cada 60 segundos."}

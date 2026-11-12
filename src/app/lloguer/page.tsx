@@ -52,12 +52,12 @@ export default async function LloguerIndex() {
   const order = ["Barcelona", "Girona", "Lleida", "Tarragona"];
 
   return (
-    <main className="min-h-screen bg-[#faf9f7]">
+    <main className="min-h-screen bg-cream">
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-extrabold text-[#0f2e21]">
+        <h1 className="text-3xl font-extrabold text-pine">
           Lloguer mitjà per municipi — els 947 municipis de Catalunya
         </h1>
-        <p className="mt-3 text-sm text-[#4b5349] max-w-2xl leading-relaxed">
+        <p className="mt-3 text-sm text-moss max-w-2xl leading-relaxed">
           Preu mitjà mensual del lloguer <b>registrat oficialment</b> (fiances de lloguer de
           l&apos;Incasòl, explotació estadística de la Generalitat de Catalunya) per a cada
           municipi, amb la sèrie històrica completa i la declaració d&apos;àrees de mercat
@@ -65,7 +65,7 @@ export default async function LloguerIndex() {
         </p>
 
         {muns.length === 0 && (
-          <p className="mt-6 rounded-xl border border-[#f3d9b0] bg-[#fdf6ec] px-4 py-3 text-sm text-[#7a4a1c]">
+          <p className="mt-6 rounded-xl border border-amberline2 bg-ambersoft2 px-4 py-3 text-sm text-amberdark">
             Les pàgines per municipi s&apos;estan generant. Torna-ho a provar en una estona.
           </p>
         )}
@@ -75,7 +75,7 @@ export default async function LloguerIndex() {
           .concat([...byProvince.keys()].filter((p) => !order.includes(p)))
           .map((p) => (
             <section key={p} className="mt-8">
-              <h2 className="font-bold text-lg text-[#0f2e21] border-b border-[#e5e1da] pb-2">
+              <h2 className="font-bold text-lg text-pine border-b border-line pb-2">
                 Província de {p}
               </h2>
               <div className="mt-3 grid gap-x-6 gap-y-1 sm:grid-cols-2 md:grid-cols-3">
@@ -83,13 +83,13 @@ export default async function LloguerIndex() {
                   <Link
                     key={m.slug}
                     href={`/lloguer/${m.slug}`}
-                    className="text-sm text-[#0f2e21] hover:underline flex items-center justify-between gap-2"
+                    className="text-sm text-pine hover:underline flex items-center justify-between gap-2"
                   >
                     <span>
                       {m.name}
-                      {m.isTense && <span className="ml-1 text-[#b0431c]" title="Àrea tensada">●</span>}
+                      {m.isTense && <span className="ml-1 text-ember3" title="Àrea tensada">●</span>}
                     </span>
-                    <span className="text-xs text-[#6b6f68]">
+                    <span className="text-xs text-stone">
                       {m.rentLatest != null ? `${m.rentLatest.toFixed(0)} €` : "—"}
                     </span>
                   </Link>
@@ -98,7 +98,7 @@ export default async function LloguerIndex() {
             </section>
           ))}
 
-        <p className="mt-10 text-xs text-[#6b6f68] leading-relaxed">
+        <p className="mt-10 text-xs text-stone leading-relaxed">
           Font: fiances de lloguer (Incasòl) via habitatge.gencat.cat · àrees de mercat residencial
           tensat segons les resolucions vigents del DOGC · cartografia ICGC. La informació és
           estadística i agregada: no és una valoració d&apos;un habitatge concret.

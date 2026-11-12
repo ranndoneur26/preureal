@@ -70,40 +70,40 @@ export default function SubscriptionResultView({ mode }: { mode: "exit" | "cance
     <div className="flex-1 max-w-lg w-full mx-auto px-4 py-20 text-center">
       {state === "checking" && (
         <>
-          <Loader2 className="w-10 h-10 text-[#e8673c] animate-spin mx-auto" />
+          <Loader2 className="w-10 h-10 text-ember animate-spin mx-auto" />
           <h1 className="mt-4 text-2xl font-extrabold">{ca ? "Verificant el pagament…" : "Verificando el pago…"}</h1>
         </>
       )}
       {state === "ok" && (
         <>
-          <CheckCircle2 className="w-14 h-14 text-[#1e7a41] mx-auto" />
+          <CheckCircle2 className="w-14 h-14 text-green2 mx-auto" />
           <h1 className="mt-4 text-2xl font-extrabold">{ca ? "Subscripció activa!" : "¡Suscripción activa!"}</h1>
-          <p className="mt-2 text-sm text-[#4b5349]">{detail}</p>
-          <button onClick={() => navigate("/mapa")} className="mt-6 px-6 py-3 rounded-xl bg-[#e8673c] text-white font-bold hover:bg-[#d95a31]">
+          <p className="mt-2 text-sm text-moss">{detail}</p>
+          <button onClick={() => navigate("/mapa")} className="mt-6 px-6 py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2">
             {ca ? "Anar al mapa" : "Ir al mapa"}
           </button>
         </>
       )}
       {state === "pending" && (
         <>
-          <Loader2 className="w-12 h-12 text-[#e89a4b] animate-spin mx-auto" />
+          <Loader2 className="w-12 h-12 text-ambergold animate-spin mx-auto" />
           <h1 className="mt-4 text-2xl font-extrabold">{ca ? "Gairebé llest" : "Casi listo"}</h1>
-          <p className="mt-2 text-sm text-[#4b5349]">{detail}</p>
-          <button onClick={() => navigate("/panell")} className="mt-6 px-6 py-3 rounded-xl bg-[#0f2e21] text-white font-bold">
+          <p className="mt-2 text-sm text-moss">{detail}</p>
+          <button onClick={() => navigate("/panell")} className="mt-6 px-6 py-3 rounded-xl bg-pine text-white font-bold">
             {ca ? "Al meu panell" : "A mi panel"}
           </button>
         </>
       )}
       {state === "error" && (
         <>
-          <XCircle className="w-14 h-14 text-[#b0431c] mx-auto" />
+          <XCircle className="w-14 h-14 text-ember3 mx-auto" />
           <h1 className="mt-4 text-2xl font-extrabold">{ca ? "Pagament no completat" : "Pago no completado"}</h1>
-          <p className="mt-2 text-sm text-[#4b5349]">{detail}</p>
+          <p className="mt-2 text-sm text-moss">{detail}</p>
           <div className="mt-6 flex gap-2 justify-center">
-            <button onClick={() => navigate("/preus")} className="px-5 py-2.5 rounded-xl bg-[#e8673c] text-white font-bold">
+            <button onClick={() => navigate("/preus")} className="px-5 py-2.5 rounded-xl bg-ember text-white font-bold">
               {ca ? "Tornar als plans" : "Volver a los planes"}
             </button>
-            <button onClick={() => navigate("/panell")} className="px-5 py-2.5 rounded-xl border border-[#e5e1da] font-semibold">
+            <button onClick={() => navigate("/panell")} className="px-5 py-2.5 rounded-xl border border-line font-semibold">
               {ca ? "Al meu panell" : "A mi panel"}
             </button>
           </div>

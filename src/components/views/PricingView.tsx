@@ -80,18 +80,18 @@ export default function PricingView() {
     <div className="max-w-6xl mx-auto px-4 py-14 w-full">
       <div className="text-center max-w-2xl mx-auto">
         <h1 className="text-4xl font-extrabold tracking-tight">{t.plans.title}</h1>
-        <p className="mt-3 text-[#4b5349]">{t.plans.subtitle}</p>
+        <p className="mt-3 text-moss">{t.plans.subtitle}</p>
       </div>
 
       {demoMode && (
-        <div className="mt-8 max-w-2xl mx-auto rounded-xl bg-[#fff7e8] border border-[#f2d9a4] text-[#8a6116] text-sm p-4 flex gap-2">
+        <div className="mt-8 max-w-2xl mx-auto rounded-xl bg-ambersoft border border-amberline text-ambertext text-sm p-4 flex gap-2">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
           <span>{t.plans.demoNote}</span>
         </div>
       )}
 
       {notice && (
-        <div className="mt-8 max-w-2xl mx-auto rounded-xl bg-[#e6f4ea] border border-[#bfe3cc] text-[#1e7a41] text-sm p-4">
+        <div className="mt-8 max-w-2xl mx-auto rounded-xl bg-mintsoft border border-mintline text-green2 text-sm p-4">
           {notice}
         </div>
       )}
@@ -131,7 +131,7 @@ export default function PricingView() {
         />
       </div>
 
-      <div className="mt-10 text-center text-xs text-[#6b6f68] max-w-xl mx-auto leading-relaxed">
+      <div className="mt-10 text-center text-xs text-stone max-w-xl mx-auto leading-relaxed">
         {locale === "ca"
           ? "La subscripció es gestiona amb Stripe (pagaments xifrats). Pots cancel·lar quan vulguis. Els preus inclouen IVA si escau."
           : "La suscripción se gestiona con Stripe (pagos cifrados). Puedes cancelar cuando quieras. Los precios incluyen IVA si procede."}
@@ -151,12 +151,12 @@ function PlanCard({
     <div
       className={`relative rounded-2xl border p-6 flex flex-col ${
         highlight
-          ? "border-[#0f2e21] bg-[#0f2e21] text-white shadow-2xl shadow-black/20 md:-mt-3 md:mb-3"
-          : "border-[#e5e1da] bg-white"
+          ? "border-pine bg-pine text-white shadow-2xl shadow-black/20 md:-mt-3 md:mb-3"
+          : "border-line bg-card"
       }`}
     >
       {popular && (
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#e8673c] text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-ember text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
           <Sparkles className="w-3 h-3" />
           {popular}
         </div>
@@ -166,13 +166,13 @@ function PlanCard({
         {name}
       </div>
       <div className="mt-3 flex items-end gap-1">
-        <span className={`text-4xl font-black ${highlight ? "text-white" : "text-[#0f2e21]"}`}>{price}</span>
-        <span className={`text-sm mb-1.5 ${highlight ? "text-white/70" : "text-[#6b6f68]"}`}>{per}</span>
+        <span className={`text-4xl font-black ${highlight ? "text-white" : "text-pine"}`}>{price}</span>
+        <span className={`text-sm mb-1.5 ${highlight ? "text-white/70" : "text-stone"}`}>{per}</span>
       </div>
-      <ul className={`mt-5 space-y-2.5 text-sm flex-1 ${highlight ? "text-white/90" : "text-[#4b5349]"}`}>
+      <ul className={`mt-5 space-y-2.5 text-sm flex-1 ${highlight ? "text-white/90" : "text-moss"}`}>
         {feats.map((f, i) => (
           <li key={i} className="flex gap-2 items-start">
-            <Check className={`w-4 h-4 mt-0.5 shrink-0 ${highlight ? "text-[#7fd6a4]" : "text-[#1e7a41]"}`} />
+            <Check className={`w-4 h-4 mt-0.5 shrink-0 ${highlight ? "text-mint" : "text-green2"}`} />
             {f}
           </li>
         ))}
@@ -182,8 +182,8 @@ function PlanCard({
         disabled={!onCta || busy}
         className={`mt-6 w-full py-3 rounded-xl font-bold text-sm transition-colors disabled:opacity-60 ${
           highlight
-            ? "bg-[#e8673c] text-white hover:bg-[#d95a31]"
-            : "bg-[#0f2e21] text-white hover:bg-[#16402e]"
+            ? "bg-ember text-white hover:bg-ember2"
+            : "bg-pine text-white hover:bg-pine2"
         }`}
       >
         {busy ? "..." : cta}

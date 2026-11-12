@@ -149,7 +149,7 @@ export default function LineChart({ series, height = 190, locale, unitLabel = "â
       {/* tooltip */}
       {hoverYear && hoverRows.length > 0 && (
         <div
-          className="pointer-events-none absolute z-10 rounded-lg border border-[#e5e1da] bg-white/95 px-2.5 py-1.5 shadow-md"
+          className="pointer-events-none absolute z-10 rounded-lg border border-line bg-card/95 px-2.5 py-1.5 shadow-md"
           style={{
             left: `${(x(hoverYear) / W) * 100}%`,
             top: 4,
@@ -157,12 +157,12 @@ export default function LineChart({ series, height = 190, locale, unitLabel = "â
             minWidth: 118,
           }}
         >
-          <div className="text-[10px] font-bold text-[#0f2e21]">{hoverYear}</div>
+          <div className="text-[10px] font-bold text-pine">{hoverYear}</div>
           {hoverRows.map((r) => (
-            <div key={r.label} className="flex items-center gap-1.5 text-[10.5px] text-[#4b5349] whitespace-nowrap">
+            <div key={r.label} className="flex items-center gap-1.5 text-[10.5px] text-moss whitespace-nowrap">
               <span className="inline-block w-2 h-2 rounded-full" style={{ background: r.color }} />
               <span className="truncate max-w-[120px]">{r.label}</span>
-              <b className="ml-auto text-[#0f2e21]">{r.v !== null ? `${fmt(r.v)} ${unitLabel}` : "â€”"}</b>
+              <b className="ml-auto text-pine">{r.v !== null ? `${fmt(r.v)} ${unitLabel}` : "â€”"}</b>
             </div>
           ))}
         </div>
@@ -171,7 +171,7 @@ export default function LineChart({ series, height = 190, locale, unitLabel = "â
       {/* llegenda */}
       <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
         {usable.map((s) => (
-          <span key={s.id} className="flex items-center gap-1.5 text-[10px] text-[#6b6f68]">
+          <span key={s.id} className="flex items-center gap-1.5 text-[10px] text-stone">
             <span
               className="inline-block rounded"
               style={

@@ -1,29 +1,62 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "leaflet/dist/leaflet.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Design system Preureal (v38.2)
+ * -------------------------------
+ * Tots els colors de marca són tokens CSS amb valor clar (light) i fosc
+ * (.dark). Les classes Tailwind es generen des de @theme inline:
+ *   --color-pine → bg-pine / text-pine / border-pine / fill-pine…
+ * El mode fosc s'activa afegint .dark a <html> (ThemeToggle), i per defecte
+ * segueix prefers-color-scheme (script anti-FOUC a layout.tsx).
+ */
+
 @theme inline {
+  /* tokens de marca Preureal */
+  --color-cream: var(--cream);
+  --color-sand: var(--sand);
+  --color-sand2: var(--sand2);
+  --color-sand3: var(--sand3);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-moss: var(--moss);
+  --color-stone: var(--stone);
+  --color-pine: var(--pine);
+  --color-pine2: var(--pine2);
+  --color-mist: var(--mist);
+  --color-ember: var(--ember);
+  --color-ember2: var(--ember2);
+  --color-ember3: var(--ember3);
+  --color-embersoft: var(--embersoft);
+  --color-embersoft2: var(--embersoft2);
+  --color-emberline: var(--emberline);
+  --color-mint: var(--mint);
+  --color-mintsoft: var(--mintsoft);
+  --color-mintline: var(--mintline);
+  --color-mossdeep: var(--mossdeep);
+  --color-green: var(--green);
+  --color-green2: var(--green2);
+  --color-graydot: var(--graydot);
+  --color-ambersoft: var(--ambersoft);
+  --color-ambersoft2: var(--ambersoft2);
+  --color-amberline: var(--amberline);
+  --color-amberline2: var(--amberline2);
+  --color-ambergold: var(--ambergold);
+  --color-ambertext: var(--ambertext);
+  --color-ambertext2: var(--ambertext2);
+  --color-amberdark: var(--amberdark);
+
+  /* tokens semàntics (compatibilitat shadcn/pàgines /lloguer) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
@@ -44,72 +77,120 @@
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
-  --background: #faf9f7;
-  --foreground: #17241d;
+
+  /* marques */
+  --cream: #faf9f7;
+  --sand: #f0ede8;
+  --sand2: #f2efe9;
+  --sand3: #eee9e1;
+  --line: #e5e1da;
+  --ink: #17241d;
+  --ink2: #2c352c;
+  --moss: #4b5349;
+  --stone: #6b6f68;
+  --pine: #0f2e21;
+  --pine2: #16402e;
+  --mist: #c9d4cc;
+  --ember: #e8673c;
+  --ember2: #d95a31;
+  --ember3: #b0431c;
+  --embersoft: #fdeae2;
+  --embersoft2: #fbe9e2;
+  --emberline: #f2c4ac;
+  --mint: #7fd6a4;
+  --mintsoft: #e7f5ec;
+  --mintline: #bfe3cc;
+  --mossdeep: #1d5c38;
+  --green: #2e9e5b;
+  --green2: #1e7a41;
+  --graydot: #9aa098;
+  --ambersoft: #fff7e8;
+  --ambersoft2: #fdf3e0;
+  --amberline: #f2d9a4;
+  --amberline2: #f3d9b0;
+  --ambergold: #efd88f;
+  --ambertext: #8a6116;
+  --ambertext2: #8a6d1a;
+  --amberdark: #7a4a1c;
+
+  /* semàntics (apunten als de marca) */
+  --background: var(--cream);
+  --foreground: var(--ink);
   --card: #ffffff;
-  --card-foreground: #17241d;
+  --card-foreground: var(--ink);
   --popover: #ffffff;
-  --popover-foreground: #17241d;
-  --primary: #0f2e21;
+  --popover-foreground: var(--ink);
+  --primary: var(--pine);
   --primary-foreground: #fdfcfb;
-  --secondary: #f0ede8;
-  --secondary-foreground: #17241d;
-  --muted: #f0ede8;
-  --muted-foreground: #6b6f68;
-  --accent: #e8673c;
+  --secondary: var(--sand);
+  --secondary-foreground: var(--ink);
+  --muted: var(--sand);
+  --muted-foreground: var(--stone);
+  --accent: var(--ember);
   --accent-foreground: #ffffff;
   --destructive: #c0392b;
-  --border: #e5e1da;
-  --input: #e5e1da;
-  --ring: #e8673c;
-  --chart-1: #0f2e21;
-  --chart-2: #e8673c;
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--ember);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  color-scheme: dark;
+
+  --cream: #121714;
+  --sand: #1a201c;
+  --sand2: #191f1b;
+  --sand3: #171d19;
+  --line: #2b332d;
+  --ink: #e8e6e1;
+  --ink2: #d0d0ca;
+  --moss: #c2c7bf;
+  --stone: #a3aaa1;
+  --pine: #1d4a36;
+  --pine2: #265a42;
+  --mist: #c9d4cc;
+  --ember: #e8673c;
+  --ember2: #f08056;
+  --ember3: #f3a37f;
+  --embersoft: #3a2a20;
+  --embersoft2: #34261d;
+  --emberline: #4f3527;
+  --mint: #7fd6a4;
+  --mintsoft: #1c3327;
+  --mintline: #2e463a;
+  --mossdeep: #8fd9ae;
+  --green: #4cc47f;
+  --green2: #7ad3a1;
+  --graydot: #6f766f;
+  --ambersoft: #33291a;
+  --ambersoft2: #2e2718;
+  --amberline: #59481f;
+  --amberline2: #4a3c1e;
+  --ambergold: #b08c3f;
+  --ambertext: #e2b568;
+  --ambertext2: #d9b268;
+  --amberdark: #cf9d5c;
+
+  --background: var(--cream);
+  --foreground: var(--ink);
+  --card: #1d2420;
+  --card-foreground: var(--ink);
+  --popover: #1d2420;
+  --popover-foreground: var(--ink);
+  --primary: var(--pine);
+  --primary-foreground: #f2f7f4;
+  --secondary: var(--sand);
+  --secondary-foreground: var(--ink);
+  --muted: var(--sand);
+  --muted-foreground: var(--stone);
+  --accent: var(--ember);
+  --accent-foreground: #ffffff;
+  --destructive: #e05b4a;
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--ember);
 }
 
 @layer base {
@@ -121,6 +202,10 @@
     @apply bg-background text-foreground;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
+  /* transicions suaus al canviar de tema */
+  body, header, footer, .leaflet-container {
+    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+  }
 }
 
 /* ---------- Leaflet per a Preureal ---------- */
@@ -129,6 +214,64 @@
 .pr-popup .leaflet-popup-content-wrapper { border-radius: 12px; }
 .pr-select-hidden { display: none; }
 
+/* mode fosc: mapa i controls Leaflet */
+.dark .leaflet-container { background: #1a201c; }
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip { background: #1d2420; color: #e8e6e1; }
+.dark .leaflet-control-attribution {
+  background: rgba(18, 23, 20, 0.85) !important;
+  color: #a3aaa1 !important;
+}
+.dark .leaflet-control-attribution a { color: #7fd6a4 !important; }
+
 /* scrollbars fi per al panell */
 .pr-scroll::-webkit-scrollbar { width: 6px; }
 .pr-scroll::-webkit-scrollbar-thumb { background: #d8d3ca; border-radius: 6px; }
+.dark .pr-scroll::-webkit-scrollbar-thumb { background: #3a423b; }
+
+/* ---------- Microinteraccions (v38.2) ---------- */
+/* entrada de vista (AppShell canvia de ruta) */
+@keyframes pr-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.pr-view { animation: pr-fade-up 0.28s ease both; }
+
+/* bottom sheet mòbil del panell de detall */
+@keyframes pr-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.pr-sheet-anim { animation: pr-sheet-up 0.3s cubic-bezier(0.32, 0.72, 0.35, 1) both; }
+@keyframes pr-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.pr-backdrop-anim { animation: pr-fade 0.22s ease both; }
+
+/* skeleton loader (millor que un spinner: mostra l'estructura) */
+.pr-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--sand);
+  border-radius: 8px;
+}
+.pr-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: pr-shimmer 1.4s infinite;
+}
+.dark .pr-skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.07), transparent);
+}
+@keyframes pr-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* targetes elevables (plans, casos d'ús) */
+.pr-lift { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.pr-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -12px rgba(15, 46, 33, 0.25); }
+.dark .pr-lift:hover { box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6); }

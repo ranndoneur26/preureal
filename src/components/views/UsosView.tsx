@@ -108,7 +108,7 @@ export default function UsosView() {
   return (
     <div className="flex-1 w-full max-w-5xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold">{ca ? "Casos d'ús reals" : "Casos de uso reales"}</h1>
-      <p className="mt-3 text-[15px] text-[#4b5349] leading-relaxed max-w-3xl">
+      <p className="mt-3 text-[15px] text-moss leading-relaxed max-w-3xl">
         {ca
           ? "Aquestes són les tres maneres més habituals d'usar Preureal, amb captures reals de la web (novembre de 2026). No publicuem testimonis inventats: el millor testimoni és provar-ho tu mateix."
           : "Estas son las tres maneras más habituales de usar Preureal, con capturas reales de la web (noviembre de 2026). No publicamos testimonios inventados: el mejor testimonio es probarlo tú mismo."}
@@ -122,18 +122,18 @@ export default function UsosView() {
             <section key={i} className="grid gap-6 lg:grid-cols-2 lg:items-start">
               <div>
                 <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-xl bg-[#0f2e21] text-white flex items-center justify-center">
+                  <span className="w-10 h-10 rounded-xl bg-pine text-white flex items-center justify-center">
                     <Icon className="w-5 h-5" />
                   </span>
                   <div>
                     <h2 className="font-bold text-lg leading-tight">{p.rol}</h2>
-                    <p className="text-sm text-[#e8673c] font-semibold">{p.claim}</p>
+                    <p className="text-sm text-ember font-semibold">{p.claim}</p>
                   </div>
                 </div>
                 <ol className="mt-4 space-y-2.5">
                   {p.passos.map((s, j) => (
-                    <li key={j} className="flex gap-2.5 text-sm text-[#4b5349] leading-relaxed">
-                      <span className="mt-0.5 w-5 h-5 rounded-full bg-[#e7f5ec] text-[#1d5c38] flex items-center justify-center shrink-0">
+                    <li key={j} className="flex gap-2.5 text-sm text-moss leading-relaxed">
+                      <span className="mt-0.5 w-5 h-5 rounded-full bg-mintsoft text-mossdeep flex items-center justify-center shrink-0">
                         <Check className="w-3 h-3" />
                       </span>
                       <span>{s}</span>
@@ -142,20 +142,20 @@ export default function UsosView() {
                 </ol>
                 <div className="mt-4">
                   {p.cta.href ? (
-                    <a href={p.cta.to} target="_blank" rel="noopener noreferrer" className="inline-flex px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold hover:bg-[#16402e] transition-colors">
+                    <a href={p.cta.to} target="_blank" rel="noopener noreferrer" className="inline-flex px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 transition-colors">
                       {p.cta.label}
                     </a>
                   ) : (
-                    <button onClick={() => navigate(p.cta.to)} className="inline-flex px-4 py-2 rounded-lg bg-[#0f2e21] text-white text-sm font-semibold hover:bg-[#16402e] transition-colors">
+                    <button onClick={() => navigate(p.cta.to)} className="inline-flex px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 transition-colors">
                       {p.cta.label}
                     </button>
                   )}
                 </div>
               </div>
-              <figure className="rounded-2xl border border-[#e5e1da] overflow-hidden bg-white shadow-sm">
+              <figure className="rounded-2xl border border-line overflow-hidden bg-card shadow-sm">
                 {/* captura real servida des de /public/usos (JPEG ja optimitzat) */}
                 <img src={cap.img} alt={cap.alt} loading="lazy" className="w-full h-auto" />
-                <figcaption className="px-4 py-2.5 text-xs text-[#6b6f68] border-t border-[#e5e1da] bg-[#faf9f7]">
+                <figcaption className="px-4 py-2.5 text-xs text-stone border-t border-line bg-cream">
                   {ca ? "Captura real de la web en producció (11-11-2026)" : "Captura real de la web en producción (11-11-2026)"}
                 </figcaption>
               </figure>

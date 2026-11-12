@@ -202,23 +202,23 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
   };
 
   return (
-    <div className="rounded-xl border-2 border-[#0f2e21] p-4 space-y-3">
+    <div className="rounded-xl border-2 border-pine p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <Calculator className="w-4 h-4 text-[#e8673c]" />
-        <div className="font-bold text-[#0f2e21] text-sm">
+        <Calculator className="w-4 h-4 text-ember" />
+        <div className="font-bold text-pine text-sm">
           {ca ? "Valoració orientativa de lloguer" : "Valoración orientativa de alquiler"}
         </div>
       </div>
 
       {planLoading ? null : !hasPremiumAccess ? (
-        <div className="rounded-lg border border-[#f3d9b0] bg-[#fdf6ec] p-3 flex items-center gap-2">
-          <Lock className="w-4 h-4 text-[#b0431c] shrink-0" />
-          <p className="text-xs text-[#7a4a1c] flex-1">
+        <div className="rounded-lg border border-amberline2 bg-ambersoft2 p-3 flex items-center gap-2">
+          <Lock className="w-4 h-4 text-ember3 shrink-0" />
+          <p className="text-xs text-amberdark flex-1">
             {ca
               ? "Amb Premium o Pro: horquilla de lloguer orientativa per a la teva vivenda a partir de les fiances oficials d'Incasòl i la dispersió real de la teva comarca."
               : "Con Premium o Pro: horquilla de alquiler orientativa para tu vivienda a partir de las fianzas oficiales de Incasòl y la dispersión real de tu comarca."}
           </p>
-          <button onClick={() => navigate("/preus")} className="px-3 py-1.5 rounded-lg bg-[#e8673c] text-white text-[11px] font-bold shrink-0 hover:bg-[#d95a31]">
+          <button onClick={() => navigate("/preus")} className="px-3 py-1.5 rounded-lg bg-ember text-white text-[11px] font-bold shrink-0 hover:bg-ember2">
             {ca ? "Veure plans" : "Ver planes"}
           </button>
         </div>
@@ -228,24 +228,24 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
             <div className="space-y-2.5">
               <div className="grid grid-cols-3 gap-2">
                 <label className="block">
-                  <span className="text-[10px] font-semibold text-[#6b6f68] uppercase">{ca ? "Superfície (m²)" : "Superficie (m²)"}</span>
+                  <span className="text-[10px] font-semibold text-stone uppercase">{ca ? "Superfície (m²)" : "Superficie (m²)"}</span>
                   <input
                     inputMode="numeric"
                     value={surface}
                     onChange={(e) => setSurface(e.target.value.replace(/[^\d]/g, "").slice(0, 3))}
                     placeholder="75"
-                    className="mt-0.5 w-full rounded-lg border border-[#e5e1da] px-2 py-1.5 text-sm focus:outline-none focus:border-[#e8673c]"
+                    className="mt-0.5 w-full rounded-lg border border-line px-2 py-1.5 text-sm focus:outline-none focus:border-ember"
                   />
                   {Number(surface) > 0 && Number(surface) < 20 && (
-                    <span className="mt-0.5 flex items-start gap-1 text-[9px] font-semibold text-[#b0431c]">
+                    <span className="mt-0.5 flex items-start gap-1 text-[9px] font-semibold text-ember3">
                       <ShieldAlert className="mt-0.5 h-2.5 w-2.5 shrink-0" />
                       {ca ? "mínim legal 20 m² (Decret 141/2012)" : "mínimo legal 20 m² (Decreto 141/2012)"}
                     </span>
                   )}
                 </label>
                 <label className="block">
-                  <span className="text-[10px] font-semibold text-[#6b6f68] uppercase">{ca ? "Habitacions" : "Habitaciones"}</span>
-                  <select value={rooms} onChange={(e) => setRooms(e.target.value)} className="mt-0.5 w-full rounded-lg border border-[#e5e1da] px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#e8673c]">
+                  <span className="text-[10px] font-semibold text-stone uppercase">{ca ? "Habitacions" : "Habitaciones"}</span>
+                  <select value={rooms} onChange={(e) => setRooms(e.target.value)} className="mt-0.5 w-full rounded-lg border border-line px-2 py-1.5 text-sm bg-card focus:outline-none focus:border-ember">
                     <option value="">{ca ? "—" : "—"}</option>
                     {[1, 2, 3, 4, 5].map((n) => (
                       <option key={n} value={n}>
@@ -255,8 +255,8 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                   </select>
                 </label>
                 <label className="block">
-                  <span className="text-[10px] font-semibold text-[#6b6f68] uppercase">{ca ? "Estat" : "Estado"}</span>
-                  <select value={estat} onChange={(e) => setEstat(e.target.value)} className="mt-0.5 w-full rounded-lg border border-[#e5e1da] px-2 py-1.5 text-sm bg-white focus:outline-none focus:border-[#e8673c]">
+                  <span className="text-[10px] font-semibold text-stone uppercase">{ca ? "Estat" : "Estado"}</span>
+                  <select value={estat} onChange={(e) => setEstat(e.target.value)} className="mt-0.5 w-full rounded-lg border border-line px-2 py-1.5 text-sm bg-card focus:outline-none focus:border-ember">
                     <option value="">{ca ? "—" : "—"}</option>
                     {ESTATS.map((e) => (
                       <option key={e.id} value={e.id}>
@@ -269,11 +269,11 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
               <button
                 onClick={submit}
                 disabled={busy}
-                className="w-full rounded-lg bg-[#e8673c] py-2 text-sm font-bold text-white hover:bg-[#d95a31] disabled:opacity-50"
+                className="w-full rounded-lg bg-ember py-2 text-sm font-bold text-white hover:bg-ember2 disabled:opacity-50"
               >
                 {busy ? (ca ? "Calculant…" : "Calculando…") : ca ? `Valorar a ${muniName}` : `Valorar en ${muniName}`}
               </button>
-              <p className="text-[10px] text-[#6b6f68]">
+              <p className="text-[10px] text-stone">
                 {ca
                   ? "Central: fiança municipal oficial d'Incasòl per a la vivenda típica (~85 m²). Superfície, habitacions i estat apliquen ajustos aproximats de mercat que veuràs desglossats. Horquilla: dispersió real de la comarca el mateix any."
                   : "Central: fianza municipal oficial de Incasòl para la vivienda típica (~85 m²). Superficie, habitaciones y estado aplican ajustes aproximados de mercado que verás desglosados. Horquilla: dispersión real de la comarca el mismo año."}
@@ -282,7 +282,7 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
           )}
 
           {error && (
-            <div className="rounded-lg border border-[#f3d9b0] bg-[#fdf6ec] p-2.5 text-xs text-[#7a4a1c] flex items-center justify-between gap-2">
+            <div className="rounded-lg border border-amberline2 bg-ambersoft2 p-2.5 text-xs text-amberdark flex items-center justify-between gap-2">
               <span>{error}</span>
               {(error.includes("límit") || error.includes("límite")) && (
                 <button onClick={() => navigate("/preus")} className="shrink-0 underline font-bold">
@@ -294,25 +294,25 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
 
           {result && (
             <div className="space-y-2.5">
-              <div className="rounded-lg bg-[#faf9f7] border border-[#e5e1da] p-3">
+              <div className="rounded-lg bg-cream border border-line p-3">
                 <div className="flex items-baseline justify-between gap-2">
-                  <div className="text-[11px] text-[#6b6f68]">{ca ? "Horquilla orientativa /mes" : "Horquilla orientativa /mes"}</div>
+                  <div className="text-[11px] text-stone">{ca ? "Horquilla orientativa /mes" : "Horquilla orientativa /mes"}</div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: confidenceStyle[result.confidence].bg, color: confidenceStyle[result.confidence].fg }}>
                     {ca ? "Confiança" : "Confianza"}: {result.confidence}
                   </span>
                 </div>
                 <div className="mt-1.5 flex items-end justify-center gap-2">
                   <div className="text-center">
-                    <div className="text-sm font-bold text-[#4b5349]">{fmt(result.min)} €</div>
-                    <div className="text-[9px] text-[#6b6f68]">{ca ? "mínima" : "mínima"}</div>
+                    <div className="text-sm font-bold text-moss">{fmt(result.min)} €</div>
+                    <div className="text-[9px] text-stone">{ca ? "mínima" : "mínima"}</div>
                   </div>
                   <div className="text-center px-3">
-                    <div className="text-2xl font-black text-[#0f2e21]">{fmt(result.central)} €</div>
-                    <div className="text-[9px] text-[#6b6f68]">{ca ? "central / més probable" : "central / más probable"}</div>
+                    <div className="text-2xl font-black text-pine">{fmt(result.central)} €</div>
+                    <div className="text-[9px] text-stone">{ca ? "central / més probable" : "central / más probable"}</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-bold text-[#4b5349]">{fmt(result.max)} €</div>
-                    <div className="text-[9px] text-[#6b6f68]">{ca ? "màxima" : "máxima"}</div>
+                    <div className="text-sm font-bold text-moss">{fmt(result.max)} €</div>
+                    <div className="text-[9px] text-stone">{ca ? "màxima" : "máxima"}</div>
                   </div>
                 </div>
               </div>
@@ -334,11 +334,11 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                 </div>
               )}
 
-              <div className="rounded-lg border border-[#e5e1da] bg-white p-3 space-y-1">
-                <div className="text-[10px] font-semibold text-[#6b6f68] uppercase">
+              <div className="rounded-lg border border-line bg-card p-3 space-y-1">
+                <div className="text-[10px] font-semibold text-stone uppercase">
                   {ca ? "Com es calcula" : "Cómo se calcula"}
                 </div>
-                <div className="flex justify-between text-xs text-[#4b5349]">
+                <div className="flex justify-between text-xs text-moss">
                   <span>
                     {result.baseSource === "COMARCA_REF"
                       ? ca
@@ -351,26 +351,26 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                   <b>{fmt(result.baseCentral)} €</b>
                 </div>
                 {result.adjustments.map((a) => (
-                  <div key={a.key} className="flex justify-between text-xs text-[#4b5349]">
+                  <div key={a.key} className="flex justify-between text-xs text-moss">
                     <span>
                       {ca ? AJUST_LABEL[a.key]?.ca : AJUST_LABEL[a.key]?.es}{" "}
-                      <span className="text-[10px] text-[#6b6f68]">
+                      <span className="text-[10px] text-stone">
                         · {a.key === "AJUST_ESTAT" ? (ca ? ESTAT_LABEL[a.detail]?.ca ?? a.detail : ESTAT_LABEL[a.detail]?.es ?? a.detail) : a.detail}
                       </span>
                     </span>
-                    <b className={a.factor >= 1 ? "text-[#1e7a41]" : "text-[#b0431c]"}>{pctFactor(a.factor)}</b>
+                    <b className={a.factor >= 1 ? "text-green2" : "text-ember3"}>{pctFactor(a.factor)}</b>
                   </div>
                 ))}
-                <div className="flex justify-between text-xs text-[#0f2e21] border-t border-[#e5e1da] pt-1">
+                <div className="flex justify-between text-xs text-pine border-t border-line pt-1">
                   <span className="font-semibold">{ca ? "Central ajustada" : "Central ajustada"}</span>
                   <b>{fmt(result.central)} €</b>
                 </div>
               </div>
 
               {result.eurM2 !== null && (
-                <div className="text-xs text-[#4b5349]">
+                <div className="text-xs text-moss">
                   ≈ <b>{fmt(result.eurM2)} €/m²·mes</b>{" "}
-                  <span className="text-[10px] text-[#6b6f68]">
+                  <span className="text-[10px] text-stone">
                     ({ca ? "derivat de la superfície introduïda; la font oficial no publica €/m²" : "derivado de la superficie introducida; la fuente oficial no publica €/m²"})
                   </span>
                 </div>
@@ -378,20 +378,20 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
 
               <ul className="space-y-1">
                 {roomsNote(result.notes.rooms, ca) && (
-                  <li className="text-[11px] text-[#4b5349] flex gap-1.5">
-                    <Info className="w-3 h-3 mt-0.5 shrink-0 text-[#6b6f68]" />
+                  <li className="text-[11px] text-moss flex gap-1.5">
+                    <Info className="w-3 h-3 mt-0.5 shrink-0 text-stone" />
                     {roomsNote(result.notes.rooms, ca)}
                   </li>
                 )}
                 {estatNote(result.notes.estat, ca) && (
-                  <li className="text-[11px] text-[#4b5349] flex gap-1.5">
-                    <Info className="w-3 h-3 mt-0.5 shrink-0 text-[#6b6f68]" />
+                  <li className="text-[11px] text-moss flex gap-1.5">
+                    <Info className="w-3 h-3 mt-0.5 shrink-0 text-stone" />
                     {estatNote(result.notes.estat, ca)}
                   </li>
                 )}
               </ul>
 
-              <div className="text-[10px] text-[#6b6f68] leading-relaxed">
+              <div className="text-[10px] text-stone leading-relaxed">
                 {ca ? "Amplada de l'horquilla: " : "Anchura de la horquilla: "}
                 {result.bandBasis === "COMARCA"
                   ? ca ? "dispersió de la comarca" : "dispersión de la comarca"
@@ -408,10 +408,10 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
               </div>
 
               <div className="flex gap-2">
-                <button onClick={() => { setResult(null); setError(null); }} className="flex-1 rounded-lg border border-[#e5e1da] py-2 text-xs font-bold text-[#0f2e21] hover:bg-[#f0ede8]">
+                <button onClick={() => { setResult(null); setError(null); }} className="flex-1 rounded-lg border border-line py-2 text-xs font-bold text-pine hover:bg-sand">
                   {ca ? "Nova valoració" : "Nueva valoración"}
                 </button>
-                <button onClick={() => navigate("/panell")} className="flex-1 rounded-lg bg-[#0f2e21] py-2 text-xs font-bold text-white hover:bg-[#1a3d2e]">
+                <button onClick={() => navigate("/panell")} className="flex-1 rounded-lg bg-pine py-2 text-xs font-bold text-white hover:bg-pine">
                   {ca ? "Al meu panell" : "A mi panel"}
                 </button>
               </div>

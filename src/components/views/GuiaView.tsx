@@ -182,12 +182,12 @@ const S = {
 
 function Card({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
   return (
-    <section className="bg-white rounded-2xl border border-[#e5e1da] p-6">
-      <h2 className="font-bold text-lg text-[#0f2e21] flex items-center gap-2 mb-3">
-        <span className="w-8 h-8 rounded-lg bg-[#f0ede8] flex items-center justify-center shrink-0">{icon}</span>
+    <section className="bg-card rounded-2xl border border-line p-6">
+      <h2 className="font-bold text-lg text-pine flex items-center gap-2 mb-3">
+        <span className="w-8 h-8 rounded-lg bg-sand flex items-center justify-center shrink-0">{icon}</span>
         {title}
       </h2>
-      <div className="space-y-2 text-sm text-[#2c352c] leading-relaxed">{children}</div>
+      <div className="space-y-2 text-sm text-ink2 leading-relaxed">{children}</div>
     </section>
   );
 }
@@ -197,7 +197,7 @@ function Bullets({ items }: { items: readonly string[] }) {
     <ul className="space-y-2">
       {items.map((b, i) => (
         <li key={i} className="flex gap-2">
-          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#e8673c] shrink-0" />
+          <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-ember shrink-0" />
           <span>{b}</span>
         </li>
       ))}
@@ -230,47 +230,47 @@ export default function GuiaView() {
 
   return (
     <div className="flex-1 max-w-3xl w-full mx-auto px-4 py-12 space-y-4">
-      <h1 className="text-3xl font-extrabold flex items-center gap-2 text-[#0f2e21]">
+      <h1 className="text-3xl font-extrabold flex items-center gap-2 text-pine">
         <BookOpen className="w-7 h-7" />
         {t.title}
       </h1>
-      <p className="text-sm text-[#4b5349] leading-relaxed">{t.intro}</p>
+      <p className="text-sm text-moss leading-relaxed">{t.intro}</p>
 
       {/* drets i obligacions */}
-      <Card icon={<ShieldAlert className="w-4 h-4 text-[#0f2e21]" />} title={t.s1t}>
+      <Card icon={<ShieldAlert className="w-4 h-4 text-pine" />} title={t.s1t}>
         <Bullets items={t.s1} />
       </Card>
 
       {/* fiança + calculadora */}
-      <Card icon={<Calculator className="w-4 h-4 text-[#0f2e21]" />} title={t.s2t}>
+      <Card icon={<Calculator className="w-4 h-4 text-pine" />} title={t.s2t}>
         <Bullets items={t.s2} />
-        <div className="mt-4 rounded-xl border border-[#e5e1da] bg-[#faf9f7] p-4">
-          <div className="font-semibold text-sm text-[#0f2e21] mb-3">{t.s2calcTitle}</div>
-          <label className="text-xs text-[#6b6f68]">{t.s2calcRent}</label>
+        <div className="mt-4 rounded-xl border border-line bg-cream p-4">
+          <div className="font-semibold text-sm text-pine mb-3">{t.s2calcTitle}</div>
+          <label className="text-xs text-stone">{t.s2calcRent}</label>
           <input
             inputMode="decimal"
             value={rent}
             onChange={(e) => setRent(e.target.value.replace(/[^\d.,]/g, "").slice(0, 8))}
             placeholder="850"
-            className="mt-1 w-full max-w-[200px] px-3 py-2 rounded-lg border border-[#e5e1da] text-sm outline-none focus:border-[#e8673c]"
+            className="mt-1 w-full max-w-[200px] px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember"
           />
           {fianza !== null && garantia !== null && total !== null && (
             <div className="mt-3 grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-lg bg-white border border-[#e5e1da] py-2">
-                <div className="font-black text-[#0f2e21]">{fmt(fianza)}</div>
-                <div className="text-[10px] text-[#6b6f68] leading-tight">{t.s2calcFianza}</div>
+              <div className="rounded-lg bg-card border border-line py-2">
+                <div className="font-black text-pine">{fmt(fianza)}</div>
+                <div className="text-[10px] text-stone leading-tight">{t.s2calcFianza}</div>
               </div>
-              <div className="rounded-lg bg-white border border-[#e5e1da] py-2">
-                <div className="font-black text-[#0f2e21]">{fmt(garantia)}</div>
-                <div className="text-[10px] text-[#6b6f68] leading-tight">{t.s2calcGarantia}</div>
+              <div className="rounded-lg bg-card border border-line py-2">
+                <div className="font-black text-pine">{fmt(garantia)}</div>
+                <div className="text-[10px] text-stone leading-tight">{t.s2calcGarantia}</div>
               </div>
-              <div className="rounded-lg bg-[#0f2e21] text-white py-2">
+              <div className="rounded-lg bg-pine text-white py-2">
                 <div className="font-black">{fmt(total)}</div>
                 <div className="text-[10px] opacity-80 leading-tight">{t.s2calcTotal}</div>
               </div>
             </div>
           )}
-          <p className="mt-3 text-[11px] text-[#6b6f68] flex gap-1.5">
+          <p className="mt-3 text-[11px] text-stone flex gap-1.5">
             <Info className="w-3 h-3 mt-0.5 shrink-0" />
             {t.s2calcNote}
           </p>
@@ -278,48 +278,48 @@ export default function GuiaView() {
       </Card>
 
       {/* despeses */}
-      <Card icon={<Coins className="w-4 h-4 text-[#0f2e21]" />} title={t.s3t}>
+      <Card icon={<Coins className="w-4 h-4 text-pine" />} title={t.s3t}>
         <Bullets items={t.s3} />
       </Card>
 
       {/* actualització renda */}
-      <Card icon={<CalendarClock className="w-4 h-4 text-[#0f2e21]" />} title={t.s4t}>
+      <Card icon={<CalendarClock className="w-4 h-4 text-pine" />} title={t.s4t}>
         <Bullets items={t.s4} />
       </Card>
 
       {/* checklist */}
-      <Card icon={<ListChecks className="w-4 h-4 text-[#0f2e21]" />} title={t.s5t}>
+      <Card icon={<ListChecks className="w-4 h-4 text-pine" />} title={t.s5t}>
         <Bullets items={t.s5} />
       </Card>
 
       {/* ajudes */}
-      <Card icon={<HandHeart className="w-4 h-4 text-[#0f2e21]" />} title={t.s6t}>
-        <p className="text-sm text-[#4b5349]">{t.s6intro}</p>
-        {aidsError && <p className="text-sm text-[#b0431c]">{t.aidsError}</p>}
-        {aids === null && !aidsError && <p className="text-sm text-[#6b6f68]">{t.loadingAids}</p>}
-        {aids !== null && aids.length === 0 && !aidsError && <p className="text-sm text-[#6b6f68]">{t.noAids}</p>}
+      <Card icon={<HandHeart className="w-4 h-4 text-pine" />} title={t.s6t}>
+        <p className="text-sm text-moss">{t.s6intro}</p>
+        {aidsError && <p className="text-sm text-ember3">{t.aidsError}</p>}
+        {aids === null && !aidsError && <p className="text-sm text-stone">{t.loadingAids}</p>}
+        {aids !== null && aids.length === 0 && !aidsError && <p className="text-sm text-stone">{t.noAids}</p>}
         {aids !== null && aids.length > 0 && (
           <div className="mt-3 space-y-3">
             {aids.map((a) => (
-              <div key={a.code} className="rounded-xl border border-[#e5e1da] p-4 bg-[#faf9f7]">
+              <div key={a.code} className="rounded-xl border border-line p-4 bg-cream">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-sm text-[#0f2e21]">{ca ? a.title : a.titleEs || a.title}</span>
+                  <span className="font-bold text-sm text-pine">{ca ? a.title : a.titleEs || a.title}</span>
                   <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 border ${
                     a.status === "CONVOCATORIA_OBERTA"
-                      ? "bg-[#e6f4ea] text-[#1e7a41] border-[#bfe3cc]"
-                      : "bg-[#f0ede8] text-[#4b5349] border-[#e5e1da]"
+                      ? "bg-mintsoft text-green2 border-mintline"
+                      : "bg-sand text-moss border-line"
                   }`}>
                     {t.aidStatus[a.status as keyof typeof t.aidStatus] ?? a.status}
                   </span>
-                  {a.amount && <span className="text-xs font-bold text-[#e8673c]">{a.amount}</span>}
+                  {a.amount && <span className="text-xs font-bold text-ember">{a.amount}</span>}
                 </div>
-                <p className="mt-1.5 text-sm text-[#2c352c]">{ca ? a.description : a.descriptionEs || a.description}</p>
+                <p className="mt-1.5 text-sm text-ink2">{ca ? a.description : a.descriptionEs || a.description}</p>
                 {a.audience && (
-                  <p className="mt-1 text-xs text-[#4b5349]">
+                  <p className="mt-1 text-xs text-moss">
                     <b>{t.aidRequisits}:</b> {ca ? a.audience : a.audienceEs || a.audience}
                   </p>
                 )}
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#6b6f68]">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-stone">
                   <span>
                     {a.source} · {t.aidRevisat}: {new Date(a.lastReviewedAt).toLocaleDateString(ca ? "ca-ES" : "es-ES")}
                   </span>
@@ -327,7 +327,7 @@ export default function GuiaView() {
                     href={a.url}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
-                    className="inline-flex items-center gap-1 font-semibold text-[#0f2e21] hover:text-[#e8673c]"
+                    className="inline-flex items-center gap-1 font-semibold text-pine hover:text-ember"
                   >
                     {ca ? "Font oficial" : "Fuente oficial"} <ExternalLink className="w-3 h-3" />
                   </a>
@@ -339,32 +339,32 @@ export default function GuiaView() {
       </Card>
 
       {/* referència oficial del preu (upsell contextual suau) */}
-      <section className="rounded-2xl border-2 border-[#0f2e21] p-6 bg-white">
-        <h2 className="font-bold text-lg text-[#0f2e21] flex items-center gap-2">
+      <section className="rounded-2xl border-2 border-pine p-6 bg-card">
+        <h2 className="font-bold text-lg text-pine flex items-center gap-2">
           <Receipt className="w-5 h-5" />
           {ca ? "La referència del preu, al mapa" : "La referencia del precio, en el mapa"}
         </h2>
-        <p className="mt-2 text-sm text-[#2c352c]">{t.consultorNote}</p>
+        <p className="mt-2 text-sm text-ink2">{t.consultorNote}</p>
         <button
           onClick={() => navigate("/mapa")}
-          className="mt-3 px-4 py-2 rounded-xl bg-[#e8673c] text-white text-sm font-bold hover:bg-[#d95a31]"
+          className="mt-3 px-4 py-2 rounded-xl bg-ember text-white text-sm font-bold hover:bg-ember2"
         >
           {t.consultorCta}
         </button>
       </section>
 
       {/* fonts */}
-      <Card icon={<ExternalLink className="w-4 h-4 text-[#0f2e21]" />} title={t.s7t}>
+      <Card icon={<ExternalLink className="w-4 h-4 text-pine" />} title={t.s7t}>
         <ul className="space-y-1.5">
           {t.fonts.map((f) => (
             <li key={f.u}>
-              <a href={f.u} target="_blank" rel="noopener noreferrer nofollow" className="text-[#0f2e21] font-medium hover:text-[#e8673c] inline-flex items-center gap-1">
+              <a href={f.u} target="_blank" rel="noopener noreferrer nofollow" className="text-pine font-medium hover:text-ember inline-flex items-center gap-1">
                 {f.t} <ExternalLink className="w-3 h-3" />
               </a>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-[11px] text-[#6b6f68]">
+        <p className="mt-3 text-[11px] text-stone">
           {t.updated}: {new Date().toLocaleDateString(ca ? "ca-ES" : "es-ES")} · Preureal no presta assessorament jurídic; aquesta guia és contingut informatiu sobre normativa pública.
         </p>
       </Card>

@@ -20,7 +20,7 @@ export default function HashBridge({ to }: { to: string }) {
   }
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
-      <p className="text-sm text-[#6b6f68]">
+      <p className="text-sm text-stone">
         Redirigint… <span className="opacity-60">/ Redirigiendo…</span>
       </p>
     </div>
