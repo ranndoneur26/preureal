@@ -38,8 +38,7 @@ jobs:
         run: npm run typecheck
 
       - name: Tests unitaris i d'integració (bloquejants)
-        run: bun test tests/unit.test.ts tests/totp.test.ts tests/pdf_report.test.ts tests/audit_v23.test.ts
-
+                run: bun test tests/unit.test.ts tests/totp.test.ts tests/pdf_report.test.ts tests/audit_v23.test.ts tests/reports_shop.test.ts
       # 2 fallos PREEXISTENTS en computeValuation (motor F4), documentats a
       # TASKS.md; no bloquejen el CI mentre no es corregeixin.
       - name: Tests de funcionalitats (no bloquejant)
