@@ -195,6 +195,19 @@ Pas natural de v38.6: la mediana comunitària ara també al comparador.
   (mínim 3 informes). Bilingüe inline com la resta de la vista.
 - Sense migració ni canvis de contracte trencadors (camp afegit).
 
+### v38.9 — Hardening del mock de security al pas bloquejant del CI
+Preparació per afegir `tests/reports_shop.test.ts` a la llista bloquejant
+(edit al workflow via GitHub, el token no té scope `workflow`):
+- **tests/audit_v23.test.ts**: el `mock.module("@/lib/security")` era PARCIAL
+  (faltaven `escapeHtml` i `htmlToText`). Amb bun 1.3.14 el re-vinculat
+  retroactiu d'imports ja avaluats explotava amb SyntaxError «Export named
+  'htmlToText' not found» i TRUNCAVA el run de tests; amb el bun de CI passava
+  per sort. Ara el mock és COMPLET: stubs originals + còpies fidels de les 2
+  funcions PURES (sense import real: `security.ts` importa `@/lib/db`, i el
+  client Prisma no es genera al pas de tests del CI). Cap canvi de codi de
+  producció; cap test nou.
+- Detectat i corregit sense tocar el workflow (`.github/workflows/ci.yml`).
+
 ### v38.8 — Informes individuals de pagament únic (Stripe mode «payment»)
 Encàrrec: «dentro de "Preus" habría que añadir la opció de obtener 3 tipos de
 informe diferentes... un solo pago, sin suscripción» (model Tinsa/Evaluo a

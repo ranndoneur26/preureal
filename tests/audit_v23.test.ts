@@ -147,9 +147,38 @@ mock.module("@/lib/auth", () => ({
 mock.module("@/lib/rate-limit", () => ({ rateLimit: async () => ({ ok: true }) }));
 
 mock.module("@/lib/security", () => ({
+  // v38.9 — hardening: el mock ara és COMPLET. Abans faltaven escapeHtml i
+  // htmlToText i, segons la versió de bun, una reimportació posterior (p.ex.
+  // la ruta /api/admin/emails) explotava amb SyntaxError «Export named
+  // 'htmlToText' not found» a la llista bloquejant. Les còpies són les
+  // funcions PURES de src/lib/security.ts (sense import real: security.ts
+  // importa @/lib/db i el client Prisma no es genera al pas de tests del CI).
   audit: fn("audit", async () => ({})),
   clientIp: () => "1.2.3.4",
   hashIp: () => "h",
+  escapeHtml: (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;"),
+  htmlToText: (html: string) =>
+    html
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|h[1-6]|li)>/gi, "\n")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim(),
   maskEmail: (e: string) => e,
   sanitizeName: (n: string) => n,
 }));
