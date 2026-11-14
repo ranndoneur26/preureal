@@ -24,13 +24,19 @@
 | Licencias por metadata API (todas «See Terms of Use» + marco Generalitat) | Documentado en REGISTRO/LIMITACIONES |
 | Formatos de código municipal por dataset (kvmv censal con cero; 8gmd/tb2m censal sin cero; nrmq INE con cero) | Cubierto por mapa dual de códigos + test |
 
-### 3. Pendiente de validación en producción (tras el deploy de Vercel)
+### 3. Validación en producción (15-11-2026, completada)
 
-1. `prisma migrate deploy` aplica la migración `20261115120000_entorn_geo` (aditiva).
-2. Primera ejecución del cron `/api/cron/entorn` (06:15 UTC): sembrado 2.353 + 5.680 puntos y ~32 lotes de municipios (2-3 días de cron).
-3. Sonda `GET /api/entorn/<buildingId>` en producción: 200 con `energia.certificats` cuando la fuente responde.
-4. Validación visual del bloque «Serveis i qualitat de l'entorn» en ficha (BCN, municipio metropolitano, ciudad mediana, municipio pequeño, zona rural).
-5. Añadir `tests/entorn.test.ts` a la línea bloqueante de `.github/workflows/ci.yml` (requiere edición del propietario vía web, como en v38).
+1. Deploy Vercel OK: migración `20261115120000_entorn_geo` aplicada; `/api/entorn/test-noexiste` → `BUILDING_NOT_FOUND` (ruta viva).
+2. Cron `/api/cron/entorn`: **sembrado completo, `done: true`** — recàrrega 2.353, sanitaris 5.609 (71 sin coords descartadas), docents 16/16 lotes (5.428 centros curso 2026/2027), equipaments 16/16 lotes (10.901 Cultura/Esports).
+3. End-to-end con edificios reales del Eixample: contadores por radios por tipología correctos y consistentes entre edificios vecinos; recàrrega 6 estaciones a 2 km.
+4. On-demand ICAEN con refcat real sin certificado: degradación honesta (coincide con la fuente). Caso positivo cubierto por test de fixture (mapping A/A verificado contra la fuente).
+5. Incidencias detectadas y corregidas durante el sembrado: ver REGISTRO_INTEGRACIONES.md §verificación.
+
+### 4. Pendiente del propietario
+
+- Añadir `tests/entorn.test.ts` a la línea bloqueante de `.github/workflows/ci.yml` (edición vía web, como en v38).
+- Validación visual del nuevo bloque en ficha (desktop + móvil) y en los 5 contextos del encargo.
+- Ciclo anterior (fuera de v40): prueba de compra end-to-end tras el fix v38.10 y confirmación del webhook «7 eventos».
 
 ### 4. Regresión garantizada
 
