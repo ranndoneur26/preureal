@@ -14,7 +14,16 @@ export async function GET(
   const { code } = await params;
   const url = new URL(req.url);
   const lang = url.searchParams.get("lang") === "es" ? "es" : "ca";
-  const demo = await getMuniDemografia(code).catch(() => null);
+  let demo: Awaited<ReturnType<typeof getMuniDemografia>>;
+  try {
+    demo = await getMuniDemografia(code);
+  } catch (e) {
+    console.error("demografia muni:", code, e);
+    return NextResponse.json(
+      { error: "DEMO_ERROR", detail: String(e instanceof Error ? e.message : e).slice(0, 200) },
+      { status: 500 }
+    );
+  }
   if (!demo) return NextResponse.json({ error: "MUNICIPALITY_NOT_FOUND" }, { status: 404 });
   return NextResponse.json(
     {
