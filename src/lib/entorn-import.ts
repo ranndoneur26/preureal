@@ -153,7 +153,11 @@ async function fetchSoda(datasetId: string, params: URLSearchParams, timeoutMs =
         headers: { "User-Agent": UA, Accept: "application/json" },
         signal: AbortSignal.timeout(timeoutMs),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${datasetId}`);
+      if (!res.ok) {
+        // inclou el missatge de SoQL (es guarda a ImportRun i ajuda a diagnosticar)
+        const body = await res.text().catch(() => "");
+        throw new Error(`HTTP ${res.status} ${datasetId}: ${body.slice(0, 220)}`);
+      }
       const json = (await res.json()) as unknown;
       return Array.isArray(json) ? json : [];
     } catch (e) {

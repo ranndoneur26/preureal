@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
 import {
   importEntornRecarrega,
   importEntornSanitaris,
@@ -59,7 +60,17 @@ export async function GET(req: Request) {
         break;
     }
     steps.push({ step: step.step, chunk: "chunk" in step ? step.chunk : 0, ...summary, elapsedMs: Date.now() - t0 });
-    if (!summary.ok) break; // error de font: es reintentarà l'endemà (no esborra res)
+    if (!summary.ok) {
+      // superfície de diagnòstic: l'error complet queda a ImportRun; aquí una
+      // pista sanejada per poder depurar sense accés d'admin
+      const lastRun = await db.importRun.findFirst({
+        where: { source: { startsWith: "ENTORNT_" }, status: "ERROR" },
+        orderBy: { createdAt: "desc" },
+        select: { source: true, error: true },
+      });
+      steps.push({ diagnostic: lastRun?.source ?? null, error: (lastRun?.error ?? "").slice(0, 220) });
+      break; // error de font: es reintentarà l'endemà (no esborra res)
+    }
     if (Date.now() - started > STEP_BUDGET_MS) {
       stoppedEarly = true;
       break;
