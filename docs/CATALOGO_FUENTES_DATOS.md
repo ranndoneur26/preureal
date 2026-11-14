@@ -254,3 +254,29 @@
 8. Cita exacta INE («Elaboración propia…») para los PDF y licencia Idescat para atribución en fichas.
 9. Condiciones de reutilización del XLSX SETELECO (si no constan, pedir confirmación a datos.gob.es).
 10. Normales climatológicas AEMET (formato por estación).
+
+---
+
+## Resultats del sprint G0 (15-11-2026) — verificaciones cerradas
+
+Verificación directa (metadata API SODA + pruebas de consulta real contra los datasets) y con navegador/headless por los agentes de verificación.
+
+| # | Pendiente de G0 | Resultado | Impacto |
+|---|---|---|---|
+| 1 | Zip GTFS t-mobilitat | **Cola virtual** (303 → mant.t-mobilitat.cat, no responde a curl); GTFS-RT JSON/PB abiertos y funcionando | A2 usa FGC Huwise + Renfe + t-mobilitat RT; el GTFS agregado queda pendiente de navegador |
+| 2 | MUCS ICGC | **No existe** como producto (verificado en buscador y catálogo icgc.cat) | Zonas verdes Cataluña vía MUC (clasificaciones urbanísticas) u OpenDataBCN |
+| 3 | Urbanismo MUC/RPUC | **CONFIRMADO**: SHP `MUC_CLAS_SHP_ETRS89.zip` (HTTP 200, 59 MB) + WMS/WFS `sig.gencat.cat/ows/PLANEJAMENT` (GeoServer; exigen User-Agent de navegador) | Urbanismo pasa de C a **B** |
+| 4 | TMB | Portal developer.tmb.cat: licencia **gratuita tras registro**; gtfs.zip requiere login (auth.tmb.cat) | Requiere alta del propietario (acción externa) |
+| 5 | Open Data BCN | **CC BY 4.0 verificado por CKAN** para espais-verds-publics (GPKG), equipament-administracio (CSV/JSON), bicing (JSON + .7z); términos generales 403 | Integrable con atribución |
+| 6 | FGC | **CC BY 4.0 verificado** en dataset `gtfs_zip` (API Huwise) | A2 |
+| 7 | Renfe | «Estaciones. Listado completo» **CC BY 4.0** (CSV/XLSX); sin GTFS estático de Rodalies | A2 (estaciones Rodalies) |
+| 8 | SETELECO | URL vigente: `..._DEF.xlsx` (200, XLSX 6,5 MB, **9 hojas** Municipio/Provincia/CCAA × %hogar/%viviendas); el CDN sirve HTML desde este sandbox | A1 con guardas de contenido |
+| 9 | Catastro ATOM | **CONFIRMADO**: feed nacional → provincial (`/INSPIRE/CadastralParcels/08/ES.SDGC.CP.atom_08.xml`) → zip GML por municipio (`A.ES.SDGC.CP.08001.zip`) | Parcelas por municipio (fases posteriores) |
+| 10 | Meteocat | Docs en **apidocs.meteocat.gencat.cat**: clave gratuita por trámite (7 días), x-api-key, CORS off (server-side), endpoint correcto `GET /xema/v1/estacions/metadades`; alternativa sin clave: SODA `nzvn-apee`/`yqwd-vj5e` | Fase B |
+| 11 | AEMET | Key gratuita inmediata, caduca 90 días; endpoints bloqueados por WAF desde este entorno; normales por estación pendiente | Fase B (©AEMET siempre) |
+| 12 | Idescat | Cita oficial verificada («Font: Idescat…» / «elaboració pròpia a partir de dades de l'Idescat») + condiciones de las APIs | Citas en fichas/PDF |
+| 13 | INE | Texto de cita confirmado (cid=125): «Elaboración propia con datos extraídos del sitio web del INE: www.ine.es» + fecha | Citas en fichas/PDF |
+| 14 | PRTR | Portal movido a **prtr-es.miteco.gob.es** (descargas y facility-level verificados) | Fase C |
+| 15 | Instalaciones industriales Cataluña | Sin dataset IPPC en el portal; alternativa verificada: **EU-ETS** `hefh-b8uy` (emisiones GEH por instalación) | Fase C |
+| 16 | XVPCA | Estaciones y contaminantes en el propio dataset (`tasf-thgu` con latitud/longitud por fila; SO2, NO2, NOX, O3, PM10, PM2.5, CO…) | Fase B sin dataset de metadatos adicional |
+| 17 | Licencia Generalitat | **Llicència oberta d'ús d'informació — Catalunya** (web.gencat.cat/llicencies): citar organismo + fecha, no alterar el sentido | Marco de atribución de todos los datasets Socrata |

@@ -1,0 +1,22 @@
+[
+  {
+    "curs": "2026/2027",
+    "codi_centre": "08005771",
+    "denominaci_completa": "Sagrat Cor-Esclaves",
+    "nom_naturalesa": "Privat",
+    "nom_titularitat": "Fundacions",
+    "adre_a": "rbla. de Catalunya, 83",
+    "codi_postal": "08008",
+    "codi_municipi": "08019",
+    "codi_municipi_6": "080193",
+    "nom_municipi": "Barcelona",
+    "coordenades_utm_x": "429904",
+    "coordenades_utm_y": "4582641",
+    "coordenades_geo_x": "2.161546",
+    "coordenades_geo_y": "41.3922",
+    "einf1c": "EINF1C",
+    "epri": "EPRI",
+    "eso": "ESO",
+    "batx": "BATX"
+  }
+]

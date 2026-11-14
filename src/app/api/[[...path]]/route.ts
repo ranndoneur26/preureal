@@ -55,6 +55,7 @@ import * as h_comparator_export from "../_impl/comparator/export/route";
 import * as h_comparisons from "../_impl/comparisons/route";
 import * as h_cron_demografia from "../_impl/cron/demografia/route";
 import * as h_cron_emails from "../_impl/cron/emails/route";
+import * as h_cron_entorn from "../_impl/cron/entorn/route";
 import * as h_cron_ine from "../_impl/cron/ine/route";
 import * as h_events from "../_impl/events/route";
 import * as h_favorites from "../_impl/favorites/route";
@@ -86,6 +87,7 @@ import * as h_subscription_reactivate from "../_impl/subscription/reactivate/rou
 import * as h_valuation from "../_impl/valuation/route";
 import * as h_buildings_id from "../_impl/buildings/[id]/route";
 import * as h_demografia_muni_code from "../_impl/demografia/muni/[code]/route";
+import * as h_entorn_id from "../_impl/entorn/[id]/route";
 import * as h_export_code from "../_impl/export/[code]/route";
 import * as h_indicators_muni_code from "../_impl/indicators/muni/[code]/route";
 import * as h_municipalities_code from "../_impl/municipalities/[code]/route";
@@ -143,6 +145,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["comparisons"], h: h_comparisons },
   { seg: ["cron", "demografia"], h: h_cron_demografia },
   { seg: ["cron", "emails"], h: h_cron_emails },
+  { seg: ["cron", "entorn"], h: h_cron_entorn },
   { seg: ["cron", "ine"], h: h_cron_ine },
   { seg: ["events"], h: h_events },
   { seg: ["favorites"], h: h_favorites },
@@ -174,6 +177,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["valuation"], h: h_valuation },
   { seg: ["buildings", ":id"], h: h_buildings_id },
   { seg: ["demografia", "muni", ":code"], h: h_demografia_muni_code },
+  { seg: ["entorn", ":id"], h: h_entorn_id },
   { seg: ["export", ":code"], h: h_export_code },
   { seg: ["indicators", "muni", ":code"], h: h_indicators_muni_code },
   { seg: ["municipalities", ":code"], h: h_municipalities_code },

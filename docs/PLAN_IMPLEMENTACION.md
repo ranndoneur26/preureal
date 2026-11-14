@@ -133,3 +133,12 @@ S = ≤ 1 día de trabajo · M = 2–4 días · L = 5–10 días · XL = > 10 d�
 3. A6 energía (quick win) y A7 recarga (SODA simples) → primera integración visible end-to-end.
 4. A3 equipamientos → A1 conectividad → A2 transporte → A5 inundabilidad → A4 zonas verdes.
 5. Cierre de Fase A: sección de ficha unificada, capas, PDF, validación 5 contextos, `TESTS_Y_VALIDACION.md`.
+
+---
+
+## Estado de ejecución (15-11-2026)
+
+- **G0 — COMPLETADO**: 17 verificaciones cerradas (tabla en CATALOGO_FUENTES_DATOS.md). Pendientes externas: alta TMB (registro propietario), GTFS agregado t-mobilitat (cola virtual), WAF AEMET.
+- **FASE A — EN CURSO (v40)**: migración 3 tablas + importadores SODA (energía ICAEN on-demand, recarga, sanitarios, docentes por lotes, equipaments Cultura/Esports) + cron multi-paso + `GET /api/entorn/:id` + panel UI con radios 300/500/1000/2000 + 105 tests bloqueantes en verde. Detalle: REGISTRO_INTEGRACIONES.md y TESTS_Y_VALIDACION.md.
+- **Fase A restante**: A1 conectividad (XLSX _DEF con guardas), A2 transporte (FGC/Renfe CC BY 4.0 + t-mobilitat RT), A4 zonas verdes (BCN GPKG; MUCS inexistente), A5 inundabilidad (SNCZI/ACA), capas de mapa activables y capítulo PDF.
+- **Nota de despliegue**: añadir `tests/entorn.test.ts` a la línea bloqueante de `.github/workflows/ci.yml` (edición del propietario vía web, sin scope workflow del token).

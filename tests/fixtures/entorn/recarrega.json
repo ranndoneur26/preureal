@@ -1,0 +1,17 @@
+[
+  {
+    "id": "46522884",
+    "promotor_gestor": "Institut Català d'Energia - Ajuntament de Barcelona",
+    "acces": "targeta",
+    "tipus_velocitat": "semiRAPID",
+    "tipus_connexi": "MENNEKES.M",
+    "latitud": "41.401768",
+    "longitud": "2.160826",
+    "designaci_descriptiva": "12206002160001",
+    "kw": "21",
+    "ac_dc": "AC",
+    "adre_a": "SABA - Carrer de Siracusa, 39-51, 08012",
+    "municipi": "Barcelona",
+    "codimun": "80193"
+  }
+]

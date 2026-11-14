@@ -1,0 +1,19 @@
+[
+  {
+    "establiment_codi": "F17000498",
+    "establiment_nom": "ARPA CAMOS NURIA",
+    "tipus_establiment_codi": "F",
+    "tipus_establiment_nom": "Farmàcia",
+    "tipus_via_nom": "CARRER",
+    "via_nom": "AGUDES",
+    "numero_via": "30-32",
+    "codi_postal": "17006",
+    "municipi_codi": "17079",
+    "municipi_nom": "GIRONA",
+    "abs_nom": "Girona - 2",
+    "regio_sanitaria_nom": "Girona",
+    "telefon": "972231844",
+    "longitud": "2.802839989",
+    "latitud": "41.975087037"
+  }
+]

@@ -1,0 +1,23 @@
+[
+  {
+    "num_cas": "983KYQ8SW",
+    "adre_a": "Carrer Nacional II",
+    "numero": "9",
+    "codi_postal": "08395",
+    "poblacio": "Sant Pol de Mar",
+    "comarca": "Maresme",
+    "codi_poblacio": "08235",
+    "referencia_cadastral": "8761106DG6086S0001MG",
+    "zona_climatica": "C2",
+    "metres_cadastre": "2224",
+    "us_edifici": "Bloc d'habitatges plurifamiliar",
+    "qualificaci_de_consum_d": "A",
+    "energia_prim_ria_no_renovable": "17.94",
+    "qualificacio_d_emissions": "A",
+    "emissions_de_co2": "3.15",
+    "consum_d_energia_final": "10.02",
+    "eina_de_certificacio": "HULC",
+    "motiu_de_la_certificacio": "Nova construcció",
+    "data_entrada": "2026-03-12"
+  }
+]

@@ -2,6 +2,66 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v40 — Bloc «Serveis i qualitat de l'entorn» (Fase A, 1a integració) — 2026-11-15
+
+Encàrrec: «auditoría, integración y ampliación de datos públicos». Fase 1-2 (auditoria
++ catàleg verificat) a v39.1; aquí la primera integració FUNCIONAL mantenint intactes
+totes les funcionalitats existents (migració aditiva, 0 taules alterades).
+
+### v40.1 — Ingesta + API + UI de l'entorn de l'edifici
+- **3 TAULES NOVES (migració `20261115120000_entorn_geo`, aditiva)**: `GeoPoint`
+  (punts oficials: category+kind+props, índexs category/municipalityCode i
+  lat/lng), `GeoPolygon` (polígons oficials simplificats, per fases futures) i
+  `BuildingAssociation` (associacions precalculades edifici↔entorn amb MÈTODE
+  d'associació al costat del resultat: REFCAT/RADIUS_x/MUNI/INTERSECT).
+- **FONT ESTRELLA — ICAEN certificats d'eficiència energètica per EDIFICI**
+  (dataset `j6ii-t3w2`, 1,34 M registres): lookup ON-DEMAND per referència
+  catastral quan s'obre la fitxa, cachejat 30 dies a BuildingAssociation
+  (mateix patró que ICGC/Catastro). Qualificacions consum/emissions, kWh/m²,
+  kgCO₂/m², ús i motiu. Verificat amb refcat real (consum A / emissions A).
+- **4 FONTS PUNTUALS SODA** (portal Generalitat, llicència oberta d'ús
+  d'informació — Catalunya): estacions de recàrrega EV (tb2m-m33b, 2.353),
+  establiments sanitaris autoritzats (nrmq-ytje, 5.680, inclou farmàcies),
+  directori de centres docents (kvmv-ahh4, 38.108, per lots de 60 municipis) i
+  Equipaments de Catalunya amb filtre Cultura/Esports (8gmd-gz7i, 1.025 files
+  només BCN). Cada fila amb coordenades vàlides; les invàlides es descarten
+  (mai s'inventen). Traçabilitat completa: DataSource + ImportRun + AuditLog.
+- **CRON `/api/cron/entorn`** (diari 06:15 UTC, `vercel.json`): bucle multi-pas
+  amb pressupost de 40 s sobre el límit de 60 s de Vercel; substitució
+  idempotent per lot; si una font cau no esborra res i reintent l'endemà;
+  finestra de frescor de 60 dies.
+- **API `GET /api/entorn/:id`** (pública, registrada al dispatcher):
+  certificats per refcat + punts propers (bbox 2000 m + haversine), grups per
+  tipologia amb els més propers i COMPTES per els radios del encàrrec
+  (300/500/1000/2000 m). Rate limit 30/min per IP; Cache-Control 1 h +
+  stale-while-revalidate 24 h (patrò demografia). Erreus tipificats
+  (BUILDING_NOT_FOUND / ENTORNT_ERROR) i degradació per bloc.
+- **UI — bloc «Serveis i qualitat de l'entorn»** a la fitxa d'edifici
+  (`EntornPanel.tsx` sota el bloc demogràfic): selector de radios
+  300/500/1000/2000 m, eficiència amb xips de qualificació A-G, mobilitat
+  (parades + recàrrega) i serveis per tipologia, «Sense informació disponible»
+  explícit quan no hi ha dada, distàncies SEMPRE etiquetades com a línia recta,
+  fonts+llicència al peu (ca/es).
+- **Fiabilitat de la ingesta**: SoQL comprovat contra els datasets reals
+  (descoberts i corregits: columna municipal sense zero inicial a 8gmd/tb2m,
+  `starts_with`+`IN`, `$order=:id`); mapa dual de codis municipals
+  (ineCode/censal/sense zero) per resoldre el lligam amb Municipality.
+- **TESTS**: `tests/entorn.test.ts` (16, fixtures REALS a
+  `tests/fixtures/entorn/`) → suite bloqueant **89 → 105 tests**, 0 fail;
+  typecheck net; eslint 0 nous; `npm audit` 0 vulnerabilitats; build OK.
+  Pendent: afegir el fitxer a la línia bloqueant de ci.yml (edició web del
+  propietari).
+- **Docs del encàrrec completats**: docs/REGISTRO_INTEGRACIONES.md (5
+  integracions reals amb estat), docs/LIMITACIONES_DATOS.md,
+  docs/TESTS_Y_VALIDACION.md, catàleg + pla actualitzats amb els resultats del
+  sprint G0 (17 verificaciones: MUC/WFS confirmat, MUCS inexistent, TMB
+  gratuita amb registre, BCN/FGC/Renfe CC BY 4.0, SETELECO `_DEF.xlsx` 9
+  fulles, Catastro ATOM per municipi, PRTR mogut a miteco, XVPCA amb
+  coordenades…).
+- **Pendent Fase A**: A1 conectivitat (XLSX amb guardes), A2 transporte
+  (FGC/Renfe/t-mobilitat), A4 zonas verdes (BCN), A5 inundabilidad
+  (SNCZI/ACA), capas de mapa activables i capítulo PDF.
+
 ### v39.1 — Documentació del projecte d'ampliació de dades públiques (Fases 1-2, sense canvis de codi)
 - **docs/AUDITORIA_PREUREAL.md**: auditoria funcional/tècnica/dades del projecte al
   commit `a5b93e7` (v39): inventari de 84 rutes API + 24 models Prisma, mapa Leaflet

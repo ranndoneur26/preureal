@@ -195,6 +195,8 @@ model Building {
   avgRentEurMonth  Float? // preu mitjà real de l'illa/edifici (font importada)
   sampleSize       Int? // mostres (contractes) de les quals surt la mitjana
   cachedAt         DateTime @default(now())
+  // v40 — associacions precalculades amb l'entorn (certificats, polígons...)
+  associations     BuildingAssociation[]
 
   @@index([municipalityCode])
   @@index([centroidLat, centroidLng])
@@ -488,4 +490,69 @@ model StatObservation {
   @@index([geoLevel, geoCode])
   @@index([municipalityCode])
   @@index([runId])
+}
+
+// ─── v40 — Serveis i qualitat de l'entorn (Fase A del projecte d'ampliació) ──
+// Migració ADDITIVA: cap taula existent no es toca. Disseny complet a
+// docs/ARQUITECTURA_DATOS.md. Regla d'or: cada dada conserva la seva font,
+// el nivell territorial real i el mètode d'associació — mai es presenta una
+// estadística municipal com a dada específica de l'edifici.
+
+// Punts geogràfics oficials (estacions de recàrrega, equipaments sanitaris/
+// educatius/culturals/esportius, parades GTFS, estacions de mesurament...).
+// Una taula genèrica (category + kind + props JSON) evita crear una taula
+// per categoria — la funció única de Vercel i el manteniment ho exigeixen.
+model GeoPoint {
+  id                String   @id @default(cuid())
+  category          String // TRANSPORT_STOP | PUBLIC_FACILITY | CHARGING_STATION | AIR_STATION | CLIMATE_STATION | PARKING | GREEN_SPACE
+  kind              String? // subtipus: FARMACIA | HOSPITAL | EDUCACIO | CULTURA | ESPORT | METRO | TREN | FGC | BUS | ...
+  externalId        String? // id de la font (SODA id, GTFS stop_id, num_cas...)
+  name              String
+  municipalityCode  String? // enllaç LÒGIC amb Municipality.code (censal 6 dígits)
+  lat               Float
+  lng               Float
+  props             String? // JSON: kw, connexió, accessibilitat, adreça, línies...
+  datasetSourceCode String // DataSource.code (FK lògica, sense FK física)
+  datasetVersion    String? // extracte referenciat (data/versió de la font)
+  fetchedAt         DateTime @default(now())
+
+  @@unique([datasetSourceCode, externalId])
+  @@index([category, municipalityCode])
+  @@index([lat, lng])
+}
+
+// Polígons oficials simplificats (zones inundables T10/T100/T500, exposició
+// acústica, planejament...). La geometria viu com a GeoJSON en String (mateixa
+// convenció que Building.polygonJson): les interseccions es precalcuen FORA de
+// runtime (sense PostGIS) i es guarden a BuildingAssociation.
+model GeoPolygon {
+  id                String   @id @default(cuid())
+  category          String // FLOOD_ZONE | NOISE_EXPOSURE | PLANNING_ZONE
+  scenario          String? // T10 | T100 | T500 | LDEN | LNIGHT | ...
+  hazardLevel       String? // nivell de perillositat publicat, si existeix
+  municipalityCode  String? // municipi(s) afectats (denormalitzat per filtrar)
+  geometry          String // GeoJSON simplificat [[ [lng,lat], ... ]]
+  datasetSourceCode String
+  datasetVersion    String?
+  fetchedAt         DateTime @default(now())
+
+  @@index([category, municipalityCode])
+}
+
+// Resultats d'associació edifici ↔ entorn PRECALCULATS (REFCAT / INTERSECT /
+// RADIUS_500 / MUNI). El mètode i la precisió viuen sempre al costat del
+// resultat. La fitxa només llegeix d'aquí: cap geoproces en runtime.
+model BuildingAssociation {
+  id                String   @id @default(cuid())
+  buildingId        String
+  building          Building @relation(fields: [buildingId], references: [id])
+  category          String // ENERGY_CERT | TRANSPORT | FACILITIES | FLOOD | ...
+  refKey            String // id de la font (num_cas ICAEN, stop_id, GeoPolygon.id...)
+  associationMethod String // REFCAT | INTERSECT | RADIUS_300 | RADIUS_500 | MUNI
+  value             String? // JSON amb el resultat (qualificació, distància...)
+  datasetSourceCode String
+  computedAt        DateTime @default(now())
+
+  @@unique([buildingId, category, refKey])
+  @@index([buildingId, category])
 }

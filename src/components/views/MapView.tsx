@@ -7,6 +7,7 @@ import LineChart, { type LineSeries } from "@/components/charts/LineChart";
 import BarChart, { type BarRow } from "@/components/charts/BarChart";
 import ValuationPanel from "@/components/views/ValuationPanel";
 import DemografiaPanel from "@/components/views/DemografiaPanel";
+import EntornPanel from "@/components/views/EntornPanel";
 import OnboardingTour from "@/components/OnboardingTour";
 import FirstRunChecklist from "@/components/FirstRunChecklist";
 import { markStep } from "@/lib/steps";
@@ -2029,6 +2030,9 @@ function FullPanel({
 
       {/* CONTEXTE DEMOGRÀFIC I TERRITORIAL — v39 (IDESCAT) */}
       <DemografiaPanel muniCode={mun.code} muniName={mun.name} />
+
+      {/* SERVEIS I QUALITAT DE L'ENTORN — v40 (Fase A) */}
+      <EntornPanel buildingId={lookup.building?.id ?? null} />
 
       {/* QUOTA + UPGRADE */}
       {auth.user?.plan === "FREE" && quota && (
