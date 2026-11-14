@@ -927,14 +927,14 @@ export async function importIdescatEmexSeed(createdBy = "system"): Promise<Idesc
     const munis = await getMuniCodes();
     const seed = seedSuperficie as unknown as { municipis: EmexSeedRow[] };
     const rows: ObsRow[] = [];
-    const pobId = await db.dataSource.findFirst({ where: { code: "IDESCAT_POB" }, select: { id: true } });
+    const pobTotals = await loadPobTotals();
     for (const row of seed.municipis) {
       const mun = munis.get(row.code);
       if (!mun) {
         skipped++;
         continue;
       }
-      await resolveEmexAgeYear(pobId?.id ?? null, row.code, row);
+      resolveEmexAgeYear(pobTotals, row.code, row);
       pushEmexRows(rows, row, mun);
     }
     await deleteWindow(sourceId, ["MUNI", "COM", "CAT"]);
@@ -975,24 +975,40 @@ export async function importIdescatEmexSeed(createdBy = "system"): Promise<Idesc
  * POB_TOTAL del padró d'algun any concret (<1% de desviació). Derivació
  * VERIFICABLE, mai inventada; si cap any no quadra queda «n.d.».
  */
-async function resolveEmexAgeYear(
-  sourceIdPob: string | null,
+type PobTotals = Map<string, Array<{ period: string; value: number }>>;
+
+/** Precàrrega en memòria dels totals de padró per municipi (1 sola query). */
+async function loadPobTotals(): Promise<PobTotals> {
+  const map: PobTotals = new Map();
+  const pobId = await db.dataSource.findFirst({ where: { code: "IDESCAT_POB" }, select: { id: true } });
+  if (!pobId) return map;
+  const rows = await db.statObservation.findMany({
+    where: { sourceId: pobId.id, variable: "POB_TOTAL", geoLevel: "MUNI" },
+    select: { geoCode: true, period: true, value: true },
+  });
+  for (const r of rows) {
+    const arr = map.get(r.geoCode) ?? [];
+    arr.push({ period: r.period, value: r.value });
+    map.set(r.geoCode, arr);
+  }
+  return map;
+}
+
+function resolveEmexAgeYear(
+  totals: PobTotals,
   code: string,
   row: EmexSeedRow
-): Promise<void> {
+): void {
   const ages = [row.f167, row.f27, row.f28, row.f29];
   if (ages.some((a) => !a || a.v?.[0] == null)) return;
   const sum = ages.reduce((acc, a) => acc + (a!.v?.[0] ?? 0), 0);
   if (sum <= 0) return;
-  if (!sourceIdPob) {
+  const candidates = totals.get(code);
+  if (!candidates || candidates.length === 0) {
     for (const a of ages) if (a && a.r == null) a.r = "n.d.";
     return;
   }
-  const totals = await db.statObservation.findMany({
-    where: { sourceId: sourceIdPob, variable: "POB_TOTAL", geoLevel: "MUNI", geoCode: code },
-    select: { period: true, value: true },
-  });
-  const match = totals.find((t) => t.value > 0 && Math.abs(t.value - sum) / t.value < 0.01);
+  const match = candidates.find((t) => t.value > 0 && Math.abs(t.value - sum) / t.value < 0.01);
   if (match) row.ageDev = Math.abs(match.value - sum) / match.value;
   for (const a of ages) {
     if (a && a.r == null) a.r = match ? match.period : "n.d.";
@@ -1082,7 +1098,7 @@ export async function importIdescatEmexBatch(
     const munis = await getMuniCodes();
     const rows: ObsRow[] = [];
     const touched: string[] = [];
-    const pobId = await db.dataSource.findFirst({ where: { code: "IDESCAT_POB" }, select: { id: true } });
+    const pobTotals = await loadPobTotals();
     for (const code of codes) {
       const mun = munis.get(code);
       if (!mun) {
@@ -1103,7 +1119,7 @@ export async function importIdescatEmexBatch(
             else if (ind.id === "f29") row.f29 = { v: ind.values, r: ind.ref, u: ind.unit };
           }
         }
-        await resolveEmexAgeYear(pobId?.id ?? null, code, row).catch(() => {});
+        resolveEmexAgeYear(pobTotals, code, row);
         pushEmexRows(rows, row, mun);
         touched.push(code);
       } catch {
