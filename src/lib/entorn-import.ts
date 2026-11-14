@@ -342,12 +342,25 @@ async function importChunk(
   const skipped = mapped.skipped + unmappable;
   const run = await db.importRun.create({ data: { source: runSource, status: "OK", createdBy } });
   try {
+    // Upsert real: a més dels punts del llot, s'eliminen PRÈVIAMENT les files
+    // amb el MATEIX externalId (fonts com kvmv-ahh4 contenen el mateix
+    // codi_centre sota dos codis municipals diferents — duplicats de dades
+    // oficials). Sense això, un centre ja insertat a un llot anterior violaria
+    // l'unique (datasetSourceCode, externalId) del llot següent.
+    const ids = Array.from(new Set(rows.map((r) => r.externalId).filter((x): x is string => Boolean(x))));
     const ops: Prisma.PrismaPromise<unknown>[] = [
       db.geoPoint.deleteMany({
         where: { datasetSourceCode: sourceCode, municipalityCode: { in: chunkCodes } },
       }),
-      ...createManyOps(rows),
     ];
+    for (let i = 0; i < ids.length; i += CREATE_BATCH) {
+      ops.push(
+        db.geoPoint.deleteMany({
+          where: { datasetSourceCode: sourceCode, externalId: { in: ids.slice(i, i + CREATE_BATCH) } },
+        })
+      );
+    }
+    ops.push(...createManyOps(rows));
     await db.$transaction(ops);
     await auditSystem("IMPORT_RUN", run.id, { source: runSource, created: rows.length, skipped });
     return { ok: true, created: rows.length, skipped };
