@@ -10,6 +10,7 @@
  */
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { getSiteUrlOrigin } from "@/lib/site-url";
 import { computeValuation, valueForYear, yearOfPeriod, type EstatConservacio, type ValuationData } from "@/lib/territorial";
 import { getMuniRentRows } from "@/lib/indicators-data";
 import { buildReportPdf } from "@/lib/pdf-report";
@@ -59,7 +60,8 @@ export async function fulfillPurchase(
 
 /** URL absoluta de descàrrega (mai relativa: viatja per correu). */
 export function purchaseDownloadUrl(purchaseId: string, tokenRaw: string): string {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "https://www.preureal.com";
+  // v38.10: helper segur — normalitza NEXT_PUBLIC_SITE_URL sense esquema.
+  const origin = getSiteUrlOrigin();
   return `${origin}/api/reports/shop/download?p=${purchaseId}&t=${tokenRaw}`;
 }
 

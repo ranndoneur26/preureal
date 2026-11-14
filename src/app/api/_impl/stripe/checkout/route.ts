@@ -5,6 +5,7 @@ import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 import { PLANS } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/security";
+import { getSiteUrlOrigin } from "@/lib/site-url";
 
 /**
  * POST /api/stripe/checkout { plan: "PREMIUM" | "PRO" }
@@ -128,7 +129,9 @@ export async function POST(req: Request) {
   }
   const stripe = new Stripe(secret);
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+  // v38.10: normalitza NEXT_PUBLIC_SITE_URL mal escrit (sense https://) —
+  // el mateix bug url_invalid vist en producció al checkout d'informes.
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ? getSiteUrlOrigin() : new URL(req.url).origin;
   const cs = await stripe.checkout.sessions.create({
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],

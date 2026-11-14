@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { audit } from "@/lib/security";
 import { validateReportParams, reportProduct, type ReportKind } from "@/lib/reports-shop";
 import { fulfillPurchase, loadValuation, purchaseDownloadUrl, shopError } from "@/lib/reports-fulfill";
+import { getSiteUrlOrigin } from "@/lib/site-url";
 
 /**
  * POST /api/reports/shop/checkout { kind, ...params } — v38.8: compra PUNTUAL
@@ -98,7 +99,11 @@ export async function POST(req: Request) {
     });
     try {
       const stripe = new Stripe(secret);
-      const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+      // v38.10: si NEXT_PUBLIC_SITE_URL està mal escrit (sense https://),
+      // l'origen cru s'enviaria a Stripe com a success_url invàlid
+      // (url_invalid, error real vist en producció). El helper segur el
+      // normalitza; sense env es manté l'origen de la petició (dev).
+      const origin = process.env.NEXT_PUBLIC_SITE_URL ? getSiteUrlOrigin() : new URL(req.url).origin;
       const cs = await stripe.checkout.sessions.create({
         mode: "payment",
         line_items: [

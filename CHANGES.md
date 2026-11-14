@@ -195,6 +195,21 @@ Pas natural de v38.6: la mediana comunitària ara també al comparador.
   (mínim 3 informes). Bilingüe inline com la resta de la vista.
 - Sense migració ni canvis de contracte trencadors (camp afegit).
 
+### v38.10 — Fix success_url de Stripe quan NEXT_PUBLIC_SITE_URL no porta esquema
+Bug REAL de producció (2026-11-14): el checkout d'informes retornava 502
+STRIPE_ERROR amb `url_invalid` al param `success_url` («An explicit scheme
+(such as https) must be provided»): NEXT_PUBLIC_SITE_URL era «www.preureal.com»
+sense `https://` i els 3 endpoints de Stripe l'usaven en cru.
+- **Fix**: els 3 endpoints (`reports/shop/checkout`, `stripe/checkout`,
+  `stripe/portal`) usen ara `getSiteUrlOrigin()` (el helper segur de
+  `site-url.ts`, que perdona l'esquema mancant i el fallback canònic) quan la
+  env està definida; sense env es manté l'origen de la petició (dev/localhost).
+- **reports-fulfill.ts** `purchaseDownloadUrl()` també passa pel helper
+  (l'enllaç de descàrrega viatja per correu: mateix risc d'URL rota).
+- **Acció del propietari a Vercel**: corregir el valor de
+  `NEXT_PUBLIC_SITE_URL` a `https://www.preureal.com` i fer Redeploy (a més,
+  el codi ja no depèn que el valor sigui perfecte).
+
 ### v38.9 — Hardening del mock de security al pas bloquejant del CI
 Preparació per afegir `tests/reports_shop.test.ts` a la llista bloquejant
 (edit al workflow via GitHub, el token no té scope `workflow`):

@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { getSiteUrlOrigin } from "@/lib/site-url";
 
 /**
  * POST /api/stripe/portal — crea una sessió del Portal de Client de Stripe
@@ -34,7 +35,8 @@ export async function POST(req: Request) {
   }
 
   const stripe = new Stripe(secret);
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || new URL(req.url).origin;
+  // v38.10: normalitza NEXT_PUBLIC_SITE_URL mal escrit (sense https://).
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ? getSiteUrlOrigin() : new URL(req.url).origin;
   const session = await stripe.billingPortal.sessions.create({
     customer: sub.stripeCustomerId,
     return_url: `${origin}/#/panell`,
