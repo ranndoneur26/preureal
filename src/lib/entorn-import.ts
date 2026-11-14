@@ -252,7 +252,7 @@ async function replaceSource(
   try {
     await db.$transaction([
       db.geoPoint.deleteMany({ where: { datasetSourceCode: sourceCode } }),
-      db.geoPoint.createMany({ data: rows }),
+      ...createManyOps(rows),
     ]);
     await auditSystem("IMPORT_RUN", run.id, { source: runSource, created: rows.length, skipped });
     return { ok: true, created: rows.length, skipped };
@@ -342,9 +342,8 @@ async function importChunk(
       db.geoPoint.deleteMany({
         where: { datasetSourceCode: sourceCode, municipalityCode: { in: chunkCodes } },
       }),
+      ...createManyOps(rows),
     ];
-    // createMany amb llista buida: guardar (algunes fonts retornen 0 files per llot)
-    if (rows.length > 0) ops.push(db.geoPoint.createMany({ data: rows }));
     await db.$transaction(ops);
     await auditSystem("IMPORT_RUN", run.id, { source: runSource, created: rows.length, skipped });
     return { ok: true, created: rows.length, skipped };
@@ -357,6 +356,20 @@ async function importChunk(
 
 const EQUIPAMENTS_WHERE =
   "(starts_with(categoria,'Cultura') OR starts_with(categoria,'Esports. Lleure'))";
+
+/** Mida de tanda de createMany: Postgres té un límit de 65.535 paràmetres per
+ * enunciat (~11 columnes × fila) i els lots densos el superen. */
+const CREATE_BATCH = 400;
+
+function createManyOps(
+  rows: Array<Record<string, unknown>>
+): Prisma.PrismaPromise<unknown>[] {
+  const ops: Prisma.PrismaPromise<unknown>[] = [];
+  for (let i = 0; i < rows.length; i += CREATE_BATCH) {
+    ops.push(db.geoPoint.createMany({ data: rows.slice(i, i + CREATE_BATCH) as never }));
+  }
+  return ops;
+}
 
 /** ── Passos de importació ─────────────────────────────────────────────── */
 
@@ -371,7 +384,33 @@ export async function importEntornSanitaris(createdBy = "system:cron") {
 export async function importEntornDocentsChunk(chunkIndex: number, createdBy = "system:cron") {
   const codes = await chunkCodesFor(chunkIndex);
   if (!codes) return { ok: false, created: 0, skipped: 0 };
-  return importChunk("kvmv-ahh4", "ENTORNT_DOCENTS", codes, null, "codi_municipi_6", "CENSAL6", mapDocent, createdBy, `ENTORNT_DOCENTS:CHUNK-${chunkIndex}`, "curs DESC");
+  // El directori publica VARIES files per centre (una per curs): filtrar al
+  // curs vigent (max(curs)) per no traslladar 7× les dades i deduplicar la resta.
+  let cursWhere: string | null = null;
+  try {
+    const url = `${SODA}/kvmv-ahh4.json?$select=max(curs)`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      signal: AbortSignal.timeout(10000),
+    });
+    const arr = (await res.json()) as Array<{ max_curs?: string }>;
+    const curs = arr?.[0]?.max_curs;
+    if (curs) cursWhere = `curs='${curs}'`;
+  } catch {
+    /* sense el filtre d'any, el dedup manteniria el resultat correcte */
+  }
+  return importChunk(
+    "kvmv-ahh4",
+    "ENTORNT_DOCENTS",
+    codes,
+    cursWhere,
+    "codi_municipi_6",
+    "CENSAL6",
+    mapDocent,
+    createdBy,
+    `ENTORNT_DOCENTS:CHUNK-${chunkIndex}`,
+    cursWhere ? undefined : "curs DESC"
+  );
 }
 
 export async function importEntornEquipamentsChunk(chunkIndex: number, createdBy = "system:cron") {
