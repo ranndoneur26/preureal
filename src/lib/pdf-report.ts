@@ -542,7 +542,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
         page.drawText(`${fmt0(v)} (${fmt1(pct)}%)`, { x: 136 + bw2 + 6, y: y - 6, size: 8, font, color: GRAY });
         y -= 16;
       }
-      line(`Font: IDESCAT, grans grups d'edat del padró${ed.any ? ` (${ed.any})` : ""}.`, 8.5, GRAY);
+      line(`Font: IDESCAT, grans grups d'edat del padró${ed.any && ed.any !== "n.d." ? ` (${ed.any})` : ""}.`, 8.5, GRAY);
       y -= 10;
     }
 

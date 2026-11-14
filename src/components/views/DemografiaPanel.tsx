@@ -253,7 +253,7 @@ export default function DemografiaPanel({ muniCode, muniName }: { muniCode: stri
             <div>
               <div className="text-[11px] font-bold text-pine mb-1">
                 {ca ? "Estructura per grans grups d'edat" : "Estructura por grandes grupos de edad"}
-                {d.edats.anyActual ? ` (${d.edats.anyActual})` : ""}
+                {d.edats.anyActual && d.edats.anyActual !== "n.d." ? ` (${d.edats.anyActual})` : ""}
               </div>
               <BarChart rows={edatsRows} locale={locale} />
             </div>

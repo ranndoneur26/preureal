@@ -1203,6 +1203,22 @@ export async function nextDemografiaStep(): Promise<
       .map((r) => r.geoCode)
   );
   const pending = codes.filter((c) => !fresh.has(c));
-  if (pending.length === 0) return { step: "DONE" };
+  if (pending.length === 0) {
+    // auto-reparació: si l'EMEX_SEED va córrer ABANS d'existir la font POB,
+    // les edats vigents quedaren amb any «n.d.» → re-sembrar (idempotent)
+    const emexId2 = await db.dataSource.findFirst({ where: { code: "IDESCAT_EMEX" }, select: { id: true } });
+    if (emexId2) {
+      const nNd = await db.statObservation.count({
+        where: {
+          sourceId: emexId2.id,
+          geoLevel: "MUNI",
+          variable: { in: ["POB_EDAT_0_14", "POB_EDAT_15_64", "POB_EDAT_65_84", "POB_EDAT_85_MES"] },
+          period: "n.d.",
+        },
+      });
+      if (nNd > 0) return { step: "EMEX_SEED" };
+    }
+    return { step: "DONE" };
+  }
   return { step: "EMEX_BATCH", codes: pending.slice(0, EMEX_BATCH_SIZE) };
 }
