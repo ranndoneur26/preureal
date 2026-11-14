@@ -19,6 +19,7 @@
  * lectura i sempre s'etiqueten com a línia recta.
  */
 import { db } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 import { audit } from "@/lib/security";
 import {
   mapDocent,
@@ -200,7 +201,18 @@ function toRows(points: PointRow[], muniMap: Map<string, string>, version: strin
     datasetSourceCode: string; datasetVersion: string;
   }> = [];
   let skipped = 0;
+  // Deduplicació per (datasetSourceCode, externalId): fonts com kvmv-ahh4
+  // publiquen VARIES files per centre (un curs per fila) i una violació de
+  // l'unique invalidaria tota la transacció. Es conserva la PRIMERA aparició
+  // (els importadors que tenen versions ordenen per data/curs DESC).
+  const seen = new Set<string>();
   for (const p of points) {
+    const key = `${p.datasetSourceCode}:${p.externalId ?? ""}`;
+    if (p.externalId && seen.has(key)) {
+      skipped++;
+      continue;
+    }
+    if (p.externalId) seen.add(key);
     rows.push({
       category: p.category,
       kind: p.kind,
@@ -288,7 +300,8 @@ async function importChunk(
   listFormat: "CENSAL6" | "STRIPPED",
   mapRow: (row: Record<string, unknown>) => GeoPointInput | null,
   createdBy: string,
-  runSource: string
+  runSource: string,
+  orderParam?: string // p. ex. "curs DESC" per conservar el curs vigent al deduplicar
 ): Promise<{ ok: boolean; created: number; skipped: number }> {
   await ensureSources();
   const muniMap = await ine5Map();
@@ -303,6 +316,7 @@ async function importChunk(
   let where = `${field5} IN (${codesList.join(",")})`;
   if (extraWhere) where = `(${extraWhere}) AND (${where})`;
   const params = new URLSearchParams({ $limit: "50000", $where: where });
+  if (orderParam) params.set("$order", orderParam);
   let rowsRaw: unknown[];
   try {
     rowsRaw = await fetchSoda(datasetId, params);
@@ -313,21 +327,25 @@ async function importChunk(
     return { ok: false, created: 0, skipped: 0 };
   }
   const points: GeoPointInput[] = [];
-  let skipped = 0;
+  let unmappable = 0;
   for (const row of rowsRaw) {
     const p = mapRow(row as Record<string, unknown>);
     if (p) points.push(p);
-    else skipped++;
+    else unmappable++;
   }
-  const { rows } = toRows(withSource(points, sourceCode), muniMap, version);
+  const mapped = toRows(withSource(points, sourceCode), muniMap, version);
+  const rows = mapped.rows;
+  const skipped = mapped.skipped + unmappable;
   const run = await db.importRun.create({ data: { source: runSource, status: "OK", createdBy } });
   try {
-    await db.$transaction([
+    const ops: Prisma.PrismaPromise<unknown>[] = [
       db.geoPoint.deleteMany({
         where: { datasetSourceCode: sourceCode, municipalityCode: { in: chunkCodes } },
       }),
-      db.geoPoint.createMany({ data: rows }),
-    ]);
+    ];
+    // createMany amb llista buida: guardar (algunes fonts retornen 0 files per llot)
+    if (rows.length > 0) ops.push(db.geoPoint.createMany({ data: rows }));
+    await db.$transaction(ops);
     await auditSystem("IMPORT_RUN", run.id, { source: runSource, created: rows.length, skipped });
     return { ok: true, created: rows.length, skipped };
   } catch (e) {
@@ -353,7 +371,7 @@ export async function importEntornSanitaris(createdBy = "system:cron") {
 export async function importEntornDocentsChunk(chunkIndex: number, createdBy = "system:cron") {
   const codes = await chunkCodesFor(chunkIndex);
   if (!codes) return { ok: false, created: 0, skipped: 0 };
-  return importChunk("kvmv-ahh4", "ENTORNT_DOCENTS", codes, null, "codi_municipi_6", "CENSAL6", mapDocent, createdBy, `ENTORNT_DOCENTS:CHUNK-${chunkIndex}`);
+  return importChunk("kvmv-ahh4", "ENTORNT_DOCENTS", codes, null, "codi_municipi_6", "CENSAL6", mapDocent, createdBy, `ENTORNT_DOCENTS:CHUNK-${chunkIndex}`, "curs DESC");
 }
 
 export async function importEntornEquipamentsChunk(chunkIndex: number, createdBy = "system:cron") {
