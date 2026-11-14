@@ -1,0 +1,97 @@
+{
+  "version" : "2.0",
+  "class" : "dataset",
+  "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/mun/data?MUN=080193,170890",
+  "link" : {
+    "describedby" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/mun",
+      "label" : "Llars. Total. Municipis"
+    } ],
+    "related" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/cat",
+      "label" : "Llars. Total. Catalunya"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/prov",
+      "label" : "Llars. Total. Províncies"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/at",
+      "label" : "Llars. Total. Àmbits del Pla territorial"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/com",
+      "label" : "Llars. Total. Comarques i Aran"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/ac",
+      "label" : "Llars. Total. Per agrupacions censals"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/dis",
+      "label" : "Llars. Total. Districtes censals"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/7952/8018/sec",
+      "label" : "Llars. Total. Seccions censals"
+    } ]
+  },
+  "label" : "Llars. Total. Municipis",
+  "source" : "1991: Idescat. Cens de població. 1996: Idescat. Estadística de població. 2001-2021: Idescat, a partir del Cens de població i habitatges de l'INE.",
+  "updated" : "2023-12-20",
+  "id" : [ "YEAR", "MUN", "CONCEPT" ],
+  "size" : [ 5, 2, 1 ],
+  "role" : {
+    "geo" : [ "MUN" ],
+    "metric" : [ "CONCEPT" ],
+    "time" : [ "YEAR" ]
+  },
+  "dimension" : {
+    "YEAR" : {
+      "category" : {
+        "index" : [ "1991", "1996", "2001", "2011", "2021" ],
+        "label" : {
+          "1991" : "1991",
+          "1996" : "1996",
+          "2001" : "2001",
+          "2011" : "2011",
+          "2021" : "2021"
+        }
+      },
+      "label" : "any"
+    },
+    "MUN" : {
+      "category" : {
+        "index" : [ "080193", "170890" ],
+        "label" : {
+          "080193" : "Barcelona",
+          "170890" : "Llagostera"
+        }
+      },
+      "label" : "municipi"
+    },
+    "CONCEPT" : {
+      "category" : {
+        "index" : [ "HOUSEHOLDS" ],
+        "label" : {
+          "HOUSEHOLDS" : "llars"
+        },
+        "unit" : {
+          "HOUSEHOLDS" : {
+            "decimals" : 0
+          }
+        }
+      },
+      "label" : "concepte",
+      "extension" : {
+        "%" : [ "HOUSEHOLDS" ]
+      }
+    }
+  },
+  "value" : [ 577193, 1761, 577904, 1878, 594452, 3499, 684078, 3104, 671177, 3302 ],
+  "extension" : {
+    "source" : [ "1991: Idescat. Cens de població.", "1996: Idescat. Estadística de població.", "2001-2021: Idescat, a partir del Cens de població i habitatges de l'INE." ]
+  }
+}

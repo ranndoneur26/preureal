@@ -6,6 +6,7 @@ import { clientIp } from "@/lib/security";
 import { getPlanSettings, planAllows, type PlanId } from "@/lib/plans";
 import { getMuniIndicators } from "@/lib/indicators-data";
 import { getCommunitySummary } from "@/lib/reports-summary";
+import { getDemografiaSummary } from "@/lib/demografia";
 
 /**
  * POST /api/comparator  { entities: [{type:"MUNI"|"BUILDING", code}] }
@@ -147,6 +148,20 @@ export async function POST(req: Request) {
         ipvaCatAnualPeriod: ind.ipva.catalunya?.latestAnual?.period ?? null,
         ipvaCatAcum: ind.ipva.catalunya?.acum2015?.value ?? null,
       };
+    }
+  }
+
+  // v39 — context demogràfic IDESCAT per a cada municipi (PÚBLIC, sense
+  // gating: contextualitza el mercat; mai altera els indicadors de preus).
+  if (munCodes.length > 0) {
+    const demo = await getDemografiaSummary(munCodes).catch(() => null);
+    if (demo) {
+      for (const r of results.filter((x: any) => x.type === "MUNI")) {
+        const d = demo.get(r.code);
+        if (d && (d.poblacio != null || d.llarsTotal != null || d.densitat != null)) {
+          r.demografia = d;
+        }
+      }
     }
   }
 

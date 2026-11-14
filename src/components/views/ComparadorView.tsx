@@ -50,6 +50,18 @@ interface ComparatorResult {
   // v38.7 — ofertes de la comunitat (mateix agregat que la fitxa; medianes
   // només amb n >= 3, sempre «no verificat»). Null per a BUILDING.
   community?: { n: number; median: number | null; medianEurM2: number | null } | null;
+  // v39 — context demogràfic IDESCAT (públic, sense gating)
+  demografia?: {
+    poblacio: number | null;
+    anyPoblacio: string | null;
+    pct65: number | null;
+    pct0_14: number | null;
+    llarsTotal: number | null;
+    llarsAny: string | null;
+    midaMitjana: number | null;
+    estrangeraPct: number | null;
+    densitat: number | null;
+  } | null;
 }
 
 /**
@@ -445,6 +457,31 @@ export default function ComparadorView() {
                         {r.indicators.ipvaCatAcum != null && (
                           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sand text-pine">
                             IPVA +{r.indicators.ipvaCatAcum.toFixed(1).replace(".", ",")} % {ca ? "acum. des de 2015" : "acum. desde 2015"}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {/* v39 — context demogràfic (IDESCAT; descriptiu, mai causal) */}
+                    {r.demografia && (r.demografia.poblacio != null || r.demografia.densitat != null) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {r.demografia.poblacio != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
+                            {ca ? "població" : "población"} {r.demografia.poblacio.toLocaleString(ca ? "ca-ES" : "es-ES")} ({r.demografia.anyPoblacio ?? "—"})
+                          </span>
+                        )}
+                        {r.demografia.pct65 != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
+                            65+ {r.demografia.pct65.toFixed(1).replace(".", ",")} %
+                          </span>
+                        )}
+                        {r.demografia.llarsTotal != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
+                            {ca ? "llars" : "hogares"} {r.demografia.llarsTotal.toLocaleString(ca ? "ca-ES" : "es-ES")} (cens {r.demografia.llarsAny ?? "—"})
+                          </span>
+                        )}
+                        {r.demografia.densitat != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
+                            {r.demografia.densitat >= 1000 ? Math.round(r.demografia.densitat).toLocaleString(ca ? "ca-ES" : "es-ES") : r.demografia.densitat.toFixed(1).replace(".", ",")} hab/km²
                           </span>
                         )}
                       </div>

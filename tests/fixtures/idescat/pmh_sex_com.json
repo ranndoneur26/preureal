@@ -1,0 +1,112 @@
+{
+  "version" : "2.0",
+  "class" : "dataset",
+  "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/com/data?COM=01&_LAST_=2",
+  "link" : {
+    "describedby" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/com",
+      "label" : "Població a 1 de gener. Per sexe. Comarques i Aran"
+    } ],
+    "related" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/cat",
+      "label" : "Població a 1 de gener. Per sexe. Catalunya"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/prov",
+      "label" : "Població a 1 de gener. Per sexe. Províncies"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/at",
+      "label" : "Població a 1 de gener. Per sexe. Àmbits del Pla territorial"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/mun",
+      "label" : "Població a 1 de gener. Per sexe. Municipis"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/ac",
+      "label" : "Població a 1 de gener. Per sexe. Per agrupacions censals"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/dis",
+      "label" : "Població a 1 de gener. Per sexe. Districtes censals"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/446/477/sec",
+      "label" : "Població a 1 de gener. Per sexe. Seccions censals"
+    } ]
+  },
+  "label" : "Població a 1 de gener. Per sexe. Comarques i Aran",
+  "note" : [ "A partir de 2023 el Padró municipal d'habitants només ofereix la xifra de població dels municipis, les comarques i Aran i les províncies.\nLa xifra total de Catalunya s'ofereix a títol informatiu.", "les dades es presenten segons la distribució territorial vigent en aquell moment: 42 comarques i l’entitat territorial singular Aran. (Aquesta distribució territorial està establerta en diverses lleis anteriors d’organització territorial comarcal; en la Llei 4/2023, de canvi d'adscripció comarcal i veguerial de Biosca i Torà, que modifica territorialment la Segarra i el Solsonès; i en la Llei 7/2023, de creació del Lluçanès, a partir de la qual Sant Feliu Sasserra retorna al Bages, per la qual cosa modifica territorialment el Bages i el Lluçanès)." ],
+  "source" : "Idescat, a partir del Padró continu de l'INE.",
+  "updated" : "2025-12-12",
+  "id" : [ "YEAR", "COM", "SEX", "CONCEPT" ],
+  "size" : [ 2, 1, 3, 1 ],
+  "role" : {
+    "geo" : [ "COM" ],
+    "metric" : [ "CONCEPT" ],
+    "time" : [ "YEAR" ]
+  },
+  "dimension" : {
+    "YEAR" : {
+      "category" : {
+        "index" : [ "2024", "2025" ],
+        "label" : {
+          "2024" : "2024",
+          "2025" : "2025"
+        }
+      },
+      "label" : "any"
+    },
+    "COM" : {
+      "category" : {
+        "index" : [ "01" ],
+        "label" : {
+          "01" : "Alt Camp"
+        }
+      },
+      "label" : "comarca o Aran",
+      "extension" : {
+        "break" : [ {
+          "time" : "2024",
+          "id" : "COM43C",
+          "label" : "Comarques vigents en data 20/07/2023"
+        } ]
+      }
+    },
+    "SEX" : {
+      "category" : {
+        "index" : [ "M", "F", "TOTAL" ],
+        "label" : {
+          "M" : "homes",
+          "F" : "dones",
+          "TOTAL" : "total"
+        }
+      },
+      "label" : "sexe"
+    },
+    "CONCEPT" : {
+      "category" : {
+        "index" : [ "POP" ],
+        "label" : {
+          "POP" : "població"
+        },
+        "unit" : {
+          "POP" : {
+            "decimals" : 0
+          }
+        }
+      },
+      "label" : "concepte",
+      "extension" : {
+        "%" : [ "POP" ]
+      }
+    }
+  },
+  "value" : [ 23609, 22729, 46338, 23981, 2.307E+4, 47051 ],
+  "extension" : {
+    "source" : [ "Idescat, a partir del Padró continu de l'INE." ]
+  }
+}

@@ -10,6 +10,7 @@
 import type { Building, Municipality } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getMuniIndicators } from "@/lib/indicators-data";
+import { getMuniDemografia, interpretacioDemografica } from "@/lib/demografia";
 import type { ReportInput } from "@/lib/pdf-report";
 import seedAids from "@/data/rental_aid_seed.json";
 
@@ -73,14 +74,69 @@ export async function gatherRentalAids(): Promise<ReportInput["aids"]> {
     }));
 }
 
+/**
+ * v39 — Context demogràfic del municipi (IDESCAT) per al capítol del PDF.
+ * Degradació elegant: sense dades importades → null (el capítol ho diu).
+ */
+export async function gatherMuniDemo(munCode: string, locale: "ca" | "es" = "ca"): Promise<ReportInput["demo"]> {
+  const d = await getMuniDemografia(munCode).catch(() => null);
+  if (!d || !d.cobertura.poblacio) return null;
+  return {
+    poblacio: {
+      actual: d.poblacio.actual,
+      any: d.poblacio.anyActual,
+      serie: d.poblacio.serie,
+      var5Pct: d.poblacio.var5Pct,
+      var10Pct: d.poblacio.var10Pct,
+      homes: d.poblacio.homes,
+      dones: d.poblacio.dones,
+    },
+    edats: {
+      g0_14: d.edats.actual?.g0_14 ?? null,
+      g15_64: d.edats.actual?.g15_64 ?? null,
+      g65_84: d.edats.actual?.g65_84 ?? null,
+      g85_mes: d.edats.actual?.g85_mes ?? null,
+      any: d.edats.anyActual,
+      pct65: d.edats.pct65,
+      pct0_14: d.edats.pct0_14,
+    },
+    llars: {
+      total: d.llars.total,
+      totalAny: d.llars.totalAny,
+      midaMitjana: d.llars.midaMitjana,
+      midaAny: d.llars.midaAny,
+      distribucioPct: d.llars.distribucioPct,
+    },
+    estrangera: {
+      valor: d.estrangera.valor,
+      pct: d.estrangera.pct,
+      any: d.estrangera.any,
+      pctCat: d.estrangera.pctCatalunya,
+    },
+    territori: {
+      superficieKm2: d.territori.superficieKm2,
+      densitat: d.territori.densitat,
+      densitatCat: d.territori.densitatCatalunya,
+    },
+    comarca: {
+      poblacioActual: d.comarca.poblacioActual,
+      densitat: d.comarca.densitat,
+      pct65: d.comarca.pct65,
+      comarca: d.comarca.comarca,
+    },
+    cat: { poblacioActual: d.catalunya.poblacioActual, pct65: d.catalunya.pct65 },
+    interpretacio: interpretacioDemografica(d, locale),
+  };
+}
+
 /** Mun el ReportInput COMPLET del municipi (i opcionalment l'edifici PRO). */
 export async function gatherMuniReportInput(
   mun: Municipality,
-  opts: { building?: Building | null; subscriberMasked: string; planLabel: string; genDate?: string }
+  opts: { building?: Building | null; subscriberMasked: string; planLabel: string; genDate?: string; locale?: "ca" | "es" }
 ): Promise<ReportInput> {
   const building = opts.building ?? null;
   const ind = await gatherMuniIndicators(mun.code, building?.avgRentEurMonth ?? null);
-  const aids = await gatherRentalAids();
+  const [aids, demo] = await Promise.all([gatherRentalAids(), gatherMuniDemo(mun.code, opts.locale ?? "ca")]);
   return {
     mun: {
       name: mun.name,
@@ -109,6 +165,7 @@ export async function gatherMuniReportInput(
         }
       : null,
     ind,
+    demo,
     aids,
     subscriberMasked: opts.subscriberMasked,
     planLabel: opts.planLabel,

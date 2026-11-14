@@ -33,6 +33,17 @@ export interface ComparisonMuniRow {
   isTense: boolean;
   tenseList: string | null;
   rentHistory: string | null; // JSON {any: €}
+  // v39 — context demogràfic IDESCAT (opcional; sense dada → s'ho diu)
+  demo?: {
+    poblacio: number | null;
+    anyPoblacio: string | null;
+    pct65: number | null;
+    llarsTotal: number | null;
+    llarsAny: string | null;
+    midaMitjana: number | null;
+    estrangeraPct: number | null;
+    densitat: number | null;
+  } | null;
 }
 
 export interface ComparisonReportInput {
@@ -230,6 +241,36 @@ export async function buildComparisonPdf(rawInput: ComparisonReportInput): Promi
       page.drawText(lbl.length > 60 ? lbl.slice(0, 59) + "…" : lbl, { x: 40 + bw + 8, y: chartTop - (i + 1) * rowH + 6, size: 8, font, color: GRAY });
     });
     y = chartTop - chartH - 16;
+  }
+
+  // ---- v39: taula de context demogràfic (IDESCAT; sempre honesta) ----
+  const demoRows = rows.filter((r) => r.demo && (r.demo.poblacio != null || r.demo.llarsTotal != null || r.demo.densitat != null));
+  if (demoRows.length > 0) {
+    y -= 6;
+    section(es ? "Contexto demográfico y territorial (IDESCAT)" : "Contexte demogràfic i territorial (IDESCAT)");
+    const dcolX = [40, 205, 330, 415, 490];
+    const dhdr = es
+      ? ["Municipio", "Población (1 ene)", "65+ %", "Hogares (cens.)", "hab/km²"]
+      : ["Municipi", "Població (1 gen)", "65+ %", "Llars (cens.)", "hab/km²"];
+    dhdr.forEach((h, i) => text(h, 8.5, GRAY, true, dcolX[i]));
+    y -= 6;
+    page.drawRectangle({ x: 40, y, width: 515, height: 0.8, color: GRAY });
+    y -= 14;
+    for (const r of demoRows) {
+      const d = r.demo!;
+      text(r.name.length > 27 ? r.name.slice(0, 26) + "…" : r.name, 9, DARK, true, dcolX[0]);
+      text(d.poblacio != null ? fmt0(d.poblacio) : "—", 9, DARK, false, dcolX[1]);
+      if (d.anyPoblacio) text(String(d.anyPoblacio), 7.5, GRAY, false, dcolX[1] + 55);
+      text(d.pct65 != null ? fmt1(d.pct65) + "%" : "—", 9, GRAY, false, dcolX[2]);
+      text(d.llarsTotal != null ? `${fmt0(d.llarsTotal)} (${d.llarsAny ?? "—"})` : "—", 9, GRAY, false, dcolX[3]);
+      text(d.densitat != null ? (d.densitat >= 1000 ? fmt0(d.densitat) : fmt1(d.densitat)) : "—", 9, GRAY, false, dcolX[4]);
+      y -= 15;
+    }
+    line(es
+      ? "Fuente: IDESCAT — Padrón continuo de habitantes (INE), Censos de población y viviendas y «El municipio en cifras». Población extranjera y porcentajes: cálculo sobre categorías oficiales. Indicador descriptivo: no atribuye causalidad con los precios."
+      : "Font: IDESCAT — Padró continu d'habitants (INE), Censos de població i habitatges i «El municipi en xifres». Població estrangera i percentatges: càlcul sobre categories oficials. Indicador descriptiu: no atribueix causalitat amb els preus.",
+      8, GRAY);
+    y -= 6;
   }
 
   // ---------- P3 · FITXA PER MUNICIPI ----------

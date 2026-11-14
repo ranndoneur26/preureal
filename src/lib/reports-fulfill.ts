@@ -17,6 +17,7 @@ import { buildReportPdf } from "@/lib/pdf-report";
 import { buildValuationPdf, type ValuationReportInput } from "@/lib/pdf-valuation";
 import { buildComparisonPdf, type ComparisonReportInput } from "@/lib/pdf-comparison";
 import { gatherMuniReportInput, maskEmail } from "@/lib/report-data";
+import { getDemografiaSummary } from "@/lib/demografia";
 import { newDownloadToken, pdfFilename, reportProduct, type ReportKind, type ValidReportParams } from "@/lib/reports-shop";
 import { reportReadyMail, sendMail } from "@/lib/mail";
 
@@ -241,8 +242,18 @@ export async function buildPurchasePdf(
   if (ordered.length < 1) throw new Error("MUNICIPALITIES_NOT_FOUND");
   muniNames.push(...ordered.map((m) => m.name));
 
+  // v39 — context demogràfic IDESCAT per a la taula comparativa (degradació elegant)
+  let demoMap: Awaited<ReturnType<typeof getDemografiaSummary>> | null = null;
+  try {
+    demoMap = await getDemografiaSummary(ordered.map((m) => m.code));
+  } catch {
+    demoMap = null;
+  }
   const input: ComparisonReportInput = {
-    munis: ordered,
+    munis: ordered.map((m) => ({
+      ...m,
+      demo: demoMap?.get(m.code) ?? null,
+    })),
     locale,
     genDate: fmtDate(locale),
     purchaseRef: purchase.id.slice(-6).toUpperCase(),

@@ -33,6 +33,41 @@ const base: ReportInput = {
     rentaHogarLatest: { value: 45000, period: "2024" },
     ipvaCat: { latestAnual: { value: 2.9, period: "2026-08" }, acum2015: { value: 28.4 } },
   },
+  // v39 — context demogràfic IDESCAT (dades reals de Barcelona, fixture API)
+  demo: {
+    poblacio: {
+      actual: 1731649,
+      any: "2025",
+      serie: [
+        { year: "2014", value: 1602386 }, { year: "2015", value: 1604555 },
+        { year: "2016", value: 1608746 }, { year: "2017", value: 1620809 },
+        { year: "2018", value: 1620343 }, { year: "2019", value: 1636762 },
+        { year: "2020", value: 1664182 }, { year: "2021", value: 1636732 },
+        { year: "2022", value: 1659987 }, { year: "2023", value: 1701763 },
+        { year: "2024", value: 1708014 }, { year: "2025", value: 1731649 },
+      ],
+      var5Pct: 5.6,
+      var10Pct: 8.1,
+      homes: 819966,
+      dones: 893281,
+    },
+    edats: {
+      g0_14: 240155, g15_64: 1099571, g65_84: 302511, g85_mes: 68933,
+      any: "2025", pct65: 21.5, pct0_14: 14.0,
+    },
+    llars: {
+      total: 671177, totalAny: "2021", midaMitjana: 2.5, midaAny: "2021",
+      distribucioPct: { g1: 31.0, g2: 30.6, g3: 18.9, g4: 13.3, g5: 6.2 },
+    },
+    estrangera: { valor: 437663, pct: 25.5, any: "2022", pctCat: 18.7 },
+    territori: { superficieKm2: 101.35, densitat: 16904.3, densitatCat: 253.0 },
+    comarca: { poblacioActual: 2398280, densitat: 16454.8, pct65: 20.2, comarca: "Barcelonès" },
+    cat: { poblacioActual: 8124126, pct65: 19.7 },
+    interpretacio: [
+      "Creixement demogràfic positiu durant l'última dècada (+8.1% d'habitants, períodes 2015-2025).",
+      "El 21.5% de la població té 65 anys o més, per sobre de la mitjana catalana (indicador: grans grups d'edat del padró).",
+    ],
+  },
   aids: [
     {
       title: "Bono alquiler joven (programa estatal)",
@@ -83,26 +118,29 @@ function extractText(bytes: Uint8Array): string {
   });
 }
 
-describe("Fase 6: informe PDF de 8 pàgines", () => {
-  test("municipi amb totes les dades → 8 pàgines i magic bytes %PDF", async () => {
+describe("Fase 6: informe PDF de 9 pàgines", () => {
+  test("municipi amb totes les dades → 9 pàgines i magic bytes %PDF", async () => {
     const bytes = await buildReportPdf(base);
     const head = String.fromCharCode(...bytes.slice(0, 5));
     expect(head).toBe("%PDF-");
     expect(await pageCount(bytes)).toBe(REPORT_PAGES);
   });
 
-  test("degradació: sense indicadors, sense ajudes, sense històric → igualment 8 pàgines", async () => {
+  test("degradació: sense indicadors, sense ajudes, sense històric, sense demografia → igualment 9 pàgines", async () => {
     const deg: ReportInput = {
       ...base,
       ind: null,
+      demo: null,
       aids: [],
       mun: { ...base.mun, rentHistory: null, rentLatest: null, rentPrevYear: null, contractsLatest: null, isTense: false, tenseList: null },
     };
     const bytes = await buildReportPdf(deg);
     expect(await pageCount(bytes)).toBe(REPORT_PAGES);
+    const text = extractText(bytes);
+    expect(text.includes("Encara no hi ha indicadors demogràfics")).toBe(true);
   });
 
-  test("edifici nau industrial (tipus ind) → 8 pàgines i nota industrial", async () => {
+  test("edifici nau industrial (tipus ind) → 9 pàgines i nota industrial", async () => {
     const nau: ReportInput = {
       ...base,
       building: {
@@ -127,6 +165,19 @@ describe("Fase 6: informe PDF de 8 pàgines", () => {
     const bytes = await buildReportPdf(calm);
     const text = extractText(bytes);
     expect(text.includes("NO consta a les resolucions")).toBe(true);
+  });
+
+  test("v39 demografia: capítol amb població, edats, llars i interpretació", async () => {
+    const bytes = await buildReportPdf(base);
+    const text = extractText(bytes);
+    expect(text.includes("Contexte demogràfic i territorial del municipi")).toBe(true);
+    expect(text.includes("Evolució de la població")).toBe(true);
+    expect(text.includes("Estructura per grans grups d'edat")).toBe(true);
+    expect(text.includes("1.731.649")).toBe(true); // població 2025 formatada
+    expect(text.includes("671.177 llars al cens 2021")).toBe(true);
+    expect(text.includes("nacionalitat estrangera")).toBe(true);
+    expect(text.includes("Lectura dels indicadors")).toBe(true);
+    expect(text.includes("Padró continu")).toBe(true); // cita de font
   });
 });
 

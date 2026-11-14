@@ -15,6 +15,7 @@ import * as h_admin_bootstrap from "../_impl/admin/bootstrap/route";
 import * as h_admin_emails from "../_impl/admin/emails/route";
 import * as h_admin_export_csv from "../_impl/admin/export-csv/route";
 import * as h_admin_import from "../_impl/admin/import/route";
+import * as h_admin_import_demografia from "../_impl/admin/import-demografia/route";
 import * as h_admin_import_ine from "../_impl/admin/import-ine/route";
 import * as h_admin_imports from "../_impl/admin/imports/route";
 import * as h_admin_plan_settings from "../_impl/admin/plan-settings/route";
@@ -52,6 +53,7 @@ import * as h_buildings from "../_impl/buildings/route";
 import * as h_comparator from "../_impl/comparator/route";
 import * as h_comparator_export from "../_impl/comparator/export/route";
 import * as h_comparisons from "../_impl/comparisons/route";
+import * as h_cron_demografia from "../_impl/cron/demografia/route";
 import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_cron_ine from "../_impl/cron/ine/route";
 import * as h_events from "../_impl/events/route";
@@ -83,6 +85,7 @@ import * as h_subscription_change from "../_impl/subscription/change/route";
 import * as h_subscription_reactivate from "../_impl/subscription/reactivate/route";
 import * as h_valuation from "../_impl/valuation/route";
 import * as h_buildings_id from "../_impl/buildings/[id]/route";
+import * as h_demografia_muni_code from "../_impl/demografia/muni/[code]/route";
 import * as h_export_code from "../_impl/export/[code]/route";
 import * as h_indicators_muni_code from "../_impl/indicators/muni/[code]/route";
 import * as h_municipalities_code from "../_impl/municipalities/[code]/route";
@@ -100,6 +103,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "emails"], h: h_admin_emails },
   { seg: ["admin", "export-csv"], h: h_admin_export_csv },
   { seg: ["admin", "import"], h: h_admin_import },
+  { seg: ["admin", "import-demografia"], h: h_admin_import_demografia },
   { seg: ["admin", "import-ine"], h: h_admin_import_ine },
   { seg: ["admin", "imports"], h: h_admin_imports },
   { seg: ["admin", "plan-settings"], h: h_admin_plan_settings },
@@ -137,6 +141,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["comparator"], h: h_comparator },
   { seg: ["comparator", "export"], h: h_comparator_export },
   { seg: ["comparisons"], h: h_comparisons },
+  { seg: ["cron", "demografia"], h: h_cron_demografia },
   { seg: ["cron", "emails"], h: h_cron_emails },
   { seg: ["cron", "ine"], h: h_cron_ine },
   { seg: ["events"], h: h_events },
@@ -168,6 +173,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["subscription", "reactivate"], h: h_subscription_reactivate },
   { seg: ["valuation"], h: h_valuation },
   { seg: ["buildings", ":id"], h: h_buildings_id },
+  { seg: ["demografia", "muni", ":code"], h: h_demografia_muni_code },
   { seg: ["export", ":code"], h: h_export_code },
   { seg: ["indicators", "muni", ":code"], h: h_indicators_muni_code },
   { seg: ["municipalities", ":code"], h: h_municipalities_code },

@@ -18,7 +18,7 @@ const WHITE = rgb(1, 1, 1);
 const BAND = rgb(0.87, 0.85, 0.94);     // lila suau per a la banda P25-P75
 const W = 595; // A4
 const H = 842;
-export const REPORT_PAGES = 8;
+export const REPORT_PAGES = 9; // v39: +1 pàgina «Contexte demogràfic i territorial»
 
 export interface ReportMun {
   name: string;
@@ -62,10 +62,48 @@ export interface ReportIndicators {
   ipvaCat: { latestAnual: { value: number; period: string } | null; acum2015: { value: number } | null } | null;
 }
 
+/**
+ * v39 — Context demogràfic i territorial del municipi (IDESCAT).
+ * Tot opcional/null: sense dada oficial el capítol ho diu explícitament.
+ */
+export interface ReportDemo {
+  poblacio: {
+    actual: number | null;
+    any: string | null;
+    serie: Array<{ year: string; value: number }>;
+    var5Pct: number | null;
+    var10Pct: number | null;
+    homes: number | null;
+    dones: number | null;
+  };
+  edats: {
+    g0_14: number | null;
+    g15_64: number | null;
+    g65_84: number | null;
+    g85_mes: number | null;
+    any: string | null;
+    pct65: number | null;
+    pct0_14: number | null;
+  };
+  llars: {
+    total: number | null;
+    totalAny: string | null;
+    midaMitjana: number | null;
+    midaAny: string | null;
+    distribucioPct: Record<string, number> | null;
+  };
+  estrangera: { valor: number | null; pct: number | null; any: string | null; pctCat: number | null };
+  territori: { superficieKm2: number | null; densitat: number | null; densitatCat: number | null };
+  comarca: { poblacioActual: number | null; densitat: number | null; pct65: number | null; comarca: string | null };
+  cat: { poblacioActual: number | null; pct65: number | null };
+  interpretacio: string[]; // regles sobre dades; sense causalitat
+}
+
 export interface ReportInput {
   mun: ReportMun;
   building: ReportBuilding | null;
   ind: ReportIndicators | null;
+  demo: ReportDemo | null; // v39: context demogràfic (null = sense dades importades)
   aids: ReportAid[];
   subscriberMasked: string;
   planLabel: string;
@@ -149,6 +187,17 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
             : null,
         }
       : null,
+    // v39: el context demogràfic també passa pel sanejament WinAnsi
+    demo: rawInput.demo
+      ? {
+          ...rawInput.demo,
+          comarca: {
+            ...rawInput.demo.comarca,
+            comarca: ns(rawInput.demo.comarca.comarca),
+          },
+          interpretacio: rawInput.demo.interpretacio.map(winAnsi),
+        }
+      : null,
     aids: rawInput.aids.map((a) => ({
       title: winAnsi(a.title),
       amount: ns(a.amount),
@@ -219,7 +268,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   newPage(true);
   page.drawRectangle({ x: 0, y: H - 262, width: W, height: 262, color: DARK });
   page.drawText("Preureal", { x: 40, y: H - 96, size: 34, font: bold, color: WHITE });
-  page.drawText("Informe professional de lloguer · 8 pàgines", { x: 40, y: H - 126, size: 12, font, color: rgb(0.79, 0.83, 0.8) });
+  page.drawText("Informe professional de lloguer · 9 pàgines", { x: 40, y: H - 126, size: 12, font, color: rgb(0.79, 0.83, 0.8) });
   page.drawText(`Generat el ${input.genDate}`, { x: 40, y: H - 146, size: 10, font, color: rgb(0.79, 0.83, 0.8) });
 
   // el contingut comença SOTA el bloc fosc de marca (el bloc arriba fins a H-262)
@@ -253,10 +302,11 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     "2. Resum executiu amb xifres clau",
     "3. Evolució del lloguer mitjà (sèrie històrica Incasòl)",
     "4. Referència oficial: banda P25-P75, esforç, renda i IPVA",
-    building ? "5. Edifici/illa analitzat i relació amb la dada municipal" : "5. Com llegir aquest mercat (interpretació de la mitjana)",
-    "6. Regulació: zona tensada, índex de referència i contractes",
-    "7. Ajudes al lloguer vigents (fonts oficials)",
-    "8. Metodologia, fonts, limitacions estadístiques i avís legal",
+    "5. Contexte demogràfic i territorial (IDESCAT)",
+    building ? "6. Edifici/illa analitzat i relació amb la dada municipal" : "6. Com llegir aquest mercat (interpretació de la mitjana)",
+    "7. Regulació: zona tensada, índex de referència i contractes",
+    "8. Ajudes al lloguer vigents (fonts oficials)",
+    "9. Metodologia, fonts, limitacions estadístiques i avís legal",
   ].forEach((s) => {
     line(s, 10);
     y -= 2;
@@ -408,7 +458,138 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   y -= 6;
   line("Tots els indicadors d'aquesta pàgina provenen de fonts oficials citades (Incasòl, INE). Preureal no els modifica ni els extrapola; on no hi ha dada, s'ho diu.", 8.5, GRAY);
 
-  // ---------- P5 · EDIFICI / LECTURA DEL MERCAT ----------
+  // ---------- P5 · CONTEXTE DEMOGRÀFIC I TERRITORIAL (v39, IDESCAT) ----------
+  newPage();
+  section("Contexte demogràfic i territorial del municipi");
+  const demo = input.demo;
+  if (demo && demo.poblacio.actual != null) {
+    const pw = demo.poblacio;
+    const ed = demo.edats;
+    // KPI banda (4 caixes, patró P2)
+    const dBoxes: Array<[string, string, string]> = [
+      ["Població", pw.actual != null ? fmt0(pw.actual) : "—", pw.any ? `1 de gener ${pw.any}` : ""],
+      ["Variació 5 anys", pw.var5Pct != null ? `${pw.var5Pct > 0 ? "+" : ""}${fmt1(pw.var5Pct)}%` : "—", "padró continu IDESCAT"],
+      ["Variació 10 anys", pw.var10Pct != null ? `${pw.var10Pct > 0 ? "+" : ""}${fmt1(pw.var10Pct)}%` : "—", "creixement / estabilitat / pèrdua"],
+      ["Densitat", demo.territori.densitat != null ? `${fmt0(demo.territori.densitat)} hab/km²` : "—", demo.territori.superficieKm2 != null ? `${fmt1(demo.territori.superficieKm2)} km²` : ""],
+    ];
+    const dbw = 125, dbh = 58;
+    dBoxes.forEach(([label, value, sub], i) => {
+      const bx = 40 + i * (dbw + 5);
+      const by = y - dbh;
+      page.drawRectangle({ x: bx, y: by, width: dbw, height: dbh, color: LIGHT });
+      page.drawText(label, { x: bx + 8, y: by + dbh - 14, size: 7.5, font, color: GRAY });
+      page.drawText(value, { x: bx + 8, y: by + dbh - 34, size: 13, font: bold, color: DARK });
+      if (sub) page.drawText(winAnsi(sub), { x: bx + 8, y: by + 8, size: 6.5, font, color: GRAY });
+    });
+    y -= dbh + 16;
+
+    // gràfic de LÍNIES vectorial: evolució de la població (últims 12 anys)
+    const serie = pw.serie.slice(-12);
+    if (serie.length >= 2) {
+      text("Evolució de la població (1 de gener)", 10, DARK, true);
+      y -= 10;
+      const chartTop = y - 6;
+      const chartH = 110;
+      const chartX = 60;
+      const chartW = 470;
+      const maxV = Math.max(...serie.map((s) => s.value));
+      const minV = Math.min(...serie.map((s) => s.value));
+      const span = Math.max(maxV - minV, 1);
+      const px = (i: number) => chartX + (i * chartW) / (serie.length - 1);
+      const py = (v: number) => chartTop - 12 - ((v - minV) / span) * (chartH - 24);
+      // malla lleu (màx i mín)
+      page.drawText(fmt0(maxV), { x: chartX - 44, y: chartTop - 14, size: 6.5, font, color: GRAY });
+      page.drawText(fmt0(minV), { x: chartX - 44, y: chartTop - chartH + 4, size: 6.5, font, color: GRAY });
+      // línia + punts
+      for (let i = 1; i < serie.length; i++) {
+        page.drawLine({
+          start: { x: px(i - 1), y: py(serie[i - 1].value) },
+          end: { x: px(i), y: py(serie[i].value) },
+          thickness: 1.6,
+          color: DARK,
+        });
+      }
+      serie.forEach((s, i) => {
+        const isLast = i === serie.length - 1;
+        page.drawCircle({ x: px(i), y: py(s.value), size: isLast ? 3.2 : 2, color: isLast ? ACCENT : DARK });
+        if (serie.length <= 13 || i % 2 === 0) {
+          const ys = String(s.year).slice(2);
+          page.drawText(ys, { x: px(i) - 6, y: chartTop + 2, size: 6.5, font, color: GRAY });
+        }
+      });
+      y = chartTop - chartH - 14;
+      line(`Sèrie ${serie[0].year}–${serie[serie.length - 1].year} · Font: IDESCAT, Padró continu d'habitants (INE).`, 8.5, GRAY);
+      y -= 8;
+    }
+
+    // distribució per grans grups d'edat (barres horitzontals oficials)
+    const ageRows: Array<[string, number | null]> = [
+      ["0-14 anys", ed.g0_14],
+      ["15-64 anys", ed.g15_64],
+      ["65-84 anys", ed.g65_84],
+      ["85 anys i més", ed.g85_mes],
+    ];
+    const ageValid = ageRows.filter(([, v]) => v != null) as Array<[string, number]>;
+    if (ageValid.length > 0 && pw.actual) {
+      text("Estructura per grans grups d'edat", 10, DARK, true);
+      y -= 12;
+      const maxAge = Math.max(...ageValid.map(([, v]) => v));
+      for (const [label, v] of ageValid) {
+        const bw2 = Math.max(4, (v / maxAge) * 330);
+        page.drawRectangle({ x: 130, y: y - 8, width: bw2, height: 11, color: DARK });
+        const pct = (v / pw.actual) * 100;
+        page.drawText(label, { x: 40, y: y - 6, size: 8.5, font, color: DARK });
+        page.drawText(`${fmt0(v)} (${fmt1(pct)}%)`, { x: 136 + bw2 + 6, y: y - 6, size: 8, font, color: GRAY });
+        y -= 16;
+      }
+      line(`Font: IDESCAT, grans grups d'edat del padró${ed.any ? ` (${ed.any})` : ""}.`, 8.5, GRAY);
+      y -= 10;
+    }
+
+    // llars + estrangera + comparativa
+    const llarsBits: string[] = [];
+    if (demo.llars.total != null) llarsBits.push(`${fmt0(demo.llars.total)} llars al cens ${demo.llars.totalAny ?? "—"}`);
+    if (demo.llars.midaMitjana != null) llarsBits.push(`grandària mitjana ${fmt1(demo.llars.midaMitjana)} persones/llar (${demo.llars.midaAny ?? "cens 2021"})`);
+    if (llarsBits.length > 0) {
+      text("Llars", 10, DARK, true);
+      y -= 12;
+      line(`El municipi té ${llarsBits.join(" i ")}. Font: IDESCAT, Censos de població i habitatges (INE). La sèrie de llars només existeix per als anys censals; no s'interpolen valors.`, 9.5);
+      y -= 8;
+    }
+    if (demo.estrangera.pct != null) {
+      text("Població de nacionalitat estrangera", 10, DARK, true);
+      y -= 12;
+      line(
+        `${fmt0(demo.estrangera.valor ?? 0)} persones (${fmt1(demo.estrangera.pct)}% del total, ${demo.estrangera.any ?? "—"})${demo.estrangera.pctCat != null ? `; Catalunya ${fmt1(demo.estrangera.pctCat)}%` : ""}. Indicador descriptiu: no s'atribueix cap relació causal amb els preus del lloguer.`,
+        9.5
+      );
+      y -= 8;
+    }
+    const cmpBits: string[] = [];
+    if (demo.comarca.comarca && demo.comarca.poblacioActual != null) cmpBits.push(`${demo.comarca.comarca}: ${fmt0(demo.comarca.poblacioActual)} hab.`);
+    if (demo.comarca.densitat != null) cmpBits.push(`densitat comarcal ${fmt0(demo.comarca.densitat)} hab/km²`);
+    if (demo.cat.poblacioActual != null) cmpBits.push(`Catalunya: ${fmt0(demo.cat.poblacioActual)} hab.`);
+    if (cmpBits.length > 0) {
+      line(`Comparativa territorial — ${cmpBits.join(" · ")}.`, 9.5);
+      y -= 8;
+    }
+    // interpretació automàtica (regles sobre dades; sense causalitat)
+    if (demo.interpretacio.length > 0) {
+      text("Lectura dels indicadors", 10, DARK, true);
+      y -= 12;
+      for (const s of demo.interpretacio.slice(0, 4)) {
+        line(`• ${winAnsi(s)}`, 9);
+        y -= 3;
+      }
+      y -= 4;
+    }
+    line("Aquest context demogràfic NO altera el càlcul del lloguer mitjà ni els indicadors de mercat: serveix per interpretar-los. Cada xifra cita la seva font oficial i l'any de referència; on no hi ha dada, no s'inventa.", 8.5, GRAY);
+  } else {
+    line("Encara no hi ha indicadors demogràfics oficials importats per a aquest municipi (IDESCAT, padró continu i censos). El sistema d'actualització els portarà automàticament; mentrestant no s'estima cap valor.", 9, GRAY);
+    y -= 10;
+  }
+
+  // ---------- P6 · EDIFICI / LECTURA DEL MERCAT ----------
   newPage();
   if (building) {
     section("Edifici / illa analitzat");
@@ -496,6 +677,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     "Geometria d'edificis i illes: ICGC, Mapa Topogràfic (RTT), llicència CC-BY 4.0. Referència catastral: ICGC/Cadastre.",
     "Banda P25-mediana-P75: construcció pròpia sobre illes del municipi amb dada de fiances importada, ponderada pel nombre de contractes (quartils tipus 7).",
     "Renda neta mitjana i esforç: Atlas de Distribució de Renda dels Llars (INE). IPVA: Índex de Preus de Vivienda en Alquiler (INE), base 2015=100.",
+    "Contexte demogràfic i territorial (pàgina 5): IDESCAT — Padró continu d'habitants (INE), Censos de població i habitatges i «El municipi en xifres». Llicència Oberta d'Ús d'Informació — Catalunya; percentatges calculats sobre categories oficials; població estrangera = total - nacionalitat espanyola; mai s'interpolen sèries.",
     "Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026 del DOGC (19-10-2026).",
     "Ajudes al lloguer: catàleg editorial propi amb verificació de la font oficial i data de darrera revisió (pàgina 7).",
   ].forEach((s) => {
@@ -517,7 +699,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   section("Avís legal");
   line("Informe generat automàticament per Preureal amb dades oficials públiques. Ús exclusivament informatiu: no constitueix valoració immobiliària formal, assessorament financer ni jurídic. Les fonts citades són els propietaris de les seves dades. Consulta l'avís legal i la política de privacitat a www.preureal.com.", 9);
   y -= 10;
-  text(`Informe v34 (Fase 6) · generat el ${input.genDate} · subscrit: ${input.subscriberMasked} · pla ${input.planLabel}`, 8.5, GRAY);
+  text(`Informe v39 (Fase demografia) · generat el ${input.genDate} · subscrit: ${input.subscriberMasked} · pla ${input.planLabel}`, 8.5, GRAY);
   footer();
 
   return pdf.save();

@@ -195,6 +195,59 @@ Pas natural de v38.6: la mediana comunitària ara també al comparador.
   (mínim 3 informes). Bilingüe inline com la resta de la vista.
 - Sense migració ni canvis de contracte trencadors (camp afegit).
 
+### v39 — Capa «Contexte demogràfic i territorial» (IDESCAT) — 2026-11-14
+
+Encàrrec: ampliar PreuReal amb una capa de dades demogràfiques i territorials
+oficials per als 947 municipis, integrada a les fitxes, als informes PDF i al
+comparador, sense alterar el càlcul del mercat de lloguer ni inventar dades.
+
+**Fonts integrades (totes oficials, verificades amb peticions reals):**
+- IDESCAT API Taules v2 (`api.idescat.cat/taules/v2`): pmh/446/477 (població
+  per sexe, sèries 1998-2025), pmh/9548/10494 (edats quinquennals 2000-2022),
+  pmh/680/690 (nacionalitat), censph/7952/8018 (llars per cens 1991-2021),
+  censph/17317/20806 (indicadors de llars del cens 2021).
+- IDESCAT «El municipi en xifres» (emex): superfície, densitat oficial i grans
+  grups d'edat vigents amb tripletta [municipi, comarca, Catalunya]; seed local
+  `idescat_superficie_seed.json` amb els 947 municipis descarregats de l'API.
+- Llicència: Llicència Oberta d'Ús d'Informació — Catalunya (citació de font).
+- Els codis MUN de l'API són els mateixos codis censals de 6 dígits que
+  `Municipality.code`: correspondència exacta dels 947 municipis, sense
+  matching per nom.
+
+**Noves variables a StatObservation** (mateix model genèric Fase 2, cap
+migració): POB_TOTAL/POB_HOMES/POB_DONES, POB_EDAT_0_14/15_64/65_84/85_MES,
+POB_NAC_ESPANYOLA/POB_NAC_TOTAL (estrangera = total - espanyola, derivació
+documentada), LLARS_TOTAL (censos), LLARS_MIDA_MITJANA, LLARS_G1..G5_PCT,
+LLARS_1P_65_PCT, POB_75_ALONE_PCT, TERRITORI_SUPERFICIE_KM2,
+TERRITORI_DENSITAT_HAB_KM2 — amb nivells MUNI + COM + CAT per comparar.
+
+**Integració:**
+- `src/lib/idescat-parse.ts` (PUR): parser JSON-stat 2.0 (ordre C verificat),
+  parser emex (variants A/B reals), agregació tot-o-res de grans grups.
+- `src/lib/idescat-import.ts`: importadors idempotents amb finestra de
+  substitució, lots anti-límit de 20.000 cel·les, DataSource + ImportRun +
+  AuditLog; seed local per cobertura immediata dels 947 municipis.
+- `GET /api/cron/demografia` (noves crons Vercel diàries): un pas per
+  execució (POB → EDAT → NAC → CENS_LLARS → lots EMEX), auth CRON_SECRET,
+  finestra de frescor de 6 mesos per font.
+- `POST /api/admin/import-demografia`: importació manual del propietari.
+- `GET /api/demografia/muni/:code` (nou, públic): bloc demogràfic complet amb
+  sèries, variacions 5/10 anys, tendència, comarca i Catalunya, fonts per bloc.
+- Ficha municipal: component `DemografiaPanel` (KPI, gràfic de línia de
+  població, barres per edats, llars per grandària, extrangera, lectura
+  automàtica sense causalitat, «no disponible» quan no hi ha dada).
+- Informe municipal PDF: NOU capítol P5 «Contexte demogràfic i territorial»
+  amb gràfic de línia VECTORIAL de població, barres d'edats, llars, extrangera
+  i comparativa comarcal/Catalunya → l'informe passa de 8 a 9 pàgines
+  (REPORT_PAGES=9; portada, índex i metodologia actualitzats).
+- Comparativa PDF (7,99 €): nova taula demogràfica per municipi.
+- Comparador: chips demogràfics (població, 65+, llars, densitat) al resultat.
+- Provenance: 2 datasets nous declarats (idescat_pmh_demografia, idescat_emex).
+
+**Tests:** 8 nous a unit.test.ts (parser JSON-stat i emex amb FIXTURES REALS
+de l'API descarregades el 2026-11-14; agregació tot-o-res) + capítol PDF
+testat (text, fonts i degradació). Blocking suite: 85 tests.
+
 ### v38.10 — Fix success_url de Stripe quan NEXT_PUBLIC_SITE_URL no porta esquema
 Bug REAL de producció (2026-11-14): el checkout d'informes retornava 502
 STRIPE_ERROR amb `url_invalid` al param `success_url` («An explicit scheme

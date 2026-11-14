@@ -1,0 +1,125 @@
+{
+  "version" : "2.0",
+  "class" : "dataset",
+  "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/mun/data?SEX=TOTAL&MUN=080193,170890&_LAST_=12",
+  "link" : {
+    "describedby" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/mun",
+      "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Municipis"
+    } ],
+    "related" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/cat",
+      "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Catalunya"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/prov",
+      "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Províncies"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/at",
+      "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Àmbits del Pla territorial"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/com",
+      "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Comarques i Aran"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/dis",
+      "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Districtes censals"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/pmh/680/690/sec",
+      "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Seccions censals"
+    } ]
+  },
+  "label" : "Població a 1 de gener. Per nacionalitat (continents) i sexe. Municipis",
+  "source" : "Idescat, a partir del Padró continu de l'INE.",
+  "updated" : "2022-04-21",
+  "id" : [ "YEAR", "MUN", "SEX", "NATION", "CONCEPT" ],
+  "size" : [ 12, 2, 1, 8, 1 ],
+  "role" : {
+    "geo" : [ "MUN" ],
+    "metric" : [ "CONCEPT" ],
+    "time" : [ "YEAR" ]
+  },
+  "dimension" : {
+    "YEAR" : {
+      "category" : {
+        "index" : [ "2011", "2012", "2013", "2014", "2015", "2016", "2017", "2018", "2019", "2020", "2021", "2022" ],
+        "label" : {
+          "2011" : "2011",
+          "2012" : "2012",
+          "2013" : "2013",
+          "2014" : "2014",
+          "2015" : "2015",
+          "2016" : "2016",
+          "2017" : "2017",
+          "2018" : "2018",
+          "2019" : "2019",
+          "2020" : "2020",
+          "2021" : "2021",
+          "2022" : "2022"
+        }
+      },
+      "label" : "any"
+    },
+    "MUN" : {
+      "category" : {
+        "index" : [ "080193", "170890" ],
+        "label" : {
+          "080193" : "Barcelona",
+          "170890" : "Llagostera"
+        }
+      },
+      "label" : "municipi"
+    },
+    "SEX" : {
+      "category" : {
+        "index" : [ "TOTAL" ],
+        "label" : {
+          "TOTAL" : "total"
+        }
+      },
+      "label" : "sexe"
+    },
+    "NATION" : {
+      "category" : {
+        "index" : [ "ESPA", "RUE", "REUR", "AFR", "AMENC", "AMES", "ASI_OCE", "TOTAL" ],
+        "label" : {
+          "ESPA" : "espanyola",
+          "RUE" : "resta de la Unió Europea",
+          "REUR" : "resta d'Europa",
+          "AFR" : "Àfrica",
+          "AMENC" : "Amèrica del Nord i Central",
+          "AMES" : "Amèrica del Sud",
+          "ASI_OCE" : "Àsia i Oceania",
+          "TOTAL" : "total"
+        }
+      },
+      "label" : "nacionalitat"
+    },
+    "CONCEPT" : {
+      "category" : {
+        "index" : [ "POP" ],
+        "label" : {
+          "POP" : "població"
+        },
+        "unit" : {
+          "POP" : {
+            "decimals" : 0
+          }
+        }
+      },
+      "label" : "concepte",
+      "extension" : {
+        "%" : [ "POP" ]
+      }
+    }
+  },
+  "value" : [ 1337179, 69484, 13806, 20604, 23851, 90653, 59871, 1615448, 6724, 299, 55, 804, 62, 137, 24, 8105, 1337498, 72678, 14501, 20734, 25971, 8.636E+4, 63201, 1620943, 6744, 332, 61, 815, 6E+1, 119, 26, 8157, 1330597, 77293, 15732, 20097, 26682, 79979, 61442, 1611822, 6759, 342, 6E+1, 842, 65, 1E+2, 32, 8.2E+3, 1329265, 79733, 16349, 20003, 25487, 70817, 60732, 1602386, 6797, 297, 6E+1, 8.6E+2, 65, 89, 3E+1, 8198, 1342096, 80527, 17678, 19556, 24496, 59268, 60934, 1604555, 6849, 299, 59, 854, 56, 8E+1, 27, 8224, 1342423, 81858, 18946, 19487, 2.537E+4, 57951, 62711, 1608746, 6922, 282, 62, 827, 62, 74, 37, 8266, 1335902, 85852, 21022, 2.034E+4, 28987, 62202, 66504, 1620809, 6959, 266, 62, 789, 54, 65, 34, 8229, 1326556, 89002, 21756, 20381, 30223, 64549, 67876, 1620343, 6988, 271, 63, 798, 69, 77, 31, 8297, 1.31638E+6, 9.606E+4, 23138, 22338, 33681, 72099, 73066, 1636762, 7.06E+3, 2.8E+2, 75, 843, 81, 78, 36, 8453, 1305095, 106723, 2.493E+4, 2.458E+4, 3.871E+4, 84357, 79787, 1664182, 7186, 284, 77, 877, 102, 89, 32, 8647, 1.28843E+6, 9.512E+4, 33209, 24078, 36812, 81323, 7.776E+4, 1636732, 7328, 257, 101, 913, 128, 89, 35, 8851, 1276713, 103512, 34417, 24301, 37499, 83583, 76168, 1636193, 7481, 254, 104, 943, 127, 8E+1, 35, 9024 ],
+  "extension" : {
+    "source" : [ "Idescat, a partir del Padró continu de l'INE." ]
+  }
+}

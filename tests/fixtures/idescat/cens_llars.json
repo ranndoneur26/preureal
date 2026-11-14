@@ -1,0 +1,134 @@
+{
+  "version" : "2.0",
+  "class" : "dataset",
+  "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/mun/data?MUN=080193,170890",
+  "link" : {
+    "describedby" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/mun",
+      "label" : "Indicadors de llars. Municipis"
+    } ],
+    "related" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/cat",
+      "label" : "Indicadors de llars. Catalunya"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/prov",
+      "label" : "Indicadors de llars. Províncies"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/at",
+      "label" : "Indicadors de llars. Àmbits del Pla territorial"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/com",
+      "label" : "Indicadors de llars. Comarques i Aran"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/ac",
+      "label" : "Indicadors de llars. Per agrupacions censals"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/dis",
+      "label" : "Indicadors de llars. Districtes censals"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/17317/20806/sec",
+      "label" : "Indicadors de llars. Seccions censals"
+    } ]
+  },
+  "label" : "Indicadors de llars. Municipis",
+  "source" : "Idescat, a partir del Cens de població i habitatges de l'INE.",
+  "updated" : "2023-12-20",
+  "id" : [ "YEAR", "MUN", "CONCEPT" ],
+  "size" : [ 1, 2, 12 ],
+  "role" : {
+    "geo" : [ "MUN" ],
+    "metric" : [ "CONCEPT" ],
+    "time" : [ "YEAR" ]
+  },
+  "dimension" : {
+    "YEAR" : {
+      "category" : {
+        "index" : [ "2021" ],
+        "label" : {
+          "2021" : "2021"
+        }
+      },
+      "label" : "any"
+    },
+    "MUN" : {
+      "category" : {
+        "index" : [ "080193", "170890" ],
+        "label" : {
+          "080193" : "Barcelona",
+          "170890" : "Llagostera"
+        }
+      },
+      "label" : "municipi"
+    },
+    "CONCEPT" : {
+      "category" : {
+        "index" : [ "AVG_HOU_SIZE", "ONE_PEOPLE_HOU_SH", "TWO_PEOPLE_HOU_SH", "THR_PEOPLE_HOU_SH", "FOU_PEOPLE_HOU_SH", "FIO_PEOPLE_HOU_SH", "O65Y_PEOPLE_HOU_SH", "O75Y_ALO_PEOPLE_SH", "O65Y_ALL_PEOP_HOU_SH", "FOR_ALL_PEOP_HOU_SH", "ESP_FOR_PEOP_HOU_SH", "ESP_ALL_PEOP_HOU_SH" ],
+        "label" : {
+          "AVG_HOU_SIZE" : "grandària mitjana de la llar",
+          "ONE_PEOPLE_HOU_SH" : "proporció de llars d'1 persona (%)",
+          "TWO_PEOPLE_HOU_SH" : "proporció de llars de 2 persones (%)",
+          "THR_PEOPLE_HOU_SH" : "proporció de llars de 3 persones (%)",
+          "FOU_PEOPLE_HOU_SH" : "proporció de llars de 4 persones (%)",
+          "FIO_PEOPLE_HOU_SH" : "proporció de llars de 5 persones o més (%)",
+          "O65Y_PEOPLE_HOU_SH" : "proporció de llars d'una persona de 65 anys o més (%)",
+          "O75Y_ALO_PEOPLE_SH" : "proporció de població de 75 anys o més que viu sola (%)",
+          "O65Y_ALL_PEOP_HOU_SH" : "proporció de llars amb tots els membres de 65 anys o més (%)",
+          "FOR_ALL_PEOP_HOU_SH" : "proporció de llars amb tots els membres estrangers (%)",
+          "ESP_FOR_PEOP_HOU_SH" : "proporció de llars amb membres estrangers i espanyols (%)",
+          "ESP_ALL_PEOP_HOU_SH" : "proporció de llars amb tots els membres espanyols (%)"
+        },
+        "unit" : {
+          "AVG_HOU_SIZE" : {
+            "decimals" : 2
+          },
+          "ONE_PEOPLE_HOU_SH" : {
+            "decimals" : 1
+          },
+          "TWO_PEOPLE_HOU_SH" : {
+            "decimals" : 1
+          },
+          "THR_PEOPLE_HOU_SH" : {
+            "decimals" : 1
+          },
+          "FOU_PEOPLE_HOU_SH" : {
+            "decimals" : 1
+          },
+          "FIO_PEOPLE_HOU_SH" : {
+            "decimals" : 1
+          },
+          "O65Y_PEOPLE_HOU_SH" : {
+            "decimals" : 1
+          },
+          "O75Y_ALO_PEOPLE_SH" : {
+            "decimals" : 1
+          },
+          "O65Y_ALL_PEOP_HOU_SH" : {
+            "decimals" : 1
+          },
+          "FOR_ALL_PEOP_HOU_SH" : {
+            "decimals" : 1
+          },
+          "ESP_FOR_PEOP_HOU_SH" : {
+            "decimals" : 1
+          },
+          "ESP_ALL_PEOP_HOU_SH" : {
+            "decimals" : 1
+          }
+        }
+      },
+      "label" : "concepte"
+    }
+  },
+  "value" : [ 2.37, 31, 30.6, 18.9, 13.3, 6.2, 13.4, 32.3, 22.3, 12, 11.5, 76.4, 2.65, 24.1, 28.3, 20.6, 17.7, 9.3, 9.4, 24.9, 17, 8.8, 10.7, 80.5 ],
+  "extension" : {
+    "source" : [ "Idescat, a partir del Cens de població i habitatges de l'INE." ]
+  }
+}

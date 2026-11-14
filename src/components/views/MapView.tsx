@@ -6,6 +6,7 @@ import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, I
 import LineChart, { type LineSeries } from "@/components/charts/LineChart";
 import BarChart, { type BarRow } from "@/components/charts/BarChart";
 import ValuationPanel from "@/components/views/ValuationPanel";
+import DemografiaPanel from "@/components/views/DemografiaPanel";
 import OnboardingTour from "@/components/OnboardingTour";
 import FirstRunChecklist from "@/components/FirstRunChecklist";
 import { markStep } from "@/lib/steps";
@@ -2025,6 +2026,9 @@ function FullPanel({
           <div className="text-xs text-stone py-4 text-center">{t.map.panel.historyNoSeries}</div>
         )}
       </div>
+
+      {/* CONTEXTE DEMOGRÀFIC I TERRITORIAL — v39 (IDESCAT) */}
+      <DemografiaPanel muniCode={mun.code} muniName={mun.name} />
 
       {/* QUOTA + UPGRADE */}
       {auth.user?.plan === "FREE" && quota && (
