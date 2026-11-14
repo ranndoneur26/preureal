@@ -2,6 +2,32 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+### v39.1 — Documentació del projecte d'ampliació de dades públiques (Fases 1-2, sense canvis de codi)
+- **docs/AUDITORIA_PREUREAL.md**: auditoria funcional/tècnica/dades del projecte al
+  commit `a5b93e7` (v39): inventari de 84 rutes API + 24 models Prisma, mapa Leaflet
+  amb tiles ICGC, fonts actuals (Incasòl, ICGC, Catastro, INE, Idescat), restriccions
+  físiques (1 serverless function, maxDuration 60 s, sense PostGIS, CSP
+  `connect-src 'self'`), components reutilitzables (patró v39
+  DataSource/StatObservation/ImportRun/cron d'un pas), problemes detectats i 8 riscos
+  d'integració amb mitigacions.
+- **docs/CATALOGO_FUENTES_DATOS.md**: inventari verificat en línia de ~30 fonts
+  públiques (cada fitxa indica quina URL s'ha obert de debò; «NOT VERIFIED» on no
+  s'ha pogut). Classes de viabilitat A-D. Hallazgos clau: ICAEN certificats
+  d'eficiència energètica **per edifici amb referència catastral** (SODA `j6ii-t3w2`),
+  equipaments sanitaris/docents amb coordenades (A), XVPCA (A), tarifes d'aigua ACA
+  per municipi en XLSX directe (A), GTFS integrat ATM/CGIM amb llicència verificada
+  (B), zones inundables T10/T100/T500 (ACA/SNCZI, B), ruido BCN GPKG CC BY 4.0 (A),
+  aparcament públic català sense font centralitzada (D). 10 pendents de verificació
+  per al sprint G0.
+- **docs/ARQUITECTURA_DATOS.md**: model de dades no destructiu (0 taules alterades;
+  3 taules noves: GeoPoint, GeoPolygon, BuildingAssociation), 6 mètodes d'associació
+  geogràfica amb implementació, traçabilitat per dada, cadències d'ingesta per font,
+  APIs de servei noves registrables al dispatcher i mesures de rendiment/seguretat.
+- **docs/PLAN_IMPLEMENTACION.md**: pla per fases (G0 verificació → Fase A → B → C)
+  amb ajustos justificats per l'auditoria (energia ICAEN adelantada com a quick win;
+  zones verdes condicionades a G0; aparcament reduït), estimacions S/M/L, criteris
+  d'acceptació i ordre d'execució proposat.
+
 ## v38 — Transparència pública, design system, dark mode i CI — 2026-11-12
 
 Encàrrec: «revisa todos estos puntos e implementa las mejoras» (transparència
