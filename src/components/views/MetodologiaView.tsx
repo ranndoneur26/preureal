@@ -232,6 +232,11 @@ export default function MetodologiaView() {
             ? "Actualització: cron mensual /api/cron/rental-share (cens + flux + recàlcul traçat a ImportRun). Numerador i denominador pendents de publicació oficial municipal (verificat el 2026-11-15): el conector /api/admin/import-rental-share queda preparat i cada càlcul es registra amb estat, avisos i versió metodològica."
             : "Actualización: cron mensual /api/cron/rental-share (censo + flujo + recálculo trazado en ImportRun). Numerador y denominador pendientes de publicación oficial municipal (verificado el 2026-11-15): el conector /api/admin/import-rental-share queda preparado y cada cálculo se registra con estado, avisos y versión metodológica."}
         </p>
+        <p className="text-[13px] text-stone">
+          {ca
+            ? "L'eina «Anàlisi del mercat residencial» (#/analisi) creua aquestes sèries amb el preu mitjà de fiances i la població del Padró: lectures descriptives, mai causals; el «volum de mercat aproximat» (mediana × 12 × contractes de l'any) és una elaboració pròpia i mai no es presenta com a mesura exacta ni com a stock de fiances vigents."
+            : "La herramienta «Análisis del mercado residencial» (#/analisi) cruza estas series con el precio medio de fianzas y la población del Padrón: lecturas descriptivas, nunca causales; el «volumen de mercado aproximado» (mediana × 12 × contratos del año) es una elaboración propia y nunca se presenta como medida exacta ni como stock de fianzas vigentes."}
+        </p>
       </div>
 
       {/* Cicle d'actualització */}

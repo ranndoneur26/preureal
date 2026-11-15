@@ -2,6 +2,50 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v42 — Eina «Anàlisi del mercat residencial» (creuament de sèries) — 2026-11-15
+
+Encàrrec: una herramienta de análisis del mercado residencial mucho más completa que
+una web convencional de consulta de precios, cruzando el precio medio real del
+alquiler, la evolución de los contratos y el crecimiento demográfico. Vista `#/analisi`
+(nueva entrada en la navegación), API pública y calculadora pura testable.
+
+### Qué cruza (solo series oficiales ya integradas)
+- **Preu mitjà real del lloguer**: sèrie 2005-2025 de fiances Incasòl
+  (`Municipality.rentHistory`) + referència de comarca (línia discontínua).
+- **Evolució de contractes**: flux anual de contractes amb fiança depositada
+  2007-2025 (ingesta v41, SODA `qww9-bvhh`); degradació honesta a punt únic
+  (`contractsLatest`) mentre el cron mensual no hagi sembrat la sèrie completa.
+- **Creixement demogràfic**: Padró continu IDESCAT (`POB_TOTAL`, v39) amb
+  variacions a 5 i 10 anys i referència de Catalunya.
+- **Contrast censal**: % de viviendas principales en alquiler (Cens 2021, v41).
+
+### Métricas derivadas (aproximaciones etiquetadas, nunca presentadas como exactas)
+- **Volum de mercat registrat aproximat** per any: mediana mensual × 12 ×
+  contractes de l'any (€/any) — sèrie gràfica + lectura anual.
+- **Dinamisme**: contractes amb fiança per cada 1.000 habitants (creuament any
+  exacte; població mai interpolada).
+- **Creixements creuats**: renda 10 anys vs població 10 anys (divergència
+  descriptiva, mai causal).
+- **Lectures automàtiques** bilingües (ca/es) generades amb les xifres reals i
+  amb el seu any de referència; sense dada → sense lectura (mai inventat).
+
+### Arquitectura
+- **Calculadora pura** `src/lib/analisi-calc.ts` (parseRentHistory defensiu,
+  growthPct amb base disponible anterior, buildCrossover any-a-any,
+  buildInterpretacio) — 12 tests nous (`tests/analisi.test.ts`).
+- **Assemblador servidor** `src/lib/analisi.ts` (reusa `getRentalShareDetail`
+  v41 + consultes directes del Padró) + **API pública**
+  `GET /api/analisi/muni/:code?lang=` (cache 1 h + SWR; dispatcher: 90 rutes).
+- **Vista client** `AnalisiView.tsx`: cercador amb debounce (API
+  `/api/municipalities`), xips d'exemple, KPIs, 4 gràfics (renda+comarca,
+  contractes, població, volum), lectures i **comparativa de fins a 4 municipis**
+  amb 9 indicadors per fila.
+- Pàgina `/analisi` (HashBridge → `#/analisi`, noindex com el comparador) i
+  entrades al header, nav mòbil i footer; nota metodològica a `#/metodologia`.
+- E2E local (BD real): Manresa — renda 21 punts (+69,5% en 10 anys), contractes
+  19 punts (−11,3% en 5), població +8,5% en 10 anys, volum ~10,3 M€/any (2025),
+  18,13 contractes/1.000 hab, cens 28,34%; Catalunya 8.146.265 hab (2025).
+
 ## v41 — Indicador «% estimat d'alquiler sobre el parc residencial» — 2026-11-15
 
 Encàrrec específic: incorporar el porcentaje de viviendas en alquiler sobre el parque

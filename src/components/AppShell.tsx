@@ -16,6 +16,7 @@ import EstatView from "@/components/views/EstatView";
 import UsosView from "@/components/views/UsosView";
 import DesignView from "@/components/views/DesignView";
 import ComparadorView from "@/components/views/ComparadorView";
+import AnalisiView from "@/components/views/AnalisiView";
 import GuiaView from "@/components/views/GuiaView";
 import SubscriptionResultView from "@/components/views/SubscriptionResultView";
 import ReportResultView from "@/components/views/ReportResultView";
@@ -114,6 +115,7 @@ export default function AppShell() {
           {view === "/" && <LandingView />}
           {view === "/mapa" && <MapView />}
           {view === "/comparador" && <ComparadorView />}
+          {view === "/analisi" && <AnalisiView />}
           {view === "/guia" && <GuiaView />}
           {view === "/preus" && <PricingView />}
           {view === "/subscripcio/exit" && <SubscriptionResultView mode="exit" />}
@@ -173,6 +175,7 @@ function Header({ route }: { route: string }) {
               <nav className="hidden md:flex items-center gap-1">
                 {link("/mapa", t.nav.mapa)}
                 {link("/comparador", "Comparador")}
+                {link("/analisi", locale === "ca" ? "Anàlisi" : "Análisis")}
                 {link("/guia", locale === "ca" ? "Guia" : "Guía")}
                 {link("/preus", t.nav.preus)}
                 {link("/faq", t.nav.faq)}
@@ -244,6 +247,7 @@ function Header({ route }: { route: string }) {
             <div id="mobile-nav" className="hidden md:hidden border-t border-line bg-cream px-4 py-3 flex-col gap-1">
               {link("/mapa", t.nav.mapa)}
               {link("/comparador", "Comparador")}
+              {link("/analisi", locale === "ca" ? "Anàlisi" : "Análisis")}
               {link("/guia", locale === "ca" ? "Guia" : "Guía")}
               {link("/preus", t.nav.preus)}
               {link("/faq", t.nav.faq)}
@@ -298,6 +302,7 @@ function Footer() {
                 <div className="flex flex-col gap-1.5">
                   {footLink("/mapa", t.nav.mapa)}
                   {footLink("/comparador", "Comparador")}
+                  {footLink("/analisi", ca ? "Anàlisi del mercat" : "Análisis del mercado")}
                   {footLink("/preus", t.nav.preus)}
                   {footLink("/faq", t.nav.faq)}
                   <a href="/lloguer" className="text-left hover:text-white">{ca ? "Lloguer per municipis" : "Alquiler por municipios"}</a>
