@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Locale, t as getT } from "@/lib/i18n";
 import LandingView from "@/components/views/LandingView";
+import AnalitzaView from "@/components/views/AnalitzaView";
 import MapView from "@/components/views/MapView";
 import PricingView from "@/components/views/PricingView";
 import AuthView from "@/components/views/AuthView";
@@ -113,6 +114,7 @@ export default function AppShell() {
         <main className="flex-1 flex flex-col">
           <div key={view} className="pr-view flex-1 flex flex-col">
           {view === "/" && <LandingView />}
+          {view === "/analitza" && <AnalitzaView />}
           {view === "/mapa" && <MapView />}
           {view === "/comparador" && <ComparadorView />}
           {view === "/analisi" && <AnalisiView />}
@@ -173,6 +175,7 @@ function Header({ route }: { route: string }) {
                 <span className="font-extrabold text-lg tracking-tight">Preureal</span>
               </button>
               <nav className="hidden md:flex items-center gap-1">
+                {link("/analitza", t.nav.analitza)}
                 {link("/mapa", t.nav.mapa)}
                 {link("/comparador", "Comparador")}
                 {link("/analisi", locale === "ca" ? "Anàlisi" : "Análisis")}
@@ -245,6 +248,7 @@ function Header({ route }: { route: string }) {
               </div>
             </div>
             <div id="mobile-nav" className="hidden md:hidden border-t border-line bg-cream px-4 py-3 flex-col gap-1">
+              {link("/analitza", t.nav.analitza)}
               {link("/mapa", t.nav.mapa)}
               {link("/comparador", "Comparador")}
               {link("/analisi", locale === "ca" ? "Anàlisi" : "Análisis")}
@@ -300,6 +304,7 @@ function Footer() {
               <div className="text-sm">
                 <div className="font-semibold text-white mb-2">{ca ? "Producte" : "Producto"}</div>
                 <div className="flex flex-col gap-1.5">
+                  {footLink("/analitza", ca ? "Analitza el teu futur lloguer" : "Analiza tu futuro alquiler")}
                   {footLink("/mapa", t.nav.mapa)}
                   {footLink("/comparador", "Comparador")}
                   {footLink("/analisi", ca ? "Anàlisi del mercat" : "Análisis del mercado")}

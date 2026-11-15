@@ -2,6 +2,68 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v44 — «Analitza el teu futur lloguer»: analitzador d'una vivenda concreta (funcionalitat principal) — 2026-11-15
+
+Nova funcionalitat destacada i gratuïta (sense registre) que evoluciona Preureal d0027
+estadístiques a una eina de decisió: la persona introdueix la vivenda que vol alquilar
+i obté un informe transparent abans de signar.
+
+**Nova API pública (sense auth, rate limit 20/min):**
+- `POST /api/analitza` — informe complet: A) preu (€/m² derivat de l'anunci,
+  referència Incasòl municipal o referència de comarca marcada ESTIMACIÓ,
+  desviació %, veredicte per llindars explícits −25/−5/+5/+15, valoració per
+  característiques reutilitzant `computeValuation` (ajustos hedònics v2),
+  evolució anual, 5 municipis propers amb dada oficial), B) normativa per
+  ESTATS (mai legalitat): zona tensada (Resolucions TER/3739/2026 + TER/3740/2026,
+  DOGC 19-10-2026 via `Municipality.isTense`), límit art. 17.2 segons tipus de
+  contracte i renta anterior, gran tenedor + SERPAVI (calculadora MIVAU),
+  actualització anual IRAV (INE, +2,54 % set. 2026), D) checklist abans de
+  signar (9 punts amb font legal). Sanejament estricte d'entrada; registre
+  anònim d'ús (Event) sense cap dada personal.
+- `POST /api/analitza/serveis` — secció C ubicació: serveis propers (transport,
+  salut, educació, compra, zones verdes) via Overpass/OpenStreetMap (ODbL,
+  gratuït), distàncies en línia recta marcades com a aproximades, cau memòria
+  6 h per quadrícula ~110 m, timeout 20 s i degradació elegant (mai s'inventen
+  serveis). Soroll/aire/inundació/fibra: pendents amb fonts oficials
+  identificades (mapa soroll, XVPCA, SINCRO/ICGC) — no s'inventen valors.
+- Dispatcher regenerat: 92 rutes (90 + 2).
+
+**Frontend (bilingüe ca/es, responsive):**
+- `src/components/analitza/AnalitzaForm.tsx` — formulari compartit (variant
+  compacta a la portada i completa a #/analitza amb mapa ICGC Leaflet reutilitzat
+  per marcar el punt exacte); adreça amb Geocodificador oficial ICGC (omple
+  municipi + coordenades), municipi amb cerca BD local, camps avançats plegats.
+- `src/components/analitza/AnalitzaReport.tsx` — informe amb els 4 blocs,
+  checklist marcable (localStorage, només booleans) i descàrrega: HTML
+  autocontingut generat per `src/lib/analitza-html.ts` (imprimible a PDF des de
+  qualsevol navegador, també mòbil, sense dependències noves).
+- Portada: el gràfic estàtic «Dreta de l'Eixample · Barcelona» (MiniGrid) és
+  substituït pel formulari de l'analitzador (funcionalitat principal); la
+  persona surt de la portada sabent si el preu de l'anunci està per sobre o
+  per sota de la referència. CTA «informe complet» → `#/analitza` amb prefill
+  (sessionStorage, s'executa automàticament).
+- Nova vista `#/analitza` + ruta `/analitza` (metadata indexable) + sitemap +
+  navegació (header, menú mòbil, footer) amb `nav.analitza`.
+- Lint nadiu next 16: setState en efectes diferit amb `await Promise.resolve()`
+  i ajusts d'estat durant el render (patrons MapView).
+
+**Idioma (ca)** — errades corregides a l'entrada v43 ja desplegada: el text
+«% censal alquiler» → «% censal de lloguer» (es: «% censal de alquiler»); en
+aquesta versió també es fixa la font de zones tensades a la portada
+(«Resolucions TER/800/2024 i TER/2408/2024» → «TER/3739/2026 i TER/3740/2026,
+DOGC 19-10-2026», coherent amb el text de zones tensades).
+
+**Proves:** `tests/analitza.test.ts` — 19 tests (€/m² derivat, veredicte per
+llindars, estats normatius segons tipus/renta/zona, haversine, parser Overpass
+amb dedup i ways amb center, informe HTML bilingüe sense placeholders amb
+escape XSS). tsc net; eslint net; build de producció OK; 174+1848 expect OK
+(els 7 fallos locals preexistents per env documentats no canvien). El CI
+necessita afegir el fitxer de test (pedaç `ci.analitza.patch` — el token no té
+scope workflow).
+
+**Costs:** 0 € (fonts ja integrades + Overpass/OpenStreetMap gratuït; cap API de
+pagament ni servei nou activat).
+
 ## v43 — Auditoria: correcció lingüística (ca) + eliminació de codi mort — 2026-11-15
 
 Auditoria integral (codi mort + idioma) amb aquestes accions:

@@ -26,6 +26,8 @@ import * as h_admin_seed_municipalities from "../_impl/admin/seed-municipalities
 import * as h_admin_stats from "../_impl/admin/stats/route";
 import * as h_admin_users from "../_impl/admin/users/route";
 import * as h_aid from "../_impl/aid/route";
+import * as h_analitza from "../_impl/analitza/route";
+import * as h_analitza_serveis from "../_impl/analitza/serveis/route";
 import * as h_auth_2fa_disable from "../_impl/auth/2fa/disable/route";
 import * as h_auth_2fa_enable from "../_impl/auth/2fa/enable/route";
 import * as h_auth_2fa_recovery from "../_impl/auth/2fa/recovery/route";
@@ -121,6 +123,8 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "stats"], h: h_admin_stats },
   { seg: ["admin", "users"], h: h_admin_users },
   { seg: ["aid"], h: h_aid },
+  { seg: ["analitza"], h: h_analitza },
+  { seg: ["analitza", "serveis"], h: h_analitza_serveis },
   { seg: ["auth", "2fa", "disable"], h: h_auth_2fa_disable },
   { seg: ["auth", "2fa", "enable"], h: h_auth_2fa_enable },
   { seg: ["auth", "2fa", "recovery"], h: h_auth_2fa_recovery },

@@ -1,10 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { useApp } from "@/components/app-context";
-import { BadgeCheck, Building2, MapPin, Scale, TrendingUp, ArrowRight } from "lucide-react";
+import { BadgeCheck, Building2, MapPin, Scale, TrendingUp, ArrowRight, WandSparkles } from "lucide-react";
+import AnalitzaForm from "@/components/analitza/AnalitzaForm";
+import AnalitzaReport from "@/components/analitza/AnalitzaReport";
+import type { AnalitzaReportData } from "@/lib/analitza-html";
 
 export default function LandingView() {
   const { t, navigate, locale } = useApp();
+  const ca = locale === "ca";
+  const [report, setReport] = useState<AnalitzaReportData | null>(null);
 
   return (
     <div className="flex flex-col">
@@ -44,20 +50,22 @@ export default function LandingView() {
           <div className="relative">
             <div className="rounded-2xl border border-line bg-card shadow-xl shadow-black/5 overflow-hidden">
               <div className="bg-pine text-white px-4 py-2.5 text-sm font-semibold flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-mint" />
-                Dreta de l&apos;Eixample · Barcelona
+                <WandSparkles className="w-4 h-4 text-mint" />
+                {ca ? "Analitza el teu futur lloguer" : "Analiza tu futuro alquiler"}
               </div>
               <div className="p-5 bg-sand2">
-                <MiniGrid />
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <Stat value="1.134 €" label={locale === "ca" ? "mitjana real" : "media real"} />
-                  <Stat value="30.789" label={locale === "ca" ? "contractes" : "contratos"} />
-                  <Stat value="2025" label="Incasòl" />
-                </div>
+                {report ? (
+                  <AnalitzaReport data={report} variant="compact" />
+                ) : (
+                  <AnalitzaForm
+                    variant="compact"
+                    onResult={(d) => setReport(d as AnalitzaReportData)}
+                  />
+                )}
               </div>
             </div>
             <div className="absolute -top-3 -right-3 rotate-3 bg-ember text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
-              {locale === "ca" ? "dades oficials" : "datos oficiales"}
+              {ca ? "gratuït · sense registre" : "gratuito · sin registro"}
             </div>
           </div>
         </div>
@@ -141,32 +149,6 @@ function Step({ icon, title, desc }: { icon: React.ReactNode; title: string; des
       <div className="w-11 h-11 rounded-xl bg-pine text-white flex items-center justify-center">{icon}</div>
       <h3 className="mt-4 font-bold text-lg">{title}</h3>
       <p className="mt-2 text-sm text-moss leading-relaxed">{desc}</p>
-    </div>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-xl bg-card border border-line py-3">
-      <div className="font-black text-pine">{value}</div>
-      <div className="text-[10px] uppercase tracking-wide text-stone">{label}</div>
-    </div>
-  );
-}
-
-/** Trama de l'Eixample dibuixada amb CSS (il·lustrativa, sense dades inventades) */
-function MiniGrid() {
-  const cells = [
-    "#8fd6a8", "#f2b8a0", "#8fd6a8", "#f2b8a0", "#f2b8a0",
-    "#f2b8a0", "#8fd6a8", "#f2b8a0", "#8fd6a8", "#f2b8a0",
-    "#8fd6a8", "#f2b8a0", "#f2b8a0", "#f2b8a0", "#8fd6a8",
-    "#f2b8a0", "#8fd6a8", "#f2b8a0", "#8fd6a8", "#f2b8a0",
-  ];
-  return (
-    <div className="grid grid-cols-5 gap-1.5">
-      {cells.map((c, i) => (
-        <div key={i} className="aspect-square rounded-md border border-white/80" style={{ background: c }} />
-      ))}
     </div>
   );
 }

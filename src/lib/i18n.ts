@@ -6,7 +6,7 @@ export const STRINGS = {
   ca: {
     brand: "Preureal",
     tagline: "El preu real del lloguer, illa a illa",
-    nav: { mapa: "Mapa", preus: "Preus", panel: "El meu compte", admin: "Admin", entrada: "Entrar", registre: "Registra't", sortida: "Sortir", faq: "Preguntes" },
+    nav: { mapa: "Mapa", analitza: "Analitza", preus: "Preus", panel: "El meu compte", admin: "Admin", entrada: "Entrar", registre: "Registra't", sortida: "Sortir", faq: "Preguntes" },
     hero: {
       badge: "Dades oficials · fiances Incasòl",
       title: "Descobreix si et cobren de més abans de signar el lloguer",
@@ -36,7 +36,7 @@ export const STRINGS = {
         { t: "Fiances de lloguer (Incasòl)", d: "Preu mitjà mensual i nombre de contractes per municipi. Explotació estadística del registre de fiances, publicada per habitatge.gencat.cat (dades fins al 2025)." },
         { t: "Cartografia d'edificis (ICGC)", d: "Polígons reals d'edificis i illes de cases de l'Institut Cartogràfic i Geològic de Catalunya (RTT, llicència CC-BY 4.0)." },
         { t: "Referència catastral (ICGC/Cadastre)", d: "Parcel·les cadastrals via API Territorial de l'ICGC. Any de construcció via serveis lliures del Cadastre quan estan disponibles." },
-        { t: "Àrees tensades (Generalitat)", d: "Llistes oficials de municipis amb regulació de preus de lloguer (Resolucions TER/800/2024 i TER/2408/2024)." },
+        { t: "Àrees tensades (Generalitat)", d: "Llistes oficials de municipis amb regulació de preus de lloguer (Resolucions TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026)." },
       ],
       note: "Les dades a nivell d'illa de cases (preu mitjà per illa) arribaran quan es tanqui el conveni de dades amb Incasòl: el mapa ja està preparat per carregar-les sense canviar el codi.",
     },
@@ -273,7 +273,7 @@ export const STRINGS = {
   es: {
     brand: "Preureal",
     tagline: "El precio real del alquiler, manzana a manzana",
-    nav: { mapa: "Mapa", preus: "Precios", panel: "Mi cuenta", admin: "Admin", entrada: "Entrar", registre: "Regístrate", sortida: "Salir", faq: "Preguntas" },
+    nav: { mapa: "Mapa", analitza: "Analiza", preus: "Precios", panel: "Mi cuenta", admin: "Admin", entrada: "Entrar", registre: "Regístrate", sortida: "Salir", faq: "Preguntas" },
     hero: {
       badge: "Datos oficiales · fianzas Incasòl",
       title: "Sé si te cobra de más antes de firmar el alquiler",
@@ -303,7 +303,7 @@ export const STRINGS = {
         { t: "Fianzas de alquiler (Incasòl)", d: "Precio medio mensual y número de contratos por municipio. Explotación estadística del registro de fianzas, publicada por habitatge.gencat.cat (datos hasta 2025)." },
         { t: "Cartografía de edificios (ICGC)", d: "Polígonos reales de edificios y manzanas del Instituto Cartográfico y Geológico de Cataluña (RTT, licencia CC-BY 4.0)." },
         { t: "Referencia catastral (ICGC/Cadastre)", d: "Parcelas catastrales vía API Territorial del ICGC. Año de construcción vía servicios libres del Catastro cuando están disponibles." },
-        { t: "Áreas tensionadas (Generalitat)", d: "Listas oficiales de municipios con regulación de precios de alquiler (Resoluciones TER/800/2024 y TER/2408/2024)." },
+        { t: "Áreas tensionadas (Generalitat)", d: "Listas oficiales de municipios con regulación de precios de alquiler (Resoluciones TER/3739/2026 y TER/3740/2026, DOGC 19-10-2026)." },
       ],
       note: "Los datos a nivel de manzana (precio medio por manzana) llegarán cuando se cierre el convenio de datos con Incasòl: el mapa ya está preparado para cargarlos sin cambiar código.",
     },
