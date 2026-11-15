@@ -20,6 +20,7 @@
  */
 
 import { db } from "@/lib/db";
+import type { Prisma } from "@prisma/client";
 import {
   computeRentalShare,
   parseCensTenencia,
@@ -369,8 +370,11 @@ export async function importIncasolFlux(createdBy = "system:manual"): Promise<Im
 
 /**
  * Recalcula RentalShareObservation per als municipis indicats (o tots).
- * Lectura set-based (4 consultes) + upsert per (municipalityCode, referenceKey).
- * Una publicació nova crea una fila nova (historial intacte).
+ * Lectura set-based (4 consultes) + escriptura PER LOTS (1 deleteMany de les
+ * claus actuals + createMany per tandes). Mateix resultat final que l'upsert
+ * per (municipalityCode, referenceKey): una publicació nova crea una fila nova
+ * (historial intacte). Els 947 upserts consecutius de la v41 superaven el
+ * temps límit de la funció i el sembrat inicial mai no acabava.
  */
 export async function recalcRentalShare(
   createdBy = "system:manual",
@@ -417,8 +421,8 @@ export async function recalcRentalShare(
       readObs(censSource?.id ?? null, ["CENS_MAIN_RENTAL", "CENS_MAIN_TOTAL"]),
     ]);
 
-    let computed = 0;
     let skipped = 0;
+    const writes: Prisma.RentalShareObservationCreateManyInput[] = [];
     const incasolSourceLabel = `${RS_VIGENTS_SOURCE.institution}${RS_VIGENTS_SOURCE.code ? " (conector administratiu)" : ""}`;
 
     for (const m of munis) {
@@ -474,18 +478,25 @@ export async function recalcRentalShare(
         runId: run.id,
         updatedAt: new Date(),
       };
+      writes.push({ municipalityCode: m.code, ...data });
+    }
 
-      await db.rentalShareObservation.upsert({
+    // v41.1 — upsert per lots: mateixes claus (municipalityCode, referenceKey).
+    // La deleteMany només toca les files del període actual que s'estan
+    // refent; les d'altres referenceKey (historial) no es mouen. Delete+create
+    // no és atòmic, però és idempotent: una mort a mig camí es repara sola a
+    // la següent execució (els inputs no canvien entre execucions).
+    const computed = writes.length;
+    if (computed > 0) {
+      await db.rentalShareObservation.deleteMany({
         where: {
-          municipalityCode_referenceKey: {
-            municipalityCode: m.code,
-            referenceKey: res.referenceKey,
-          },
+          municipalityCode: { in: writes.map((w) => w.municipalityCode) },
+          referenceKey: { in: Array.from(new Set(writes.map((w) => w.referenceKey))) },
         },
-        create: { municipalityCode: m.code, ...data },
-        update: data,
       });
-      computed++;
+      for (const part of await chunk(writes, 400)) {
+        await db.rentalShareObservation.createMany({ data: part, skipDuplicates: true });
+      }
     }
 
     await closeRun(run.id, {

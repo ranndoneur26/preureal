@@ -2,6 +2,31 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v41.1 — Fix del cron rental-share: recàlcul per lots + maxDuration al dispatcher — 2026-11-15
+
+Síntoma en producció: la primera execució de `/api/cron/rental-share` (sembrat inicial
+de la sèrie) penjava >100s, Vercel la matava i el client rebia només el fragment `"…"`
+del cos d'error de plataforma; el recàlcul només arribava a ~20 dels 947 municipis.
+Dos defectes d'origen:
+
+1. **`maxDuration` no exportat on cal**: el route segment config només té efecte si
+   s'exporta des de `src/app/api/[[...path]]/route.ts` (la funció única), no des dels
+   `_impl`. La v41 l'exportava només a l'impl → Vercel aplicava el límit per defecte.
+   Ara el generador (`scripts/gen_api_dispatcher.py`) l'emeteix (`export const
+   maxDuration = 60;`) i el dispatcher s'ha regenerat (90 rutes, sense més canvis).
+2. **947 upserts consecutius** a `recalcRentalShare` (1 consulta per municipi)
+   superaven qualsevol límit raonable. Ara: lectura set-based (com abans) +
+   **escriptura per lots** — 1 `deleteMany` de les claus del període actual +
+   `createMany` per tandes de 400. Mateix resultat final que l'upsert per
+   `(municipalityCode, referenceKey)`: les files d'altres referenceKey (historial)
+   no es toquen. Delete+create no és atòmic però és idempotent (una mort a mig
+   camí es repara sola a la següent execució).
+
+Validat en local: typecheck + guardia de dispatcher OK; tests v41/v42 38/38; la
+suite bloquejant antiga dóna els mateixos 7 fallos d'entorn local amb i sense el
+canvi (verda a Actions). Desplegat el fix, el cron del dia 5 i la invocació manual
+acaben el sembrat en una sola execució.
+
 ## v42 — Eina «Anàlisi del mercat residencial» (creuament de sèries) — 2026-11-15
 
 Encàrrec: una herramienta de análisis del mercado residencial mucho más completa que

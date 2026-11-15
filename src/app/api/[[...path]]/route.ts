@@ -238,6 +238,12 @@ async function handle(
   return dispatch(req, method, path ?? []);
 }
 
+// v41.1 — límit de temps explícit de la funció única (route segment config:
+// només val si s'exporta AQUÍ, no als _impl). Sense aquest export, Vercel
+// aplica el límit per defecte i els passos llargs (sembrat inicial del cron
+// rental-share) moren sense respondre mai el JSON final.
+export const maxDuration = 60;
+
 export const GET = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
   handle(req, "GET", ctx);
 export const POST = (req: NextRequest, ctx: { params: Promise<{ path?: string[] }> }) =>
