@@ -17,6 +17,7 @@ import * as h_admin_export_csv from "../_impl/admin/export-csv/route";
 import * as h_admin_import from "../_impl/admin/import/route";
 import * as h_admin_import_demografia from "../_impl/admin/import-demografia/route";
 import * as h_admin_import_ine from "../_impl/admin/import-ine/route";
+import * as h_admin_import_rental_share from "../_impl/admin/import-rental-share/route";
 import * as h_admin_imports from "../_impl/admin/imports/route";
 import * as h_admin_plan_settings from "../_impl/admin/plan-settings/route";
 import * as h_admin_reports from "../_impl/admin/reports/route";
@@ -57,6 +58,7 @@ import * as h_cron_demografia from "../_impl/cron/demografia/route";
 import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_cron_entorn from "../_impl/cron/entorn/route";
 import * as h_cron_ine from "../_impl/cron/ine/route";
+import * as h_cron_rental_share from "../_impl/cron/rental-share/route";
 import * as h_events from "../_impl/events/route";
 import * as h_favorites from "../_impl/favorites/route";
 import * as h_geocode from "../_impl/geocode/route";
@@ -68,6 +70,8 @@ import * as h_lookup_refcat from "../_impl/lookup-refcat/route";
 import * as h_municipalities from "../_impl/municipalities/route";
 import * as h_plans from "../_impl/plans/route";
 import * as h_provenance from "../_impl/provenance/route";
+import * as h_rental_share from "../_impl/rental-share/route";
+import * as h_rental_share_ranking from "../_impl/rental-share/ranking/route";
 import * as h_reports from "../_impl/reports/route";
 import * as h_reports_pdf from "../_impl/reports/pdf/route";
 import * as h_reports_shop_catalog from "../_impl/reports/shop/catalog/route";
@@ -107,6 +111,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "import"], h: h_admin_import },
   { seg: ["admin", "import-demografia"], h: h_admin_import_demografia },
   { seg: ["admin", "import-ine"], h: h_admin_import_ine },
+  { seg: ["admin", "import-rental-share"], h: h_admin_import_rental_share },
   { seg: ["admin", "imports"], h: h_admin_imports },
   { seg: ["admin", "plan-settings"], h: h_admin_plan_settings },
   { seg: ["admin", "reports"], h: h_admin_reports },
@@ -147,6 +152,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["cron", "emails"], h: h_cron_emails },
   { seg: ["cron", "entorn"], h: h_cron_entorn },
   { seg: ["cron", "ine"], h: h_cron_ine },
+  { seg: ["cron", "rental-share"], h: h_cron_rental_share },
   { seg: ["events"], h: h_events },
   { seg: ["favorites"], h: h_favorites },
   { seg: ["geocode"], h: h_geocode },
@@ -158,6 +164,8 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["municipalities"], h: h_municipalities },
   { seg: ["plans"], h: h_plans },
   { seg: ["provenance"], h: h_provenance },
+  { seg: ["rental-share"], h: h_rental_share },
+  { seg: ["rental-share", "ranking"], h: h_rental_share_ranking },
   { seg: ["reports"], h: h_reports },
   { seg: ["reports", "pdf"], h: h_reports_pdf },
   { seg: ["reports", "shop", "catalog"], h: h_reports_shop_catalog },

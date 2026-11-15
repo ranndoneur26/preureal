@@ -1,0 +1,116 @@
+{
+  "version" : "2.0",
+  "class" : "dataset",
+  "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/mun/data?MUN=081293,080193,082234&lang=es",
+  "link" : {
+    "describedby" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/mun?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Municipios"
+    } ],
+    "related" : [ {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/cat?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Cataluña"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/prov?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Provincias"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/at?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Ámbitos del Plan territorial"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/com?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Comarcas y Aran"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/ac?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Por agrupaciones censales"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/dis?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Distritos censales"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/20419/sec?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Secciones censales"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/6924/mun?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Municipios (2011)"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/697/mun?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Municipios (2001)"
+    }, {
+      "class" : "dataset",
+      "href" : "https://api.idescat.cat/taules/v2/censph/310/344/mun?lang=es",
+      "label" : "Viviendas principales. Por régimen de tenencia. Municipios (1991)"
+    } ]
+  },
+  "label" : "Viviendas principales. Por régimen de tenencia. Municipios",
+  "note" : [ "En el Censo de población de 2021, para salvaguardar el secreto estadístico, los resultados han sido redondeados aleatoriamente a valores múltiples de 3. Por esta razón algún total puede no coincidir con la suma de su desagregación." ],
+  "source" : "Idescat, a partir del Censo de población y viviendas del INE.",
+  "updated" : "2023-10-30",
+  "id" : [ "YEAR", "MUN", "TENURE_REGIME", "CONCEPT" ],
+  "size" : [ 1, 1, 5, 1 ],
+  "role" : {
+    "geo" : [ "MUN" ],
+    "metric" : [ "CONCEPT" ],
+    "time" : [ "YEAR" ]
+  },
+  "dimension" : {
+    "YEAR" : {
+      "category" : {
+        "index" : [ "2021" ],
+        "label" : {
+          "2021" : "2021"
+        }
+      },
+      "label" : "año"
+    },
+    "MUN" : {
+      "category" : {
+        "index" : [ "080193" ],
+        "label" : {
+          "080193" : "Barcelona"
+        }
+      },
+      "label" : "municipio",
+      "note" : [ "Datos solo disponibles para los municipios de 500 habitantes o más" ]
+    },
+    "TENURE_REGIME" : {
+      "category" : {
+        "index" : [ "PROPERTY", "RENTAL", "OTH", "_U", "TOTAL" ],
+        "label" : {
+          "PROPERTY" : "de propiedad",
+          "RENTAL" : "de alquiler",
+          "OTH" : "otras formas",
+          "_U" : "No consta",
+          "TOTAL" : "total"
+        }
+      },
+      "label" : "régimen de tenencia"
+    },
+    "CONCEPT" : {
+      "category" : {
+        "index" : [ "MAIN_DWELL" ],
+        "label" : {
+          "MAIN_DWELL" : "viviendas principales"
+        },
+        "unit" : {
+          "MAIN_DWELL" : {
+            "decimals" : 0
+          }
+        }
+      },
+      "label" : "concepto"
+    }
+  },
+  "value" : [ 409683, 208467, 53025, 0, 671178 ],
+  "extension" : {
+    "source" : [ "Idescat, a partir del Censo de población y viviendas del INE." ]
+  }
+}

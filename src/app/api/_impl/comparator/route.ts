@@ -7,6 +7,7 @@ import { getPlanSettings, planAllows, type PlanId } from "@/lib/plans";
 import { getMuniIndicators } from "@/lib/indicators-data";
 import { getCommunitySummary } from "@/lib/reports-summary";
 import { getDemografiaSummary } from "@/lib/demografia";
+import { getRentalShareSummary } from "@/lib/rental-share";
 
 /**
  * POST /api/comparator  { entities: [{type:"MUNI"|"BUILDING", code}] }
@@ -160,6 +161,21 @@ export async function POST(req: Request) {
         const d = demo.get(r.code);
         if (d && (d.poblacio != null || d.llarsTotal != null || d.densitat != null)) {
           r.demografia = d;
+        }
+      }
+    }
+  }
+
+  // v41 — «% estimat d'alquiler sobre el parc residencial» (PÚBLIC, sense
+  // gating: referència censal oficial Cens 2021 + flux de fiances Incasòl).
+  // El % estimat compost només s'adjunta quan existeix (mai inventat).
+  if (munCodes.length > 0) {
+    const rs = await getRentalShareSummary(munCodes).catch(() => null);
+    if (rs) {
+      for (const r of results.filter((x: any) => x.type === "MUNI")) {
+        const s = rs.get(r.code);
+        if (s && (s.censusPct != null || s.estimatPct != null || s.flujoLatest != null)) {
+          r.rentalShare = s;
         }
       }
     }

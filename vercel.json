@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/entorn",
       "schedule": "15 6 * * *"
+    },
+    {
+      "path": "/api/cron/rental-share",
+      "schedule": "0 20 5 * *"
     }
   ]
 }

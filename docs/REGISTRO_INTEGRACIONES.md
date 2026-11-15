@@ -9,6 +9,24 @@ Registro vivo de cada integración real (fuente, fecha, alcance, estado). Actual
 | 3 | CatSalut — Establiments sanitaris autoritzats (`nrmq-ytje`) | Equipamientos (salud) | 2026-11-15 | v40 | **5.609 establecimientos sembrados en producción** (71 sin coordenadas → descartados, nunca inventados). | **ACTIVA Y VERIFICADA EN PRODUCCIÓN** |
 | 4 | Educació — Directori de centres docents (`kvmv-ahh4`) | Equipamientos (educación) | 2026-11-15 | v40 | **Sembrado en producción: 16/16 lotes OK** — 5.428 centros del curso vigente (filtro `max(curs)`, dedup por `codi_centre`) → `GeoPoint` (EDUCACIO con niveles en props). | **ACTIVA Y VERIFICADA EN PRODUCCIÓN** |
 | 5 | DGSD — Equipaments de Catalunya (`8gmd-gz7i`) | Equipamientos (cultura, deporte) | 2026-11-15 | v40 | **Sembrado en producción: 16/16 lotes OK** — 10.901 equipamientos Cultura/Esports → `GeoPoint` (CULTURA / ESPORT). 1.025 solo Barcelona ciudad. | **ACTIVA Y VERIFICADA EN PRODUCCIÓN** |
+| 6 | Idescat — Cens 2021 «Habitatges principals per règim de tinença» (`taules/v2/censph/310/20419`) | Indicador % de alquiler (v41) | 2026-11-15 | v41 | **615 municipios + Cataluña** importados a `StatObservation` (CENS_MAIN_*, 3.080 obs; e2e local 6,9 s). Códigos MUN = `Municipality.code` (615/615 match verificado). Contraste cifras publicadas: Manresa 8.793/31.029 (28,34 %), Barcelona 208.467/671.178, Cataluña 692.285. | **ACTIVA Y VERIFICADA EN LOCAL** |
+| 7 | Incasòl via Dades Obertes — flux anual de fiances (`qww9-bvhh`, filtro `gener-desembre` + `Municipi`) | Indicador % de alquiler (v41) | 2026-11-15 | v41 | **15.297 obs municipio-año (2007-2025), 0 skipped** (fallback ineCode documentado: 255 municipios del seed sin `ineCode` → derivación desde el código censal 6 dígitos). Solo REFERENCIA de mercado; nunca numerador. | **ACTIVA Y VERIFICADA EN LOCAL** |
+| 8 | PreuReal — indicador compuesto «% estimado de alquiler sobre el parque residencial» (`PREUREAL_CALC_RENTAL_SHARE`) | Indicador % de alquiler (v41) | 2026-11-15 | v41 | 615 filas `CENS_REF_ONLY` en `RentalShareObservation` (numerador stock y denominador catastral sin fuente municipal abierta — verificado; conector `/api/admin/import-rental-share` preparado con dryRun). Piloto Manresa contrastado con fuentes originales por código independiente. | **ACTIVA (estado honesto: contraste censal)** |
+| 9 | Conectores pendientes: Incasòl fiances VIGENTES (stock) + Catastro inmuebles uso residencial | Indicador % de alquiler (v41) | — | v41 | Verificado que NO existen publicaciones municipales abiertas (catálogo Socrata: solo flujo; saldo XLSX solo Cataluña; DNP/INE inaccesibles desde el entorno). Especificación y conector listos en `docs/INDICADOR_ALQUILER_PARQUE.md` §5. | **PREPARADO — esperando fuente** |
+
+## Infraestructura añadida en v41 (indicador % de alquiler)
+
+| Componente | Archivos | Notas |
+|---|---|---|
+| Tabla `RentalShareObservation` | migración `20261115140000_rental_share` (aditiva) | Histórico del cálculo con `referenceKey`, validaciones, `dataStatus`, `warnings`, `methodologyVersion`; clave única (municipalityCode, referenceKey) |
+| Componentes en `StatObservation` (tabla existente) | `src/lib/rental-share.ts` | 5 `DataSource` nuevos (cens, flux, vigentes-pendiente, parc-pendiente, calc derivado) |
+| Parsers puros + calculadora con validaciones | `src/lib/rental-share-parse.ts` | Fixtures reales en `tests/fixtures/rental-share/` |
+| Importadores idempotentes + recálculo set-based | `src/lib/rental-share.ts` | Ventana de sustitución por variable; recálculo 947 municipios |
+| API pública + ranking | `_impl/rental-share`, `_impl/rental-share/ranking` (dispatcher regenerado: 89 rutas) | Rate limit, cache 1 h + SWR |
+| Cron mensual `/api/cron/rental-share` (día 5, 20:00 UTC) | `_impl/cron/rental-share`, `vercel.json` | Cens + flux + recálculo; presupuesto 40 s |
+| Conector admin `POST /api/admin/import-rental-share` | `_impl/admin/import-rental-share` | dryRun, validación estricta, ImportRun + AuditLog |
+| UI: sección ficha SSR + panel mapa + comparador + metodología | `lloguer/[slug]/page.tsx`, `RentalSharePanel.tsx`, `ComparadorView.tsx`, `MetodologiaView.tsx` | Ca/es; degradación honesta; flujo siempre etiquetado |
+| Tests | `tests/rental_share.test.ts` (26) | Suite bloqueante CI: 89 → **115 tests** (los 7 fallos locales son preexistentes de `main`, entorno sandbox sin CI) |
 
 ## Infraestructura añadida en v40 (habilita el resto de fases)
 

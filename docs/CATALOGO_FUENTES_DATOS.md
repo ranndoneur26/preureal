@@ -280,3 +280,17 @@ Verificación directa (metadata API SODA + pruebas de consulta real contra los d
 | 15 | Instalaciones industriales Cataluña | Sin dataset IPPC en el portal; alternativa verificada: **EU-ETS** `hefh-b8uy` (emisiones GEH por instalación) | Fase C |
 | 16 | XVPCA | Estaciones y contaminantes en el propio dataset (`tasf-thgu` con latitud/longitud por fila; SO2, NO2, NOX, O3, PM10, PM2.5, CO…) | Fase B sin dataset de metadatos adicional |
 | 17 | Licencia Generalitat | **Llicència oberta d'ús d'informació — Catalunya** (web.gencat.cat/llicencies): citar organismo + fecha, no alterar el sentido | Marco de atribución de todos los datasets Socrata |
+
+---
+
+## Anexo v41 (2026-11-15) — fuentes del indicador «% estimado de alquiler sobre el parque residencial»
+
+Verificación de la misma jornada del encargo; detalle completo en `INDICADOR_ALQUILER_PARQUE.md`.
+
+| # | Fuente | Dato y cobertura | Licencia / condiciones | Clase |
+|---|---|---|---|---|
+| 18 | Idescat API Taules v2 `censph/310/20419/mun/data` (JSON-stat) | **VERIFICADO EN VIVO**: «Habitatges principals. Per règim de tinença» (Cens 2021): 615 municipios + Cataluña; MUN = código censal 6 dígitos (615/615 match con `Municipality.code`); valores redondeados a múltiplos de 3 (nota oficial de secreto estadístico) | Llicència Oberta d'Ús d'Informació — Catalunya (IDESCAT) | **A** |
+| 19 | Incasòl via Dades Obertes `qww9-bvhh` («Preu mitjà del lloguer d'habitatges per municipi») | **VERIFICADO EN VIVO**: `habitatges` = **FLUJO** (contractes d'alta al Registre en el període), municipal, 2007-2026, trimestral/cumulatius; PreuReal importa solo `gener-desembre` anual. NUNCA sustituye al stock de fiances vigentes | Termes d'ús Generalitat (SODA «See Terms of Use») | **A** (como referencia de mercado) |
+| 20 | Incasòl — fiances **VIGENTES** (stock) por municipio | **NOT VERIFIED / NO EXISTE publicación municipal abierta** (búsquedas `fiances`, `fianza`, `fiances vigents` en el catálogo: 0 resultados de stock; el saldo neto `Saldo_contractes_Htge_i_Temp.xlsx` de habitatge.gencat.cat es solo Cataluña) | Pendiente (publicación oficial o convenio) | **D** (conector admin preparado) |
+| 21 | Catastro/DNP — inmuebles de uso residencial por municipio | **NOT VERIFIED desde el entorno** (INE: 166 operaciones sin estadística catastral; catastro.meh.es / minhap / minhafp sin DNS; ovc «ya no disponible») | Pendiente de verificación de descarga | **D** (conector admin preparado) |
+| 22 | PreuReal — indicador compuesto `PREUREAL_CALC_RENTAL_SHARE` | Derivado: elaboración propia con validaciones (13 reglas), estado y avisos por fila; visible en `/api/provenance` | — (elaboración propia sobre componentes oficiales) | derivado |

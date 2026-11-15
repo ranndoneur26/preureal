@@ -556,3 +556,49 @@ model BuildingAssociation {
   @@unique([buildingId, category, refKey])
   @@index([buildingId, category])
 }
+
+// ─── v41 — Indicador «% estimat d'alquiler sobre el parc residencial» ────────
+// Històric de l'indicador compost per municipi. Els COMPONENTS viuen a
+// StatObservation (fiances vigents INCASÒL, parc residencial Catastro, cens
+// INE 2021 via Idescat, flux de fiances) i el CÀLCUL queda traçat aquí:
+// cada fila guarda els valors dels components, el període oficial de
+// cadascun, la versió metodològica, l'estat de validació i els avisos.
+//
+// Regles fonamentals (mai s'inventen dades):
+//  - rentalPercentage només es calcula amb numerador VIGENTES (stock de
+//    fiances) + denominador catastral complets, validats i del mateix municipi.
+//  - El FLUX de contractes anual (INCASOL_CONTRACTES_PERIODE) es guarda com a
+//    referència de mercat (incasolDepositsPeriod) i MAI com a numerador.
+//  - Una publicació nova crea una fila nova (referenceKey), l'historial no
+//    es sobreescriu; reimportar la mateixa publicació és idempotent (upsert).
+// Migració ADDITIVA: cap taula existent no es toca.
+model RentalShareObservation {
+  id                     String   @id @default(cuid())
+  municipalityCode       String // enllaç LÒGIC amb Municipality.code (6 dígits)
+  municipalityName       String? // nom oficial, denormalitzat per a la UI (unió per codi, mai per nom)
+  referenceKey           String // "C2021" (només cens) | "N:<període>|D:<any>" (compost)
+  numeratorKind          String? // VIGENTES quan hi ha càlcul del %
+  incasolActiveDeposits  Int? // numerador: fiances vigents (stock)
+  incasolDepositsPeriod  Int? // referència: contractes amb fiança del període (FLUX, mai numerador)
+  incasolPeriod          String? // període oficial del numerador ("2025", "2026-T1"...)
+  residentialProperties  Int? // denominador: inmuebles d'ús residencial (Catastro)
+  cadastreYear           String? // any de referència del denominador
+  rentalPercentage       Float? // (vigents / parc) × 100 — només amb components complets i validats
+  censusMainRental       Int? // Cens 2021: viviendas principales en alquiler
+  censusMainTotal        Int? // Cens 2021: viviendas principals total
+  censusRentalPercentage Float? // Cens: % sobre viviendas principals (referència censal oficial)
+  censusYear             String? // "2021"
+  incasolSource          String? // font del numerador (nom de la publicació oficial)
+  cadastreSource         String? // font del denominador
+  censusSource           String? // font del bloc censal
+  methodologyVersion     String   @default("1.0")
+  dataStatus             String // OK | TIMING_MISMATCH | REVIEW_OVER_100 | NEGATIVE_INPUT | MISMATCH_MUNI | NO_NUMERATOR | NO_DENOMINATOR | CENS_REF_ONLY | NO_DATA
+  warnings               String? // JSON [] amb els avisos de validació
+  runId                  String? // ImportRun.id que va calcular la fila
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@unique([municipalityCode, referenceKey])
+  @@index([municipalityCode])
+  @@index([dataStatus])
+}

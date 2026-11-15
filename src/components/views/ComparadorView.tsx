@@ -62,6 +62,15 @@ interface ComparatorResult {
     estrangeraPct: number | null;
     densitat: number | null;
   } | null;
+  // v41 — % estimat d'alquiler sobre el parc residencial (públic, sense gating)
+  rentalShare?: {
+    censusPct: number | null;
+    censusYear: string | null;
+    estimatPct: number | null;
+    dataStatus: string | null;
+    flujoLatest: number | null;
+    flujoYear: string | null;
+  } | null;
 }
 
 /**
@@ -482,6 +491,21 @@ export default function ComparadorView() {
                         {r.demografia.densitat != null && (
                           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
                             {r.demografia.densitat >= 1000 ? Math.round(r.demografia.densitat).toLocaleString(ca ? "ca-ES" : "es-ES") : r.demografia.densitat.toFixed(1).replace(".", ",")} hab/km²
+                          </span>
+                        )}
+                        {r.rentalShare?.censusPct != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
+                            {ca ? "alquiler (cens " : "alquiler (censo "}{r.rentalShare.censusYear ?? "2021"}) {r.rentalShare.censusPct.toFixed(1).replace(".", ",")} %
+                          </span>
+                        )}
+                        {r.rentalShare?.estimatPct != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-embersoft text-ember3">
+                            {ca ? "% estimat sobre parc residencial" : "% estimado sobre parque residencial"} {r.rentalShare.estimatPct.toFixed(1).replace(".", ",")} %
+                          </span>
+                        )}
+                        {r.rentalShare?.flujoLatest != null && (
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-sand text-stone">
+                            {ca ? "fiances (flux " : "fianzas (flujo "}{r.rentalShare.flujoYear ?? "—"}) {r.rentalShare.flujoLatest.toLocaleString(ca ? "ca-ES" : "es-ES")}
                           </span>
                         )}
                       </div>

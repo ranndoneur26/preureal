@@ -2,6 +2,63 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v41 — Indicador «% estimat d'alquiler sobre el parc residencial» — 2026-11-15
+
+Encàrrec específic: incorporar el porcentaje de viviendas en alquiler sobre el parque
+residencial (numerador: fiances VIGENTES Incasòl; denominador: parque residencial
+catastral; contraste censal INE 2021 via Idescat). Diseño completo y limitaciones:
+`docs/INDICADOR_ALQUILER_PARQUE.md`. Migración aditiva: 0 taules existents tocats.
+
+### Verificación de fuentes (HTTP real, 2026-11-15)
+- **Numerador (fiances vigentes, stock)**: NO existe publicació municipal oberta
+  (el dataset municipal `qww9-bvhh` és FLUX per definició oficial; el saldo net és
+  XLSX només Catalunya). Per l'encàrrec, el flux NO substitueix el stock → conector
+  administratiu preparat + fonts registrades com a pendents (mai inventades).
+- **Denominador (parc catastral)**: DNP/INE inaccessibles des de l'entorn de treball
+  → conector preparat, descàrrega pendent de verificació.
+- **Contraste censal VERIFICAT**: Idescat Taules v2 `censph/310/20419` (Cens 2021,
+  viviendas principals per règim de tinença): 615 municipis + Catalunya, códigos MUN
+  idénticos a `Municipality.code` (615/615 match). Contraste con cifras publicadas OK
+  (Manresa 8.793/31.029; Barcelona 208.467/671.178; Cataluña 692.285).
+- **Flujo anual VERIFICAT**: SODA `qww9-bvhh` (periode `gener-desembre`, nivell
+  municipi) → 15.297 obs 2007-2025 amb 0 skipped (fallback `ineCode` documentat:
+  255 municipis del seed sense `ineCode`; el codi censal 6 dígits sempre comença
+  pel codi INE de 5).
+
+### Modelo de datos y lógica
+- **Migración `20261115140000_rental_share` (aditiva)**: tabla `RentalShareObservation`
+  — histórico del cálculo con `referenceKey` (`C:2021` | `N:período|D:año`),
+  componentes, fuentes, `methodologyVersion`, `dataStatus` (9 estados), `warnings`
+  JSON y `runId`; clave única `(municipalityCode, referenceKey)`; una publicación
+  nueva crea fila nueva (histórico nunca sobrescrito).
+- **Componentes en `StatObservation`** (tabla general existente, encargo §4) con 5
+  `DataSource` nuevos (cens censal, flux trimestral, vigents PENDIENTE, parc
+  PENDIENTE, calc derivado) — visibles en `/api/provenance`.
+- **Calculadora `computeRentalShare`** (pura): 13 validaciones obligatorias del
+  encargo §5 — sin cálculo si falta componente, denominador 0, negativos o
+  municipios distintos; % > 100 → revisión sin publicación; desfase temporal →
+  `TIMING_MISMATCH` visible; componentes ausentes nunca se sustituyen por ceros.
+- **Conector admin `POST /api/admin/import-rental-share`** (dryRun + validación
+  estricta + ImportRun + AuditLog) para alimentar numerador/denominador cuando
+  existan datos oficiales.
+
+### API, automatización y UI
+- **API pública** `GET /api/rental-share?muni=:code` (detalle + historial + serie
+  de flujo + metodología, cache 1 h) y `GET /api/rental-share/ranking`
+  (ordenación censal/estimada para identificar los municipios con más peso del
+  alquiler). Dispatcher regenerado: 89 rutas.
+- **Cron mensual** `/api/cron/rental-share` (día 5, 20:00 UTC, presupuesto 40 s):
+  cens + flux + recálculo de los 947 municipios, idempotente.
+- **UI (ca/es)**: sección SSR «Parc d'habitatges i mercat del lloguer» en la ficha
+  `/lloguer/[slug]` (bloque estimado o «sense informació suficient» + referencia
+  censal oficial con Cataluña + tabla de flujo etiquetada + fuentes), panel cliente
+  `RentalSharePanel` en el mapa, chips en el comparador (cens/estimat/flux) y
+  apartado de metodología en `#/metodologia` con el texto del encargo.
+- **Tests**: `tests/rental_share.test.ts` (26 tests con fixtures reales) añadidos a
+  la suite bloqueante de CI (89 → 115). E2E local completo (migración + seed 947 +
+  ingesta viva + recálculo + consultas: 6,9 s) y piloto Manresa con código
+  independiente contrastando las fuentes originales en vivo.
+
 ## v40 — Bloc «Serveis i qualitat de l'entorn» (Fase A, 1a integració) — 2026-11-15
 
 Encàrrec: «auditoría, integración y ampliación de datos públicos». Fase 1-2 (auditoria
