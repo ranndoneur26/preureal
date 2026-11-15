@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, CheckCircle2, CircleDashed, CircleSlash, Printer,
+  AlertTriangle, CheckCircle2, CircleDashed, CircleSlash, Info, Printer,
   ArrowRight, FileText, Loader2, MapPin,
 } from "lucide-react";
 import { useApp } from "@/components/app-context";
@@ -107,6 +107,7 @@ export default function AnalitzaReport({
     s === "OK" ? <CheckCircle2 className="w-4 h-4 text-pine shrink-0" />
     : s === "PENDING" ? <CircleDashed className="w-4 h-4 text-ember3 shrink-0" />
     : s === "ALERT" ? <AlertTriangle className="w-4 h-4 text-ember3 shrink-0" />
+    : s === "INFO" ? <Info className="w-4 h-4 text-pine shrink-0" />
     : <CircleSlash className="w-4 h-4 text-stone shrink-0" />;
   const stateText = (s: string) => (STATE_LABELS[s]?.[locale as Locale2] ?? s);
   const normLabel = (c: { id: string; detail: string }) => NORM_CHECK_LABELS[`${c.id}|${c.detail}`]?.[locale as Locale2] ?? c.detail;
@@ -292,7 +293,7 @@ export default function AnalitzaReport({
             <li key={c.id} className="flex items-start gap-2.5 text-sm leading-relaxed">
               {stateIcon(c.state)}
               <span>
-                <span className={`font-bold ${c.state === "ALERT" ? "text-ember3" : c.state === "OK" ? "text-pine" : c.state === "PENDING" ? "text-ember3" : "text-stone"}`}>
+                <span className={`font-bold ${c.state === "ALERT" ? "text-ember3" : c.state === "OK" || c.state === "INFO" ? "text-pine" : c.state === "PENDING" ? "text-ember3" : "text-stone"}`}>
                   {stateText(c.state)}
                 </span>{" "}
                 — {normLabel(c)}

@@ -158,6 +158,7 @@ export const STATE_LABELS: Record<string, { ca: string; es: string }> = {
   OK: { ca: "Compatible amb les dades consultades", es: "Compatible con los datos consultados" },
   PENDING: { ca: "Requereix comprovacions addicionals", es: "Requiere comprobaciones adicionales" },
   ALERT: { ca: "Possible incompliment: revisar", es: "Posible incumplimiento: revisar" },
+  INFO: { ca: "Informació aplicable", es: "Información aplicable" },
   NA: { ca: "No aplica", es: "No aplica" },
 };
 
@@ -291,7 +292,7 @@ export function buildReportHtml(
       const label = NORM_CHECK_LABELS[`${c.id}|${c.detail}`];
       const detail = label ? L(label) : esc(c.detail);
       const st = L(STATE_LABELS[c.state] ?? STATE_LABELS.PENDING);
-      const cls = c.state === "OK" ? "ok" : c.state === "PENDING" ? "pending" : c.state === "ALERT" ? "alert" : "na";
+      const cls = c.state === "OK" ? "ok" : c.state === "PENDING" ? "pending" : c.state === "ALERT" ? "alert" : c.state === "INFO" ? "ok" : "na";
       return `<tr><td><span class="${cls}">${esc(st)}</span></td><td>${detail}</td></tr>`;
     })
     .join("");

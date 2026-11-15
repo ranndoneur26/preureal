@@ -248,10 +248,10 @@ const reportFixture: AnalitzaReportData = {
     tense: true,
     appliesRentLimits: true,
     checks: [
-      { id: "ZONA_TENSADA", state: "ALERT", detail: "MUNI_TENSAT" },
+      { id: "ZONA_TENSADA", state: "INFO", detail: "MUNI_TENSAT" },
       { id: "LIMIT_RENTA_ART172", state: "OK", detail: "NO_SUPERIOR_ANTERIOR" },
       { id: "GRAN_TENEDOR_SERPAVI", state: "PENDING", detail: "CONSULTA_SERPAVI" },
-      { id: "ACTUALITZACIO_IRAV", state: "OK", detail: "IRAV_VIGENT" },
+      { id: "ACTUALITZACIO_IRAV", state: "INFO", detail: "IRAV_VIGENT" },
     ],
     consultedAt: "2026-11-15",
     tenseList: "A",
@@ -274,8 +274,7 @@ describe("analitza — informe HTML descargable", () => {
     expect(html).toContain("Anàlisi del teu futur lloguer");
     expect(html).toContain("Manresa");
     expect(html).toContain("Fiança mitjana municipal registrada");
-    expect(html).toContain("Possible incompliment"); // estat ALERT de zona tensada
-    expect(html).toContain("Compatible amb les dades consultades");
+    expect(html).toContain("Informació aplicable"); // estat INFO de zona tensada
     expect(html).toContain("Resolució TER/3739/2026");
     expect(html).toContain("incasol.gencat.cat");
     expect(html).toContain("SÍ"); // checklist col·lumn
@@ -284,7 +283,8 @@ describe("analitza — informe HTML descargable", () => {
   test("bilingüe: versió castellà coherent", () => {
     const html = buildReportHtml(reportFixture, null, "es");
     expect(html).toContain("Análisis de tu futuro alquiler");
-    expect(html).toContain("Posible incumplimiento");
+    expect(html).toContain("Información aplicable"); // estat INFO de zona tensada
+    expect(html).toContain("Requiere comprobaciones adicionales"); // estat PENDING SERPAVI
     expect(html).toContain("Servicios de entorno no consultados");
   });
 

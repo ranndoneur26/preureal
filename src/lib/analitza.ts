@@ -130,7 +130,7 @@ export function buildPriceCheck(input: PriceCheckInput): PriceCheckResult {
 
 // ── B. Comprovació normativa ─────────────────────────────────────────────────
 
-export type NormState = "OK" | "PENDING" | "ALERT" | "NA";
+export type NormState = "OK" | "PENDING" | "ALERT" | "INFO" | "NA";
 
 /** Fets normatius vigents, amb font i data — revisar quan canviïn les normes. */
 export const NORM_FACTS = {
@@ -203,7 +203,7 @@ export function buildNormative(
   // 1) zona tensada (data de la BD: resolucions vigents)
   checks.push({
     id: "ZONA_TENSADA",
-    state: tense ? "ALERT" : "OK",
+    state: "INFO", // informatiu: ser-hi o no ser-hi en zona tensada no és un incompliment
     detail: tense
       ? "MUNI_TENSAT"
       : "MUNI_NO_TENSAT",
@@ -237,7 +237,7 @@ export function buildNormative(
   });
 
   // 4) actualització anual (IRAV) — sempre informatiu
-  checks.push({ id: "ACTUALITZACIO_IRAV", state: "OK", detail: "IRAV_VIGENT" });
+  checks.push({ id: "ACTUALITZACIO_IRAV", state: "INFO", detail: "IRAV_VIGENT" });
 
   return {
     tense,
