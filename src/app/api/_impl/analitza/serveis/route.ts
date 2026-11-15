@@ -18,7 +18,17 @@ import { buildOverpassQuery, parseOverpassElements, type Poi, type PoiCategory }
  * la UI les marca sempre com a aproximades.
  */
 
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+/**
+ * Instàncies Overpass públiques i gratuïtes — s'intenten en ordre (la
+ * principal sovint està saturada; els miralls són oficials de la comunitat).
+ * Si totes fallen → ok:false sense cap dada inventada.
+ */
+const OVERPASS_ENDPOINTS = [
+  "https://overpass-api.de/api/interpreter",
+  "https://overpass.kumi.systems/api/interpreter",
+  "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
+];
+const OVERPASS_TIMEOUT_MS = 15000;
 const CACHE_MS = 6 * 3600_000;
 const MAX_CACHE = 500;
 
@@ -58,40 +68,45 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, cached: true, point: { lat, lng }, items: trimByCategory(hit.pois) });
   }
 
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 20000);
-  try {
-    const res = await fetch(OVERPASS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Preureal/1.0 (serveis propers; dades OpenStreetMap)",
-      },
-      body: `data=${encodeURIComponent(buildOverpassQuery(lat, lng))}`,
-      signal: ctrl.signal,
-      cache: "no-store",
-    });
-    if (!res.ok) throw new Error(`overpass ${res.status}`);
-    const data = (await res.json()) as { elements?: Array<Record<string, unknown>> };
-    const pois = parseOverpassElements(data.elements, lat, lng);
-    if (cache.size > MAX_CACHE) cache.clear();
-    cache.set(key, { at: Date.now(), pois });
-    return NextResponse.json({
-      ok: true,
-      cached: false,
-      point: { lat, lng },
-      items: trimByCategory(pois),
-      source: "OpenStreetMap (Overpass API) — dades ODbL © OpenStreetMap contributors",
-      distancesNote: "Distàncies en línia recta (a vol d'ocell): aproximades, no temps de trajecte.",
-    });
-  } catch {
-    return NextResponse.json(
-      { ok: false, reason: "SERVEIS_NO_DISPONIBLES", message: "El servei de dades d'entorn (OpenStreetMap/Overpass) no ha respòs; reintenta en uns minuts. No es fabriquen serveis ni distàncies." },
-      { status: 502 },
-    );
-  } finally {
-    clearTimeout(t);
+  let lastErr: unknown = null;
+  for (const url of OVERPASS_ENDPOINTS) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), OVERPASS_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": "Preureal/1.0 (serveis propers; dades OpenStreetMap)",
+        },
+        body: `data=${encodeURIComponent(buildOverpassQuery(lat, lng))}`,
+        signal: ctrl.signal,
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`overpass ${url} → ${res.status}`);
+      const data = (await res.json()) as { elements?: Array<Record<string, unknown>> };
+      const pois = parseOverpassElements(data.elements, lat, lng);
+      if (cache.size > MAX_CACHE) cache.clear();
+      cache.set(key, { at: Date.now(), pois });
+      return NextResponse.json({
+        ok: true,
+        cached: false,
+        point: { lat, lng },
+        items: trimByCategory(pois),
+        source: "OpenStreetMap (Overpass API) — dades ODbL © OpenStreetMap contributors",
+        distancesNote: "Distàncies en línia recta (a vol d'ocell): aproximades, no temps de trajecte.",
+      });
+    } catch (e) {
+      lastErr = e; // prova el mirall següent
+    } finally {
+      clearTimeout(t);
+    }
   }
+  void lastErr;
+  return NextResponse.json(
+    { ok: false, reason: "SERVEIS_NO_DISPONIBLES", message: "El servei de dades d'entorn (OpenStreetMap/Overpass) no ha respòs en aquest moment; reintenta en uns minuts. No es fabriquen serveis ni distàncies." },
+    { status: 502 },
+  );
 }
 
 /** Retalla per categoria: els N més propers de cadascuna (resposta lleugera). */
