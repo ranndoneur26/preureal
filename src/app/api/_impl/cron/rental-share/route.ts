@@ -9,7 +9,7 @@ export const maxDuration = 60;
 
 /**
  * GET /api/cron/rental-share — v41: actualització programada (mensual) de
- * l'indicador «% estimat d'alquiler sobre el parc residencial».
+ * l'indicador «% estimat de lloguer sobre el parc residencial».
  * Tres passos idempotents en seqüència amb guarda de pressupost (40s, mateixa
  * convenció que els crons demografia/entorn):
  *  1. CENS      — reimporta la taula censal Idescat (refinestrament idempotent)

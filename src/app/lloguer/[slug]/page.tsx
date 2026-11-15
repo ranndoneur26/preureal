@@ -68,7 +68,7 @@ export default async function MunicipiPage({ params }: Props) {
   const m = await getMuni(slug);
   if (!m) notFound();
 
-  // v41 — indicador «% estimat d'alquiler sobre el parc residencial» + cens + flux
+  // v41 — indicador «% estimat de lloguer sobre el parc residencial» + cens + flux
   const rs = await getRentalShareDetail(m.code).catch(() => null);
   const fmtInt = (n: number) => n.toLocaleString("ca-ES", { maximumFractionDigits: 0 });
   const fmtPct = (n: number) => n.toLocaleString("ca-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -213,24 +213,24 @@ export default async function MunicipiPage({ params }: Props) {
         <section className="mt-6 bg-card rounded-2xl border border-line p-6" id="parc-lloguer">
           <h2 className="font-bold text-pine text-lg">Parc d&apos;habitatges i mercat del lloguer</h2>
 
-          {/* Bloc 1 — % estimat d'alquiler sobre el parc residencial (compost) */}
+          {/* Bloc 1 — % estimat de lloguer sobre el parc residencial (compost) */}
           {rs?.current?.rentalPercentage != null ? (
             <div className="mt-4 rounded-xl border border-sand bg-sand/50 p-4">
               <div className="text-[10px] font-semibold text-stone uppercase tracking-wide">
-                % estimat d&apos;alquiler sobre el parc residencial
+                % estimat de lloguer sobre el parc residencial
               </div>
               <div className="text-3xl font-black text-ember leading-tight">
                 {fmtPct(rs.current.rentalPercentage)}%
               </div>
               <div className="mt-1 text-xs text-moss">
-                Fiances vigentes: <b className="text-pine">{rs.current.incasolActiveDeposits != null ? fmtInt(rs.current.incasolActiveDeposits) : "—"}</b>
+                Fiances vigents: <b className="text-pine">{rs.current.incasolActiveDeposits != null ? fmtInt(rs.current.incasolActiveDeposits) : "—"}</b>
                 {" "}· Parc residencial: <b className="text-pine">{rs.current.residentialProperties != null ? fmtInt(rs.current.residentialProperties) : "—"}</b>
                 {rs.current.incasolPeriod ? ` · Numerador: ${rs.current.incasolPeriod}` : ""}
                 {rs.current.cadastreYear ? ` · Denominador: ${rs.current.cadastreYear}` : ""}
               </div>
               {rs.current.dataStatus === "TIMING_MISMATCH" && (
                 <div className="mt-2 text-[11px] text-ember3">
-                  Desfase temporal entre fonts: valor indicatiu, no definitiu.
+                  Desfasament temporal entre fonts: valor indicatiu, no definitiu.
                 </div>
               )}
               {rs.current.warnings.length > 0 && (
@@ -244,14 +244,14 @@ export default async function MunicipiPage({ params }: Props) {
           ) : (
             <div className="mt-4 rounded-xl border border-sand bg-sand/50 p-4 text-xs text-moss leading-relaxed">
               <div className="text-[10px] font-semibold text-stone uppercase tracking-wide mb-1">
-                % estimat d&apos;alquiler sobre el parc residencial
+                % estimat de lloguer sobre el parc residencial
               </div>
               <b className="text-pine">Sense informació suficient</b> per calcular-lo a {m.name}: el numerador
-              (fiances <b>vigentes</b> del Registre de fiances d&apos;Incasòl) i el denominador (inmuebles
-              d&apos;ús residencial del Catastro) no tenen publicació oficial municipal oberta (verificat el
+              (fiances <b>vigents</b> del Registre de fiances d&apos;Incasòl) i el denominador (immobles
+              d&apos;ús residencial del Cadastre) no tenen publicació oficial municipal oberta (verificat el
               15/11/2026). Quan la font oficial publiqui les dades, l&apos;indicador s&apos;actualitzarà
               automàticament — mai s&apos;inventen valors ni es substitueix el stock pel flux anual de
-              contractes. Fórmula: (fiances vigentes / parc residencial) × 100.
+              contractes. Fórmula: (fiances vigents / parc residencial) × 100.
             </div>
           )}
 
@@ -263,7 +263,7 @@ export default async function MunicipiPage({ params }: Props) {
               </div>
               <div className="mt-0.5 text-sm text-moss">
                 <b className="text-pine">{fmtPct(rs.current.censusRentalPercentage)}%</b> de les{" "}
-                <b className="text-pine">viviendas principales</b> estan en alquiler
+                <b className="text-pine">vivendes principals</b> estan en lloguer
                 {rs.current.censusMainRental != null && rs.current.censusMainTotal != null
                   ? ` (${fmtInt(rs.current.censusMainRental)} de ${fmtInt(rs.current.censusMainTotal)})`
                   : ""}
@@ -300,15 +300,15 @@ export default async function MunicipiPage({ params }: Props) {
               </table>
               <p className="mt-2 text-[11px] text-stone leading-relaxed">
                 És el <b>flux anual</b> d&apos;operacions registrades al Registre de fiances d&apos;Incasòl
-                (altes de l&apos;any): mesura l&apos;activitat del mercat, no el nombre de vivendes alquilades
-                ni el stock de fiances vigentes.
+                (altes de l&apos;any): mesura l&apos;activitat del mercat, no el nombre de vivendes llogades
+                ni l'estoc de fiances vigents.
               </p>
             </div>
           )}
 
           <p className="mt-4 text-[11px] text-stone leading-relaxed">
             Fonts: Incasòl (Registre de fiances, via Dades Obertes), Idescat (Cens de població i habitatges 2021),
-            Catastro (pendent de publicació municipal verificada). Percentatges: elaboració pròpia a partir de
+            Cadastre (pendent de publicació municipal verificada). Percentatges: elaboració pròpia a partir de
             components oficials. {" "}
             <Link href="/metodologia" className="underline">Metodologia i limitacions</Link>.
           </p>

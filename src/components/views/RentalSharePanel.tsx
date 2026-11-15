@@ -92,11 +92,11 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
           {c?.rentalPercentage != null ? (
             <div className="rounded-lg bg-sand/60 px-3 py-2">
               <div className="text-[10px] font-semibold text-stone uppercase tracking-wide">
-                {ca ? "% estimat d'alquiler sobre el parc residencial" : "% estimado de alquiler sobre el parque residencial"}
+                {ca ? "% estimat de lloguer sobre el parc residencial" : "% estimado de alquiler sobre el parque residencial"}
               </div>
               <div className="text-2xl font-black text-ember3 leading-tight">{fmtPct(c.rentalPercentage)}%</div>
               <div className="text-[10px] text-stone">
-                {ca ? "Fiances vigentes" : "Fianzas vigentes"}: {c.incasolActiveDeposits != null ? fmt0(c.incasolActiveDeposits) : "—"}
+                {ca ? "Fiances vigents" : "Fianzas vigentes"}: {c.incasolActiveDeposits != null ? fmt0(c.incasolActiveDeposits) : "—"}
                 {" · "}
                 {ca ? "Parc residencial" : "Parque residencial"}: {c.residentialProperties != null ? fmt0(c.residentialProperties) : "—"}
                 {c.incasolPeriod ? ` · ${c.incasolPeriod}` : ""}
@@ -104,15 +104,15 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
               </div>
               {c.dataStatus === "TIMING_MISMATCH" && (
                 <div className="mt-1 text-[10px] text-ember3">
-                  {ca ? "Desfase temporal entre fonts: valor indicatiu." : "Desfase temporal entre fuentes: valor indicativo."}
+                  {ca ? "Desfasament temporal entre fonts: valor indicatiu." : "Desfase temporal entre fuentes: valor indicativo."}
                 </div>
               )}
             </div>
           ) : (
             <div className="rounded-lg bg-sand/60 px-3 py-2 text-[11px] text-moss leading-relaxed">
-              <b className="text-pine">{ca ? "% estimat d'alquiler sobre el parc residencial — sense informació suficient" : "% estimado de alquiler sobre el parque residencial — sin información suficiente"}.</b>{" "}
+              <b className="text-pine">{ca ? "% estimat de lloguer sobre el parc residencial — sense informació suficient" : "% estimado de alquiler sobre el parque residencial — sin información suficiente"}.</b>{" "}
               {ca
-                ? "El numerador (fiances vigentes Incasòl) i el denominador (parc residencial catastral) no tenen publicació oficial municipal oberta encara. Mai s'inventen valors."
+                ? "El numerador (fiances vigents Incasòl) i el denominador (parc residencial catastral) no tenen publicació oficial municipal oberta encara. Mai s'inventen valors."
                 : "El numerador (fianzas vigentes Incasòl) y el denominador (parque residencial catastral) no tienen todavía publicación oficial municipal abierta. Nunca se inventan valores."}
             </div>
           )}
@@ -121,7 +121,7 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
           {c?.censusRentalPercentage != null && (
             <div className="text-xs text-moss">
               <b className="text-pine">{fmtPct(c.censusRentalPercentage)}%</b>{" "}
-              {ca ? "de les viviendas principals en alquiler — Cens" : "de las viviendas principales en alquiler — Censo"}{" "}
+              {ca ? "de les vivendes principals en lloguer — Cens" : "de las viviendas principales en alquiler — Censo"}{" "}
               {c.censusYear ?? "2021"}
               {c.censusMainRental != null && c.censusMainTotal != null
                 ? `: ${fmt0(c.censusMainRental)} / ${fmt0(c.censusMainTotal)}`
@@ -143,7 +143,7 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
               </b>
               <div className="mt-1 text-[10px] text-stone leading-relaxed">
                 {ca
-                  ? "Flux anual d'altes al Registre de fiances (Incasòl): activitat del mercat, no vivendes alquilades ni stock."
+                  ? "Flux anual d'altes al Registre de fiances (Incasòl): activitat del mercat, no vivendes llogades ni estoc."
                   : "Flujo anual de altas en el Registro de fianzas (Incasòl): actividad del mercado, ni viviendas alquiladas ni stock."}
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
 
           <div className="text-[10px] text-stone leading-relaxed">
             {ca ? "Fonts" : "Fuentes"}: Incasòl (Registre de fiances, via Dades Obertes), Idescat (Cens 2021),
-            Catastro ({ca ? "pendent de publicació verificada" : "pendiente de publicación verificada"}).{" "}
+            Cadastre ({ca ? "pendent de publicació verificada" : "pendiente de publicación verificada"}).{" "}
             {ca ? "Elaboració pròpia; metodologia i limitacions a" : "Elaboración propia; metodología y limitaciones en"}{" "}
             <a href="/metodologia" className="underline">/metodologia</a>.
           </div>

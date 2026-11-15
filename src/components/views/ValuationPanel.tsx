@@ -215,7 +215,7 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
           <Lock className="w-4 h-4 text-ember3 shrink-0" />
           <p className="text-xs text-amberdark flex-1">
             {ca
-              ? "Amb Premium o Pro: horquilla de lloguer orientativa per a la teva vivenda a partir de les fiances oficials d'Incasòl i la dispersió real de la teva comarca."
+              ? "Amb Premium o Pro: franja de lloguer orientativa per al teu habitatge a partir de les fiances oficials d'Incasòl i la dispersió real de la teva comarca."
               : "Con Premium o Pro: horquilla de alquiler orientativa para tu vivienda a partir de las fianzas oficiales de Incasòl y la dispersión real de tu comarca."}
           </p>
           <button onClick={() => navigate("/preus")} className="px-3 py-1.5 rounded-lg bg-ember text-white text-[11px] font-bold shrink-0 hover:bg-ember2">
@@ -296,7 +296,7 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
             <div className="space-y-2.5">
               <div className="rounded-lg bg-cream border border-line p-3">
                 <div className="flex items-baseline justify-between gap-2">
-                  <div className="text-[11px] text-stone">{ca ? "Horquilla orientativa /mes" : "Horquilla orientativa /mes"}</div>
+                  <div className="text-[11px] text-stone">{ca ? "Franja orientativa /mes" : "Horquilla orientativa /mes"}</div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: confidenceStyle[result.confidence].bg, color: confidenceStyle[result.confidence].fg }}>
                     {ca ? "Confiança" : "Confianza"}: {result.confidence}
                   </span>
@@ -392,7 +392,7 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
               </ul>
 
               <div className="text-[10px] text-stone leading-relaxed">
-                {ca ? "Amplada de l'horquilla: " : "Anchura de la horquilla: "}
+                {ca ? "Amplada de la franja: " : "Anchura de la horquilla: "}
                 {result.bandBasis === "COMARCA"
                   ? ca ? "dispersió de la comarca" : "dispersión de la comarca"
                   : result.bandBasis === "PROVINCIA"

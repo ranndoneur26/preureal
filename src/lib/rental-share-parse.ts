@@ -251,7 +251,7 @@ export function computeRentalShare(input: RentalShareCalcInput): RentalShareCalc
         const yD = yearOf(input.cadastreYear);
         if (yN && yD && yN !== yD) {
           warnings.push(
-            `Desfase temporal: numerador ${input.incasolPeriod} vs denominador ${input.cadastreYear}. Valor indicatiu, no definitiu.`
+            `Desfasament temporal: numerador ${input.incasolPeriod} vs denominador ${input.cadastreYear}. Valor indicatiu, no definitiu.`
           );
           dataStatus = "TIMING_MISMATCH";
         } else {

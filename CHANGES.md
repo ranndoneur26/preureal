@@ -2,6 +2,61 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v43 — Auditoria: correcció lingüística (ca) + eliminació de codi mort — 2026-11-15
+
+Auditoria integral (codi mort + idioma) amb aquestes accions:
+
+**Idioma (català)** — ~45 correccions de text visible en ca (i 5 en es):
+- Castellanismes eliminats del text català: «alquiler» → «lloguer», «viviendas
+  principales» → «vivendes principals», «vigentes» → «vigents», «horquilla» →
+  «franja», «renta» → «renda», «inmuebles» → «immobles», «alquilades» →
+  «llogades», «stock» → «estoc», «Catastro» → «Cadastre» (text corrent; el nom
+  institucional «Direcció General del Catastro» es manté), «Embudo» → «Embut»,
+  «MODO PRUEBA» → «MODE DE PROVA», «suscripción de prueba» → «subscripció de
+  prova», «gastos» → «despeses», «Desfase» → «Desfasament».
+- Ortografia: «gratüits» → «gratuïts», «juridic» → «jurídic», «recursus» →
+  «recursos», «agresiva» → «agressiva», «Obrés» → «Obres», «al teu bústia» →
+  «a la teva bústia», «als illes» → «a les illes», «seperat» → «separat»,
+  «obtén» → «obté» (imperatiu normatiu), interrogant espanyola «¿» eliminada.
+- Sintaxi: «Sap si et cobra de més…» → «Descobreix si et cobren de més…» (hero
+  i OG), «en quant per cent» → «en quin percentatge» (×2), «Cliqui» (vostè) →
+  «Fes clic» (tu, coherència de registre), «mercat de boquí» → «termòmetre del
+  mercat», «(normalment segons)» → «(normalment en segons)» (×2).
+- Bug bilingüe al correu de resum de preferits: «vs any anterior» s'enviava
+  també als correus en espanyol → ara «vs año anterior» amb locale.
+- Bug de traducció a Metodologia: la clau del mapa de principis tenia el typo
+  «seperat» i no coincidia mai amb l'API → els usuaris es veien el text ca.
+- Coherència de dades: «informe PDF de 8 pàgines» → «9 pàgines» (UI, guia,
+  onboarding; el PDF real en té 9).
+
+**Codi mort eliminat** (verificat amb cerca exhaustiva de referències):
+- `src/lib/observability.ts` (123 línies, 0 usos), exports mai cridats
+  `catastroConfigured`, `jsonStatSources`, `ENTORNT_SOURCES`, `IDESCAT_SOURCES`,
+  `IdescatScope`.
+- 18 claus i18n mortes (ca+es): hero.ctaSecondary, plans.stripeOff,
+  plans.informes.loginCta/errValidation, map.noDataMun/yearUnavailable/
+  tenseBadge/notTense/estimate/surfaces/compareBtn/refComarcaOf/
+  legendRefComarca, legal.completar, common.save/cancel/close/ok.
+- Model Prisma `GeoPolygon` (taula creada i mai llegida/escrita) + migració
+  `20261115153000_drop_geo_polygon` (DROP TABLE IF EXISTS).
+- devDep `@types/bcryptjs` (stub deprecated; bcryptjs 3 porta tipus propis).
+- Arrel: `Caddyfile`, `components.json` (shadcn sense components ui/),
+  `public/logo.svg` (0 referències), artefactes del pla de negoci a `data/`
+  (plan_cover, plan_cuerpo, charts, adrh_table_ids).
+- `scripts/archive/` sencer (54 fitxers, 864 KB) llevat de
+  `migrate_sqlite_to_pg.py`, mogut a `scripts/` (el citen DEPLOY.md i
+  docker-compose). Scripts one-off de fases acabades: fase2_/fase3_/fase4/
+  fase5_*, audit_*, test_auth_fase1, db_check.local, empaquetat ZIP v24
+  (make_zip/smoke/upload), fetch_superficie_seed, test_demografia_local,
+  test_site_url, dev_keepalive, scripts/propuesta/.
+- Docs històrics superats moguts a `docs/archive/` (AUDIT, AUDITORIA_FASE1,
+  COM_APPLICAR_*, INFORME_*, PROJECT_CONTEXT) i `docs/ci-workflow.yml`
+  (còpia desactualitzada del CI) eliminat. Referències actualitzades a
+  README, TASKS i docker-compose.
+
+Validació: tsc net, 127 tests bloquejants en verd, check_repo OK,
+dispatcher sense drift.
+
 ## v41.1 — Fix del cron rental-share: recàlcul per lots + maxDuration al dispatcher — 2026-11-15
 
 Síntoma en producció: la primera execució de `/api/cron/rental-share` (sembrat inicial

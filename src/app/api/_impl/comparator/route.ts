@@ -166,7 +166,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // v41 — «% estimat d'alquiler sobre el parc residencial» (PÚBLIC, sense
+  // v41 — «% estimat de lloguer sobre el parc residencial» (PÚBLIC, sense
   // gating: referència censal oficial Cens 2021 + flux de fiances Incasòl).
   // El % estimat compost només s'adjunta quan existeix (mai inventat).
   if (munCodes.length > 0) {

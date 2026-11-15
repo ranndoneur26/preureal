@@ -138,7 +138,7 @@ export default function EstatView() {
             <div>
               <div className="font-bold text-mossdeep">{ca ? "Tots els sistemes operatius" : "Todos los sistemas operativos"}</div>
               <p className="text-sm text-mossdeep/80 mt-0.5">
-                {checkedAt && (ca ? `Última comprovació: ${checkedAt.toLocaleTimeString("ca-ES")} · auto-refresc cada minut` : `Última comprobación: ${checkedAt.toLocaleTimeString("es-ES")} · autorrefresco cada minuto`)}
+                {checkedAt && (ca ? `Última comprovació: ${checkedAt.toLocaleTimeString("ca-ES")} · refresc automàtic cada minut` : `Última comprobación: ${checkedAt.toLocaleTimeString("es-ES")} · autorrefresco cada minuto`)}
               </p>
             </div>
           </>

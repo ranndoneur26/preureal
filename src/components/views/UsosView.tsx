@@ -29,8 +29,8 @@ export default function UsosView() {
           claim: "Saber si la renda que et presenten és raonable abans de signar",
           passos: [
             "Cerques el teu municipi al mapa (els 947 de Catalunya tenen dada oficial de fiances).",
-            "Cliqui sobre l'edifici concret (cartografia real de l'ICGC) i veus el preu mitjà registrat oficialment.",
-            "Introdueixes la renda que t'ofereixen: la fitxa et diu en quant per cent està per sobre o per sota del preu real.",
+            "Fes clic sobre l'edifici concret (cartografia real de l'ICGC) i veus el preu mitjà registrat oficialment.",
+            "Introdueixes la renda que t'ofereixen: la fitxa et diu en quin percentatge està per sobre o per sota del preu real.",
             "Comproves si el municipi és àrea de mercat residencial tensat (regulació de preus vigent del DOGC).",
           ],
           captura: 0,
@@ -42,7 +42,7 @@ export default function UsosView() {
           claim: "Argumentari amb dades oficials, no impressions",
           passos: [
             "Compares fins a 6 municipis a la vegada amb el comparador (mitjanes oficials de fiances Incasòl).",
-            "Generes informes PDF de 8 pàgines amb històric, indicadors INE i banda de referència per lliurar al client.",
+            "Generes informes PDF de 9 pàgines amb històric, indicadors INE i banda de referència per lliurar al client.",
             "Exportes les dades en CSV per treballar-les al teu CRM (pla Pro).",
             "Factura nominal per a despeses professionals.",
           ],
@@ -83,7 +83,7 @@ export default function UsosView() {
           claim: "Argumentario con datos oficiales, no impresiones",
           passos: [
             "Compara hasta 6 municipios a la vez con el comparador (medias oficiales de fianzas Incasòl).",
-            "Generas informes PDF de 8 páginas con histórico, indicadores INE y banda de referencia para entregar al cliente.",
+            "Generas informes PDF de 9 páginas con histórico, indicadores INE y banda de referencia para entregar al cliente.",
             "Exportas los datos en CSV para trabajarlos en tu CRM (plan Pro).",
             "Factura nominal para gastos profesionales.",
           ],

@@ -53,7 +53,7 @@ export default function SubscriptionResultView({ mode }: { mode: "exit" | "cance
           setDetail(ca ? "Pagament confirmat i subscripció activa. Ja tens accés complet!" : "Pago confirmado y suscripción activa. ¡Ya tienes acceso completo!");
         } else if (d.paymentStatus === "paid") {
           setState("pending");
-          setDetail(d.message || (ca ? "Pagament rebut; la subscripció s'activarà amb la confirmació de Stripe (normalment segons)." : "Pago recibido; la suscripción se activará con la confirmación de Stripe."));
+          setDetail(d.message || (ca ? "Pagament rebut; la subscripció s'activarà amb la confirmació de Stripe (normalment en segons)." : "Pago recibido; la suscripción se activará con la confirmación de Stripe."));
         } else {
           setState("pending");
           setDetail(d.message || (ca ? "El pagament no s'ha completat encara." : "El pago no se ha completado todavía."));

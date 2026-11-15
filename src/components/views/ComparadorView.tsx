@@ -62,7 +62,7 @@ interface ComparatorResult {
     estrangeraPct: number | null;
     densitat: number | null;
   } | null;
-  // v41 — % estimat d'alquiler sobre el parc residencial (públic, sense gating)
+  // v41 — % estimat de lloguer sobre el parc residencial (públic, sense gating)
   rentalShare?: {
     censusPct: number | null;
     censusYear: string | null;
@@ -495,7 +495,7 @@ export default function ComparadorView() {
                         )}
                         {r.rentalShare?.censusPct != null && (
                           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-mintsoft text-green2">
-                            {ca ? "alquiler (cens " : "alquiler (censo "}{r.rentalShare.censusYear ?? "2021"}) {r.rentalShare.censusPct.toFixed(1).replace(".", ",")} %
+                            {ca ? "lloguer (cens " : "alquiler (censo "}{r.rentalShare.censusYear ?? "2021"}) {r.rentalShare.censusPct.toFixed(1).replace(".", ",")} %
                           </span>
                         )}
                         {r.rentalShare?.estimatPct != null && (

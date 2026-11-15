@@ -41,14 +41,6 @@ const FRESH_MS = 60 * 24 * 3600 * 1000;
 /** Municipis per lot (les fonts puntuals s'importen per lots de municipis). */
 export const MUNIS_PER_CHUNK = 60;
 
-export const ENTORNT_SOURCES = [
-  "ENTORNT_RECARREGA",
-  "ENTORNT_SANITARIS",
-  "ENTORNT_DOCENTS",
-  "ENTORNT_EQUIPAMENTS",
-  "ENTORNT_ENERGIA",
-] as const;
-
 type SourceMeta = {
   code: string;
   name: string;

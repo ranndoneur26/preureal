@@ -178,7 +178,7 @@ describe("rental-share — calculadora computeRentalShare (validacions obligatò
     const r = computeRentalShare({ ...base, incasolPeriod: "2024", cadastreYear: "2026" });
     expect(r.dataStatus).toBe("TIMING_MISMATCH");
     expect(r.rentalPercentage).toBe(20);
-    expect(r.warnings.join(" ")).toContain("Desfase temporal");
+    expect(r.warnings.join(" ")).toContain("Desfasament temporal");
   });
 
   test("períodes compatibles en any → OK (T1 del mateix any que el catastral)", () => {

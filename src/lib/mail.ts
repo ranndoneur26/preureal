@@ -409,7 +409,7 @@ export function favoritesDigestMail(items: DigestItem[], locale: "ca" | "es") {
           : ca ? "sense dades oficials aquest període" : "sin datos oficiales este período";
       const trend =
         it.trendPct != null
-          ? ` · <span style="color:${it.trendPct > 0 ? "#b0431c" : "#1e7a41"}">${it.trendPct > 0 ? "+" : ""}${it.trendPct.toFixed(1)}% vs any anterior</span>`
+          ? ` · <span style="color:${it.trendPct > 0 ? "#b0431c" : "#1e7a41"}">${it.trendPct > 0 ? "+" : ""}${it.trendPct.toFixed(1)}% ${ca ? "vs any anterior" : "vs año anterior"}</span>`
           : "";
       return `<tr><td style="padding:6px 0;border-bottom:1px solid #eee"><a href="${getSiteUrlOrigin()}${it.url}" style="color:#0f2e21;font-weight:600;text-decoration:none">${escapeHtml(it.label)}</a><br>${rent}${trend}</td></tr>`;
     })
@@ -462,7 +462,7 @@ export function priceAlertMail(items: PriceAlertEntry[], locale: "ca" | "es") {
     })
     .join("");
   const body = ca
-    ? `<p>S'ha canviat el valor vigent de lloguer registrat (fiances Incasòl) d'algun dels teus preferits amb alerta activada:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Gestiona les alertes al panell → Preferits. Pots ajustar el llindar % o desactivar-les quan vulguis.</p>`
+    ? `<p>Ha canviat el valor vigent del lloguer registrat (fiances Incasòl) d'algun dels teus preferits amb l'alerta activada:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Gestiona les alertes al panell → Preferits. Pots ajustar el llindar % o desactivar-les quan vulguis.</p>`
     : `<p>Ha cambiado el valor vigente de alquiler registrado (fianzas Incasòl) de alguno de tus favoritos con alerta activada:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Gestiona las alertas en el panel → Favoritos. Puedes ajustar el umbral % o desactivarlas cuando quieras.</p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }

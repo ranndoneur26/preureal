@@ -50,11 +50,6 @@ function normalitzaNom(s: string): string {
     .trim();
 }
 
-export function catastroConfigured(): boolean {
-  // Els serveis lliures no requereixen clau; només arribabilitat de xarxa.
-  return true;
-}
-
 /** Província catastral (en nom, per a DNPRC) a partir del codi municipal Gencat. */
 export function provinciaForCode(municipalityCode: string): string | null {
   return PROVINCIES[municipalityCode.slice(0, 2)] || null;

@@ -521,24 +521,6 @@ model GeoPoint {
   @@index([lat, lng])
 }
 
-// Polígons oficials simplificats (zones inundables T10/T100/T500, exposició
-// acústica, planejament...). La geometria viu com a GeoJSON en String (mateixa
-// convenció que Building.polygonJson): les interseccions es precalcuen FORA de
-// runtime (sense PostGIS) i es guarden a BuildingAssociation.
-model GeoPolygon {
-  id                String   @id @default(cuid())
-  category          String // FLOOD_ZONE | NOISE_EXPOSURE | PLANNING_ZONE
-  scenario          String? // T10 | T100 | T500 | LDEN | LNIGHT | ...
-  hazardLevel       String? // nivell de perillositat publicat, si existeix
-  municipalityCode  String? // municipi(s) afectats (denormalitzat per filtrar)
-  geometry          String // GeoJSON simplificat [[ [lng,lat], ... ]]
-  datasetSourceCode String
-  datasetVersion    String?
-  fetchedAt         DateTime @default(now())
-
-  @@index([category, municipalityCode])
-}
-
 // Resultats d'associació edifici ↔ entorn PRECALCULATS (REFCAT / INTERSECT /
 // RADIUS_500 / MUNI). El mètode i la precisió viuen sempre al costat del
 // resultat. La fitxa només llegeix d'aquí: cap geoproces en runtime.

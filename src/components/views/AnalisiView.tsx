@@ -293,7 +293,7 @@ export default function AnalisiView() {
                 sub={d.poblacio?.latestYear ? `1 de gener de ${d.poblacio.latestYear}` : undefined}
               />
               <Kpi
-                label={ca ? "% censal alquiler" : "% censal alquiler"}
+                label={ca ? "% censal de lloguer" : "% censal de alquiler"}
                 value={d.census?.pct != null ? `${d.census.pct.toFixed(2).replace(".", ",")}%` : "—"}
                 sub={d.census?.year ? `Cens ${d.census.year}` : undefined}
               />
@@ -325,7 +325,7 @@ export default function AnalisiView() {
             <div className="rounded-2xl border border-line bg-card p-5">
               <div className="text-[11px] font-bold text-pine mb-1">
                 {ca ? "Contractes amb fiança depositada per any (flux anual)" : "Contratos con fianza depositada por año (flujo anual)"}
-                <span className="font-normal text-stone"> — {ca ? "activitat del mercat, no vivendes alquilades" : "actividad del mercado, no viviendas alquiladas"}</span>
+                <span className="font-normal text-stone"> — {ca ? "activitat del mercat, no vivendes llogades" : "actividad del mercado, no viviendas alquiladas"}</span>
               </div>
               <LineChart series={contractSeries} locale={locale} unitLabel={ca ? "contractes" : "contratos"} height={180} />
             </div>
@@ -441,7 +441,7 @@ export default function AnalisiView() {
                           get: (p: AnalisiPayload) => (p.poblacio?.g10.pct != null ? `${p.poblacio.g10.pct > 0 ? "+" : ""}${p.poblacio.g10.pct.toFixed(1).replace(".", ",")}%` : "—"),
                         },
                         {
-                          label: ca ? "% vivendes principals en alquiler (Cens 2021)" : "% viviendas principales en alquiler (Censo 2021)",
+                          label: ca ? "% de vivendes principals en lloguer (Cens 2021)" : "% viviendas principales en alquiler (Censo 2021)",
                           get: (p: AnalisiPayload) => (p.census?.pct != null ? `${p.census.pct.toFixed(2).replace(".", ",")}%` : "—"),
                         },
                       ] as Array<{ label: string; get: (p: AnalisiPayload) => string }>

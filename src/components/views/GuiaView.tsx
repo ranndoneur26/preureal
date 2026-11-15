@@ -68,7 +68,7 @@ const S = {
     s3t: "Despeses: qui paga què",
     s3: [
       "IVA: el 10 % sobre la renda el paga el propietari (habitatge habitual). No el pots cobrar a part.",
-      "Comissió immobiliària: a Catalunya, la Llei 13/2023 de la Generalitat fa que els qui contracten el servei el paguin — per regla general, els gastos d'agència de la cotitulació els paga el propietari, no l'inquilí.",
+      "Comissió immobiliària: a Catalunya, la Llei 13/2023 de la Generalitat fa que els qui contracten el servei el paguin — per regla general, les despeses d'agència les paga el propietari, no l'inquilí.",
       "Subministraments (llum, aigua, gas): els paga l'inquilí si el contracte ho pacta; comprova qui és el titular i si hi ha deute pendent abans de signar.",
       "IBI i altres tributs sobre l'immoble: els paga el propietari, tret que el contracte ho pacti expressament (revisa-ho!).",
     ],
@@ -76,7 +76,7 @@ const S = {
     s4: [
       "La renda es pot actualitzar un cop l'any en la data que consti al contracte, segons l'índex que s'hi hagi pactat.",
       "Si el contracte no diu res, s'aplica l'IPC general (art. 18 LAU).",
-      "Hi ha límits temporals i un índex de referència estatal que poden afectar l'actualització: consulta el text vigent de la LAU i el DOGC/BOE abans d'acceptar una clàusula d'actualització agresiva.",
+      "Hi ha límits temporals i un índex de referència estatal que poden afectar l'actualització: consulta el text vigent de la LAU i el DOGC/BOE abans d'acceptar una clàusula d'actualització agressiva.",
       "A municipis amb àrea de mercat residencial tensat (resolucions del Departament de Territori) hi ha límits adicionals sobre la renda dels nous contractes.",
     ],
     s5t: "Checklist de clàusules abans de signar",
@@ -86,7 +86,7 @@ const S = {
       "Actualització: índex i límits, i quan s'aplica.",
       "Durada i pròrrogues: contracte mínim 1 any amb pròrroga obligatòria fins a 5/7 anys; revisa les condicions de retirada anticipada (la LAU limita la compensació màx. a 1 mes de renda per any pendent... comprova la clàusula).",
       "Fiança vs garanties: que no t'exigeixin més de 1 mes de fiança + 2 de garanties addicionals.",
-      "Obrés i estat: inventari amb fotografies, estat del moblament i qui paga cada reparació.",
+      "Obres i estat: inventari amb fotografies, estat del moblament i qui paga cada reparació.",
       "Clàusules abusives: càrrecs per gestió immobiliària a càrrec teu, penals desproporcionats, prohibició de registre d'habitants o de titularitat de subministraments a nom teu.",
     ],
     s6t: "Ajudes vigents al lloguer",
@@ -104,7 +104,7 @@ const S = {
       { t: "DOGC — diari oficial de la Generalitat", u: "https://dogc.gencat.cat/" },
     ],
     consultorNote:
-      "¿És raonable el preu que et demanen? Amb Premium pots veure la banda de referència P25–P75, la posició del teu preu i l'esforç econòmic del municipi amb dades oficials.",
+      "És raonable el preu que et demanen? Amb Premium pots veure la banda de referència P25–P75, la posició del teu preu i l'esforç econòmic del municipi amb dades oficials.",
     consultorCta: "Veure les referències oficials (mapa)",
     loadingAids: "Carregant ajudes…",
     aidsError: "Ara mateix no podem carregar les ajudes. Torna-ho a provar més tard.",
@@ -126,7 +126,7 @@ const S = {
     s2: [
       "Fianza legal: 1 mes de renta (la cubre la ley para viviendas).",
       "Garantías adicionales (aval, depósito extra...): el propietario no puede exigir más de 2 mensualidades adicionales en total para vivienda habitual (art. 36 LAU).",
-      "Devolución: la fianza debe devolverse en 1 mes desde la entrega de las llaves (2 meses si hay garantía adicional), descontando solo los deudas debidamente justificados.",
+      "Devolución: la fianza debe devolverse en 1 mes desde la entrega de las llaves (2 meses si hay garantía adicional), descontando solo las deudas debidamente justificados.",
       "Los importes de fianza y garantías no se pueden actualizar durante el contrato.",
     ],
     s2calcTitle: "Calculadora de fianza y garantías",
@@ -139,7 +139,7 @@ const S = {
     s3t: "Gastos: quién paga qué",
     s3: [
       "IVA: el 10 % sobre la renta lo paga el propietario (vivienda habitual). No puedes cobrársele aparte.",
-      "Comisión inmobiliaria: en Cataluña, la Ley 13/2023 de la Generalitat hace que quien contrate el servicio lo pague — por regla general, los gastos de agencia de la cotitulación los paga el propietario, no el inquilino.",
+      "Comisión inmobiliaria: en Cataluña, la Ley 13/2023 de la Generalitat hace que quien contrate el servicio lo pague — por regla general, los gastos de agencia de la contratación los paga el propietario, no el inquilino.",
       "Suministros (luz, agua, gas): los paga el inquilino si el contrato lo pacta; comprueba quién es el titular y si hay deuda pendiente antes de firmar.",
       "IBI y otros tributos sobre el inmueble: los paga el propietario, salvo que el contrato lo pacte expresamente (¡revísalo!).",
     ],
@@ -157,7 +157,7 @@ const S = {
       "Actualización: índice y límites, y cuándo se aplica.",
       "Duración y prórrogas: contrato mínimo 1 año con prórroga obligatoria hasta 5/7 años; revisa las condiciones de retirada anticipada (la LAU limita la compensación máx. a 1 mes de renta por año pendiente... comprueba la cláusula).",
       "Fianza vs garantías: que no te exijan más de 1 mes de fianza + 2 de garantías adicionales.",
-      "Obras y estado: inventario con fotografías, estado del moblaje y quién paga cada reparación.",
+      "Obras y estado: inventario con fotografías, estado del mobiliario y quién paga cada reparación.",
       "Cláusulas abusivas: cargos por gestión inmobiliaria a tu cargo, penales desproporcionados, prohibición de registro de habitantes o de titularidad de suministros a tu nombre.",
     ],
     s6t: "Ayudas vigentes al alquiler",

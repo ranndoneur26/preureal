@@ -12,7 +12,7 @@ comparador de municipis, històric de consultes, informes PDF i subscripcions
 
 | Fitxer | Contingut |
 |---|---|
-| [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) | Context complet: arquitectura, funcionalitats, estat, problemes |
+| [docs/archive/PROJECT_CONTEXT.md](docs/archive/PROJECT_CONTEXT.md) | Context històric v0.3.0: arquitectura, funcionalitats, estat (superat — vegeu CHANGES.md) |
 | [TASKS.md](TASKS.md) | Tasques pendents per prioritat |
 | [VERCEL.md](VERCEL.md) | Desplegament a Vercel pas a pas |
 | [CHANGES.md](CHANGES.md) | Changelog per versions (v31…v38) |

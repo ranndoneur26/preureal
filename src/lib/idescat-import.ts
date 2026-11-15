@@ -41,21 +41,6 @@ const SERIE_ANY = 12;
 /** Sèrie d'edats: finestra més curta (és un context secundari). */
 const EDAT_ANY = 6;
 
-export const IDESCAT_SOURCES = [
-  "IDESCAT_POB",
-  "IDESCAT_EDAT",
-  "IDESCAT_NAC",
-  "IDESCAT_CENS_LLARS",
-  "IDESCAT_EMEX",
-] as const;
-export type IdescatScope =
-  | "POB"
-  | "EDAT"
-  | "NAC"
-  | "CENS_LLARS"
-  | "EMEX_SEED"
-  | "EMEX_BATCH";
-
 const POB_SOURCE = {
   code: "IDESCAT_POB",
   name: "Població a 1 de gener per sexe (Padró continu)",

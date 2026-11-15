@@ -55,7 +55,7 @@ export default function LegalView({ kind }: { kind: "avis" | "privacitat" | "coo
               </p>
               <p className="mt-2">
                 {ca
-                  ? "La informació mostrada té caràcter estadístic i agregat. No constitueix una taxació d'un habitatge concret ni assessorament juridic o immobiliari. Les dades oficials es publiquen amb retard i poden tenir limitacions metodològiques que es descriuen a les fonts."
+                  ? "La informació mostrada té caràcter estadístic i agregat. No constitueix una taxació d'un habitatge concret ni assessorament jurídic o immobiliari. Les dades oficials es publiquen amb retard i poden tenir limitacions metodològiques que es descriuen a les fonts."
                   : "La información mostrada tiene carácter estadístico y agregado. No constituye una tasación de una vivienda concreta ni asesoramiento jurídico o inmobiliario. Los datos oficiales se publican con retraso y pueden tener limitaciones metodológicas que se describen en las fuentes."}
               </p>
             </Block>

@@ -188,7 +188,7 @@ function Header({ route }: { route: string }) {
                 <button
                   onClick={() => setLocale(locale === "ca" ? "es" : "ca")}
                   className="px-2.5 py-2 rounded-lg text-sm font-semibold border border-line hover:bg-sand flex items-center gap-1"
-                  aria-label="Canvia d'idioma"
+                  aria-label={locale === "ca" ? "Canvia d'idioma" : "Cambia de idioma"}
                 >
                   <Languages className="w-4 h-4" />
                   {locale === "ca" ? "CA" : "ES"}

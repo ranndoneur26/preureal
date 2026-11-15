@@ -50,7 +50,7 @@ export function reportProduct(kind: ReportKind): ReportProduct {
       priceCents: priceFromEnv("REPORT_PRICE_VALORACIO_CENTS", 699),
       nameCa: "Valoració d'habitatge",
       nameEs: "Valoración de vivienda",
-      descCa: "Horquilla de renta orientativa per a UNA vivenda concreta (superfície, estat i habitacions) amb el motor v2 i desglossament d'ajustos.",
+      descCa: "Franja de renda orientativa per a UN habitatge concret (superfície, estat i habitacions) amb el motor v2 i desglossament d'ajustos.",
       descEs: "Horquilla de renta orientativa para UNA vivienda concreta (superficie, estado y habitaciones) con el motor v2 y desglose de ajustes.",
     },
     COMPARATIVA: {

@@ -5,7 +5,7 @@ import { clientIp } from "@/lib/security";
 
 /**
  * GET /api/rental-share/ranking?order=desc|asc&limit=20&source=census|estimat
- * v41: rànquing municipal de l'indicador «% estimat d'alquiler sobre el parc
+ * v41: rànquing municipal de l'indicador «% estimat de lloguer sobre el parc
  * residencial». Per defecte ordre censal (Cens 2021 — dada oficial disponible
  * per a 615 municipis); source=estimat només retorna municipis amb el càlcul
  * compost complet (numerador stock + denominador catastral), que avui és

@@ -726,7 +726,7 @@ function LoginRequired() {
       } else if (d.error === "BAD_CODE") {
         setMsg(ca ? "Codi incorrecte." : "Código incorrecto.");
       } else {
-        setMsg(ca ? "Dades invàlides: revisa l'email i la contrasenya (mínim 8 caràcters)." : "Datos inválidos: revisa el email y la contraseña (mínimo 8 caracteres).");
+        setMsg(ca ? "Dades invàlides: revisa el correu i la contrasenya (mínim 8 caràcters)." : "Datos inválidos: revisa el email y la contraseña (mínimo 8 caracteres).");
       }
     } catch (e: any) {
       setMsg("Error: " + (e?.message || e));

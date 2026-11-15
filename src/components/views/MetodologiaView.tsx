@@ -208,23 +208,23 @@ export default function MetodologiaView() {
         </div>
       )}
 
-      {/* v41 — Indicador «% estimat d'alquiler sobre el parc residencial» */}
+      {/* v41 — Indicador «% estimat de lloguer sobre el parc residencial» */}
       <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
         <Home className="w-5 h-5 text-pine" />
-        {ca ? "% estimat d'alquiler sobre el parc residencial" : "% estimado de alquiler sobre el parque residencial"}
+        {ca ? "% estimat de lloguer sobre el parc residencial" : "% estimado de alquiler sobre el parque residencial"}
       </h2>
       <div className="mt-4 rounded-2xl border border-line bg-sand/50 p-5 text-sm text-moss leading-relaxed space-y-3">
         <p>
           {ca
-            ? "El percentatge estimat de vivendes en alquiler es calcula dividint el nombre de fiances vigents registrades a l'INCASÒL entre el nombre d'inmuebles d'ús residencial del Catastro, multiplicat per 100. Aquest indicador permet aproximar el pes de l'alquiler sobre el parc residencial de cada municipi. No equival exactament al percentatge censal de viviendas principals en alquiler, perquè el Catastro no distingeix entre vivendes principals, secundàries i buides. Els resultats són una elaboració estadística pròpia a partir de fonts oficials."
+            ? "El percentatge estimat de vivendes en lloguer es calcula dividint el nombre de fiances vigents registrades a l'INCASÒL entre el nombre d'immobles d'ús residencial del Cadastre, multiplicat per 100. Aquest indicador permet aproximar el pes del lloguer sobre el parc residencial de cada municipi. No equival exactament al percentatge censal de vivendes principals en lloguer, perquè el Cadastre no distingeix entre vivendes principals, secundàries i buides. Els resultats són una elaboració estadística pròpia a partir de fonts oficials."
             : "El porcentaje estimado de viviendas en alquiler se calcula dividiendo el número de fianzas vigentes registradas en INCASÒL entre el número de inmuebles de uso residencial del Catastro, multiplicado por 100. Este indicador permite aproximar el peso del alquiler sobre el parque residencial de cada municipio. No equivale exactamente al porcentaje censal de viviendas principales en alquiler, ya que el Catastro no distingue entre viviendas principales, secundarias y vacías. Los resultados son una elaboración estadística propia a partir de fuentes oficiales."}
         </p>
         <div className="rounded-xl bg-card border border-line p-3 font-mono text-xs text-pine">
-          {(ca ? "FÓRMULA: " : "FÓRMULA: ") + "(fiances vigentes INCASÒL / inmuebles de uso residencial Catastro) × 100"}
+          {(ca ? "FÓRMULA: " : "FÓRMULA: ") + (ca ? "(fiances vigents INCASÒL / immobles d'ús residencial Cadastre) × 100" : "(fianzas vigentes INCASÒL / inmuebles de uso residencial Catastro) × 100")}
         </div>
         <p>
           {ca
-            ? "Referència censal oficial per separat: el Cens de població i habitatges 2021 (Idescat a partir del Cens de l'INE) publica el % de viviendas principals en alquiler per a 615 municipis (valors arrodonits a múltiples de 3 per secret estadístic). El flux anual de contractes amb fiança d'Incasòl es mostra com a activitat del mercat i mai com a stock de vivendes alquilades."
+            ? "Referència censal oficial per separat: el Cens de població i habitatges 2021 (Idescat a partir del Cens de l'INE) publica el % de vivendes principals en lloguer per a 615 municipis (valors arrodonits a múltiples de 3 per secret estadístic). El flux anual de contractes amb fiança d'Incasòl es mostra com a activitat del mercat i mai com a estoc de vivendes llogades."
             : "Referencia censal oficial por separado: el Censo de población y viviendas 2021 (Idescat a partir del Censo del INE) publica el % de viviendas principales en alquiler para 615 municipios (valores redondeados a múltiplos de 3 por secreto estadístico). El flujo anual de contratos con fianza de Incasòl se muestra como actividad del mercado y nunca como stock de viviendas alquiladas."}
         </p>
         <p className="text-[13px] text-stone">
@@ -234,7 +234,7 @@ export default function MetodologiaView() {
         </p>
         <p className="text-[13px] text-stone">
           {ca
-            ? "L'eina «Anàlisi del mercat residencial» (#/analisi) creua aquestes sèries amb el preu mitjà de fiances i la població del Padró: lectures descriptives, mai causals; el «volum de mercat aproximat» (mediana × 12 × contractes de l'any) és una elaboració pròpia i mai no es presenta com a mesura exacta ni com a stock de fiances vigents."
+            ? "L'eina «Anàlisi del mercat residencial» (#/analisi) creua aquestes sèries amb el preu mitjà de fiances i la població del Padró: lectures descriptives, mai causals; el «volum de mercat aproximat» (mediana × 12 × contractes de l'any) és una elaboració pròpia i mai no es presenta com a mesura exacta ni com a estoc de fiances vigents."
             : "La herramienta «Análisis del mercado residencial» (#/analisi) cruza estas series con el precio medio de fianzas y la población del Padrón: lecturas descriptivas, nunca causales; el «volumen de mercado aproximado» (mediana × 12 × contratos del año) es una elaboración propia y nunca se presenta como medida exacta ni como stock de fianzas vigentes."}
         </p>
       </div>
@@ -288,7 +288,7 @@ function Row({ k, v }: { k: string; v: string }) {
 
 function translatePrincipi(p: string): string {
   const map: Record<string, string> = {
-    "Les dades oficials i les declaracions d'usuaris es presenten SEMPRE per seperat.":
+    "Les dades oficials i les declaracions d'usuaris es presenten SEMPRE per separat.":
       "Los datos oficiales y las declaraciones de usuarios se presentan SIEMPRE por separado.",
     "Si una dada no està disponible, es mostra com a no disponible (mai s'inventa).":
       "Si un dato no está disponible, se muestra como no disponible (nunca se inventa).",

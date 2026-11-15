@@ -31,20 +31,20 @@ export const GUIA_VIVIENDA: { ca: ViviendaLocale; es: ViviendaLocale } = {
     title: "Informació bàsica de l'habitatge",
     intro:
       "Vuit blocs amb les preguntes que qualsevol persona que vulgui llogar es fa, amb resposta acotada: límits legals vigents a Catalunya, xifres orientatives i què comprovar a cada punt. Obre només el bloc que t'interessa.",
-    note: "Respostes orientatives amb els límits legals vigents (LAU, Llei 13/2023 de la Generalitat, ICAEN, INE, Incasòl). No substitueix l'assessorament jurídic. Fonts i enllaços: vegeu «Fonts oficials».",
+    note: "Respostes orientatives amb els límits legals vigents (LAU, Llei 13/2023 de la Generalitat, ICAEN, INE, Incasòl). No substitueix l'assessorament jurídic. Fonts i enllaços: consulta «Fonts oficials».",
     blocks: [
       {
         title: "Dades essencials de l'habitatge",
         qa: [
           ["Preu mensual", "És la primera dada: compara'l amb la mitjana del municipi al mapa de PreuReal (gratuït). En zona tensada hi ha, a més, un màxim legal per als nous contractes."],
           ["Habitacions i banys", "Compte-les a la visita: un «doble dormitori» és sovint un menjador compartit. Pregunta si alguna habitació és interior (sense finestra)."],
-          ["m² útils i construits", "Els útils són on vius; els construïts inclouen tabics i la part proporcional de zones comunes (10–20 % més). El Catastro registra els construïts: demana la referència i comprova-ho gratis a la seva seu electrònica."],
+          ["m² útils i construits", "Els útils són on vius; els construïts inclouen tabics i la part proporcional de zones comunes (10–20 % més). El Cadastre registra els construïts: demana la referència i comprova-ho gratis a la seva seu electrònica."],
           ["Distribució", "Demana plànol (o fes-ne un de mà): mira quines habitacions donen al carrer (soroll) o a interior (silenci) i on queden cuina i banys respecte del menjador."],
           ["Planta i ascensor", "Mou el preu tant com els m²: la diferència entre un 1r sense ascensor i un 4t amb ascensor és significativa. Pregunta si l'ascensor té el manteniment al dia."],
           ["Estat de conservació", "Obre aixetes i armaris, mira sota el fregador i darrere dels mobles (les humitats s'amaguen allà). Si la finca té obres aprovades, pregunta per la derrama: les obres de conservació les paga el propietari."],
           ["Moblat o sense mobles", "Defineix-ho per escrit amb un inventari de mobles i electrodomèstics i el seu estat: és la millor protecció per recuperar la fiança sencera."],
           ["Disponibilitat per entrar", "Data exacta. Si et pressionen per pagar «avui mateix» sense visita ni contracte, és el patró típic d'estafa de pagament anticipat."],
-          ["Antiguitat de l'edifici", "Es consulta gratis amb la referència catastral (seu electrònica del Catastro, any de construcció). Un edifici antic no és pitjor per si sol: mira conservació i certificat energètic."],
+          ["Antiguitat de l'edifici", "Es consulta gratis amb la referència catastral (seu electrònica del Cadastre, any de construcció). Un edifici antic no és pitjor per si sol: mira conservació i certificat energètic."],
         ],
       },
       {
@@ -94,9 +94,9 @@ export const GUIA_VIVIENDA: { ca: ViviendaLocale; es: ViviendaLocale } = {
         title: "Condicions del contracte",
         qa: [
           ["Duració", "Mínim 5 anys a petició teva (7 si l'arrendador és empresa): es prorroga any rere any fins a 10/11. Només pot ser per menys si tu ho demanes expressament (art. 9 LAU)."],
-          ["Tipus de contracte", "«Vivienda habitual» = tots els drets de la LAU. «Temporal» només és legal amb una causa real i documentada (feina temporal, estudis, obra): és la clàusula que més drets et fa perdre."],
+          ["Tipus de contracte", "«Habitatge habitual» = tots els drets de la LAU. «Temporal» només és legal amb una causa real i documentada (feina temporal, estudis, obra): és la clàusula que més drets et fa perdre."],
           ["Renovació", "Acabat el termini, la pròrroga és obligatòria per anys i automàtica; per acabar-ne necessites avisar amb un mínim de 30 dies naturals. En zona tensada, 3 anys més de pròrroga."],
-          ["Actualització anual", "Revisa l'índex escrit al contracte (si no n'hi ha, el legal vigent de l'art. 18 LAU). Per als contractes en règim de zona tensada, l'INE publica l'Índex de Referencia de Arrendamiento (2,54 % interanual a setembre de 2026)."],
+          ["Actualització anual", "Revisa l'índex escrit al contracte (si no n'hi ha, el legal vigent de l'art. 18 LAU). Per als contractes en règim de zona tensada, l'INE publica l'Índex de Referència de Lloguers (2,54 % interanual a setembre de 2026)."],
           ["Sortida anticipada", "Amb 6 mesos de contracte complits pots marxar avisant amb 30 dies; la compensació màxima és d'1 mensualitat per any que falti (art. 11 LAU)."],
           ["Mascotes", "La LAU no ho regula: la jurisprudència majoritària considera nul·les les prohibicions absolutes, però pacta-ho per escrit. Els danys causats serien descomptables de la fiança."],
           ["Empadronament", "És un dret: cap clàusula no el pot impedir i l'arrendador ha de facilitar la documentació. Sense padró perdes sanitat, escola i ajudes: no firmis si el bloquegen."],
@@ -139,7 +139,7 @@ export const GUIA_VIVIENDA: { ca: ViviendaLocale; es: ViviendaLocale } = {
           ["Qui és el propietari", "Compara el signatari amb la nota simple del Registre de la Propietat (≈10 €) o el certificat catastral. Si signa un gestor, demana l'apoderament."],
           ["L'habitatge està legalment disponible", "A Catalunya cal cèdula d'habitabilitat vigent per llogar. Si el «propietari» té excuses per no firmar ni fer visita, no paguis res."],
           ["Les fotos corresponen al pis real", "Si el pis no s'assembla o posen impediments a la visita, és l'estafa típica de pagament anticipat: mai transferències abans de veure i firmar."],
-          ["Visitar la vivienda", "Sempre presencial (o videotrucada en directe si ets lluny): comprova que qui et mostra el pis té claus reals i pot obrir-ho tot."],
+          ["Visitar l'habitatge", "Sempre presencial (o videotrucada en directe si ets lluny): comprova que qui et mostra el pis té claus reals i pot obrir-ho tot."],
           ["Contracte legal", "La LAU obliga a formalitzar-lo per escrit (art. 1.2) i el propietari ha de dipositar la fiança a l'Incasòl. Sense contracte no tens pròrroga, desnonament protegit ni justificació del pagament."],
           ["Quina documentació et demanaran", "Normal: DNI/NIE, nòmines o prova d'ingressos, vida laboral i, si cal, aval. Desproporcionat: garants infinits, targetes o pagaments per apps de missatgeria."],
           ["Càrregues que afectin el lloguer", "La nota simple mostra hipoteca, embargos o inquilins anteriors. Una hipoteca no impedeix llogar, però convé saber-ho abans de firmar."],

@@ -1,5 +1,5 @@
 /**
- * v41 — Indicador «% estimat d'alquiler sobre el parc residencial»
+ * v41 — Indicador «% estimat de lloguer sobre el parc residencial»
  * (encàrrec INDICADOR_ALQUILER, Fases 2-6).
  *
  * Fonts (VERIFICADES el 2026-11-15 amb HTTP real; vegeu
@@ -10,7 +10,7 @@
  *  - Flux de fiances (REFERÈNCIA, mai numerador): Socrata qww9-bvhh
  *    «Preu mitjà del lloguer d'habitatges per municipi» — habitatges =
  *    contractes d'alta al Registre de fiances en el període (FLUJO).
- *  - Fiances VIGENTS (stock) per municipi: NO existeix publicació oberta
+ *  - Fiances vigents (estoc) per municipi: NO existeix publicació oberta
  *    municipal (verificat) — conector administratiu preparat.
  *  - Parc residencial catastral: DNP/INE no accessible des de l'entorn de
  *    treball — conector administratiu preparat.
@@ -59,43 +59,43 @@ export const RS_FLUX_SOURCE = {
   unit: "contractes amb fiança depositada (flux anual)",
   periodicity: "TRIMESTRAL",
   methodology:
-    `Dataset ${FLUX_DATASET} «Preu mitjà del lloguer d'habitatges per municipi»: habitatges = contractes donats d'alta al Registre de fiances en el període considerat. PreuReal importa NOMÉS el període anual (gener-desembre), nivell municipi, com a referència de mercat. És un FLUX (operacions de l'any), mai un stock: no s'utilitza com a numerador del % estimat d'alquiler sobre el parc.`,
+    `Dataset ${FLUX_DATASET} «Preu mitjà del lloguer d'habitatges per municipi»: habitatges = contractes donats d'alta al Registre de fiances en el període considerat. PreuReal importa NOMÉS el període anual (gener-desembre), nivell municipi, com a referència de mercat. És un FLUX (operacions de l'any), mai un estoc: no s'utilitza com a numerador del % estimat de lloguer sobre el parc.`,
 };
 
 export const RS_VIGENTS_SOURCE = {
   code: "INCASOL_FIANZES_VIGENTS",
-  name: "Registre de fiances de lloguer — fiances VIGENTS per municipi (stock) [conector preparat]",
+  name: "Registre de fiances de lloguer — fiances vigents per municipi (estoc) [conector preparat]",
   institution: "Incasòl (Generalitat de Catalunya)",
   url: "https://incasol.gencat.cat",
-  license: "PENDIENTE DE CONFIRMAR (publicació oficial o conveni)",
-  unit: "fiances vigents (stock)",
-  periodicity: "PENDIENTE",
+  license: "PENDENT DE CONFIRMAR (publicació oficial o conveni)",
+  unit: "fiances vigents (estoc)",
+  periodicity: "PENDENT",
   methodology:
-    "Numerador oficial del % estimat. VERIFICAT 2026-11-15: no existeix publicació municipal oberta de fiances vigentes (el catàleg de Dades Obertes només publica flux qww9-bvhh, i el saldo net d'alta/baixa és XLSX agregat només per a Catalunya). Conector: POST /api/admin/import-rental-share — s'activarà quan hi hagi dades oficials. El flux anual MAI el substitueix.",
+    "Numerador oficial del % estimat. VERIFICAT 2026-11-15: no existeix publicació municipal oberta de fiances vigents (el catàleg de Dades Obertes només publica flux qww9-bvhh, i el saldo net d'alta/baixa és XLSX agregat només per a Catalunya). Conector: POST /api/admin/import-rental-share — s'activarà quan hi hagi dades oficials. El flux anual MAI el substitueix.",
 };
 
 export const RS_PARC_SOURCE = {
   code: "DNP_CATASTRE_PARC",
-  name: "Catastro — inmuebles de uso residencial per municipi (parc residencial) [conector preparat]",
+  name: "Cadastre — immobles d'ús residencial per municipi (parc residencial) [conector preparat]",
   institution: "Dirección General del Catastro (Ministerio de Hacienda)",
   url: "https://www.catastro.minhap.es",
-  license: "PENDIENTE DE VERIFICAR (condicions de reutilització del DNP)",
-  unit: "inmuebles de uso residencial (stock)",
-  periodicity: "PENDIENTE",
+  license: "PENDENT DE VERIFICAR (condicions de reutilització del DNP)",
+  unit: "immobles d'ús residencial (estoc)",
+  periodicity: "PENDENT",
   methodology:
-    "Denominador oficial del % estimat: inmuebles amb ús principal residencial (exclou locals, oficines, garatges i trasters). VERIFICAT 2026-11-15: el portal del DNP i la disseminació INE no són accessibles des de l'entorn de treball (DNS bloquejat); descàrrega pendent de verificació. Conector: POST /api/admin/import-rental-share — s'activarà quan la font estigui verificada.",
+    "Denominador oficial del % estimat: immobles amb ús principal residencial (exclou locals, oficines, garatges i trasters). VERIFICAT 2026-11-15: el portal del DNP i la disseminació INE no són accessibles des de l'entorn de treball (DNS bloquejat); descàrrega pendent de verificació. Conector: POST /api/admin/import-rental-share — s'activarà quan la font estigui verificada.",
 };
 
 export const RS_CALC_SOURCE = {
   code: "PREUREAL_CALC_RENTAL_SHARE",
-  name: "PreuReal — indicador compost «% estimat d'alquiler sobre el parc residencial»",
+  name: "PreuReal — indicador compost «% estimat de lloguer sobre el parc residencial»",
   institution: "PreuReal (elaboració pròpia a partir de components oficials)",
   url: "https://www.preureal.com/metodologia",
   license: "—",
   unit: "%",
   periodicity: "DERIVAT",
   methodology:
-    "Fórmula: (fiances vigentes INCASÒL / inmuebles de uso residencial del Catastro) × 100. Es calcula NOMÉS amb numerador stock + denominador catastral complets, validats i del mateix municipi; el % censal (Cens 2021, sobre viviendas principales) es mostra sempre separat com a referència oficial. No equival al % censal de viviendas principales en alquiler: el parc catastral no distingeix principals/secundàries/buies. Cada càlcul queda traçat a RentalShareObservation amb estat i avisos.",
+    "Fórmula: (fiances vigents INCASÒL / immobles d'ús residencial del Cadastre) × 100. Es calcula NOMÉS amb numerador estoc + denominador catastral complets, validats i del mateix municipi; el % censal (Cens 2021, sobre vivendes principals) es mostra sempre separat com a referència oficial. No equival al % censal de vivendes principals en lloguer: el parc catastral no distingeix principals/secundàries/buides. Cada càlcul queda traçat a RentalShareObservation amb estat i avisos.",
 };
 
 // ── Fetchers (mateixes convencions que idescat-import / entorn-import) ───────
@@ -516,17 +516,17 @@ export async function recalcRentalShare(
 // ── Metodologia (encàrrec §9 — transparència i traçabilitat) ─────────────────
 
 export const RENTAL_SHARE_METODOLOGIA = {
-  formula: "(fiances vigentes INCASÒL / inmuebles de uso residencial del Catastro) × 100",
-  ca: "El percentatge estimat de vivendes en alquiler es calcula dividint el nombre de fiances vigents registrades a l'INCASÒL entre el nombre d'inmuebles d'ús residencial del Catastro, multiplicat per 100. Aquest indicador permet aproximar el pes de l'alquiler sobre el parc residencial de cada municipi. No equival exactament al percentatge censal de viviendas principals en alquiler, perquè el Catastro no distingeix entre vivendes principals, secundàries i buides. Els resultats són una elaboració estadística pròpia a partir de fonts oficials. El contrast censal oficial (Cens de població i habitatges 2021, sobre viviendas principals) es mostra sempre per separat, amb el seu any de referència.",
+  formula: "(fiances vigents INCASÒL / immobles d'ús residencial del Cadastre) × 100",
+  ca: "El percentatge estimat de vivendes en lloguer es calcula dividint el nombre de fiances vigents registrades a l'INCASÒL entre el nombre d'immobles d'ús residencial del Cadastre, multiplicat per 100. Aquest indicador permet aproximar el pes del lloguer sobre el parc residencial de cada municipi. No equival exactament al percentatge censal de vivendes principals en lloguer, perquè el Cadastre no distingeix entre vivendes principals, secundàries i buides. Els resultats són una elaboració estadística pròpia a partir de fonts oficials. El contrast censal oficial (Cens de població i habitatges 2021, sobre vivendes principals) es mostra sempre per separat, amb el seu any de referència.",
   es: "El porcentaje estimado de viviendas en alquiler se calcula dividiendo el número de fianzas vigentes registradas en INCASÒL entre el número de inmuebles de uso residencial del Catastro, multiplicado por 100. Este indicador permite aproximar el peso del alquiler sobre el parque residencial de cada municipio. No equivale exactamente al porcentaje censal de viviendas principales en alquiler, ya que el Catastro no distingue entre viviendas principales, secundarias y vacías. Los resultados son una elaboración estadística propia a partir de fuentes oficiales. El contraste censal oficial (Censo de población y viviendas 2021, sobre viviendas principales) se muestra siempre por separado, con su año de referencia.",
   limitations: [
     "INCASÒL: pot haver-hi contractes sense fiança depositada, retards en altes/baixes, fiances que no equivalen a vivendes úniques i modalitats amb tractament estadístic diferent.",
-    "Catastro: pot incloure inmuebles que no siguin vivendes habitables i no distingeix principals/secundàries/buies; pot haver-hi diferències entre inmuebles catastrals i vivendes físiques.",
+    "Cadastre: pot incloure immobles que no siguin vivendes habitables i no distingeix principals/secundàries/buides; pot haver-hi diferències entre immobles catastrals i vivendes físiques.",
     "Cens: referència estructural i comparable, sense la periodicitat d'INCASÒL; sempre es mostra el seu any (2021) i els valors censals estan arrodonits a múltiples de 3 (secret estadístic).",
-    "El flux anual de contractes amb fiança (operacions de l'any) no és un substitut del stock de fiances vigents i mai s'utilitza com a numerador.",
+    "El flux anual de contractes amb fiança (operacions de l'any) no és un substitut de l'estoc de fiances vigents i mai s'utilitza com a numerador.",
   ],
   pendingSources:
-    "Numerador (fiances vigentes per municipi) i denominador (parc residencial catastral) pendents de publicació oficial municipal: verificat el 2026-11-15 que no existeixen fonts obertes municipals per a aquestes dades (vegeu docs/INDICADOR_ALQUILER_PARQUE.md). El conector administratiu queda preparat per alimentar-les quan estiguin disponibles.",
+    "Numerador (fiances vigents per municipi) i denominador (parc residencial catastral) pendents de publicació oficial municipal: verificat el 2026-11-15 que no existeixen fonts obertes municipals per a aquestes dades (vegeu docs/INDICADOR_ALQUILER_PARQUE.md). El conector administratiu queda preparat per alimentar-les quan estiguin disponibles.",
 };
 
 // ── Consultes per a UI/API ───────────────────────────────────────────────────

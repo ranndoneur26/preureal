@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     languages: { "ca": "/", "es": "/" },
   },
   openGraph: {
-    title: "Preureal — Sap si et cobren de més de lloguer",
+    title: "Preureal — Descobreix si et cobren de més de lloguer",
     description:
       "El preu mitjà real del lloguer registrat oficialment (fiances Incasòl) sobre el mapa de Catalunya. 947 municipis, dades oficials.",
     url: "/",

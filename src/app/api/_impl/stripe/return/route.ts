@@ -55,7 +55,7 @@ export async function POST(req: Request) {
     message: paid
       ? fresh?.plan && fresh.plan !== "FREE"
         ? "Pagament confirmat i subscripció activa."
-        : "Pagament rebut; la subscripció s'activarà en rebre la confirmació de Stripe (normalment segons)."
+        : "Pagament rebut; la subscripció s'activarà en rebre la confirmació de Stripe (normalment en segons)."
       : "El pagament no s'ha completat.",
   });
 }

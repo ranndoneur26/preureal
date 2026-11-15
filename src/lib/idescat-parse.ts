@@ -83,13 +83,6 @@ export function jsonStatCells(ds: JsonStatDataset): StatCell[] {
   return cells;
 }
 
-/** Fonts citades pel dataset (extension.source o source). */
-export function jsonStatSources(ds: JsonStatDataset): string[] {
-  const raw = ds.extension?.source ?? ds.source;
-  if (!raw) return [];
-  return Array.isArray(raw) ? raw.map(String) : [String(raw)];
-}
-
 /**
  * Sèries per territori d'una taula poblacional JSON-stat.
  * filters selecciona CATEGORIES fixes (p. ex. { SEX: ["TOTAL"] }).

@@ -25,9 +25,9 @@ const STEPS = [
     titleCa: "Pica al teu edifici",
     titleEs: "Pulsa en tu edificio",
     bodyCa:
-      "Al mapa hi ha els edificis reals de l'ICGC amb l'any de construcció i, als illes importades, el preu mitjà de l'illa. Pots obrir un informe PDF de 8 pàgines per comparar el que et demanen.",
+      "Al mapa hi ha els edificis reals de l'ICGC amb l'any de construcció i, a les illes importades, el preu mitjà de l'illa. Pots obrir un informe PDF de 9 pàgines per comparar el que et demanen.",
     bodyEs:
-      "En el mapa están los edificios reales del ICGC con el año de construcción y, en las manzanas importadas, el precio medio de la manzana. Puedes abrir un informe PDF de 8 páginas para comparar lo que te piden.",
+      "En el mapa están los edificios reales del ICGC con el año de construcción y, en las manzanas importadas, el precio medio de la manzana. Puedes abrir un informe PDF de 9 páginas para comparar lo que te piden.",
   },
   {
     icon: Bell,
