@@ -2,6 +2,32 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v47 — Fix de la descàrrega PDF de l'informe + enllaç consulta → estima — 2026-11-16
+
+**Fix (bug real):** el botó «Descarrega l'informe (PDF)» de l'Informe d'anàlisi
+del lloguer era MUT: `window.open("", "_blank", "noopener,noreferrer")` retorna
+`null` als navegadors moderns (el flag `noopener` no retorna referència), de
+manera que l'informe mai no s'escrivia a la finestra nova i l'error s'empassava
+en silenci dins un `catch {}`. Ara la impressió es fa amb un iframe ocult fora
+de pantalla (fiable a tots els navegadors, també Safari/iOS, i invisible per als
+bloquejadors de pop-ups); el marc s'elimina 60 s després, mai abans que
+l'usuari tanqui el diàleg d'impressió.
+
+**Enllaç creuat consulta → estima:** la secció «consulta» de la portada ara té
+una targeta clara amb CTA cap a «Estima el lloguer del teu habitatge», amb un
+text resumit i amb redacció pròpia (base oficial de fiances Incasòl escalada per
+superfície N1 + ajustos opcionals amb coeficient documentat N2; mai una taxació)
+— mai una còpia del text llarg que viu a la pestanya estima. L'informe complet
+(«Informe d'anàlisi del lloguer») també afegeix el CTA a /estima al peu, al
+costat de «Torna al mapa» i «Anar al comparador».
+
+**Tests:** +5 guardes (`tests/consulta_v47.test.ts`, a la suite bloquejant): el
+patró trencat no pot tornar (mai `noopener` al window.open; iframe +
+`win.print()` + fora de pantalla + `frame.remove()`), CTA present a la portada i
+a l'informe complet, i el text del teaser ha de ser resumit i propi (les 3
+frases exactes del text llarg de «estima» no poden aparèixer a la portada, que
+el manté intacte a la secció seva).
+
 ## v46 — Registre obligatori amb e-mail primer al formulari de la Home — 2026-11-16
 
 Els formularis de la Home («Consulta el preu real registrat» i «Estima el lloguer

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, CircleDashed, CircleSlash, Info, Printer,
-  ArrowRight, FileText, Loader2, MapPin, ExternalLink,
+  ArrowRight, FileText, Loader2, MapPin, ExternalLink, WandSparkles,
 } from "lucide-react";
 import { useApp } from "@/components/app-context";
 import type { AnalitzaReportData, ServeisPayload, Locale2 } from "@/lib/analitza-html";
@@ -125,14 +125,39 @@ export default function AnalitzaReport({
   const downloadPdf = () => {
     try {
       const html = buildReportHtml(data, serveis, locale as Locale2, checked);
-      const w = window.open("", "_blank", "noopener,noreferrer");
-      if (!w) return;
-      w.document.write(html);
-      w.document.close();
-      w.focus();
-      setTimeout(() => w.print(), 400);
+      // FIX v47: window.open("", "_blank", "noopener,noreferrer") retorna NULL
+      // als navegadors moderns (el flag noopener no retorna referència), de
+      // manera que l'informe MAI no s'escrivia i l'error s'empassava en silenci:
+      // el botó era mut. Ara s'imprimeix amb un iframe ocult fora de pantalla
+      // (fiable a tots els navegadors, també Safari/iOS, i no activa els
+      // bloquejadors de pop-ups).
+      const frame = document.createElement("iframe");
+      frame.setAttribute("aria-hidden", "true");
+      frame.setAttribute("tabindex", "-1");
+      frame.setAttribute("title", ca ? "Informe imprimible" : "Informe imprimible");
+      frame.style.position = "fixed";
+      frame.style.left = "-10000px";
+      frame.style.top = "0";
+      frame.style.width = "800px";
+      frame.style.height = "1000px";
+      frame.style.border = "0";
+      document.body.appendChild(frame);
+      const win = frame.contentWindow;
+      if (!win) return;
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      win.focus();
+      setTimeout(() => {
+        try {
+          win.print();
+        } catch {}
+        // el marc s'elimina amb marge suficient perquè el diàleg d'impressió
+        // conservi el document (mai abans que l'usuari el tanqui)
+        setTimeout(() => frame.remove(), 60000);
+      }, 400);
     } catch {
-      // finestra bloquejada: res crític, l'informe segueix a la pàgina
+      // res crític: l'informe segueix visible a la pàgina
     }
   };
 
@@ -433,6 +458,9 @@ export default function AnalitzaReport({
         <div className="mt-4 flex flex-wrap gap-3">
           <button onClick={() => navigate("/mapa")} className="rounded-xl border border-line bg-card font-semibold hover:bg-sand transition-colors flex items-center gap-2 px-4 min-h-[44px] text-sm">
             <MapPin className="w-4 h-4" />{ca ? "Torna al mapa" : "Vuelve al mapa"}
+          </button>
+          <button onClick={() => navigate("/estima")} className="rounded-xl border border-line bg-card font-semibold hover:bg-sand transition-colors flex items-center gap-2 px-4 min-h-[44px] text-sm">
+            <WandSparkles className="w-4 h-4" />{ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda"}<ArrowRight className="w-4 h-4" />
           </button>
           <button onClick={() => navigate("/comparador")} className="rounded-xl border border-line bg-card font-semibold hover:bg-sand transition-colors flex items-center gap-2 px-4 min-h-[44px] text-sm">
             {ca ? "Anar al comparador" : "Ir al comparador"}<ArrowRight className="w-4 h-4" />
