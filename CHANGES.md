@@ -2,6 +2,35 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v50 — El panell demogràfic del mapa: una xifra sota l'altra i requadres grans — 2026-11-17
+
+**El problema (captura d'usuari, Barcelona):** a la fitxa municipal del
+/mapa, el bloc «Contexte demogràfic i territorial» posava les 4 xifres KPI
+(Població, Variació 5 anys, Variació 10 anys, Densitat) en una FILA de 4
+columnes (`grid-cols-2 sm:grid-cols-4`) dins d'una columna lateral estreta:
+les xifres llargues (p. ex. 1.731.649 habitants o 16.904 hab/km²) desbordaven
+el requadre i se solapaven amb el KPI veí — il·legible.
+
+**El fix (literal, el que demanà l'usuari):** una xifra SOTA l'altra (mai al
+costat) i requadres més grans.
+- El grid de KPIs passa a `grid-cols-1`: cada xifra ocupa TOTA l'amplada de la
+  fitxa, amb el seu període sota («1 de gener 2025», «+27.607 hab.», km²) —
+  mai més en fila de 4 ni 2+2; a més, cap altre layout de columnes no queda
+  al panell (guarda D1).
+- Requadre Kpi més generós: `px-3.5 py-2.5` (abans `px-3 py-2`) i el detall
+  separat del valor amb `mt-0.5`; la jerarquia tipogràfica es manté (xifra
+  protagonista en `text-lg font-black`).
+
+**No canvia:** títol del bloc, badges de tendència/edats/estrangers/llars,
+gràfics d'evolució i d'edats, detall opcional («Més detall»), fonts IDESCAT i
+el muntatge des de MapView — tot intacte. La fitxa municipal és l'únic lloc on
+es usa DemografiaPanel (MapView), cap altra vista no és afectada.
+
+**Tests:** +5 guardes noves (`tests/map_kpi_v50.test.ts`, a la suite
+bloquejant: D1 grid d'una columna i cap `grid-cols-2/3/4` al panell, D2
+requadre gran amb detall separat, D3 les 4 xifres amb i18n ca/es intactes,
+D4 resta del panell intacta, D5 DemografiaPanel continua muntat al /mapa).
+
 ## v49 — Redisseny premium de la portada: mini-mapa viu al hero + etiqueta fixa de contracte — 2026-11-17
 
 **Redisseny del hero (segons la maqueta):** el bloc de text del hero queda

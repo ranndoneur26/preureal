@@ -81,10 +81,12 @@ const fmt1 = (n: number) => n.toLocaleString("ca-ES", { maximumFractionDigits: 1
 
 function Kpi({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
-    <div className="rounded-lg bg-sand/60 px-3 py-2">
+    // v50 — requadre més gran (més padding + separació del detall): les xifres
+    // llargues (p. ex. 1.731.649 habitants) respiren dins la fitxa estreta
+    <div className="rounded-lg bg-sand/60 px-3.5 py-2.5">
       <div className="text-[10px] font-semibold text-stone uppercase tracking-wide">{label}</div>
       <div className={`text-lg font-black leading-tight ${accent ? "text-ember3" : "text-pine"}`}>{value}</div>
-      {sub && <div className="text-[10px] text-stone">{sub}</div>}
+      {sub && <div className="text-[10px] text-stone mt-0.5">{sub}</div>}
     </div>
   );
 }
@@ -209,8 +211,10 @@ export default function DemografiaPanel({ muniCode, muniName }: { muniCode: stri
 
       {!pending && d && hasPoblacio && p && (
         <div className="space-y-4">
-          {/* KPI població */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* v50 — KPI població: una xifra SOTA l'altra (mai en fila de 4):
+              la fitxa municipal del mapa és estreta i les xifres llargues
+              (1.731.649 · 16.904 hab/km²) desbordaven el requadre */}
+          <div className="grid grid-cols-1 gap-2">
             <Kpi label={ca ? "Població" : "Población"} value={p.actual != null ? fmt0(p.actual) : "—"} sub={p.anyActual ? `${ca ? "1 de gener" : "1 de enero"} ${p.anyActual}` : undefined} />
             <Kpi label={ca ? "Variació 5 anys" : "Variación 5 años"} value={p.var5Pct != null ? `${p.var5Pct > 0 ? "+" : ""}${fmt1(p.var5Pct)}%` : "—"} sub={p.abs5 != null ? `${p.abs5 > 0 ? "+" : ""}${fmt0(p.abs5)} hab.` : undefined} />
             <Kpi label={ca ? "Variació 10 anys" : "Variación 10 años"} value={p.var10Pct != null ? `${p.var10Pct > 0 ? "+" : ""}${fmt1(p.var10Pct)}%` : "—"} sub={p.abs10 != null ? `${p.abs10 > 0 ? "+" : ""}${fmt0(p.abs10)} hab.` : undefined} />
