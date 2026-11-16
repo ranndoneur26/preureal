@@ -5,14 +5,14 @@ import { WandSparkles } from "lucide-react";
 import { useApp } from "@/components/app-context";
 import AnalitzaForm from "@/components/analitza/AnalitzaForm";
 import AnalitzaReport from "@/components/analitza/AnalitzaReport";
+import { ORIENTATION_DISCLAIMER } from "@/lib/analitza";
 import type { AnalitzaReportData } from "@/lib/analitza-html";
 
 /**
- * v44 — Vista #/analitza: «Analitza el teu futur lloguer», la funcionalitat
- * principal de Preureal. Formulari (variant full, amb mapa ICGC per marcar el
- * punt exacte reutilitzant la mateixa cartografia del mapa general) + informe
- * complet amb els quatre blocs (preu, normativa, ubicació, abans de signar).
- * Gratuït i sense registre: l'API /api/analitza és pública.
+ * F1 (redisseny de la Home) — Vista #/analitza: «Consulta el preu real
+ * registrat»: mapa ICGC + comparació ESTADÍSTICA del preu de l'anunci amb la
+ * referència oficial (fiances Incasòl) + normativa + serveis + checklist.
+ * Mai una valoració individualitzada: vegeu ORIENTATION_DISCLAIMER.
  */
 export default function AnalitzaView() {
   const { locale } = useApp();
@@ -97,12 +97,15 @@ export default function AnalitzaView() {
             {ca ? "Nou · gratuït i sense registre" : "Nuevo · gratuito y sin registro"}
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            {ca ? "Analitza el teu futur lloguer" : "Analiza tu futuro alquiler"}
+            {ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado"}
           </h1>
           <p className="mt-3 text-moss leading-relaxed">
             {ca
-              ? "Introdueix les dades de la vivenda que estàs pensant d'alquilar i obtens un informe transparent abans de signar: el preu de l'anunci davant la referència oficial (fiances Incasòl), les comprovacions normatives de la zona i els serveis propers. Dades oficials i estimacions sempre separades i explicades."
-              : "Introduce los datos de la vivienda que estás pensando alquilar y obtén un informe transparente antes de firmar: el precio del anuncio frente a la referencia oficial (fianzas Incasòl), las comprobaciones normativas de la zona y los servicios próximos. Datos oficiales y estimaciones siempre separados y explicados."}
+              ? "Compara el preu de l'anunci amb la referència oficial registrada (fiances Incasòl) i obtens un informe transparent abans de signar: comparació estadística del preu, comprovacions normatives de la zona i serveis propers. Dades oficials i estimacions sempre separades i explicades. Aquesta eina NO valora el teu habitatge."
+              : "Compara el precio del anuncio con la referencia oficial registrada (fianzas Incasòl) y obtén un informe transparente antes de firmar: comparación estadística del precio, comprobaciones normativas de la zona y servicios próximos. Datos oficiales y estimaciones siempre separados y explicados. Esta herramienta NO valora tu vivienda."}
+          </p>
+          <p className="mt-2 text-xs text-stone leading-relaxed">
+            {ca ? ORIENTATION_DISCLAIMER.ca : ORIENTATION_DISCLAIMER.es}
           </p>
         </div>
 

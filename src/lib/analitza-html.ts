@@ -1,5 +1,5 @@
 /**
- * v44 — Informe descargable de «Analitza el teu futur lloguer»: generador
+ * F1 — Informe descargable de «Consulta el preu real registrat»: generador
  * PUR d'un HTML autocontingut (CSS incrustat, imprimible a PDF des de
  * qualsevol navegador, també mòbil). Sense dependències ni DOM: testejable.
  *
@@ -9,6 +9,7 @@
 
 import type { ValuationResult } from "./territorial";
 import type { NormCheck, Poi, PriceVerdict } from "./analitza";
+import { ORIENTATION_DISCLAIMER, SERPAVI_URL } from "./analitza";
 
 // ── Tipus de l'informe (forma exacta de POST /api/analitza) ──────────────────
 
@@ -278,7 +279,7 @@ export function buildReportHtml(
   const expected = p.expected;
   const expectedRows = expected
     ? [
-        [ca ? "Central ajustada per a AQUESTA vivenda" : "Central ajustada para ESTA vivienda", `${eur(expected.central)}/mes`],
+        [ca ? "Central orientativa (comparativa estadística)" : "Central orientativa (comparativa estadística)", `${eur(expected.central)}/mes`],
         [ca ? "Base oficial sense ajustos" : "Base oficial sin ajustos", `${eur(expected.baseCentral)}/mes (${expected.baseSource === "MUNICIPI" ? (ca ? "fiança municipal" : "fianza municipal") : (ca ? "ref. comarca" : "ref. comarca")})`],
         [ca ? "Banda típica" : "Banda típica", `${eur(expected.min)} – ${eur(expected.max)} (${ca ? "disposició" : "dispersión"} ${(expected.relativeDispersion * 100).toFixed(0).replace(".", ",")} %)`],
         [ca ? "Confiança" : "Confianza", expected.confidence],
@@ -322,10 +323,11 @@ export function buildReportHtml(
     .join("");
 
   return `<!doctype html><html lang="${locale}"><head><meta charset="utf-8"/>
-<title>Preureal — ${ca ? "informe d'anàlisi de lloguer" : "informe de análisis de alquiler"} · ${esc(i.municipalityName)}</title>
+<title>Preureal — ${ca ? "consulta del preu real registrat" : "consulta del precio real registrado"} · ${esc(i.municipalityName)}</title>
 <style>${CSS}</style></head><body>
-<h1>Preureal · ${ca ? "Anàlisi del teu futur lloguer" : "Análisis de tu futuro alquiler"}</h1>
+<h1>Preureal · ${ca ? "Consulta del preu real registrat" : "Consulta del precio real registrado"}</h1>
 <p class="sub">${esc(i.municipalityName)} · ${esc(contractLabel)} · ${ca ? "generat" : "generado"} ${esc(genStr)} · www.preureal.com</p>
+<p class="small">${L(ORIENTATION_DISCLAIMER)}</p>
 
 <h2>${ca ? "1. Dades introduïdes" : "1. Datos introducidos"}</h2>
 <table>${rowsInput.map((r) => `<tr><th>${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join("")}</table>
@@ -336,12 +338,12 @@ export function buildReportHtml(
  <span class="kpi"><b>${p.eurM2 != null ? p.eurM2.toFixed(2).replace(".", ",") : "—"} €/m²·mes</b>${ca ? "derivat de l'anunci" : "derivado del anuncio"}</span>
  <span class="kpi"><b>${eur(p.reference)}</b>${refLabel}${p.referencePeriod ? ` · ${esc(p.referencePeriod)}` : ""}${p.referenceContracts != null ? ` · n=${p.referenceContracts} ${ca ? "contractes" : "contratos"}` : ""}</span>
  <span class="kpi"><b>${pct(p.deltaVsReferencePct)}</b>${ca ? "diferència amb la referència" : "diferencia con la referencia"}</span>
- ${p.deltaVsExpectedPct != null ? `<span class="kpi"><b>${pct(p.deltaVsExpectedPct)}</b>${ca ? "diferència amb la valoració per característiques" : "diferencia con la valoración por características"}</span>` : ""}
+ ${p.deltaVsExpectedPct != null ? `<span class="kpi"><b>${pct(p.deltaVsExpectedPct)}</b>${ca ? "diferència amb la comparativa per característiques" : "diferencia con la comparativa por características"}</span>` : ""}
 </div>
 <p><b>${ca ? "Lectura:" : "Lectura:"}</b> ${esc(verdict)}</p>
 ${note ? `<p class="small">${esc(note)}</p>` : ""}
 ${expectedRows ? `<table>${expectedRows.map((r) => `<tr><th>${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join("")}</table>
-<p class="small">${ca ? "La valoració per característiques és una ESTIMACIÓ elaborada per Preureal sobre la fiança oficial (ajustos visibles i documentats). No és el preu real de l'edifici ni de la vivenda." : "La valoración por características es una ESTIMACIÓN elaborada por Preureal sobre la fianza oficial (ajustos visibles y documentados). No es el precio real del edificio ni de la vivienda."}</p>` : ""}
+<p class="small">${ca ? "La comparativa per característiques és una ESTIMACIÓ ESTADÍSTICA ORIENTATIVA elaborada per Preureal sobre la fiança oficial (ajustos visibles i documentats). No és una taxació ni una valoració individualitzada de l'habitatge." : "La comparativa por características es una ESTIMACIÓN ESTADÍSTICA ORIENTATIVA elaborada por Preureal sobre la fianza oficial (ajustes visibles y documentados). No es una tasación ni una valoración individualizada de la vivienda."}</p>` : ""}
 <h3>${ca ? "Evolució anual registrada (Incasòl)" : "Evolución anual registrada (Incasòl)"}</h3>
 ${evRows ? `<table><tr><th>${ca ? "Any" : "Año"}</th><th>€/mes</th></tr>${evRows}</table>` : `<p class="small">${ca ? "Sèrie històrica no disponible per a aquest municipi." : "Serie histórica no disponible para este municipio."}</p>`}
 ${neighRows ? `<h3>${ca ? "Municipis propers amb dada oficial" : "Municipios próximos con dato oficial"}</h3>
@@ -349,6 +351,7 @@ ${neighRows ? `<h3>${ca ? "Municipis propers amb dada oficial" : "Municipios pr�
 
 <h2>${ca ? "3. Comprovació normativa" : "3. Comprobación normativa"}</h2>
 <table><tr><th>${ca ? "Estat" : "Estado"}</th><th>${ca ? "Explicació" : "Explicación"}</th></tr>${normRows}</table>
+${data.normative.tense ? `<p class="small"><b>${ca ? "Zona tensada (Llei 12/2023, LAU art. 17.2):" : "Zona tensionada (Ley 12/2023, LAU art. 17.2):"}</b> ${ca ? "els nous contractes d'habitatge habitual de grans tenidors tenen el límit de renta del darrer contracte dels 5 anys anteriors; si l'habitatge porta 5 anys o més sense llogar (o és de nova construcció), el límit és el rang oficial de referència." : "los nuevos contratos de vivienda habitual de grandes tenedores tienen el límite de renta del último contrato de los 5 años anteriores; si la vivienda lleva 5 años o más sin alquilar (o es de nueva construcción), el límite es el rango oficial de referencia."} <a href="${SERPAVI_URL}">${SERPAVI_URL}</a></p>` : ""}
 <p class="small">${ca ? "Consulta oficial del sistema estatal de referència (SERPAVI):" : "Consulta oficial del sistema estatal de referencia (SERPAVI):"} <a href="${esc(data.normative.serpaviUrl)}">${esc(data.normative.serpaviUrl)}</a><br/>
 ${ca ? "Data de consulta normativa:" : "Fecha de consulta normativa:"} ${esc(data.normative.consultedAt)} · ${data.normative.resolutions.map((r) => esc(r)).join(" · ")}<br/>
 ${ca ? "La comprovació és informativa i no substitueix l'assessorament jurídic ni el text vigent de la norma." : "La comprobación es informativa y no sustituye el asesoramiento jurídico ni el texto vigente de la norma."}</p>

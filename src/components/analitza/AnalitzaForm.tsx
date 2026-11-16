@@ -6,12 +6,13 @@ import { useApp } from "@/components/app-context";
 import type { ContractType } from "@/lib/analitza";
 
 /**
- * v44 «Analitza el teu futur lloguer» — formulari compartit.
+ * F1 «Consulta el preu real registrat» — formulari compartit.
  * variant "compact": a la portada (camps avançats plegats).
  * variant "full": a #/analitza (amb mapa ICGC per marcar el punt exacte).
  *
  * Dades demanades: mínimes per a l'anàlisi (cap dada personal). L'adreça usa
  * el Geocodificador oficial ICGC (via /api/geocode) i omple municipi i punt.
+ * El resultat és una COMPARACIÓ ESTADÍSTICA, mai una valoració individual.
  */
 
 export interface MuniLite {
@@ -419,13 +420,13 @@ export default function AnalitzaForm({
       >
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
         {loading
-          ? (ca ? "Analitzant…" : "Analizando…")
-          : (ca ? "Analitza el meu futur lloguer" : "Analiza mi futuro alquiler")}
+          ? (ca ? "Consultant dades oficials…" : "Consultando datos oficiales…")
+          : (ca ? "Compara l'anunci amb la referència oficial" : "Compara el anuncio con la referencia oficial")}
       </button>
       <p className="text-[11px] text-stone leading-relaxed">
         {ca
-          ? "Gratuït i sense registre. Cap dada personal: només municipi, característiques de la vivenda i el preu que vols comprovar."
-          : "Gratuito y sin registro. Ningún dato personal: solo municipio, características de la vivienda y el precio que quieres comprobar."}
+          ? "Gratuït i sense registre. Cap dada personal: només municipi, característiques de la vivenda i el preu que vols comprovar. Comparació estadística: el resultat no valora el teu habitatge."
+          : "Gratuito y sin registro. Ningún dato personal: solo municipio, características de la vivienda y el precio que quieres comprobar. Comparación estadística: el resultado no valora tu vivienda."}
       </p>
     </form>
   );

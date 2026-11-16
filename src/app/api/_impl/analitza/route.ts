@@ -17,7 +17,7 @@ import {
 } from "@/lib/analitza";
 
 /**
- * POST /api/analitza — v44 «Analitza el teu futur lloguer» (funcionalitat
+ * POST /api/analitza — F1 «Consulta el preu real registrat» (funcionalitat
  * principal, GRATUÏTA i sense registre).
  *
  * Entrada: municipi (codi 6 dígits), preu anunciament, superfície, habitacions,

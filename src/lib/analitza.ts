@@ -1,6 +1,7 @@
 /**
- * Preureal — v44 «Analitza el teu futur lloguer»: lògica PURA (sense BD ni
- * xarxa) del nou analitzador d'una vivenda concreta abans de signar.
+ * Preureal — F1 «Consulta el preu real registrat» (redisseny de la Home):
+ * lògica PURA (sense BD ni xarxa) de la consulta estadística d'una vivenda
+ * concreta abans de signar (mai una valoració individualitzada).
  *
  * Reutilitza el motor de valoració validat (src/lib/territorial.ts:
  * computeValuation, ajustos hedònics v2) i afegeix:
@@ -163,6 +164,24 @@ export const NORM_FACTS = {
   /** Certificat d'amiant obligatori per vendre o llogar a Catalunya des del 3-10-2026. */
   amiantNote: "Certificat de presència o absència d'amiant, obligatori a Catalunya des del 3-10-2026 (Generalitat)",
 };
+
+// ── F1 (redisseny de la Home): constants de transparència compartides ───────
+
+/**
+ * Portal oficial de consulta individualitzada SERPAVI (MIVAU): el rang oficial
+ * de referència per parcel·la. Qualsevol estimació de Preureal és una dada
+ * estadística orientativa; el rang amb validesa legal només el dóna SERPAVI.
+ */
+export const SERPAVI_URL = "https://serpavi.mivau.gob.es/";
+
+/**
+ * Text fix de transparència (F1): s'ha de mostrar a TOTA tarjeta de resultat
+ * (compacta, completa i PDF). Mai «taxació» ni «valoració individualitzada».
+ */
+export const ORIENTATION_DISCLAIMER = {
+  ca: "Estimació estadística orientativa. No és una taxació ni una valoració individualitzada de l'habitatge.",
+  es: "Estimación estadística orientativa. No es una tasación ni una valoración individualizada de la vivienda.",
+} as const;
 
 export interface NormCheck {
   id: string;

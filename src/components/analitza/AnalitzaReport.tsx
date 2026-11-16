@@ -3,15 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, CircleDashed, CircleSlash, Info, Printer,
-  ArrowRight, FileText, Loader2, MapPin,
+  ArrowRight, FileText, Loader2, MapPin, ExternalLink,
 } from "lucide-react";
 import { useApp } from "@/components/app-context";
 import type { AnalitzaReportData, ServeisPayload, Locale2 } from "@/lib/analitza-html";
 import { buildReportHtml, verdictNote, VERDICT_LABELS, STATE_LABELS, NORM_CHECK_LABELS, CHECKLIST_LABELS, CATEGORY_LABELS } from "@/lib/analitza-html";
+import { ORIENTATION_DISCLAIMER, SERPAVI_URL } from "@/lib/analitza";
 import { savePrefill } from "./AnalitzaForm";
 
 /**
- * v44 — Informe «Analitza el teu futur lloguer» (blocs A-D).
+ * F1 — Informe «Consulta el preu real registrat» (blocs A-D). Comparació
+ * estadística + normativa + ubicació + checklist; MAI una valoració
+ * individualitzada (vegeu ORIENTATION_DISCLAIMER).
  * variant "compact": capçalera ràpida a la portada (veredicte + diferència +
  * estat normatiu + CTA a l'informe complet).
  * variant "full": informe complet amb llista de comprovació marcable i
@@ -156,6 +159,7 @@ export default function AnalitzaReport({
             <span className="inline-flex items-center gap-1 text-ember3 font-semibold"> · <AlertTriangle className="w-3.5 h-3.5 inline" />{ca ? "zona tensada" : "zona tensionada"}</span>
           )}
         </p>
+        <p className="text-[11px] text-stone leading-relaxed">{ca ? ORIENTATION_DISCLAIMER.ca : ORIENTATION_DISCLAIMER.es}</p>
         <button
           onClick={openFull}
           className="w-full rounded-xl border border-line bg-card font-semibold hover:bg-sand transition-colors flex items-center justify-center gap-2 min-h-[48px]"
@@ -192,6 +196,7 @@ export default function AnalitzaReport({
         <p className="text-[11px] text-stone mt-2">
           {ca ? "Generat" : "Generado"} {new Date(data.generatedAt).toLocaleString(ca ? "ca-ES" : "es-ES")} · {ca ? "informe gratuït, sense dades personals" : "informe gratuito, sin datos personales"}
         </p>
+        <p className="text-[11px] text-stone mt-1.5 font-semibold">{ca ? ORIENTATION_DISCLAIMER.ca : ORIENTATION_DISCLAIMER.es}</p>
       </div>
 
       {/* A. PREU */}
@@ -229,12 +234,12 @@ export default function AnalitzaReport({
             : "La referencia es la fianza media de la vivienda TÍPICA del municipio (Incasòl): no es el precio real del edificio ni de la vivienda concreta."}
         </p>
 
-        {/* valoració per característiques */}
+        {/* comparativa per característiques (estimació orientativa, mai taxació) */}
         {p.expected && (
           <div className="mt-3 rounded-xl border border-sand3 bg-cream p-4">
-            <div className="text-xs font-bold text-pine">{ca ? "Valoració per a aquesta vivenda (estimació amb ajustos visibles)" : "Valoración para esta vivienda (estimación con ajustos visibles)"}</div>
+            <div className="text-xs font-bold text-pine">{ca ? "Comparativa per a aquestes característiques (estimació orientativa amb ajustos visibles)" : "Comparativa para estas características (estimación orientativa con ajustes visibles)"}</div>
             <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              <span><b>{fmtEur(p.expected.central, ca)}</b> {ca ? "central ajustada" : "central ajustada"}</span>
+              <span><b>{fmtEur(p.expected.central, ca)}</b> {ca ? "central orientativa" : "central orientativa"}</span>
               <span className="text-stone">{fmtEur(p.expected.min, ca)} – {fmtEur(p.expected.max, ca)} {ca ? "banda" : "banda"}</span>
               <span className="text-stone">{ca ? "confiança" : "confianza"}: <b>{p.expected.confidence}</b></span>
               {p.deltaVsExpectedPct != null && <span><b>{fmtPct(p.deltaVsExpectedPct)}</b> {ca ? "diferència amb el central" : "diferencia con el central"}</span>}
@@ -301,6 +306,27 @@ export default function AnalitzaReport({
             </li>
           ))}
         </ul>
+        {data.normative.tense && (
+          <div className="mt-3 rounded-xl bg-embersoft border border-sand3 p-3.5">
+            <p className="text-xs text-ember3 leading-relaxed font-semibold flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                {ca
+                  ? "Zona tensada (Llei 12/2023, LAU art. 17.2): els nous contractes d'habitatge habitual de grans tenidors tenen el límit de renta del darrer contracte dels 5 anys anteriors; si l'habitatge porta 5 anys o més sense llogar (o és de nova construcció), el límit és el rang oficial de referència."
+                  : "Zona tensionada (Ley 12/2023, LAU art. 17.2): los nuevos contratos de vivienda habitual de grandes tenedores tienen el límite de renta del último contrato de los 5 años anteriores; si la vivienda lleva 5 años o más sin alquilar (o es de nueva construcción), el límite es el rango oficial de referencia."}
+              </span>
+            </p>
+            <a
+              href={SERPAVI_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-pine text-white text-xs font-bold px-3.5 py-2.5 hover:bg-pine/90 transition-colors min-h-[44px]"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              {ca ? "Consulta el rang oficial a SERPAVI" : "Consulta el rango oficial en SERPAVI"}
+            </a>
+          </div>
+        )}
         <div className="mt-3 text-[11px] text-stone leading-relaxed">
           <b>{ca ? "Consulta oficial:" : "Consulta oficial:"}</b>{" "}
           <a className="underline text-pine" href={data.normative.serpaviUrl} target="_blank" rel="noopener noreferrer">

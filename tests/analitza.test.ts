@@ -1,13 +1,15 @@
 /**
- * v44 — Tests de «Analitza el teu futur lloguer»: lògica PURA dels mòduls
- * src/lib/analitza.ts (preu, normativa, POIs, distàncies) i src/lib/analitza-html.ts
- * (informe descargable). Sense BD ni xarxa. Regles que cobreix:
+ * Tests de «Consulta el preu real registrat» (F1 del redisseny de la Home):
+ * lògica PURA dels mòduls src/lib/analitza.ts (preu, normativa, POIs,
+ * distàncies) i src/lib/analitza-html.ts (informe descargable). Sense BD ni
+ * xarxa. Regles que cobreix:
  *  - €/m² derivat només amb superfície vàlida (mai de la font)
  *  - veredicte per llindars explícits (−25/−5/+5/+15)
  *  - normativa: estats (mai legalitat), tipus de contracte, zona tensada,
  *    renta anterior superior → ALERT, sense dada → PENDING
  *  - parser Overpass defensiu: nodes i ways amb center, dedup, distàncies
  *  - informe HTML: sense placeholders, amb fonts i limitacions, bilingüe
+ *  - F1: transparència (text fix «no taxació»), SERPAVI oficial, retiquetat
  */
 import { describe, expect, test } from "bun:test";
 import {
@@ -22,6 +24,8 @@ import {
   priceVerdict,
   NORM_FACTS,
   CHECKLIST,
+  ORIENTATION_DISCLAIMER,
+  SERPAVI_URL,
 } from "../src/lib/analitza";
 import { buildReportHtml, verdictNote, type AnalitzaReportData } from "../src/lib/analitza-html";
 
@@ -271,7 +275,7 @@ const reportFixture: AnalitzaReportData = {
 describe("analitza — informe HTML descargable", () => {
   test("conté les seccions A-D, fonts i limitacions (ca)", () => {
     const html = buildReportHtml(reportFixture, { ok: true, items: [], distancesNote: "Distàncies aproximades" }, "ca");
-    expect(html).toContain("Anàlisi del teu futur lloguer");
+    expect(html).toContain("Consulta del preu real registrat");
     expect(html).toContain("Manresa");
     expect(html).toContain("Fiança mitjana municipal registrada");
     expect(html).toContain("Informació aplicable"); // estat INFO de zona tensada
@@ -282,7 +286,7 @@ describe("analitza — informe HTML descargable", () => {
 
   test("bilingüe: versió castellà coherent", () => {
     const html = buildReportHtml(reportFixture, null, "es");
-    expect(html).toContain("Análisis de tu futuro alquiler");
+    expect(html).toContain("Consulta del precio real registrado");
     expect(html).toContain("Información aplicable"); // estat INFO de zona tensada
     expect(html).toContain("Requiere comprobaciones adicionales"); // estat PENDING SERPAVI
     expect(html).toContain("Servicios de entorno no consultados");
@@ -303,5 +307,49 @@ describe("analitza — informe HTML descargable", () => {
     expect(verdictNote("VERY_BELOW", "ca")).toContain("habitabilitat");
     expect(verdictNote("IN_RANGE", "ca")).toBeNull();
     expect(verdictNote(null, "es")).toBeNull();
+  });
+});
+
+// ── F1 (redisseny de la Home): transparència i separació de funcionalitats ──
+
+describe("F1 — separació UX i transparència", () => {
+  test("SERPAVI_URL és el portal oficial de consulta individualitzada (MIVAU)", () => {
+    expect(SERPAVI_URL).toBe("https://serpavi.mivau.gob.es/");
+    expect(SERPAVI_URL.startsWith("https://")).toBe(true);
+  });
+
+  test("el text fix de transparència nega taxació i valoració individualitzada (ca i es)", () => {
+    expect(ORIENTATION_DISCLAIMER.ca).toContain("Estimació estadística orientativa");
+    expect(ORIENTATION_DISCLAIMER.ca).toContain("No és una taxació");
+    expect(ORIENTATION_DISCLAIMER.ca).toContain("valoració individualitzada");
+    expect(ORIENTATION_DISCLAIMER.es).toContain("Estimación estadística orientativa");
+    expect(ORIENTATION_DISCLAIMER.es).toContain("No es una tasación");
+    expect(ORIENTATION_DISCLAIMER.es).toContain("valoración individualizada");
+  });
+
+  test("l'informe HTML/PDF inclou el text fix a la capçalera i retiqueta la comparativa", () => {
+    const html = buildReportHtml(reportFixture, null, "ca");
+    // text fix present (compacta i completa comparteixen el generador del PDF)
+    expect(html).toContain(ORIENTATION_DISCLAIMER.ca);
+    // la comparativa per característiques ja no es presenta com a «valoració»
+    expect(html).toContain("Central orientativa (comparativa estadística)");
+    expect(html).toContain("No és una taxació ni una valoració individualitzada");
+    expect(html).not.toContain("Central ajustada per a AQUESTA vivenda");
+    expect(html).not.toContain("diferència amb la valoració per característiques");
+  });
+
+  test("zona tensada a l'informe: avís legal (Llei 12/2023, art. 17.2) + enllaç SERPAVI oficial", () => {
+    const html = buildReportHtml(reportFixture, null, "ca"); // fixture: tense=true
+    expect(html).toContain("Zona tensada (Llei 12/2023, LAU art. 17.2)");
+    expect(html).toContain(SERPAVI_URL);
+    const htmlEs = buildReportHtml(reportFixture, null, "es");
+    expect(htmlEs).toContain("Zona tensionada (Ley 12/2023, LAU art. 17.2)");
+  });
+
+  test("zona NO tensada: sense avís legal de límits (no es mostra el bloc SERPAVI legal)", () => {
+    const senseTensio = JSON.parse(JSON.stringify(reportFixture)) as AnalitzaReportData;
+    senseTensio.normative.tense = false;
+    const html = buildReportHtml(senseTensio, null, "ca");
+    expect(html).not.toContain("Zona tensada (Llei 12/2023, LAU art. 17.2)");
   });
 });

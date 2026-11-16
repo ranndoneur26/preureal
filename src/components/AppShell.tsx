@@ -308,7 +308,7 @@ function Footer() {
               <div className="text-sm">
                 <div className="font-semibold text-white mb-2">{ca ? "Producte" : "Producto"}</div>
                 <div className="flex flex-col gap-1.5">
-                  {footLink("/analitza", ca ? "Analitza el teu futur lloguer" : "Analiza tu futuro alquiler")}
+                  {footLink("/analitza", ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado")}
                   {footLink("/mapa", t.nav.mapa)}
                   {footLink("/comparador", "Comparador")}
                   {footLink("/analisi", ca ? "Anàlisi del mercat" : "Análisis del mercado")}

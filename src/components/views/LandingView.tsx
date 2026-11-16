@@ -2,15 +2,18 @@
 
 import { useState } from "react";
 import { useApp } from "@/components/app-context";
-import { BadgeCheck, Building2, MapPin, Scale, TrendingUp, ArrowRight, WandSparkles } from "lucide-react";
+import { BadgeCheck, Building2, MapPin, Scale, TrendingUp, ArrowRight, WandSparkles, Search } from "lucide-react";
 import AnalitzaForm from "@/components/analitza/AnalitzaForm";
 import AnalitzaReport from "@/components/analitza/AnalitzaReport";
+import EstimaIntro from "@/components/analitza/EstimaIntro";
 import type { AnalitzaReportData } from "@/lib/analitza-html";
 
 export default function LandingView() {
   const { t, navigate, locale } = useApp();
   const ca = locale === "ca";
   const [report, setReport] = useState<AnalitzaReportData | null>(null);
+  // F1 — dues funcionalitats separades: «consulta» (mapa + comparació) i «estima»
+  const [tab, setTab] = useState<"consulta" | "estima">("consulta");
 
   return (
     <div className="flex flex-col">
@@ -49,18 +52,46 @@ export default function LandingView() {
 
           <div className="relative">
             <div className="rounded-2xl border border-line bg-card shadow-xl shadow-black/5 overflow-hidden">
-              <div className="bg-pine text-white px-4 py-2.5 text-sm font-semibold flex items-center gap-2">
-                <WandSparkles className="w-4 h-4 text-mint" />
-                {ca ? "Analitza el teu futur lloguer" : "Analiza tu futuro alquiler"}
+              {/* F1 — dues funcionalitats separades i etiquetades honestament */}
+              <div role="tablist" aria-label={ca ? "Eines de la portada" : "Herramientas de la portada"} className="grid grid-cols-2 bg-pine text-white">
+                <button
+                  role="tab"
+                  aria-selected={tab === "consulta"}
+                  onClick={() => setTab("consulta")}
+                  className={`px-2.5 sm:px-3 py-3 text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors min-h-[48px] ${tab === "consulta" ? "bg-pine" : "bg-pine/60 text-white/75 hover:bg-pine/80"}`}
+                >
+                  <Search className="w-4 h-4 shrink-0" />
+                  <span className="text-left">{ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado"}</span>
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={tab === "estima"}
+                  onClick={() => setTab("estima")}
+                  className={`px-2.5 sm:px-3 py-3 text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors min-h-[48px] ${tab === "estima" ? "bg-pine" : "bg-pine/60 text-white/75 hover:bg-pine/80"}`}
+                >
+                  <WandSparkles className="w-4 h-4 shrink-0" />
+                  <span className="text-left">{ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda"}</span>
+                </button>
               </div>
               <div className="p-5 bg-sand2">
-                {report ? (
-                  <AnalitzaReport data={report} variant="compact" />
+                {tab === "estima" ? (
+                  <EstimaIntro />
                 ) : (
-                  <AnalitzaForm
-                    variant="compact"
-                    onResult={(d) => setReport(d as AnalitzaReportData)}
-                  />
+                  <>
+                    <p className="text-[11px] text-stone leading-relaxed mb-3">
+                      {ca
+                        ? "Comparació estadística del preu de l'anunci amb la referència oficial registrada (fiances Incasòl): no és una valoració del teu habitatge."
+                        : "Comparación estadística del precio del anuncio con la referencia oficial registrada (fianzas Incasòl): no es una valoración de tu vivienda."}
+                    </p>
+                    {report ? (
+                      <AnalitzaReport data={report} variant="compact" />
+                    ) : (
+                      <AnalitzaForm
+                        variant="compact"
+                        onResult={(d) => setReport(d as AnalitzaReportData)}
+                      />
+                    )}
+                  </>
                 )}
               </div>
             </div>

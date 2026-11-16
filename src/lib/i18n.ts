@@ -6,7 +6,7 @@ export const STRINGS = {
   ca: {
     brand: "Preureal",
     tagline: "El preu real del lloguer, illa a illa",
-    nav: { mapa: "Mapa", analitza: "Analitza", preus: "Preus", panel: "El meu compte", admin: "Admin", entrada: "Entrar", registre: "Registra't", sortida: "Sortir", faq: "Preguntes" },
+    nav: { mapa: "Mapa", analitza: "Consulta", preus: "Preus", panel: "El meu compte", admin: "Admin", entrada: "Entrar", registre: "Registra't", sortida: "Sortir", faq: "Preguntes" },
     hero: {
       badge: "Dades oficials · fiances Incasòl",
       title: "Descobreix si et cobren de més abans de signar el lloguer",
@@ -273,7 +273,7 @@ export const STRINGS = {
   es: {
     brand: "Preureal",
     tagline: "El precio real del alquiler, manzana a manzana",
-    nav: { mapa: "Mapa", analitza: "Analiza", preus: "Precios", panel: "Mi cuenta", admin: "Admin", entrada: "Entrar", registre: "Regístrate", sortida: "Salir", faq: "Preguntas" },
+    nav: { mapa: "Mapa", analitza: "Consulta", preus: "Precios", panel: "Mi cuenta", admin: "Admin", entrada: "Entrar", registre: "Regístrate", sortida: "Salir", faq: "Preguntas" },
     hero: {
       badge: "Datos oficiales · fianzas Incasòl",
       title: "Sé si te cobra de más antes de firmar el alquiler",
