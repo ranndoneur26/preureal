@@ -13,7 +13,6 @@ import {
   useEmailFirst,
   type GateKind,
 } from "@/components/emailfirst/EmailFirst";
-import type { ContractType } from "@/lib/analitza";
 import { buildSignupRedirect, returnRouteFor } from "@/lib/email-first";
 
 /**
@@ -54,7 +53,6 @@ export interface AnalitzaFormValues {
   priceEurMonth: string;
   surfaceM2: string;
   rooms: string;
-  contractType: ContractType;
   builtYear: string;
   previousRent: string;
   notes: string;
@@ -69,7 +67,6 @@ const emptyValues: AnalitzaFormValues = {
   priceEurMonth: "",
   surfaceM2: "",
   rooms: "",
-  contractType: "HABITATGE",
   builtYear: "",
   previousRent: "",
   notes: "",
@@ -148,7 +145,8 @@ export default function AnalitzaForm({
           priceEurMonth: price,
           surfaceM2: vals.surfaceM2 ? Number(vals.surfaceM2) : undefined,
           rooms: vals.rooms ? Number(vals.rooms) : undefined,
-          contractType: vals.contractType,
+          // v48 — sense contractType: el servidor el fixa a HABITATGE (les
+          // dades oficials de fiances Incasòl només cobreixen habitatge habitual)
           builtYear: vals.builtYear ? Number(vals.builtYear) : undefined,
           previousRent: vals.previousRent ? Number(vals.previousRent) : undefined,
           notes: vals.notes || undefined,
@@ -183,6 +181,10 @@ export default function AnalitzaForm({
     ef.sessionEmail,
     (d) => {
       const filled = { ...emptyValues, ...(d.values as Partial<AnalitzaFormValues>) };
+      // v48 — els esborranys anteriors (< v48) poden portar contractType
+      // (TEMPORADA/HABITACIO): el camp ja no existeix al formulari ni al body,
+      // el servidor coacciona qualsevol valor a HABITATGE. Mai es restaura.
+      delete (filled as { contractType?: unknown }).contractType;
       setV(filled);
       if (filled.lat != null && filled.lng != null) onPointChange?.({ lat: filled.lat, lng: filled.lng });
       if (d.autoRun && filled.municipalityCode && Number(filled.priceEurMonth) >= 50) {
@@ -389,17 +391,12 @@ export default function AnalitzaForm({
         </div>
       </div>
 
-      {/* tipus de contracte */}
-      <div>
-        <label className={labelCls} htmlFor="analitza-tipus">
-          {ca ? "Tipus de contracte *" : "Tipo de contrato *"}
-        </label>
-        <select id="analitza-tipus" className={inputCls} value={v.contractType} onChange={(e) => set({ contractType: e.target.value as ContractType })}>
-          <option value="HABITATGE">{ca ? "Habitatge habitual" : "Vivienda habitual"}</option>
-          <option value="TEMPORADA">{ca ? "Temporada (ús diferent de l'habitatge habitual)" : "Temporada (uso distinto de la vivienda habitual)"}</option>
-          <option value="HABITACIO">{ca ? "Habitació (compartir pis)" : "Habitación (compartir piso)"}</option>
-        </select>
-      </div>
+      {/* v48 — el selector «Tipus de contracte» desapareix: de les 3 opcions
+          (HABITATGE / TEMPORADA / HABITACIO) només l'habitatge habitual té
+          dades oficials aplicables (fiances Incasòl). El servidor fixa
+          HABITATGE i l'informe ho documenta («Tipus de contracte: Habitatge
+          habitual»). El select del mapa (avisos ciutadans) és una altra cosa
+          i es manté intacte. */}
 
       {/* camps avançats */}
       <details className="rounded-xl border border-line bg-card px-3.5 py-2">

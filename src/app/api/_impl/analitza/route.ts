@@ -37,7 +37,13 @@ import {
  * (serveis d'entorn) viu a POST /api/analitza/serveis per no blocar la resposta.
  */
 
-const CONTRACT_TYPES: ContractType[] = ["HABITATGE", "TEMPORADA", "HABITACIO"];
+// v48 — les dades oficials de referència (fiances Incasòl) només cobreixen
+// l'habitatge habitual: el formulari ja no ofereix TEMPORADA ni HABITACIO i
+// qualsevol valor llegat (esborranys antics, clients vells) es COACCIONA a
+// HABITATGE per la línia de sanejament de sota. L'informe ho documenta
+// («Tipus de contracte: Habitatge habitual»). El tipus ContractType i el
+// motor normatiu mantenen els altres valors per robustesa: mai crash.
+const CONTRACT_TYPES: ContractType[] = ["HABITATGE"];
 
 /** Sanejament d'entrada — res de franges lliures: rangs estrictes. */
 function sanitize(body: Record<string, unknown>) {

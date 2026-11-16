@@ -2,6 +2,40 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v48 — El formulari de consulta només analitza «Vivienda habitual» — 2026-11-17
+
+**Decisió de producte (dades honestes):** el selector «Tipus de contracte» del
+formulari de consulta (Home compacta i /analitza completa) oferia 3 opcions
+(Vivienda habitual / Temporada / Habitación –compartir piso–), però les dades
+oficials aplicables — la referència registrada de fiances Incasòl — només
+cobreixen l'habitatge habitual: oferir les altres dues suggeria un càlcul que
+no existeix. El selector desapareix del formulari (amb una sola opció vàlida no
+hi ha res a triar) i l'assumpció queda documentada on és visible: l'informe
+continua mostrant «Tipus de contracte: Habitatge habitual» a cada consulta.
+
+**Bloqueig REAL al servidor:** la whitelist de `/api/analitza` passa de
+`["HABITATGE", "TEMPORADA", "HABITACIO"]` a `["HABITATGE"]` — qualsevol valor
+llegat (esborranys sessionStorage anteriors a v48, clients vells) es COACCIONA
+a HABITATGE pel sanejament existent: mai 400, mai crash, i la lectura normativa
+pren sempre el camí d'habitatge habitual (mai el camí TEMPORADA_FORA_LIMIT).
+El formulari, a més, neteja els esborranys antics: el `contractType` llegat mai
+es restaura ni s'envia. El motor normatiu manté les branques TEMPORADA/HABITACIO
+per robustesa defensiva (tests existents a analitza.test.ts, intactes).
+
+**No canvia:** l'avís ciutadà del mapa manté el SEU selector de tipus de
+contracte (Habitatge / Habitatge compartit / Local comercial / Altres) —
+classifica el report que l'usuari envia a /api/reports, dades reals de
+ciutadans sense relació amb la referència Incasòl. /estima no tenia cap
+selector de contracte. Mapa, freemium i rendiment intactes.
+
+**Tests:** +10 guardes (`tests/form_contract_v48.test.ts`, a la suite
+bloquejant): el selector i les 2 opcions sense dades mai tornen al formulari
+(avalua codi sense comentaris, línia + blocs JSX), el body no envia
+`contractType`, l'esborrany llegat es saneja, la whitelist és exactament
+`["HABITATGE"]`, i 4 tests de comportament real de la ruta amb harness mínim:
+TEMPORADA / HABITACIO / absent / HABITATGE → sempre HABITATGE a la sortida, i
+LIMIT_RENTA_ART172 pren el detall NO_TENSAT_LLIURE (mai TEMPORADA_FORA_LIMIT).
+
 ## v47 — Fix de la descàrrega PDF de l'informe + enllaç consulta → estima — 2026-11-16
 
 **Fix (bug real):** el botó «Descarrega l'informe (PDF)» de l'Informe d'anàlisi
