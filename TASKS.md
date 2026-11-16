@@ -3,6 +3,13 @@
 Prioridad: **P0** bloquea / verificar primero · **P1** importante · **P2** mejora.
 Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 
+## Redisseny del formulari de la Home (encàrrec 2026-11-15, fases F0–F4)
+- [x] **F1** (28b2d0f): separació UX de la Home en dues funcionalitats + etiquetes honestes + avís SERPAVI zones tensades.
+- [x] **F2** (5bce5f7): nivell N1 «Estima el lloguer del teu habitatge» (fiança Incasòl × escalat superfície, rang orientatiu traçat, degradació honesta, formulari progressiu, avís legal, metodologia N1, pàgina SEO /estima).
+- [x] **F3** (c9dd420): nivell N2 (estat de conservació ×0,80–1,12 ancoratge Fotocasa 2021; densitat m²/hab limitada ±5%), nivell real mai inflat, N3 documentat honestament com a no viable amb dades públiques (botó oficial SERPAVI, mai simulat), variables sense coeficient documentat NO es demanen (regla d'or).
+- [x] **F4** (2026-11-16): QA integral — tests RGPD a nivell de ruta (`tests/f4_qa.test.ts`, 16 tests), invariants del motor en bateria de casos, informe de viabilitat A/B/C formalitzat (`docs/SERPAVI_VIABILITAT.md` + secció a `#/metodologia`), suite CI 100% bloquejant (10 fitxers, sense `continue-on-error`: els 2 tests antics de computeValuation ja passen), secció QA a la metodologia. Mapa, freemium i rendiment de la Home intactes.
+- [ ] **Propietari**: verificació visual de `#/estima` (mòbil + desktop), del resultat N2 amb traçabilitat i de la nova secció de viabilitat a `#/metodologia`.
+
 ## Noves funcionalitats — anàlisi i valoració (encàrrec 2026-11-11)
 - [x] **Fase 1 auditoria de dades** — `docs/archive/INFORME_AUDITORIA_FUNCIONALIDADES.md` (auditoria real: 692/947 munis amb sèrie Incasòl 2005–2025, Atlas INE 947/947, esforç de renta ja calculat, sense €/m² ni secció censal; 0 migracions per a les 4 funcionalitats)
 - [x] **Propietari**: 6 punts del §5 validats via preguntes interactives (€/habitatge, ometre secció censal, mediana/any, valoració territorial v1, quotes 5/30, SVG propis)
@@ -55,7 +62,7 @@ Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 - [ ] Eliminar o activar `tailwind.config.ts` (Tailwind 4) tras comprobar que no altera estilos. NOTA v38.2: los componentes ya NO usan hex duro sino tokens de globals.css; el config legacy sigue muerto (Tailwind 4 no lo lee).
 - [ ] Revisar dependencias sin uso aparente (`@mdxeditor/editor`, `react-syntax-highlighter`, `@dnd-kit/*`, `next-intl`, `zustand`…) antes de quitar nada.
 - [x] SEO rutas reales (2026-11-12 v38.1): puente sin 404 para /preus, /metodologia, /lloguer/** (server-rendered) y sitemap dinámico; el routing interno sigue siendo hash.
-- [x] Tests mínimos (2026-11-12 v38.3): suite bun (unitarios, TOTP RFC 6238, PDF, suscripciones) + Playwright E2E (landing/preus/mapa/legal/registro) + CI en GitHub Actions. PENDIENTE: 2 expectativas antiguas de computeValuation (motor F4) fallan desde antes de v38; corregirlas.
+- [x] Tests mínimos (2026-11-12 v38.3): suite bun (unitarios, TOTP RFC 6238, PDF, suscripciones) + Playwright E2E (landing/preus/mapa/legal/registro) + CI en GitHub Actions. RESOLT 2026-11-16 (F4 redisseny Home): les 2 expectatives antigues de computeValuation ja passen (arreglades amb els commits F2/F3 del motor validat) i el pas `continue-on-error` s'ha eliminat del CI — tota la suite (10 fitxers) és bloquejant.
 - [x] Colas PDF (2026-11-12, decisión): generación síncrona mantenida (pdf-lib ~50-150 ms, cuota 5-30/mes, rate limit 10/min); migrar a Inngest/Trigger.dev documentado como roadmap en README si el volumen crece.
 - [ ] Importación de datos por edificio/illa (convenio Incasòl).
 - [x] 255 municipis sense dada (2026-11-11): Palamós recuperat amb la sèrie oficial Incasòl (cruïlla de nom) i 254 municipis amb REFERÈNCIA DE COMARCA (mitjana ponderada pel nº de contractes, mateix any, mín. 3 munis) exposada separada (`comarcaRefLatest/History`, `rentSource="COMARCA_REF"`) i sempre etiquetada com a estimació a la UI (mapa, fitxa, històric, comparador i valoració). Cap dada municipal inventada.

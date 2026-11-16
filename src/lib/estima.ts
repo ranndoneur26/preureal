@@ -265,3 +265,174 @@ export const ESTIMA_LIMITATIONS = [
   "LIMIT_HABITABILITAT: superfícies < 20 m² (o < 5 m² per habitació) generen avisos informatius d'habitabilitat (Decret 141/2012) que no alteren el càlcul.",
   "LIMIT_PRIVACITAT: el nivell N1 no demana adreça ni referència catastral; no es guarda cap dada personal ni s'associa la consulta a cap usuari.",
 ] as const;
+
+// ── F4 — Informe de viabilitat: classificació A/B/C de les variables ────────
+
+/**
+ * Informe de VIABILITAT de la metodologia SERPAVI (entregable de la fase
+ * d'auditoria, la «porta» que legitima l'implementació dels nivells N1/N2/N3):
+ * classificació A/B/C de CADA variable del qüestionari oficial SERPAVI segons
+ * si té font pública verificable per aplicar-la sense inventar res.
+ *
+ *  - A: APLICADA — coeficient documentat al motor validat amb font citada.
+ *  - B: PARCIAL — la dada existeix en font pública (ICGC CC-BY, Cadastre),
+ *       però NO hi ha coeficient d'ajust publicat: la dada no multiplica mai
+ *       la renta; el seu ús és informatiu (a Analitza) i no es demana aquí.
+ *  - C: NO VIABLE amb fonts públiques — ni la dada ni el coeficient tenen
+ *       cobertura pública verificable: NO es demana, NO s'aplica, NO s'inventa.
+ *
+ * La classificació és la mateixa que ha governat el formulari: si una fila no
+ * és A, el formulari no la demana (regla d'or: no demanar dades que el càlcul
+ * no usa). El N3 (rang per secció censal) és C per definició: només SERPAVI
+ * (MIVAU) el calcula amb fonts tributàries no públiques en bloc — l'eina
+ * ofereix sempre el botó oficial i no simula mai la consulta.
+ */
+export type EstimaViabilityClass = "A" | "B" | "C";
+
+export interface EstimaViabilityRow {
+  id: string;
+  /** Nom de la variable al qüestionari oficial SERPAVI. */
+  variable: { ca: string; es: string };
+  cls: EstimaViabilityClass;
+  /** Què fa aquesta eina amb la variable (traçable i auditable). */
+  tractament: { ca: string; es: string };
+  /** Font del coeficient (cls A) o de la dada (cls B); textual per a C. */
+  font: string;
+}
+
+export const ESTIMA_VIABILITY: {
+  verdict: { ca: string; es: string };
+  legend: Record<EstimaViabilityClass, { ca: string; es: string }>;
+  rows: EstimaViabilityRow[];
+} = {
+  verdict: {
+    ca: "VIABLE amb degradació honesta: N1 i N2 s'implementen amb les úniques variables classificades A (coeficient documentat i validat al motor); les B i C no es demanen ni s'apliquen; el N3 (rang per secció censal) no és viable amb dades públiques i es resol sempre amb la consulta oficial SERPAVI, mai simulada.",
+    es: "VIABLE con degradación honesta: N1 y N2 se implementan con las únicas variables clasificadas A (coeficiente documentado y validado en el motor); las B y C no se piden ni se aplican; el N3 (rango por sección censal) no es viable con datos públicos y se resuelve siempre con la consulta oficial SERPAVI, nunca simulada.",
+  },
+  legend: {
+    A: {
+      ca: "A — aplicada: coeficient documentat amb font citada i validat al motor de càlcul.",
+      es: "A — aplicada: coeficiente documentado con fuente citada y validado en el motor de cálculo.",
+    },
+    B: {
+      ca: "B — parcial: la dada existeix en font pública, però sense coeficient d'ajust publicat: no multiplica mai la renta i no es demana aquí.",
+      es: "B — parcial: el dato existe en fuente pública, pero sin coeficiente de ajuste publicado: nunca multiplica la renta y no se pide aquí.",
+    },
+    C: {
+      ca: "C — no viable amb fonts públiques: no es demana, no s'aplica, no s'inventa; el rang oficial el dóna SERPAVI.",
+      es: "C — no viable con fuentes públicas: no se pide, no se aplica, no se inventa; el rango oficial lo da SERPAVI.",
+    },
+  },
+  rows: [
+    {
+      id: "SUPERFICIE",
+      variable: { ca: "Superfície (m²)", es: "Superficie (m²)" },
+      cls: "A",
+      tractament: {
+        ca: "APLICADA: la fiança municipal oficial (€/mes de la vivenda típica de 85 m²) s'escala amb elasticitat renta-superfície 0,8.",
+        es: "APLICADA: la fianza municipal oficial (€/mes de la vivienda típica de 85 m²) se escala con elasticidad renta-superficie 0,8.",
+      },
+      font: "Elasticitat documentada (β 0,8; rang −0,10 a −0,25 en estudis hedònics de Barcelona i Berlín) — src/lib/territorial.ts",
+    },
+    {
+      id: "ESTAT_CONSERVACIO",
+      variable: { ca: "Estat de conservació", es: "Estado de conservación" },
+      cls: "A",
+      tractament: {
+        ca: "APLICADA: a reformar ×0,80; bon estat ×1,00 (referència del parc); reformada ×1,06; obra nova ×1,12.",
+        es: "APLICADA: a reformar ×0,80; buen estado ×1,00 (referencia del parque); reformada ×1,06; obra nueva ×1,12.",
+      },
+      font: "Multiplicadors ancorats al salt de renta en reformar (Fotocasa 2021) — src/lib/territorial.ts",
+    },
+    {
+      id: "HABITACIONS",
+      variable: { ca: "Habitacions (densitat m²/habitació)", es: "Habitaciones (densidad m²/habitación)" },
+      cls: "A",
+      tractament: {
+        ca: "APLICADA: factor de densitat limitat a ±5% (l'efecte principal ja entra per la superfície); «no ho sé» → continua N1.",
+        es: "APLICADA: factor de densidad limitado a ±5% (el efecto principal ya entra por la superficie); «no lo sé» → sigue N1.",
+      },
+      font: "Densitat de referència del parc (85 m² / 3 hab) amb exponents hedònics — src/lib/territorial.ts",
+    },
+    {
+      id: "ANY_CONSTRUCCIO",
+      variable: { ca: "Any de construcció", es: "Año de construcción" },
+      cls: "B",
+      tractament: {
+        ca: "PARCIAL: la dada és pública (edificis ICGC, CC-BY 4.0; serveis Cadastre com a recolzament) però NO hi ha coeficient d'ajust publicat: no entra al càlcul; ús informatiu a Analitza.",
+        es: "PARCIAL: el dato es público (edificios ICGC, CC-BY 4.0; servicios Catastro como apoyo) pero NO hay coeficiente de ajuste publicado: no entra al cálculo; uso informativo en Analitza.",
+      },
+      font: "ICGC — edificis amb any de construcció (CC-BY 4.0); sense coeficient publicat",
+    },
+    {
+      id: "ASCENSOR",
+      variable: { ca: "Ascensor", es: "Ascensor" },
+      cls: "C",
+      tractament: {
+        ca: "NO demanada NI aplicada: sense font pública verificable de cobertura completa ni coeficient publicat.",
+        es: "NO pedida NI aplicada: sin fuente pública verificable de cobertura completa ni coeficiente publicado.",
+      },
+      font: "Sense coeficient documentat (regla d'or: no s'inventa res)",
+    },
+    {
+      id: "APARCAMENT",
+      variable: { ca: "Aparcament", es: "Aparcamiento" },
+      cls: "C",
+      tractament: {
+        ca: "NO demanada NI aplicada: sense coeficient publicat aplicable a la renta de l'habitatge.",
+        es: "NO pedida NI aplicada: sin coeficiente publicado aplicable a la renta de la vivienda.",
+      },
+      font: "Sense coeficient documentat (regla d'or: no s'inventa res)",
+    },
+    {
+      id: "AMUEBLAT",
+      variable: { ca: "Amueblat", es: "Amueblado" },
+      cls: "C",
+      tractament: {
+        ca: "NO demanada NI aplicada: sense font pública verificable ni coeficient publicat.",
+        es: "NO pedida NI aplicada: sin fuente pública verificable ni coeficiente publicado.",
+      },
+      font: "Sense coeficient documentat (regla d'or: no s'inventa res)",
+    },
+    {
+      id: "PLANTA",
+      variable: { ca: "Planta / àtic", es: "Planta / ático" },
+      cls: "C",
+      tractament: {
+        ca: "NO demanada NI aplicada: sense coeficient publicat; les fonts de cartografia no cobreixen la planta útil de manera fiable.",
+        es: "NO pedida NI aplicada: sin coeficiente publicado; las fuentes de cartografía no cubren la planta útil de forma fiable.",
+      },
+      font: "Sense coeficient documentat (regla d'or: no s'inventa res)",
+    },
+    {
+      id: "ENERGIA",
+      variable: { ca: "Qualificació energètica", es: "Calificación energética" },
+      cls: "C",
+      tractament: {
+        ca: "NO demanada NI aplicada: el registre oficial de certificats no ofereix un coeficient d'ajust de renta publicat.",
+        es: "NO pedida NI aplicada: el registro oficial de certificados no ofrece un coeficiente de ajuste de renta publicado.",
+      },
+      font: "Sense coeficient documentat (regla d'or: no s'inventa res)",
+    },
+    {
+      id: "PISCINA",
+      variable: { ca: "Piscina / zones comunitàries", es: "Piscina / zonas comunitarias" },
+      cls: "C",
+      tractament: {
+        ca: "NO demanada NI aplicada: sense coeficient publicat i detecció no fiable amb fonts obertes.",
+        es: "NO pedida NI aplicada: sin coeficiente publicado y detección no fiable con fuentes abiertas.",
+      },
+      font: "Sense coeficient documentat (regla d'or: no s'inventa res)",
+    },
+    {
+      id: "N3_SECCIO_CENSAL",
+      variable: { ca: "N3 — rang per secció censal", es: "N3 — rango por sección censal" },
+      cls: "C",
+      tractament: {
+        ca: "NO SIMULAT: el rang oficial per parcel·la/secció només el calcula SERPAVI amb fonts tributàries no públiques en bloc; l'eina ofereix sempre el botó oficial.",
+        es: "NO SIMULADO: el rango oficial por parcela/sección solo lo calcula SERPAVI con fuentes tributarias no públicas en bloque; la herramienta ofrece siempre el botón oficial.",
+      },
+      font: "SERPAVI (MIVAU) — consulta oficial per parcel·la: https://serpavi.mivau.gob.es/",
+    },
+  ],
+} as const;

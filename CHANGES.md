@@ -2,6 +2,47 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## F4 — QA integral del redisseny de la Home (tests + metodologia + porta F0) — 2026-11-16
+
+Tancament formal del redisseny del formulari de la Home (F1 → F4): qualitat mesurada,
+transparència auditable i cap via d'entrada de regressions en silenci.
+
+**Tests nous — `tests/f4_qa.test.ts` (16 tests, ara a la suite bloquejant):**
+- RGPD a nivell de RUTA (patró audit_v23: mocks de next/server, db, rate-limit,
+  security, indicators-data): `POST /api/estima` mai fa eco d'adreça, referència
+  catastral, correu ni notes enviats; el registre anònim d'ús (Event) només conté
+  municipi, m² arrodonits, zona tensada i nivell real; el `select` de la consulta
+  BD és exactament el llistat de dades estadístiques (auditable); 429 i 404/400 no
+  escriuen res; el contracte de transparència (text fix ca/es, SERPAVI, fonts,
+  limitacions) viatja sempre a la resposta.
+- Invariants del motor N1/N2 en bateria de casos (6 superfícies × 4 habitacions ×
+  5 estats): rang positiu i ordenat, nivell real mai inflat (N2 ⟺ ajust de
+  característica aplicat), base traçada intacta, determinisme i €/m² decreixent
+  (elasticitat 0,8 < 1).
+- Guarda del informe de viabilitat A/B/C: 11 variables, ids únics, només les 3
+  classe A es demanen i s'apliquen, el N3 és C i mai simulat (SERPAVI oficial).
+- Guarda del CI: la suite bloquejant inclou els 10 fitxers i cap pas corre amb
+  `continue-on-error`.
+
+**CI (`.github/workflows/ci.yml`):** els 10 fitxers de tests passen a BLOQUEJANTS en
+un sol pas — s'elimina el `continue-on-error` dels tests de funcionalitats i el
+comentari dels 2 fallos preexistents (ja corregits amb els commits F2/F3 del motor).
+
+**Pàgina metodologia (`#/metodologia`):** dues seccions noves —
+- «Informe de viabilitat — classificació A/B/C de les variables» (renderitzat des de
+  `ESTIMA_VIABILITY` a `src/lib/estima.ts`): veredicte, llegenda i les 11 variables
+  del qüestionari oficial SERPAVI amb tractament i font, més l'enllaç oficial MIVAU.
+- «Qualitat i verificació (QA)»: què valida el CI, els tres nivells de test de
+  l'estimador i els documents d'auditoria del repositori.
+
+**Documentació:** `docs/SERPAVI_VIABILITAT.md` — informe formal de viabilitat (la
+«porta» F0 que legitima N1/N2 i el N3 com a no viable amb dades públiques): fonts
+autoritzades, classificació A/B/C per variable, veredicte, riscos/mitigacions i
+traçabilitat d'acceptació. TASKS.md actualitzat (ítem de tests v38.3 resolt).
+
+Sense canvis a Landing, preus, mapa ni cap flux existent: F4 només afegeix tests,
+documentació i transparència.
+
 ## v44 — «Analitza el teu futur lloguer»: analitzador d'una vivenda concreta (funcionalitat principal) — 2026-11-15
 
 Nova funcionalitat destacada i gratuïta (sense registre) que evoluciona Preureal d0027

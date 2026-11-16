@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Database, Scale, ShieldCheck, AlertTriangle, FileText, Home } from "lucide-react";
+import { Database, Scale, ShieldCheck, AlertTriangle, FileText, Home, ClipboardCheck } from "lucide-react";
 import { useApp } from "@/components/app-context";
+import { ESTIMA_VIABILITY, ESTIMA_SERPAVI_URL, type EstimaViabilityClass } from "@/lib/estima";
 
 /**
  * #/metodologia — Transparència metodològica.
@@ -39,6 +40,12 @@ const QUALITY_STYLES: Record<string, string> = {
   MITJANA: "bg-ambersoft text-ambertext border-amberline",
   DECLARATIU: "bg-sand text-stone border-line",
   EDITORIAL: "bg-sand text-stone border-line",
+};
+
+const VIABILITY_CLS_STYLES: Record<EstimaViabilityClass, string> = {
+  A: "bg-mintsoft text-mossdeep border-mintline",
+  B: "bg-ambersoft text-ambertext border-amberline",
+  C: "bg-sand text-stone border-line",
 };
 
 function qualityStyle(q: string): string {
@@ -265,6 +272,78 @@ export default function MetodologiaView() {
           {ca
             ? "N2 NOMÉS aplica les característiques amb coeficient documentat: estat de conservació i densitat d'habitacions. La resta de variables del formulari oficial (ascensor, aparcament, any de construcció, moblat, planta, qualificació energètica, piscina, zones comunitàries) NO es demanen ni s'apliquen: sense coeficient documentat no s'inventa res — demanar dades que el càlcul no usa seria enganyós. El N3 (rang per secció censal) només el pot calcular SERPAVI (MIVAU), que treballa amb fonts tributàries no públiques en bloc: aquesta eina NO simula consultes oficials ni inventa rangs per secció, i ofereix sempre l'enllaç oficial; en zones tensades (Llei 12/2023, LAU art. 17.2) ho recorda amb l'avís legal."
             : "N2 SOLO aplica las características con coeficiente documentado: estado de conservación y densidad de habitaciones. El resto de variables del formulario oficial (ascensor, aparcamiento, año de construcción, amueblado, planta, calificación energética, piscina, zonas comunitarias) NO se piden ni se aplican: sin coeficiente documentado no se inventa nada — pedir datos que el cálculo no usa sería engañoso. El N3 (rango por sección censal) solo lo puede calcular SERPAVI (MIVAU), que trabaja con fuentes tributarias no públicas en bloque: esta herramienta NO simula consultas oficiales ni inventa rangos por sección, y ofrece siempre el enlace oficial; en zonas tensionadas (Ley 12/2023, LAU art. 17.2) lo recuerda con el aviso legal."}
+        </p>
+      </div>
+
+      {/* F4 — Informe de viabilitat SERPAVI (classificació A/B/C de les variables) */}
+      <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
+        <ShieldCheck className="w-5 h-5 text-pine" />
+        {ca
+          ? "Informe de viabilitat — classificació A/B/C de les variables"
+          : "Informe de viabilidad — clasificación A/B/C de las variables"}
+      </h2>
+      <div className="mt-4 flex flex-col gap-4">
+        <div className="rounded-2xl border border-mintline bg-mintsoft/50 p-4 text-sm text-mossdeep leading-relaxed">
+          {ca ? ESTIMA_VIABILITY.verdict.ca : ESTIMA_VIABILITY.verdict.es}
+        </div>
+        <div className="rounded-2xl border border-line bg-sand/50 p-4 text-[13px] text-moss flex flex-col gap-1.5">
+          {(["A", "B", "C"] as const).map((k) => (
+            <p key={k}>
+              <span className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold mr-2 ${VIABILITY_CLS_STYLES[k]}`}>{k}</span>
+              {ca ? ESTIMA_VIABILITY.legend[k].ca : ESTIMA_VIABILITY.legend[k].es}
+            </p>
+          ))}
+        </div>
+        <ul className="flex flex-col gap-2.5">
+          {ESTIMA_VIABILITY.rows.map((r) => (
+            <li key={r.id} className="rounded-2xl border border-line bg-card p-4">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="font-bold text-sm leading-snug">
+                  {ca ? r.variable.ca : r.variable.es}
+                </h3>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-bold ${VIABILITY_CLS_STYLES[r.cls]}`} aria-label={r.cls}>
+                  {r.cls}
+                </span>
+              </div>
+              <p className="mt-1.5 text-[13px] text-moss leading-relaxed">
+                {ca ? r.tractament.ca : r.tractament.es}
+              </p>
+              <p className="mt-1 text-[11px] text-stone leading-relaxed border-t border-line pt-1.5">
+                {ca ? "Font: " : "Fuente: "}{r.font}
+              </p>
+            </li>
+          ))}
+        </ul>
+        <p className="text-[13px] text-stone leading-relaxed">
+          {ca
+            ? "Aquesta classificació és la «porta» que va legitimar l'implementació: el formulari només demana les variables A, i el rang per secció censal (N3) sempre es resol amb la consulta oficial "
+            : "Esta clasificación es la «puerta» que legitimó la implementación: el formulario solo pide las variables A, y el rango por sección censal (N3) siempre se resuelve con la consulta oficial "}
+          <a href={ESTIMA_SERPAVI_URL} target="_blank" rel="noopener noreferrer" className="text-ember font-semibold hover:underline">
+            SERPAVI (MIVAU)
+          </a>.
+        </p>
+      </div>
+
+      {/* F4 — Qualitat i verificació (QA) */}
+      <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
+        <ClipboardCheck className="w-5 h-5 text-pine" />
+        {ca ? "Qualitat i verificació (QA)" : "Calidad y verificación (QA)"}
+      </h2>
+      <div className="mt-4 rounded-2xl border border-line bg-sand/50 p-5 text-sm text-moss leading-relaxed space-y-3">
+        <p>
+          {ca
+            ? "El projecte passa un control de qualitat bloquejant a cada canvi (GitHub Actions): guardia de repo i dispatcher d'API (el build falla si una ruta no està registrada), lint, comprovació de tipus, SUITE DE TESTS BLOQUEJANT (unitaris, TOTP RFC 6238, PDF, auditoria, botiga d'informes, rental-share, anàlisi, analitza/estima, funcionalitats i QA del redisseny) i auditoria de dependències de producció. Cap test corre amb «continue-on-error»: una regressió no pot entrar en silenci."
+            : "El proyecto pasa un control de calidad bloqueante en cada cambio (GitHub Actions): guardia de repo y dispatcher de API (el build falla si una ruta no está registrada), lint, comprobación de tipos, SUITE DE TESTS BLOQUEANTE (unitarios, TOTP RFC 6238, PDF, auditoría, tienda de informes, rental-share, análisis, analitza/estima, funcionalidades y QA del rediseño) y auditoría de dependencias de producción. Ningún test corre con «continue-on-error»: una regresión no puede entrar en silencio."}
+        </p>
+        <p>
+          {ca
+            ? "L'estimador (#/estima) està testat a tres nivells: el motor pur (elasticitat de superfície, multiplicadors d'estat ancorats, densitat d'habitacions limitada, degradació honesta), la RUTA d'API (RGPD: cap adreça, cap referència catastral, cap correu — el registre anònim d'ús només guarda municipi, m² arrodonits, zona tensada i nivell; testat amb la ruta real, no només amb el motor) i el contracte de transparència (text fix de transparència, enllaç oficial SERPAVI, fonts i limitacions sempre presents a la resposta)."
+            : "El estimador (#/estima) está testeado a tres niveles: el motor puro (elasticidad de superficie, multiplicadores de estado anclados, densidad de habitaciones limitada, degradación honesta), la RUTA de API (RGPD: ninguna dirección, ninguna referencia catastral, ningún correo — el registro anónimo de uso solo guarda municipio, m² redondeados, zona tensionada y nivel; testeado con la ruta real, no solo con el motor) y el contrato de transparencia (texto fijo de transparencia, enlace oficial SERPAVI, fuentes y limitaciones siempre presentes en la respuesta)."}
+        </p>
+        <p className="text-[13px] text-stone">
+          {ca
+            ? "Els informes de viabilitat i auditoria complets estan al repositori: docs/SERPAVI_VIABILITAT.md (classificació A/B/C amb verdict) i docs/archive/INFORME_AUDITORIA_FUNCIONALIDADES.md (auditoria de dades: 692/947 municipis amb sèrie Incasòl 2005–2025)."
+            : "Los informes de viabilidad y auditoría completos están en el repositorio: docs/SERPAVI_VIABILITAT.md (clasificación A/B/C con veredicto) y docs/archive/INFORME_AUDITORIA_FUNCIONALIDADES.md (auditoría de datos: 692/947 municipios con serie Incasòl 2005–2025)."}
         </p>
       </div>
 
