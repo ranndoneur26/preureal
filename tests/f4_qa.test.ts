@@ -16,6 +16,7 @@
  *     continue-on-error que deixi passar regressions en silenci).
  */
 import { describe, expect, test, mock } from "bun:test";
+import { readFileSync } from "node:fs";
 import {
   buildEstimation,
   ESTIMA_VIABILITY,
@@ -385,7 +386,24 @@ describe("F4 QA — informe de viabilitat SERPAVI (classificació A/B/C)", () =>
 });
 
 // ── 4. Guarda del CI: cap test del redisseny corre amb continue-on-error ─────
-// NOTA F4: aquestes 2 guardes van amb el commit que actualitza
-// .github/workflows/ci.yml (els 10 fitxers bloquejants en un pas). Requereixen
-// permís «workflows» del PAT per pushear-se; fins aleshores queden al commit
-// pendents del workflow.
+
+describe("F4 QA — guarda del pipeline CI (tot bloquejant, un procés per fitxer)", () => {
+  const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+  const blocking = ["unit", "totp", "pdf_report", "audit_v23", "reports_shop", "rental_share", "analisi", "analitza", "funcionalitats", "f4_qa", "email_first"];
+
+  test("cada fitxer de tests corre BLOQUEJANT al seu propi procés bun (mai mocks creuats)", () => {
+    // un procés per fitxer: els mock.module globals d'un fitxer mai no poden
+    // re-vincular mòduls que un altre comprova REALS (bug d'ordre de bun 1.4.x)
+    const loopLine = ci.split("\n").find((l) => l.trim().startsWith("for f in "));
+    expect(loopLine).toBeDefined();
+    for (const f of blocking) {
+      expect(loopLine).toContain(f);
+    }
+    expect(ci.includes('bun test "tests/$f.test.ts"')).toBe(true); // 1 procés per fitxer
+    expect(ci.includes("set -e")).toBe(true); // el primer fallo bloca
+  });
+
+  test("cap pas de tests amb continue-on-error (mai silenciar regressions)", () => {
+    expect(ci.includes("continue-on-error")).toBe(false);
+  });
+});

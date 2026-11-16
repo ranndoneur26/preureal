@@ -66,22 +66,16 @@ servidor; mai arriba al body de /api/analitza ni /api/estima, mai s'associa al
 Event d'ús (que continua anònim: municipi/m²/tensada/nivell), mai a analytics; el
 desat només al sessionStorage del navegador.
 
-**Tests nous — `tests/email_first.test.ts` (37 tests en aquest commit; el 38è, la
-guarda G7 del ci.yml, va amb el commit de CI pendent):**
+**Tests nous — `tests/email_first.test.ts` (38 tests, a la suite bloquejant):**
 taula de decisió completa; anti-enumeració dels dos endpoints nous; bloqueig real
 401 sense cap lectura de BD a ambdues rutes; quota per user_id i 402; magic link
 (hash-only, un sol ús atòmic, caducitat, inactius, returnTo revalidat, anul·lació
 d'anteriors, GET sense mutació); rutes internes segures; guardes de font
 (e-mail primera casella als 3 formularis, textos falsos eliminats, panell bloquejat
 present). `f4_qa.test.ts` s'adaptat (mock del gate amb usuari vàlid per continuar
-exercint el cos real de la ruta).
+exercint el cos real de la ruta) i la seva guarda del CI ara exigeix email_first.
 
-**CI (pendent de permís):** el pas a la suite 100% bloquejant —un procés bun per
-fitxer amb `set -e`, amb `email_first` al bucle— i les 3 guardes que llegeixen
-ci.yml (2 a f4_qa + G7 a email_first) van al commit següent, que toca
-`.github/workflows/ci.yml` i requereix el permís «workflows» del PAT; fins
-aleshores el CI corre el workflow anterior (tests/funcionalitats amb
-continue-on-error; f4_qa i email_first a la suite local, verificados per fitxer).
+**CI:** `email_first` afegit al bucle bloquejant (un procés bun per fitxer).
 
 ## F4 — QA integral del redisseny de la Home (tests + metodologia + porta F0) — 2026-11-16
 
@@ -102,12 +96,18 @@ transparència auditable i cap via d'entrada de regressions en silenci.
   (elasticitat 0,8 < 1).
 - Guarda del informe de viabilitat A/B/C: 11 variables, ids únics, només les 3
   classe A es demanen i s'apliquen, el N3 és C i mai simulat (SERPAVI oficial).
-- Guarda del CI: la suite bloquejant inclou els 10 fitxers i cap pas corre amb
+- Guarda del CI: els 10 fitxers de tests corren BLOQUEJANTS un a un i cap pas corre amb
   `continue-on-error`.
 
 **CI (`.github/workflows/ci.yml`):** els 10 fitxers de tests passen a BLOQUEJANTS en
-un sol pas — s'elimina el `continue-on-error` dels tests de funcionalitats i el
-comentari dels 2 fallos preexistents (ja corregits amb els commits F2/F3 del motor).
+un procés bun PER FITXER (bucle amb `set -e`: el primer fallo bloca) — s'elimina el
+`continue-on-error` dels tests de funcionalitats i el comentari dels 2 fallos
+preexistents (ja corregits amb els commits F2/F3 del motor). Motiu: detectat al CI
+un flake real — bun 1.4.x executa els fitxers en ordre NO determinista dins del
+mateix procés i els `mock.module` globals d'un fitxer (p. ex. audit_v23 sobre
+`@/lib/security`) poden re-vincular mòduls que unit.test.ts comprova REALS si li
+toca correr després; aïllant cada fitxer al seu propi procés el resultat és
+determinista i cap mock no pot travar a cap altre fitxer.
 
 **Pàgina metodologia (`#/metodologia`):** dues seccions noves —
 - «Informe de viabilitat — classificació A/B/C de les variables» (renderitzat des de

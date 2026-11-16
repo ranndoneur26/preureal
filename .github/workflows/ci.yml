@@ -37,13 +37,20 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Tests unitaris i d'integració (bloquejants)
-        run: bun test tests/unit.test.ts tests/totp.test.ts tests/pdf_report.test.ts tests/audit_v23.test.ts tests/reports_shop.test.ts tests/rental_share.test.ts tests/analisi.test.ts tests/analitza.test.ts
-      # 2 fallos PREEXISTENTS en computeValuation (motor F4), documentats a
-      # TASKS.md; no bloquejen el CI mentre no es corregeixin.
-      - name: Tests unitaris i d'integració (bloquejants)
-        run: bun test tests/funcionalitats.test.ts
-        continue-on-error: true
+      # F4 — Suite bloquejant: un procés bun PER FITXER. Els mock.module globals
+      # (p. ex. audit_v23 sobre @/lib/security) poden re-vincular mòduls que
+      # unit.test.ts comprova REALS segons l'ordre no determinista de bun quan
+      # tots els fitxers corren al mateix procés; aïllar cada fitxer al seu
+      # propi procés fa el resultat determinista i cap mock no pot travar
+      # a cap altre fitxer. `set -e`: el primer fallo bloca (cap excepció).
+      - name: Tests unitaris i d'integració (bloquejants — un procés per fitxer)
+        run: |
+          set -e
+          for f in unit totp pdf_report audit_v23 reports_shop rental_share analisi analitza funcionalitats f4_qa email_first; do
+            echo "##[group]tests/$f.test.ts"
+            bun test "tests/$f.test.ts"
+            echo "##[endgroup]"
+          done
 
       - name: Auditoria de dependències de producció (high+ bloqueja)
         run: npm run audit

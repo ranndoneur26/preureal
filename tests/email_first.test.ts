@@ -734,11 +734,14 @@ describe("email-first — guardes de font dels formularis i del registre", () =>
     expect(estima).toContain("ESTIMA_DISCLAIMER = ORIENTATION_DISCLAIMER");
   });
 
-  // NOTA v46: la guarda G7 (ci.yml: email_first corre BLOQUEJANT al seu propi
-  // procés bun) va amb el commit que actualitza .github/workflows/ci.yml (bucle
-  // per fitxer + email_first a la llista). Requereix el permís «workflows» del
-  // PAT per pushear-se; fins aleshores queda al commit pendent del workflow
-  // (branca local v46-amb-workflow), com les 2 guardes equivalents de f4_qa.
+  test("G7. ci.yml: el fitxer email_first corre BLOQUEJANT al seu propi procés bun", () => {
+    const ci = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
+    const loopLine = ci.split("\n").find((l) => l.trim().startsWith("for f in "));
+    expect(loopLine).toBeDefined();
+    expect(loopLine).toContain("email_first");
+    expect(ci.includes('bun test "tests/$f.test.ts"')).toBe(true);
+    expect(ci.includes("set -e")).toBe(true);
+  });
 
   test("G8. doble enviament IDEMPOTENT (mai dobles consultes ni doble quota)", () => {
     const src = readSrc("../src/components/emailfirst/EmailFirst.tsx");
