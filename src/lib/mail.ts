@@ -40,7 +40,7 @@ export function mailProvider(): "resend" | "sandbox" {
 }
 
 /** Tipo de correo (telemetría EmailLog). */
-export type MailType = "WELCOME" | "VERIFY" | "RESET" | "RECEIPT" | "GENERIC" | "DIGEST" | "ALERT";
+export type MailType = "WELCOME" | "VERIFY" | "RESET" | "RECEIPT" | "GENERIC" | "DIGEST" | "ALERT" | "MAGIC_LINK";
 
 /**
  * P0: los correos de verificación/restablecimiento llevan el token en la URL
@@ -377,6 +377,19 @@ export function resetMail(token: string, locale: "ca" | "es") {
     locale === "ca"
       ? `<p>Has demanat restablir la contrasenya. Obre aquest enllaç (vàlid 1 hora, d'un sol ús):</p><p><a href="${url}">${url}</a></p>`
       : `<p>Has solicitado restablecer la contraseña. Abre este enlace (válido 1 hora, de un solo uso):</p><p><a href="${url}">${url}</a></p>`;
+  return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
+}
+
+// v46 — Magic link del flux email-first (entrada sense contrasenya al
+// formulari de la Home). Mateix patró que verifyMail/resetMail: URL absoluta,
+// token només al correu, caducitat i un sol ús explicats a l'usuari.
+export function magicMail(token: string, locale: "ca" | "es") {
+  const url = `${getSiteUrlOrigin()}/#/entrada-link?token=${token}`;
+  const title = locale === "ca" ? "Entra a Preureal" : "Entrar en Preureal";
+  const body =
+    locale === "ca"
+      ? `<p>Has demanat entrar a Preureal amb aquest correu. Obre l'enllaç per crear la sessió (vàlid 15 minuts, d'un sol ús):</p><p><a href="${url}">${url}</a></p><p>Si no has estat tu, ignora aquest correu: la contrasenya del compte continua sent vàlida i ningú hi ha accedit.</p>`
+      : `<p>Has solicitado entrar en Preureal con este correo. Abre el enlace para crear la sesión (válido 15 minutos, de un solo uso):</p><p><a href="${url}">${url}</a></p><p>Si no has sido tú, ignora este correo: la contraseña de la cuenta sigue siendo válida y nadie ha accedido.</p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
 

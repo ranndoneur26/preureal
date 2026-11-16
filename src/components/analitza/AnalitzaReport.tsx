@@ -9,7 +9,7 @@ import { useApp } from "@/components/app-context";
 import type { AnalitzaReportData, ServeisPayload, Locale2 } from "@/lib/analitza-html";
 import { buildReportHtml, verdictNote, VERDICT_LABELS, STATE_LABELS, NORM_CHECK_LABELS, CHECKLIST_LABELS, CATEGORY_LABELS } from "@/lib/analitza-html";
 import { ORIENTATION_DISCLAIMER, SERPAVI_URL } from "@/lib/analitza";
-import { savePrefill } from "./AnalitzaForm";
+import { saveEmailFirstDraft } from "@/lib/email-first";
 
 /**
  * F1 — Informe «Consulta el preu real registrat» (blocs A-D). Comparació
@@ -116,7 +116,9 @@ export default function AnalitzaReport({
   const normLabel = (c: { id: string; detail: string }) => NORM_CHECK_LABELS[`${c.id}|${c.detail}`]?.[locale as Locale2] ?? c.detail;
 
   const openFull = () => {
-    savePrefill({ ...data.input, autoRun: true } as never);
+    // v46 — esborrany email-first (mateixa mecànica que el flux de registre):
+    // la vista full el consumeix i, amb sessió, executa la consulta sola.
+    saveEmailFirstDraft("analitza", { values: { ...data.input } as never, email: "", autoRun: true });
     navigate("/analitza");
   };
 

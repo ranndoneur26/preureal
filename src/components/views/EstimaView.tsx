@@ -5,6 +5,7 @@ import { WandSparkles, ListChecks, Home, Info, ExternalLink, FileText, Ruler, Ma
 import { useApp } from "@/components/app-context";
 import EstimaForm, { type EstimaPayload } from "@/components/estima/EstimaForm";
 import EstimaReport from "@/components/estima/EstimaReport";
+import { GateLockedPanel } from "@/components/emailfirst/EmailFirst";
 import { ESTIMA_LIMITATIONS, ESTIMA_SOURCES, ESTIMA_SERPAVI_URL } from "@/lib/estima";
 import { ORIENTATION_DISCLAIMER } from "@/lib/analitza";
 
@@ -17,7 +18,7 @@ import { ORIENTATION_DISCLAIMER } from "@/lib/analitza";
  * vegeu ORIENTATION_DISCLAIMER.
  */
 export default function EstimaView() {
-  const { locale } = useApp();
+  const { locale, auth, navigate } = useApp();
   const ca = locale === "ca";
   const [result, setResult] = useState<EstimaPayload | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,7 +45,7 @@ export default function EstimaView() {
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-pine text-white text-xs font-semibold mb-4">
             <WandSparkles className="w-4 h-4 text-mint" />
-            {ca ? "Nou · nivells N1 + N2 · gratuït i sense registre" : "Nuevo · niveles N1 + N2 · gratuito y sin registro"}
+            {ca ? "Nou · nivells N1 + N2 · gratuït amb registre Free" : "Nuevo · niveles N1 + N2 · gratuito con registro Free"}
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             {ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda"}
@@ -84,6 +85,10 @@ export default function EstimaView() {
                 variant="full"
                 onRetry={() => { setResult(null); setFormKey((k) => k + 1); }}
               />
+            ) : !auth.user ? (
+              // v46 — el panell de resultats NEIX BLOQUEJAT sense compte:
+              // «Registra't primer» (el bloqueig real és al servidor: 401)
+              <GateLockedPanel ca={ca} onSignup={() => navigate("/registre")} />
             ) : (
               <div className="rounded-2xl border border-line bg-card p-6 text-sm text-stone leading-relaxed">
                 <p className="font-semibold text-moss flex items-center gap-1.5">
@@ -99,8 +104,8 @@ export default function EstimaView() {
                   {loading
                     ? (ca ? "Calculant amb la base oficial…" : "Calculando con la base oficial…")
                     : (ca
-                      ? "Sense registre, sense dades personals, gratuït: el resultat ve de fonts oficials (Incasòl) amb constants documentades i sempre amb les limitacions explicades."
-                      : "Sin registro, sin datos personales, gratuito: el resultado viene de fuentes oficiales (Incasòl) con constantes documentadas y siempre con las limitaciones explicadas.")}
+                      ? "Gratuït amb registre Free: el resultat ve de fonts oficials (Incasòl) amb constants documentades i sempre amb les limitacions explicades. L'e-mail només identifica el compte i aplica la quota (3 consultes detallades al mes)."
+                      : "Gratuito con registro Free: el resultado viene de fuentes oficiales (Incasòl) con constantes documentadas y siempre con las limitaciones explicadas. El e-mail solo identifica la cuenta y aplica la cuota (3 consultas detalladas al mes).")}
                 </p>
               </div>
             )}

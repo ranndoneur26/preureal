@@ -1,19 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { BadgeCheck, Building2, MapPin, Scale, TrendingUp, ArrowRight, WandSparkles, Search } from "lucide-react";
 import AnalitzaForm from "@/components/analitza/AnalitzaForm";
 import AnalitzaReport from "@/components/analitza/AnalitzaReport";
 import EstimaIntro from "@/components/analitza/EstimaIntro";
+import { GateLockedPanel } from "@/components/emailfirst/EmailFirst";
 import type { AnalitzaReportData } from "@/lib/analitza-html";
+import { peekLatestDraftKind } from "@/lib/email-first";
 
 export default function LandingView() {
-  const { t, navigate, locale } = useApp();
+  const { t, navigate, locale, auth } = useApp();
   const ca = locale === "ca";
   const [report, setReport] = useState<AnalitzaReportData | null>(null);
   // F1 — dues funcionalitats separades: «consulta» (mapa + comparació) i «estima»
   const [tab, setTab] = useState<"consulta" | "estima">("consulta");
+
+  // v46 — quan l'usuari torna del registre/magic link amb un esborrany del
+  // flux email-first, la portada obre DIRECTAMENT la pestanya del formulari
+  // que el va generar (mai la pestanya per defecte). Diferit amb await
+  // (patró del repo: evita cascades de render al muntar).
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      await Promise.resolve();
+      if (!alive) return;
+      const k = peekLatestDraftKind();
+      if (k === "estima") setTab("estima");
+    })();
+    return () => { alive = false; };
+  }, []);
 
   return (
     <div className="flex flex-col">
@@ -86,10 +103,16 @@ export default function LandingView() {
                     {report ? (
                       <AnalitzaReport data={report} variant="compact" />
                     ) : (
-                      <AnalitzaForm
-                        variant="compact"
-                        onResult={(d) => setReport(d as AnalitzaReportData)}
-                      />
+                      <>
+                        <AnalitzaForm
+                          variant="compact"
+                          onResult={(d) => setReport(d as AnalitzaReportData)}
+                        />
+                        {!auth.user && (
+                          // v46 — el panell de resultats NEIX BLOQUEJAT sense compte
+                          <GateLockedPanel ca={ca} onSignup={() => navigate("/registre")} />
+                        )}
+                      </>
                     )}
                   </>
                 )}

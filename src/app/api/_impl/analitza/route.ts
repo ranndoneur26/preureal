@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
+import { gateDetailedQuery } from "@/lib/consulta-gate";
 import { haversineMeters } from "@/lib/analitza";
 import { computeValuation, muniSeries, interannualPct, valueForYear, yearOfPeriod, type ValuationData } from "@/lib/territorial";
 import { getMuniRentRows } from "@/lib/indicators-data";
@@ -18,12 +19,16 @@ import {
 
 /**
  * POST /api/analitza — F1 «Consulta el preu real registrat» (funcionalitat
- * principal, GRATUÏTA i sense registre).
+ * principal). v46: flux email-first amb registre obligatori — la ruta passa
+ * per gateDetailedQuery(): sense sessió retorna 401 { code:
+ * "REGISTRAT_PRIMER" } i NO executa cap càlcul detallat; amb sessió, la
+ * consulta COMPUTA dins la quota del pla (per user_id, atòmica v23).
  *
  * Entrada: municipi (codi 6 dígits), preu anunciament, superfície, habitacions,
  * tipus de contracte, any de construcció, renta anterior, notes. Dades personals
- * mínimes: res no s'associa a cap usuari (sense auth); només registre anònim
- * d'ús (Event) amb municipi i tipus de contracte per a mètriques agregades.
+ * mínimes: l'e-mail només identifica el compte (sessió httpOnly; mai arriba al
+ * body ni es persisteix amb la consulta); el registre d'ús (Event) continua
+ * sent anònim: municipi i tipus de contracte per a mètriques agregades.
  *
  * Sortida: informe JSON amb A) anàlisi de preu (referència Incasòl municipal o
  * referència de comarca marcada com a ESTIMACIÓ + motor computeValuation per a
@@ -63,6 +68,11 @@ export async function POST(req: Request) {
   const ip = clientIp(req);
   const rl = await rateLimit(`analitza:${ip}`, 20, 60_000);
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  // v46 — BLOQUEIG REAL (mai només visual): sense sessió, 401 REGISTRAT_PRIMER
+  // ABANS de llegir el body i de tocar la BD; amb sessió, quota per user_id.
+  const gate = await gateDetailedQuery();
+  if (!gate.ok) return gate.res;
 
   let body: Record<string, unknown>;
   try {

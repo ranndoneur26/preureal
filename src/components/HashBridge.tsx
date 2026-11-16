@@ -16,7 +16,12 @@ export default function HashBridge({ to }: { to: string }) {
   if (typeof window !== "undefined") {
     // Es executa durant el render client: substitueix l'entrada actual
     // (sense afegir historial) per la ruta hash equivalent.
-    window.setTimeout(() => window.location.replace(to), 0);
+    // v46 — els paràmetres de la URL real (?email=...&return=...&pla=free del
+    // flux email-first) viatgen DINS del hash perquè la SPA els llegeixi.
+    const extra = typeof window !== "undefined" && window.location.search && !to.includes("?")
+      ? window.location.search
+      : "";
+    window.setTimeout(() => window.location.replace(to + extra), 0);
   }
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">

@@ -1,20 +1,47 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { MapPin, ShieldCheck, Fingerprint } from "lucide-react";
+import { MapPin, ShieldCheck, Fingerprint, MailCheck } from "lucide-react";
+import { safeInternalRoute } from "@/lib/email-first";
+
+/**
+ * v46 — Registre/entrada amb flux EMAIL-FIRST:
+ *  - mode "register": l'E-MAIL és la PRIMERA casella (mai el nom); accepta
+ *    ?email=... precarregat des del formulari de la Home i ?return=... (només
+ *    rutes internes — allowlist a src/lib/email-first.ts, mai open redirect).
+ *    Al completar el registre torna a la ruta de retorn amb l'esborrany intacte
+ *    (el formulari de la Home l'executa automàticament).
+ *  - mode "login": en entrar també honora ?return=...
+ *  - mode "magic" (/#/entrada-link?token=...): consumició del magic link —
+ *    la vista fa el POST (P1.2: el GET de l'API mai muta dades), crea la sessió
+ *    i torna a la ruta de retorn per reprendre el formulari.
+ *  - RGPD: consentiment explícit al registre amb finalitat del tractament
+ *    (crear el compte, aplicar la quota de consultes, correus de servei).
+ */
 
 export default function AuthView({
   mode,
   token,
   oauthError,
+  emailParam,
+  returnParam,
+  planParam,
 }: {
-  mode: "register" | "login" | "forgot" | "reset";
+  mode: "register" | "login" | "forgot" | "reset" | "magic";
   token?: string;
   oauthError?: string;
+  /** ?email= del flux email-first (e-mail precarregat al registre) */
+  emailParam?: string;
+  /** ?return= — només rutes internes (revalidat amb safeInternalRoute) */
+  returnParam?: string;
+  /** ?pla=free — nota del pla al registre */
+  planParam?: string;
 }) {
   const { t, navigate, locale, auth } = useApp();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const ca = locale === "ca";
+  const [form, setForm] = useState({ name: "", email: emailParam ? decodeURIComponent(emailParam).slice(0, 200) : "", password: "" });
+  const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(oauthError || null);
   const [info, setInfo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -51,6 +78,37 @@ export default function AuthView({
       .catch(() => setGoogleEnabled(false));
   }, []);
 
+  // ── v46: mode "magic" — consumició del magic link (vista pròpia) ──────────
+  const magicEstatRef = useRef(false);
+  const [magicEstat, setMagicEstat] = useState<"comprovant" | "ok" | "invalid" | "ja_usat" | "caducat">(token ? "comprovant" : "invalid");
+  useEffect(() => {
+    if (mode !== "magic" || !token || magicEstatRef.current) return;
+    magicEstatRef.current = true;
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth/magic-link/consume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+          cache: "no-store",
+        });
+        const d = await res.json().catch(() => null);
+        if (res.ok && d?.ok) {
+          await auth.refresh();
+          setMagicEstat("ok");
+          // torna a la ruta interna de retorn i l'esborrany del formulari de la
+          // Home s'executa sol (l'usuari no torna a escriure res)
+          const back = safeInternalRoute(String(d.returnTo || "")) ?? "/";
+          setTimeout(() => navigate(back), 900);
+        } else {
+          setMagicEstat(d?.estat === "ja_usat" ? "ja_usat" : d?.estat === "caducat" ? "caducat" : "invalid");
+        }
+      } catch {
+        setMagicEstat("invalid");
+      }
+    })();
+  }, [mode, token]);
+
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [k]: e.target.value });
 
@@ -72,9 +130,10 @@ export default function AuthView({
           return;
         }
         await auth.refresh();
-        // Fase 1: després de registrar-se, pantalla «Revisa el teu correu»
-        // (el correu de verificació ja s'ha enviat automàticament al servidor)
-        navigate("/revisa-correu");
+        // v46 — amb ?return= intern: torna al formulari (l'esborrany es restaura
+        // i la consulta s'executa sola). Sense return: pantalla «Revisa el correu»
+        const back = safeInternalRoute(returnParam);
+        navigate(back ?? "/revisa-correu");
       } else if (mode === "login") {
         const res = await fetch("/api/auth/login", {
           method: "POST",
@@ -92,6 +151,9 @@ export default function AuthView({
           return;
         }
         await auth.refresh();
+        // v46 — amb ?return= intern: torna al formulari per reprendre el flux
+        const back = safeInternalRoute(returnParam);
+        if (back) { navigate(back); return; }
         // Fase 1: si el correu no està verificat, abans de res verificar-lo
         navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
       } else if (mode === "forgot") {
@@ -143,6 +205,8 @@ export default function AuthView({
         return;
       }
       await auth.refresh();
+      const back = safeInternalRoute(returnParam);
+      if (back) { navigate(back); return; }
       navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
     } finally {
       setBusy(false);
@@ -177,6 +241,8 @@ export default function AuthView({
       const d = await r.json();
       if (!r.ok) { setError(d.error || "DEFAULT"); return; }
       await auth.refresh();
+      const back = safeInternalRoute(returnParam);
+      if (back) { navigate(back); return; }
       navigate(d.user?.emailVerified ? "/mapa" : "/revisa-correu");
     } finally {
       setPkBusy(false);
@@ -190,11 +256,70 @@ export default function AuthView({
       ? { h: t.auth.entradaTitle, btn: t.auth.entradaCta }
       : mode === "forgot"
       ? { h: t.auth.forgotTitle, btn: t.auth.forgotCta }
+      : mode === "magic"
+      ? { h: ca ? "Entra a Preureal" : "Entrar en Preureal", btn: ca ? "Continua" : "Continuar" }
       : { h: t.auth.resetTitle, btn: t.auth.resetCta };
 
   const errText = error
     ? (t.auth.errors as Record<string, string>)[error] || t.auth.errors.DEFAULT
     : null;
+
+  // ── v46 — vista del magic link (/#/entrada-link?token=...) ────────────────
+  if (mode === "magic") {
+    return (
+      <div className="flex-1 flex items-center justify-center px-4 py-14">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-pine text-white flex items-center justify-center mx-auto">
+              <MailCheck className="w-6 h-6 text-mint" />
+            </div>
+            <h1 className="mt-4 text-2xl font-extrabold">{titles.h}</h1>
+          </div>
+          <div className="bg-card rounded-2xl border border-line p-6 space-y-4 text-center">
+            {magicEstat === "comprovant" && (
+              <div className="text-sm text-stone">{ca ? "Comprovant l'enllaç…" : "Comprobando el enlace…"}</div>
+            )}
+            {magicEstat === "ok" && (
+              <>
+                <div className="rounded-lg bg-mintsoft border border-mintline text-green2 text-sm px-3 py-2">
+                  {ca
+                    ? "Sessió creada. Et portem al formulari: l'esborrany es restaura i la consulta s'executa sola."
+                    : "Sesión creada. Te llevamos al formulario: el borrador se restaura y la consulta se ejecuta sola."}
+                </div>
+                <button
+                  onClick={() => navigate(safeInternalRoute(returnParam) ?? "/")}
+                  className="w-full py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2 transition-colors"
+                >
+                  {ca ? "Continua" : "Continuar"}
+                </button>
+              </>
+            )}
+            {magicEstat === "ja_usat" && (
+              <div className="rounded-lg bg-embersoft border border-emberline text-ember3 text-sm px-3 py-2">
+                {ca ? "Aquest enllaç ja s'havia fet servir. Fes-ne servir un de nou des del formulari." : "Este enlace ya se había usado. Pide uno nuevo desde el formulario."}
+              </div>
+            )}
+            {magicEstat === "caducat" && (
+              <div className="rounded-lg bg-embersoft border border-emberline text-ember3 text-sm px-3 py-2">
+                {ca ? "L'enllaç ha caducat (15 min). Torna al formulari i torna-ho a provar." : "El enlace ha caducado (15 min). Vuelve al formulario e inténtalo de nuevo."}
+              </div>
+            )}
+            {magicEstat === "invalid" && (
+              <div className="rounded-lg bg-embersoft border border-emberline text-ember3 text-sm px-3 py-2">
+                {(t.auth.errors as Record<string, string>).TOKEN_INVALID}
+              </div>
+            )}
+            <button
+              onClick={() => navigate("/")}
+              className="w-full py-2.5 rounded-xl border border-line bg-card font-semibold text-pine hover:bg-cream transition-colors text-sm"
+            >
+              {ca ? "Anar a la portada" : "Ir a la portada"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // confirmació visual després de restablir la contrasenya (Fase 1)
   if (mode === "reset" && resetDone) {
@@ -216,7 +341,7 @@ export default function AuthView({
                 : "Tu contraseña se ha cambiado correctamente. Las sesiones abiertas en otros dispositivos se han cerrado por seguridad."}
             </div>
             <button
-              onClick={() => navigate("/mapa")}
+              onClick={() => navigate(safeInternalRoute(returnParam) ?? "/mapa")}
               className="w-full py-3 rounded-xl bg-ember text-white font-bold hover:bg-ember2 transition-colors"
             >
               {locale === "ca" ? "Continua al mapa" : "Continuar al mapa"}
@@ -303,6 +428,14 @@ export default function AuthView({
             <MapPin className="w-6 h-6 text-mint" />
           </div>
           <h1 className="mt-4 text-2xl font-extrabold">{titles.h}</h1>
+          {/* v46 — nota del pla Free quan el registre ve del flux email-first */}
+          {mode === "register" && planParam === "free" && (
+            <p className="mt-2 text-sm text-moss">
+              {ca
+                ? "Pla Free: 3 consultes detallades al mes · sense targeta"
+                : "Plan Free: 3 consultas detalladas al mes · sin tarjeta"}
+            </p>
+          )}
         </div>
 
         <form onSubmit={submit} className="bg-card rounded-2xl border border-line p-6 space-y-4">
@@ -322,11 +455,7 @@ export default function AuthView({
               </div>
             </>
           )}
-          {mode === "register" && (
-            <Field label={t.auth.name}>
-              <input value={form.name} onChange={set("name")} className="pr-input" autoComplete="name" />
-            </Field>
-          )}
+          {/* v46 — l'E-MAIL és la PRIMERA casella del registre (i del login) */}
           {mode !== "reset" && (
             <Field label={t.auth.email}>
               <input
@@ -336,7 +465,14 @@ export default function AuthView({
                 onChange={set("email")}
                 className="pr-input"
                 autoComplete="email"
+                inputMode="email"
+                autoFocus={mode === "register"}
               />
+            </Field>
+          )}
+          {mode === "register" && (
+            <Field label={t.auth.name}>
+              <input value={form.name} onChange={set("name")} className="pr-input" autoComplete="name" />
             </Field>
           )}
           {mode !== "forgot" && (
@@ -351,6 +487,34 @@ export default function AuthView({
                 autoComplete={mode === "login" ? "current-password" : "new-password"}
               />
             </Field>
+          )}
+
+          {/* v46 — RGPD: consentiment explícit amb finalitat del tractament */}
+          {mode === "register" && (
+            <label className="flex items-start gap-2.5 text-xs text-moss leading-relaxed cursor-pointer">
+              <input
+                type="checkbox"
+                required
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                className="mt-0.5 w-4 h-4 shrink-0 accent-[#e8673c]"
+              />
+              <span>
+                {(ca
+                  ? "Accepto la "
+                  : "Acepto la ")}
+                <button
+                  type="button"
+                  onClick={() => navigate("/privacitat")}
+                  className="text-pine font-semibold underline"
+                >
+                  {ca ? "política de privacitat" : "política de privacidad"}
+                </button>
+                {(ca
+                  ? ": tractem el teu e-mail per crear el compte, aplicar la quota de consultes i enviar-te els correus de servei (verificació i seguretat)."
+                  : ": tratamos tu e-mail para crear la cuenta, aplicar la cuota de consultas y enviarte los correos de servicio (verificación y seguridad).")}
+              </span>
+            </label>
           )}
 
           {/* v37.1 — entrada amb passkey (només login i navegadors amb WebAuthn) */}

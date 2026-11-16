@@ -5,6 +5,7 @@ import { WandSparkles } from "lucide-react";
 import { useApp } from "@/components/app-context";
 import AnalitzaForm from "@/components/analitza/AnalitzaForm";
 import AnalitzaReport from "@/components/analitza/AnalitzaReport";
+import { GateLockedPanel } from "@/components/emailfirst/EmailFirst";
 import { ORIENTATION_DISCLAIMER } from "@/lib/analitza";
 import type { AnalitzaReportData } from "@/lib/analitza-html";
 
@@ -15,7 +16,7 @@ import type { AnalitzaReportData } from "@/lib/analitza-html";
  * Mai una valoració individualitzada: vegeu ORIENTATION_DISCLAIMER.
  */
 export default function AnalitzaView() {
-  const { locale } = useApp();
+  const { locale, auth, navigate } = useApp();
   const ca = locale === "ca";
   const [report, setReport] = useState<AnalitzaReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -94,7 +95,7 @@ export default function AnalitzaView() {
         <div className="max-w-3xl">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-pine text-white text-xs font-semibold mb-4">
             <WandSparkles className="w-4 h-4 text-mint" />
-            {ca ? "Nou · gratuït i sense registre" : "Nuevo · gratuito y sin registro"}
+            {ca ? "Nou · gratuït amb registre Free" : "Nuevo · gratuito con registro Free"}
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
             {ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado"}
@@ -130,6 +131,10 @@ export default function AnalitzaView() {
           <div ref={reportRef} className="lg:sticky lg:top-20">
             {report ? (
               <AnalitzaReport data={report} variant="full" />
+            ) : !auth.user ? (
+              // v46 — el panell de resultats NEIX BLOQUEJAT sense compte:
+              // «Registra't primer» (el bloqueig real és al servidor: 401)
+              <GateLockedPanel ca={ca} onSignup={() => navigate("/registre")} />
             ) : (
               <div className="rounded-2xl border border-line bg-card p-6 text-sm text-stone leading-relaxed">
                 <p className="font-semibold text-moss">
@@ -142,7 +147,7 @@ export default function AnalitzaView() {
                   <li><b>{ca ? "D. Abans de signar" : "D. Antes de firmar"}</b> — {ca ? "llista de comprovació marcable amb fonts." : "lista de comprobación marcable con fuentes."}</li>
                 </ul>
                 <p className="mt-3 text-xs">
-                  {ca ? "Sense registre, sense dades personals, gratuït: el resultat ve de fonts oficials (Incasòl, DOGC, MIVAU) i dades obertes (OpenStreetMap), sempre amb la font, la data i les limitacions." : "Sin registro, sin datos personales, gratuito: el resultado viene de fuentes oficiales (Incasòl, DOGC, MIVAU) y datos abiertos (OpenStreetMap), siempre con la fuente, la fecha y las limitaciones."}
+                  {ca ? "Gratuït amb registre Free: el resultat ve de fonts oficials (Incasòl, DOGC, MIVAU) i dades obertes (OpenStreetMap), sempre amb la font, la data i les limitacions. L'e-mail només identifica el compte i aplica la quota (3 consultes detallades al mes)." : "Gratuito con registro Free: el resultado viene de fuentes oficiales (Incasòl, DOGC, MIVAU) y datos abiertos (OpenStreetMap), siempre con la fuente, la fecha y las limitaciones. El e-mail solo identifica la cuenta y aplica la cuota (3 consultas detalladas al mes)."}
                 </p>
               </div>
             )}

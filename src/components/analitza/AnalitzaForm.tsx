@@ -3,16 +3,37 @@
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Search, Loader2, ChevronDown } from "lucide-react";
 import { useApp } from "@/components/app-context";
+import {
+  EmailFirstField,
+  GateLockedPanel,
+  GateMagicPanel,
+  GateQuotaPanel,
+  GateSignupPanel,
+  useDraftAutoRun,
+  useEmailFirst,
+  type GateKind,
+} from "@/components/emailfirst/EmailFirst";
 import type { ContractType } from "@/lib/analitza";
+import { buildSignupRedirect, returnRouteFor } from "@/lib/email-first";
 
 /**
  * F1 «Consulta el preu real registrat» — formulari compartit.
  * variant "compact": a la portada (camps avançats plegats).
  * variant "full": a #/analitza (amb mapa ICGC per marcar el punt exacte).
  *
- * Dades demanades: mínimes per a l'anàlisi (cap dada personal). L'adreça usa
- * el Geocodificador oficial ICGC (via /api/geocode) i omple municipi i punt.
- * El resultat és una COMPARACIÓ ESTADÍSTICA, mai una valoració individual.
+ * v46 — flux EMAIL-FIRST amb registre obligatori: l'e-mail és la PRIMERA
+ * casella (precarregat de la sessió amb «Canvia d'usuari»); el panell de
+ * resultats neix bloquejat («Registra't primer») i el bloqueig REAL és al
+ * servidor (401 REGISTRAT_PRIMER + quota per user_id a /api/analitza). La
+ * taula de decisió completa viu a useEmailFirst().submitGate(): no registrat
+ * → registre Free amb e-mail precarregat i esborrany conservat; registrat
+ * sense sessió → magic link; en tornar, l'esborrany es restaura i la consulta
+ * s'executa sola. L'e-mail és dada personal: només identifica el compte i
+ * aplica la quota; mai s'envia al body de la consulta ni a analytics.
+ *
+ * Dades demanades: mínimes per a l'anàlisi. L'adreça usa el Geocodificador
+ * oficial ICGC (via /api/geocode) i omple municipi i punt. El resultat és una
+ * COMPARACIÓ ESTADÍSTICA, mai una valoració individual.
  */
 
 export interface MuniLite {
@@ -37,23 +58,6 @@ export interface AnalitzaFormValues {
   builtYear: string;
   previousRent: string;
   notes: string;
-}
-
-export const ANALITZA_PREFILL_KEY = "pr_analitza_prefill";
-
-export function savePrefill(values: Partial<AnalitzaFormValues> & { autoRun?: boolean }) {
-  try {
-    sessionStorage.setItem(ANALITZA_PREFILL_KEY, JSON.stringify(values));
-  } catch {}
-}
-
-function loadPrefill(): (Partial<AnalitzaFormValues> & { autoRun?: boolean }) | null {
-  try {
-    const raw = sessionStorage.getItem(ANALITZA_PREFILL_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
 }
 
 const emptyValues: AnalitzaFormValues = {
@@ -94,7 +98,7 @@ export default function AnalitzaForm({
   /** full: punt marcat al mapa per l'usuari (la vista el sincronitza al formulari) */
   externalPoint?: { lat: number; lng: number } | null;
 }) {
-  const { locale } = useApp();
+  const { locale, navigate } = useApp();
   const ca = locale === "ca";
   const [v, setV] = useState<AnalitzaFormValues>(emptyValues);
   const [munQuery, setMunQuery] = useState("");
@@ -105,6 +109,9 @@ export default function AnalitzaForm({
   const munBoxRef = useRef<HTMLDivElement>(null);
   const geoBoxRef = useRef<HTMLDivElement>(null);
 
+  // v46 — flux email-first (e-mail primera casella + taula de decisió)
+  const ef = useEmailFirst("analitza");
+
   const set = (patch: Partial<AnalitzaFormValues>) => {
     setV((prev) => {
       const next = { ...prev, ...patch };
@@ -114,7 +121,8 @@ export default function AnalitzaForm({
     });
   };
 
-  const runSubmit = async (vals: AnalitzaFormValues) => {
+  /** Consulta real (el servidor aplica sessió + quota: 401/402 mapejats). */
+  const executeQuery = async (vals: AnalitzaFormValues) => {
     if (!vals.municipalityCode) {
       setError(ca ? "Tria el municipi (o escriu l'adreça exacta per omplir-lo)." : "Elige el municipio (o escribe la dirección exacta para rellenarlo).");
       return;
@@ -127,7 +135,6 @@ export default function AnalitzaForm({
     setError(null);
     setLoading(true);
     onLoadingChange?.(true);
-    savePrefill({ ...vals, autoRun: false });
     try {
       const res = await fetch("/api/analitza", {
         method: "POST",
@@ -147,8 +154,10 @@ export default function AnalitzaForm({
           notes: vals.notes || undefined,
         }),
       });
-      const d = await res.json();
-      if (!res.ok || !d.ok) {
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.ok) {
+        // v46 — bloquejos del SERVIDOR al panell de bloqueig (mai un error sec)
+        if (ef.applyServerError(res.status, d)) return;
         setError(d?.message || (ca ? "No s'ha pogut calcular l'informe. Revisa les dades." : "No se ha podido calcular el informe. Revisa los datos."));
         return;
       }
@@ -161,6 +170,29 @@ export default function AnalitzaForm({
     }
   };
 
+  /** Submit del formulari = flux email-first (guarda esborrany + decideix). */
+  const handleEmailFirstSubmit = () => {
+    void ef.submitGate(v as unknown as Record<string, unknown>, () => executeQuery(v));
+  };
+
+  // v46 — esborrany: en tornar del registre/magic link (sessió nova), restaura
+  // els valors i executa la consulta automàticament (l'usuari no torna a
+  // escriure res). Sense sessió l'esborrany espera: mai es perd.
+  useDraftAutoRun(
+    "analitza",
+    ef.sessionEmail,
+    (d) => {
+      const filled = { ...emptyValues, ...(d.values as Partial<AnalitzaFormValues>) };
+      setV(filled);
+      if (filled.lat != null && filled.lng != null) onPointChange?.({ lat: filled.lat, lng: filled.lng });
+      if (d.autoRun && filled.municipalityCode && Number(filled.priceEurMonth) >= 50) {
+        void executeQuery(filled);
+      }
+    },
+    (values) => Boolean(values.municipalityCode) && Number(values.priceEurMonth) >= 50,
+    () => {},
+  );
+
   // punt marcat al mapa (vista full): sincronitza al formulari durant el render
   // (patró React d'ajust d'estat quan canvien les props — l'estat del pare ja és
   // el mateix punt, no cal notificar de tornada: mai bucles)
@@ -170,33 +202,6 @@ export default function AnalitzaForm({
   // neteja de desplegables amb consultes massa curtes (durant el render, patró MapView)
   if (munQuery.trim().length < 2 && munOptions.length > 0) setMunOptions([]);
   if ((v.address ?? "").trim().length < 5 && geoOptions.length > 0) setGeoOptions([]);
-
-  // prefill des de la portada (mateixa sessió): omple i, si cal, executa automàtic.
-  // El consumeix UNA vegada (esborra la clau) i difereix els setState amb await
-  // per evitar renders en cascada (patró MapView).
-  useEffect(() => {
-    if (variant !== "full") return;
-    let cancelled = false;
-    void (async () => {
-      await Promise.resolve();
-      if (cancelled) return;
-      const pre = loadPrefill();
-      if (!pre) return;
-      try {
-        sessionStorage.removeItem(ANALITZA_PREFILL_KEY);
-      } catch {}
-      const { autoRun, ...vals } = pre;
-      const filled = { ...emptyValues, ...vals };
-      setV(filled);
-      if (filled.lat != null && filled.lng != null) onPointChange?.({ lat: filled.lat, lng: filled.lng });
-      if (autoRun && filled.municipalityCode && Number(filled.priceEurMonth) >= 50) {
-        void runSubmit(filled);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [variant]);
 
   // cerca de municipis (BD local, instantània) — debounce curt (les neteges de
   // consultes curtes es fan durant el render, vegeu dalt)
@@ -262,14 +267,44 @@ export default function AnalitzaForm({
     "w-full rounded-xl border border-line bg-card px-3.5 py-3 text-[15px] outline-none focus:border-pine min-h-[48px]";
   const labelCls = "block text-xs font-bold text-moss mb-1.5";
 
+  // panell de bloqueig segons l'estat del flux (neix bloquejat sense compte)
+  const gatePanel = ef.gate === "locked" ? (
+    ef.redirecting
+      ? <GateSignupPanel ca={ca} />
+      : (
+        <GateLockedPanel
+          ca={ca}
+          onSignup={() => {
+            const em = ef.email.trim().toLowerCase();
+            navigate(buildSignupRedirect(em, returnRouteFor("analitza", variant)));
+          }}
+        />
+      )
+  ) : ef.gate === "magic" ? (
+    <GateMagicPanel ca={ca} />
+  ) : ef.gate === "quota" ? (
+    <GateQuotaPanel onPlans={() => navigate("/preus")} />
+  ) : null;
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        void runSubmit(v);
+        handleEmailFirstSubmit();
       }}
       className="flex flex-col gap-3.5"
     >
+      {/* v46 — PRIMERA casella: l'e-mail (registre obligatori, flux email-first) */}
+      <EmailFirstField
+        value={ef.email}
+        onChange={(x) => { ef.setEmail(x); ef.setEmailError(null); }}
+        readOnly={Boolean(ef.sessionEmail)}
+        error={ef.emailError}
+        inputRef={ef.emailRef}
+        ca={ca}
+        onSwitchUser={() => void ef.switchUser()}
+      />
+
       {/* municipi */}
       <div ref={munBoxRef} className="relative">
         <label className={labelCls} htmlFor="analitza-muni">
@@ -415,18 +450,22 @@ export default function AnalitzaForm({
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || ef.busy || ef.redirecting}
         className="w-full rounded-xl bg-ember text-white font-bold text-base px-6 py-3.5 hover:bg-ember2 transition-all hover:shadow-lg hover:shadow-orange-200 disabled:opacity-60 flex items-center justify-center gap-2 min-h-[48px]"
       >
-        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-        {loading
-          ? (ca ? "Consultant dades oficials…" : "Consultando datos oficiales…")
+        {loading || ef.busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+        {loading || ef.busy
+          ? (ca ? "Comprovant el compte…" : "Comprobando la cuenta…")
           : (ca ? "Compara l'anunci amb la referència oficial" : "Compara el anuncio con la referencia oficial")}
       </button>
+
+      {/* v46 — panells de bloqueig del flux email-first (ara sota el botó) */}
+      {gatePanel}
+
       <p className="text-[11px] text-stone leading-relaxed">
         {ca
-          ? "Gratuït i sense registre. Cap dada personal: només municipi, característiques de la vivenda i el preu que vols comprovar. Comparació estadística: el resultat no valora el teu habitatge."
-          : "Gratuito y sin registro. Ningún dato personal: solo municipio, características de la vivienda y el precio que quieres comprobar. Comparación estadística: el resultado no valora tu vivienda."}
+          ? "Gratuït amb registre Free (3 consultes detallades al mes). L'e-mail només identifica el compte i aplica la quota al servidor; no demanem cap altra dada personal i res no s'associa al teu usuari sense compte. Comparació estadística: el resultat no valora el teu habitatge."
+          : "Gratuito con registro Free (3 consultas detalladas al mes). El e-mail solo identifica la cuenta y aplica la cuota en el servidor; no pedimos ningún otro dato personal y nada se asocia a tu usuario sin cuenta. Comparación estadística: el resultado no valora tu vivienda."}
       </p>
     </form>
   );

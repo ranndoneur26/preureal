@@ -3,17 +3,34 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Loader2, MapPin, Ruler, WandSparkles } from "lucide-react";
 import { useApp } from "@/components/app-context";
+import {
+  EmailFirstField,
+  GateLockedPanel,
+  GateMagicPanel,
+  GateQuotaPanel,
+  GateSignupPanel,
+  useDraftAutoRun,
+  useEmailFirst,
+} from "@/components/emailfirst/EmailFirst";
 import { ESTIMA_SURFACE_MIN, ESTIMA_SURFACE_MAX, ESTIMA_ROOMS_MAX } from "@/lib/estima";
+import { buildSignupRedirect, returnRouteFor } from "@/lib/email-first";
 
 /**
  * F2/F3 «Estima el lloguer del teu habitatge» — formulari PROGRESSIU de 2 passos.
  * variant "compact": a la portada (pestanya «Estima»). variant "full": a #/estima.
  *
+ * v46 — flux EMAIL-FIRST amb registre obligatori: l'e-mail és la PRIMERA
+ * casella del formulari (precarregat de la sessió amb «Canvia d'usuari»);
+ * sense compte, el panell de resultats mostra «Registra't primer» i el
+ * bloqueig REAL és al servidor (401 REGISTRAT_PRIMER a /api/estima + quota
+ * per user_id). La taula de decisió completa viu a useEmailFirst().submitGate().
+ *
  * Demana EXACTAMENT el que el càlcul usa (regla d'or): municipi + superfície
  * sempre (N1); estat de conservació i habitacions OPCIONALS (N2, els únics
  * ajustos amb coeficient documentat i validat al motor). Cap adreça, cap
  * referència catastral, cap característica sense coeficient documentat
- * (ascensor, aparcament, moblat, planta… no es demanen) i cap dada personal.
+ * (ascensor, aparcament, moblat, planta… no es demanen). L'e-mail només
+ * identifica el compte i aplica la quota: mai s'envia al body ni a analytics.
  */
 
 export interface EstimaMuniLite {
@@ -46,6 +63,14 @@ export interface EstimaPayload {
   message?: string;
 }
 
+interface EstimaValues {
+  municipalityCode: string;
+  municipalityName: string;
+  surfaceM2: string;
+  rooms: string;
+  estat: string;
+}
+
 export default function EstimaForm({
   variant,
   onResult,
@@ -55,7 +80,7 @@ export default function EstimaForm({
   onResult: (data: EstimaPayload) => void;
   onLoadingChange?: (loading: boolean) => void;
 }) {
-  const { locale } = useApp();
+  const { locale, navigate } = useApp();
   const ca = locale === "ca";
   const [step, setStep] = useState<1 | 2>(1);
   const [muni, setMuni] = useState<EstimaMuniLite | null>(null);
@@ -67,6 +92,9 @@ export default function EstimaForm({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const munBoxRef = useRef<HTMLDivElement>(null);
+
+  // v46 — flux email-first (e-mail primera casella + taula de decisió)
+  const ef = useEmailFirst("estima");
 
   // N2 real: només si un ajust de característica s'aplicarà de debò (mateixa
   // semàntica que el motor: estat declarat, o habitacions ≥1 amb superfície).
@@ -108,13 +136,14 @@ export default function EstimaForm({
     setError(null);
   };
 
-  const submit = async () => {
-    if (!muni) {
+  /** Consulta real (el servidor aplica sessió + quota: 401/402 mapejats). */
+  const executeQuery = async (vals: EstimaValues) => {
+    if (!vals.municipalityCode) {
       setStep(1);
       setError(ca ? "Tria el municipi per començar." : "Elige el municipio para empezar.");
       return;
     }
-    const m2 = Number(surface);
+    const m2 = Number(vals.surfaceM2);
     if (!Number.isFinite(m2) || m2 < ESTIMA_SURFACE_MIN || m2 > ESTIMA_SURFACE_MAX) {
       setError(ca
         ? `Introdueix la superfície (entre ${ESTIMA_SURFACE_MIN} i ${ESTIMA_SURFACE_MAX} m²).`
@@ -129,15 +158,17 @@ export default function EstimaForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          municipalityCode: muni.code,
-          municipalityName: muni.name,
+          municipalityCode: vals.municipalityCode,
+          municipalityName: vals.municipalityName,
           surfaceM2: m2,
-          ...(rooms !== "" ? { rooms: Number(rooms) } : {}),
-          ...(estat !== "" ? { estat } : {}),
+          ...(vals.rooms !== "" ? { rooms: Number(vals.rooms) } : {}),
+          ...(vals.estat !== "" ? { estat: vals.estat } : {}),
         }),
       });
-      const d = await res.json();
-      if (!res.ok || !d.ok) {
+      const d = await res.json().catch(() => null);
+      if (!res.ok || !d?.ok) {
+        // v46 — bloquejos del SERVIDOR al panell de bloqueig (mai un error sec)
+        if (ef.applyServerError(res.status, d)) return;
         setError(d?.message || (ca ? "No s'ha pogut calcular l'estimació. Revisa les dades." : "No se ha podido calcular la estimación. Revisa los datos."));
         return;
       }
@@ -149,6 +180,55 @@ export default function EstimaForm({
       onLoadingChange?.(false);
     }
   };
+
+  const currentValues = (): EstimaValues => ({
+    municipalityCode: muni?.code ?? "",
+    municipalityName: muni?.name ?? "",
+    surfaceM2: surface,
+    rooms,
+    estat,
+  });
+
+  /** Submit del formulari = flux email-first (guarda esborrany + decideix). */
+  const handleEmailFirstSubmit = () => {
+    const vals = currentValues();
+    void ef.submitGate(vals as unknown as Record<string, unknown>, () => executeQuery(vals));
+  };
+
+  // v46 — esborrany: en tornar del registre/magic link (sessió nova), restaura
+  // els valors i executa l'estimació automàticament (l'usuari no torna a
+  // escriure res). Sense sessió l'esborrany espera: mai es perd.
+  useDraftAutoRun(
+    "estima",
+    ef.sessionEmail,
+    (d) => {
+      const values = (d.values ?? {}) as Partial<EstimaValues>;
+      if (values.municipalityCode) {
+        setMuni({
+          code: values.municipalityCode,
+          name: values.municipalityName ?? "",
+          comarca: null,
+          lat: 0,
+          lng: 0,
+        });
+        setStep(2);
+      }
+      if (typeof values.surfaceM2 === "string") setSurface(values.surfaceM2);
+      if (typeof values.rooms === "string") setRooms(values.rooms);
+      if (typeof values.estat === "string") setEstat(values.estat);
+      if (d.autoRun && values.municipalityCode && Number(values.surfaceM2) >= ESTIMA_SURFACE_MIN) {
+        void executeQuery({
+          municipalityCode: values.municipalityCode,
+          municipalityName: values.municipalityName ?? "",
+          surfaceM2: values.surfaceM2 ?? "",
+          rooms: values.rooms ?? "",
+          estat: values.estat ?? "",
+        });
+      }
+    },
+    (values) => Boolean(values.municipalityCode) && Number(values.surfaceM2) >= ESTIMA_SURFACE_MIN,
+    () => {},
+  );
 
   const inputCls =
     "w-full rounded-xl border border-line bg-card px-3.5 py-3 text-[15px] outline-none focus:border-pine min-h-[48px]";
@@ -165,8 +245,39 @@ export default function EstimaForm({
     </div>
   );
 
+  // panell de bloqueig segons l'estat del flux (neix bloquejat sense compte)
+  const gatePanel = ef.gate === "locked" ? (
+    ef.redirecting
+      ? <GateSignupPanel ca={ca} />
+      : (
+        <GateLockedPanel
+          ca={ca}
+          onSignup={() => {
+            const em = ef.email.trim().toLowerCase();
+            navigate(buildSignupRedirect(em, returnRouteFor("estima", variant)));
+          }}
+        />
+      )
+  ) : ef.gate === "magic" ? (
+    <GateMagicPanel ca={ca} />
+  ) : ef.gate === "quota" ? (
+    <GateQuotaPanel onPlans={() => navigate("/preus")} />
+  ) : null;
+
   return (
     <div className="flex flex-col gap-3.5">
+      {/* v46 — PRIMERA casella: l'e-mail (registre obligatori, flux email-first) */}
+      <EmailFirstField
+        value={ef.email}
+        onChange={(x) => { ef.setEmail(x); ef.setEmailError(null); }}
+        readOnly={Boolean(ef.sessionEmail)}
+        error={ef.emailError}
+        inputRef={ef.emailRef}
+        ca={ca}
+        onSwitchUser={() => void ef.switchUser()}
+        onEnter={() => { if (step === 2) handleEmailFirstSubmit(); }}
+      />
+
       {stepIndicator}
       <p className="text-[11px] font-semibold text-stone" aria-live="polite">
         {ca
@@ -253,7 +364,7 @@ export default function EstimaForm({
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
-                  void submit();
+                  handleEmailFirstSubmit();
                 }
               }}
             />
@@ -313,13 +424,13 @@ export default function EstimaForm({
       {step === 2 ? (
         <button
           type="button"
-          onClick={() => void submit()}
-          disabled={loading}
+          onClick={handleEmailFirstSubmit}
+          disabled={loading || ef.busy || ef.redirecting}
           className="w-full rounded-xl bg-ember text-white font-bold text-base px-6 py-3.5 hover:bg-ember2 transition-all hover:shadow-lg hover:shadow-orange-200 disabled:opacity-60 flex items-center justify-center gap-2 min-h-[48px]"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <WandSparkles className="w-5 h-5" />}
-          {loading
-            ? (ca ? "Calculant amb la base oficial…" : "Calculando con la base oficial…")
+          {loading || ef.busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <WandSparkles className="w-5 h-5" />}
+          {loading || ef.busy
+            ? (ca ? "Comprovant el compte…" : "Comprobando la cuenta…")
             : (ca ? `Estima el rang orientatiu (N${n2 ? "2" : "1"})` : `Estima el rango orientativo (N${n2 ? "2" : "1"})`)}
         </button>
       ) : (
@@ -331,11 +442,14 @@ export default function EstimaForm({
         </p>
       )}
 
+      {/* v46 — panells de bloqueig del flux email-first */}
+      {gatePanel}
+
       <p className="text-[11px] text-stone leading-relaxed flex items-start gap-1.5">
         <Ruler className="w-3.5 h-3.5 text-pine shrink-0 mt-0.5" />
         {ca
-          ? "Nivells N1 i N2: base estadística oficial (fiança municipal Incasòl) escalada per superfície, amb ajustos opcionals per estat de conservació i habitacions (coeficients documentats). Cap dada personal: no demanem adreça ni referència catastral i res no s'associa al teu usuari. El resultat és sempre un RANG orientatiu, mai una taxació."
-          : "Niveles N1 y N2: base estadística oficial (fianza municipal Incasòl) escalada por superficie, con ajustos opcionales por estado de conservación y habitaciones (coeficientes documentados). Ningún dato personal: no pedimos dirección ni referencia catastral y nada se asocia a tu usuario. El resultado es siempre un RANGO orientativo, nunca una tasación."}
+          ? "Nivells N1 i N2: base estadística oficial (fiança municipal Incasòl) escalada per superfície, amb ajustos opcionals per estat de conservació i habitacions (coeficients documentats). Gratuït amb registre Free: l'e-mail només identifica el compte i aplica la quota; no demanem adreça ni referència catastral. El resultat és sempre un RANG orientatiu, mai una taxació."
+          : "Niveles N1 y N2: base estadística oficial (fianza municipal Incasòl) escalada por superficie, con ajustos opcionales por estado de conservación y habitaciones (coeficientes documentados). Gratuito con registro Free: el e-mail solo identifica la cuenta y aplica la cuota; no pedimos dirección ni referencia catastral. El resultado es siempre un RANGO orientativo, nunca una tasación."}
       </p>
     </div>
   );

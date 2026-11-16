@@ -41,6 +41,7 @@ model User {
   priceReports       PriceReport[]
   passwordTokens     PasswordToken[]
   emailTokens        EmailToken[]
+  magicTokens        MagicToken[]
   favorites          Favorite[]
   savedComparisons   SavedComparison[]
   subscriptionUsages SubscriptionUsage[]
@@ -139,6 +140,27 @@ model EmailToken {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+// v46 — Magic link (entrada sense contrasenya) per al flux email-first del
+// formulari de la Home: un compte registrat sense sessió rep un enllaç d'un
+// sol ús (15 min) que crea la sessió en consumir-lo — mai es desa el token
+// cru (mateix patró P0 v19 que EmailToken: només el HASH sha256 a la BD).
+// `returnTo` guarda la ruta interna segura (allowlist a src/lib/email-first.ts)
+// per reprendre el formulari en tornar: l'esborrany viu al sessionStorage del
+// navegador, el token només recorda A ON tornar.
+model MagicToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  returnTo  String?
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 // Municipios de Cataluña (código INE de 5 dígitos) con datos reales de lloguer

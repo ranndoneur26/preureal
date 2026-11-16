@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
+import { gateDetailedQuery } from "@/lib/consulta-gate";
 import {
   buildEstimation,
   sanitizeEstimaSurface,
@@ -18,6 +19,9 @@ import { valueForYear, yearOfPeriod } from "@/lib/territorial";
 
 /**
  * POST /api/estima — F2/F3 «Estima el lloguer del teu habitatge» (N1 + N2).
+ * v46: flux email-first amb registre obligatori — mateix gate que /api/analitza:
+ * sense sessió 401 { code: "REGISTRAT_PRIMER" } (mai cap càlcul detallat) i
+ * amb sessió la consulta computa dins la quota del pla per user_id.
  *
  * Entrada (regla d'or: no demanar dades que el càlcul no usa): municipi
  * (codi 6 dígits) + superfície (5–500 m²) + característiques OPCIONALS amb
@@ -25,9 +29,9 @@ import { valueForYear, yearOfPeriod } from "@/lib/territorial";
  * conservació A_REFORMAR|BON_ESTAT|REFORMADA|OBRA_NOVA). Les demés variables
  * SERPAVI (ascensor, aparcament, any construcció, moblat, planta, energia,
  * piscina, zones comunitàries) NO s'accepten: sense coeficient documentat no
- * s'apliquen ni es demanen. Res de dades personals: sense auth, sense adreça,
- * sense referència catastral; només registre anònim d'ús (Event) amb municipi,
- * superfície arrodonida i nivell real (N1/N2).
+ * s'apliquen ni es demanen. L'e-mail només identifica el compte (sessió
+ * httpOnly; mai arriba al body); el registre d'ús (Event) continua sent
+ * anònim: municipi, superfície arrodonida i nivell real (N1/N2).
  *
  * Sortida: SEMPRE un RANG orientatiu amb traçabilitat completa (base Incasòl,
  * període, nº contractes, ajustos aplicats amb factor, dispersió mesurada,
@@ -40,6 +44,11 @@ export async function POST(req: Request) {
   const ip = clientIp(req);
   const rl = await rateLimit(`estima:${ip}`, 20, 60_000);
   if (!rl.ok) return NextResponse.json({ error: "TOO_MANY" }, { status: 429 });
+
+  // v46 — BLOQUEIG REAL (mai només visual): sense sessió, 401 REGISTRAT_PRIMER
+  // ABANS de llegir el body i de tocar la BD; amb sessió, quota per user_id.
+  const gate = await gateDetailedQuery();
+  if (!gate.ok) return gate.res;
 
   let body: Record<string, unknown>;
   try {

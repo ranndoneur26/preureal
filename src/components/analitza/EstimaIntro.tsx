@@ -5,6 +5,7 @@ import { ExternalLink, FileText, Home, Info } from "lucide-react";
 import { useApp } from "@/components/app-context";
 import EstimaForm, { type EstimaPayload } from "@/components/estima/EstimaForm";
 import EstimaReport from "@/components/estima/EstimaReport";
+import { GateLockedPanel } from "@/components/emailfirst/EmailFirst";
 import { ESTIMA_SERPAVI_URL } from "@/lib/estima";
 
 /**
@@ -16,10 +17,12 @@ import { ESTIMA_SERPAVI_URL } from "@/lib/estima";
  * fonts tributàries no públiques: mai es simula, mai s'inventa — botó oficial.
  *
  * Regla d'or: mai una xifra única de taxació, mai una consulta oficial
- * SERPAVI simulada, cap dada personal (no demana adreça ni ref. catastral).
+ * SERPAVI simulada. v46 — flux email-first: el registre Free és obligatori
+ * per veure el resultat (bloqueig real al servidor); l'e-mail només identifica
+ * el compte i aplica la quota (3 consultes detallades al mes).
  */
 export default function EstimaIntro() {
-  const { locale, navigate } = useApp();
+  const { locale, navigate, auth } = useApp();
   const ca = locale === "ca";
   const [result, setResult] = useState<EstimaPayload | null>(null);
   const [formKey, setFormKey] = useState(0);
@@ -45,8 +48,8 @@ export default function EstimaIntro() {
           <EstimaReport data={result} variant="compact" onRetry={() => { setResult(null); setFormKey((k) => k + 1); }} />
           <p className="text-[11px] text-stone leading-relaxed">
             {ca
-              ? "Cap dada personal: l'estimació no demana adreces ni referències catastrals i no guarda res associat a usuaris."
-              : "Ningún dato personal: la estimación no pide direcciones ni referencias catastrales y no guarda nada asociado a usuarios."}
+              ? "L'estimació no demana adreces ni referències catastrals; l'e-mail només identifica el teu compte Free i la seva quota (3 consultes detallades al mes)."
+              : "La estimación no pide direcciones ni referencias catastrales; el e-mail solo identifica tu cuenta Free y su cuota (3 consultas detalladas al mes)."}
           </p>
         </>
       ) : (
@@ -56,6 +59,10 @@ export default function EstimaIntro() {
             variant="compact"
             onResult={(d) => setResult(d)}
           />
+          {!auth.user && (
+            // v46 — el panell de resultats NEIX BLOQUEJAT sense compte
+            <GateLockedPanel ca={ca} onSignup={() => navigate("/registre")} />
+          )}
           <a
             href={ESTIMA_SERPAVI_URL}
             target="_blank"

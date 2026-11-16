@@ -39,6 +39,8 @@ import * as h_auth_google_callback from "../_impl/auth/google/callback/route";
 import * as h_auth_google_status from "../_impl/auth/google/status/route";
 import * as h_auth_login from "../_impl/auth/login/route";
 import * as h_auth_logout from "../_impl/auth/logout/route";
+import * as h_auth_magic_link from "../_impl/auth/magic-link/route";
+import * as h_auth_magic_link_consume from "../_impl/auth/magic-link/consume/route";
 import * as h_auth_me from "../_impl/auth/me/route";
 import * as h_auth_passkeys from "../_impl/auth/passkeys/route";
 import * as h_auth_passkeys_auth_options from "../_impl/auth/passkeys/auth-options/route";
@@ -61,6 +63,7 @@ import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_cron_entorn from "../_impl/cron/entorn/route";
 import * as h_cron_ine from "../_impl/cron/ine/route";
 import * as h_cron_rental_share from "../_impl/cron/rental-share/route";
+import * as h_email_status from "../_impl/email-status/route";
 import * as h_estima from "../_impl/estima/route";
 import * as h_events from "../_impl/events/route";
 import * as h_favorites from "../_impl/favorites/route";
@@ -137,6 +140,8 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["auth", "google", "status"], h: h_auth_google_status },
   { seg: ["auth", "login"], h: h_auth_login },
   { seg: ["auth", "logout"], h: h_auth_logout },
+  { seg: ["auth", "magic-link"], h: h_auth_magic_link },
+  { seg: ["auth", "magic-link", "consume"], h: h_auth_magic_link_consume },
   { seg: ["auth", "me"], h: h_auth_me },
   { seg: ["auth", "passkeys"], h: h_auth_passkeys },
   { seg: ["auth", "passkeys", "auth-options"], h: h_auth_passkeys_auth_options },
@@ -159,6 +164,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["cron", "entorn"], h: h_cron_entorn },
   { seg: ["cron", "ine"], h: h_cron_ine },
   { seg: ["cron", "rental-share"], h: h_cron_rental_share },
+  { seg: ["email-status"], h: h_email_status },
   { seg: ["estima"], h: h_estima },
   { seg: ["events"], h: h_events },
   { seg: ["favorites"], h: h_favorites },

@@ -135,6 +135,19 @@ mock.module("@/lib/indicators-data", () => ({
   getMuniRentRows: async () => [], // sense pool → l'horquilla cau a la sèrie històrica
 }));
 
+// v46 — la ruta /api/estima ara passa per gateDetailedQuery() (flux email-first:
+// bloqueig real 401 sense sessió + quota per user_id). En aquest fitxer el gate
+// s'ha de MOCKAR amb usuari vàlid perquè els tests RGPD de sota segueixin
+// exercint el cos REAL de la ruta (mateixa tècnica que els mocks de db/rate-limit).
+// El comportament REAL del gate (401/402) es comprova a tests/email_first.test.ts.
+mock.module("@/lib/consulta-gate", () => ({
+  gateDetailedQuery: async () => ({
+    ok: true as const,
+    user: { id: "test-user", email: "test@example.com", plan: "FREE" as const },
+  }),
+  registratPrimerResponse: () => new Response(JSON.stringify({ error: "UNAUTHENTICATED", code: "REGISTRAT_PRIMER" }), { status: 401 }),
+}));
+
 // imports de la ruta DESPRÉS dels mock.module (obligatori amb bun)
 const { POST: estimaPOST } = await import("../src/app/api/_impl/estima/route");
 

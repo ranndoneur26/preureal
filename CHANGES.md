@@ -2,6 +2,87 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v46 — Registre obligatori amb e-mail primer al formulari de la Home — 2026-11-16
+
+Els formularis de la Home («Consulta el preu real registrat» i «Estima el lloguer
+del teu habitatge») passen a un flux EMAIL-FIRST amb registre obligatori, amb el
+bloqueig REAL al servidor (mai només visual). El mapa, la seva consulta de preus
+registrats i el freemium existents no canvien.
+
+**Taula de decisió completa (cap cas sense definir):**
+- E-mail buit o invàlid → error inline exacte «Introdueix un e-mail vàlid.» (focus
+  al camp); no s'envia res.
+- Registrat + sessió (mateix e-mail) → desbloqueja i executa; la consulta COMPUTA
+  dins la quota del pla (3 detallades/mes al Free), aplicada PER USER_ID al
+  servidor amb la mateixa font atòmica v23 que /api/lookup.
+- Registrat + sense sessió → magic link d'un sol ús (15 min): «Ja tens compte.
+  T'hem enviat un enllaç per entrar-hi.»; en tornar, l'esborrany es restaura i la
+  consulta s'executa sola (l'usuari no torna a escriure res).
+- NO registrat → «Registra't primer» + redirecció immediata al registre del pla
+  Free amb ?pla=free&email=&return= (e-mail precarregat a la primera casella del
+  registre; `return` només rutes internes de l'allowlist — mai open redirect).
+- Registrat + quota exhaurida → el servidor respon 402 QUOTA_EXCEEDED i el client
+  mostra el missatge existent del límit del pla Free (mateix contracte que el mapa).
+
+**Backend (nou):**
+- `POST /api/email-status` — públic, rate-limit 5 req/min/IP, resposta MÍNIMA
+  `{ registered: boolean }` (mai noms ni pla: anti-enumeració).
+- `POST /api/auth/magic-link` + `GET/POST /api/auth/magic-link/consume` — tokens
+  de 192 bits amb NOMÉS el HASH a la BD (taula nova MagicToken + migració), un
+  sol ús ATÒMIC (update condicionat used:false), caducitat 15 min, un enllaç nou
+  anul·la els pendents anteriors, comptes inactius mai reben correu i la resposta
+  és `{ sent: true }` SEMPRE (anti-enumeració). GET mai muta (P1.2: redirigeix a
+  /#/entrada-link i la SPA fa el POST).
+- `src/lib/consulta-gate.ts` — `gateDetailedQuery()`: sense sessió →
+  **401 `{ code: "REGISTRAT_PRIMER" }` sense llegir el body ni tocar la BD**;
+  amb sessió → consumeDetailQuery per user_id; quota exhaurida → 402.
+  Aplicat a `POST /api/analitza` i `POST /api/estima` (els registres detallats
+  de consulta dels formularis, recomanat per l'encàrrec: compten dins la quota).
+
+**Frontend:**
+- El camp «El teu e-mail *» és la PRIMERA casella d'AnalitzaForm i EstimaForm
+  (compact i full) i del formulari de registre (AuthView: e-mail → nom →
+  contrasenya). Amb sessió queda precarregat i de només lectura amb
+  «Canvia d'usuari» (tanca la sessió).
+- Panell de resultats NEIX BLOQUEJAT sense compte: «Registra't primer» + «Crea un
+  compte Free gratuït per veure els resultats. Sense targeta · 3 consultes
+  detallades al mes.» + CTA «Registra't gratis» (LandingView ambdues pestanyes,
+  AnalitzaView, EstimaView, EstimaIntro). aria-live="polite" i focus al camp en
+  error (accessibilitat).
+- Esborrany del formulari a sessionStorage (clau pr_analitza_prefill històrica i
+  nova pr_estima_prefill) desat ABANS de qualsevol crida: error de xarxa o registre
+  mai no perden el que l'usuari havia escrit; doble enviament idempotent (guard
+  inflight). En tornar del registre/magic link, la portada obre la pestanya del
+  formulari origen, restaura l'esborrany i executa la consulta automàticament.
+- Textos actualitzats (mai falsos): «Gratuït i sense registre» → «Gratuït amb
+  registre Free»; «Cap dada personal» eliminat (l'e-mail HO ÉS): política de
+  privacitat ampliada (seccions 2 i 3: e-mail dels formularis, esborrany a
+  sessionStorage, consentiment art. 6.1.a RGPD) i consentiment explícit amb
+  finalitat al registre.
+- `HashBridge` ara transmet la query (?email=&return=&pla=free) dins del hash.
+
+**RGPD / seguretat:** l'e-mail només identifica el compte i aplica la quota al
+servidor; mai arriba al body de /api/analitza ni /api/estima, mai s'associa al
+Event d'ús (que continua anònim: municipi/m²/tensada/nivell), mai a analytics; el
+desat només al sessionStorage del navegador.
+
+**Tests nous — `tests/email_first.test.ts` (37 tests en aquest commit; el 38è, la
+guarda G7 del ci.yml, va amb el commit de CI pendent):**
+taula de decisió completa; anti-enumeració dels dos endpoints nous; bloqueig real
+401 sense cap lectura de BD a ambdues rutes; quota per user_id i 402; magic link
+(hash-only, un sol ús atòmic, caducitat, inactius, returnTo revalidat, anul·lació
+d'anteriors, GET sense mutació); rutes internes segures; guardes de font
+(e-mail primera casella als 3 formularis, textos falsos eliminats, panell bloquejat
+present). `f4_qa.test.ts` s'adaptat (mock del gate amb usuari vàlid per continuar
+exercint el cos real de la ruta).
+
+**CI (pendent de permís):** el pas a la suite 100% bloquejant —un procés bun per
+fitxer amb `set -e`, amb `email_first` al bucle— i les 3 guardes que llegeixen
+ci.yml (2 a f4_qa + G7 a email_first) van al commit següent, que toca
+`.github/workflows/ci.yml` i requereix el permís «workflows» del PAT; fins
+aleshores el CI corre el workflow anterior (tests/funcionalitats amb
+continue-on-error; f4_qa i email_first a la suite local, verificados per fitxer).
+
 ## F4 — QA integral del redisseny de la Home (tests + metodologia + porta F0) — 2026-11-16
 
 Tancament formal del redisseny del formulari de la Home (F1 → F4): qualitat mesurada,

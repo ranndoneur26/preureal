@@ -103,10 +103,15 @@ export default function AppShell() {
   const token = hashQuery
     ? new URLSearchParams(hashQuery).get("token")
     : null;
+  // v46 — flux email-first: ?email= (precarrega el registre), ?return= (ruta
+  // interna de retorn) i ?pla=free (nota del pla). La validació dura de
+  // `return` la fa safeInternalRoute a AuthView (mai open redirect).
+  const hashParams = hashQuery ? new URLSearchParams(hashQuery) : null;
+  const emailParam = hashParams?.get("email") || undefined;
+  const returnParam = hashParams?.get("return") || undefined;
+  const planParam = hashParams?.get("pla") || undefined;
   // errores del callback de Google: /#/entrada?error=GOOGLE_XXX
-  const oauthError = hashQuery
-    ? new URLSearchParams(hashQuery).get("error")
-    : null;
+  const oauthError = hashParams?.get("error") || null;
 
   return (
     <AppContext.Provider value={ctx}>
@@ -130,11 +135,16 @@ export default function AppShell() {
             <AuthView
               mode={view === "/registre" ? "register" : view === "/entrada" ? "login" : "forgot"}
               oauthError={view === "/entrada" ? oauthError || undefined : undefined}
+              emailParam={view === "/registre" ? emailParam : undefined}
+              returnParam={returnParam}
+              planParam={planParam}
             />
           )}
           {view === "/restablir" && <AuthView mode="reset" token={token || undefined} />}
           {view === "/revisa-correu" && <CheckEmailView />}
           {view === "/verifica" && <VerificaView token={token || undefined} />}
+          {/* v46 — consumició del magic link del flux email-first */}
+          {view === "/entrada-link" && <AuthView mode="magic" token={token || undefined} />}
           {view === "/panell" && <PanelView />}
           {view === "/admin" && <AdminView />}
           {view === "/avis-legal" && <LegalView kind="avis" />}
