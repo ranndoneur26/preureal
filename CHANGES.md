@@ -2,6 +2,41 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v49 — Redisseny premium de la portada: mini-mapa viu al hero + etiqueta fixa de contracte — 2026-11-17
+
+**Redisseny del hero (segons la maqueta):** el bloc de text del hero queda
+AMUNT de la columna esquerra (graella `items-start`, mai centrada contra el
+formulari) i ABAIX hi torna el MAPA VIU, més petit: nou component
+`LandingMap.tsx` amb els mateixos edificis ICGC colrats per la renta real
+registrada (fiances Incasòl) que el /mapa — mateixa font (`/api/buildings`),
+mateixa escala de color exacta (5 colors, llindars 550/700/850/1000 €/mes),
+mateixa base cartogràfica ICGC amb atribució. Lleuger per propòsit: sense
+controls de zoom, `scrollWheelZoom: false` (mai segresta el scroll), una càrrega
+d'edificis per vista amb recàrrega al moveend, tooltips amb la renta real
+(≈ €/mes) i clic a un edifici → deep link `/mapa?edifici=...` (v24) amb CTA
+«Obre el mapa complet». El formulari (columna dreta) guanya una ombra més
+profunda (shadow-2xl) per donar-li presència premium.
+
+**Etiqueta FIXA de contracte (demanda explícita):** el formulari de consulta
+mostra ara «Tipus de contracte: Habitatge habitual / Vivienda habitual» com a
+camp FIX visible i NO interactiu (amb «fixat/fijo» i l'explicació honesta:
+única modalitat amb dades oficials aplicables — fiances Incasòl). Continua
+SENSE selector: el servidor fixa HABITATGE (v48), el body no envia
+`contractType` i l'esborrany llegat es saneja igual.
+
+**Robustesa:** `map.remove()` al desmuntar (mai «Map container is already
+initialized» en tornar a la portada); servei d'edificis no disponible → queda
+el mapa base ICGC sense cridar errors. Els textos del hero venen d'i18n i no
+es toquen; l'enllaç creuat consulta → estima (v47) queda intacte.
+
+**Tests:** +8 guardes noves (`tests/home_premium_v49.test.ts`, a la suite
+bloquejant: LandingMap muntat al hero, text amunt amb items-start, endpoint i
+escala de color EXACTA compartida amb el /mapa, scroll mai segrestat, cleanup,
+deep link + CTA al mapa complet, llegenda i18n, etiqueta fixa visible ca/es i
+no interactiva) + actualització de les guardes v48 (F1: el que mai pot tornar
+és el SELECTOR — l'etiqueta fixa de v49 és legítima; ara també prohibeix
+`<select`/`<option` al formulari).
+
 ## v48 — El formulari de consulta només analitza «Vivienda habitual» — 2026-11-17
 
 **Decisió de producte (dades honestes):** el selector «Tipus de contracte» del

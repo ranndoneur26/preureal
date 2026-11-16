@@ -6,6 +6,7 @@ import { BadgeCheck, Building2, MapPin, Scale, TrendingUp, ArrowRight, WandSpark
 import AnalitzaForm from "@/components/analitza/AnalitzaForm";
 import AnalitzaReport from "@/components/analitza/AnalitzaReport";
 import EstimaIntro from "@/components/analitza/EstimaIntro";
+import LandingMap from "@/components/views/LandingMap";
 import { GateLockedPanel } from "@/components/emailfirst/EmailFirst";
 import type { AnalitzaReportData } from "@/lib/analitza-html";
 import { peekLatestDraftKind } from "@/lib/email-first";
@@ -34,9 +35,10 @@ export default function LandingView() {
 
   return (
     <div className="flex flex-col">
-      {/* HERO */}
+      {/* HERO — v49: text block amunt + mini-mapa viu a sota (columna
+          esquerra) i formulari a la dreta; aspecte premium amb ombres suaus */}
       <section className="w-full bg-cream">
-        <div className="max-w-6xl mx-auto px-4 pt-14 pb-16 md:pt-20 md:pb-24 grid md:grid-cols-2 gap-10 items-center">
+        <div className="max-w-6xl mx-auto px-4 pt-12 pb-16 md:pt-16 md:pb-24 grid md:grid-cols-2 gap-10 items-start">
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-pine text-white text-xs font-semibold mb-6">
               <BadgeCheck className="w-4 h-4 text-mint" />
@@ -65,10 +67,17 @@ export default function LandingView() {
               </button>
             </div>
             <p className="mt-4 text-sm text-stone">{t.hero.trust}</p>
+
+            {/* v49 — el mapa viu torna a la portada, més petit: els mateixos
+                edificis ICGC colrats per la renta real registrada (Incasòl),
+                clic → /mapa?edifici=... (deep link v24) i CTA al mapa complet */}
+            <div className="mt-8 relative rounded-2xl border border-line bg-card shadow-xl shadow-black/10 overflow-hidden h-[280px] sm:h-[340px]">
+              <LandingMap />
+            </div>
           </div>
 
           <div className="relative">
-            <div className="rounded-2xl border border-line bg-card shadow-xl shadow-black/5 overflow-hidden">
+            <div className="rounded-2xl border border-line bg-card shadow-2xl shadow-black/10 overflow-hidden">
               {/* F1 — dues funcionalitats separades i etiquetades honestament */}
               <div role="tablist" aria-label={ca ? "Eines de la portada" : "Herramientas de la portada"} className="grid grid-cols-2 bg-pine text-white">
                 <button

@@ -40,16 +40,20 @@ const codeOnly = (src: string) =>
     .map((l) => l.replace(/\/\/.*$/, ""))
     .join("\n");
 
-describe("v48 — el formulari de consulta sense «Tipus de contracte»", () => {
+describe("v48 — el formulari de consulta sense selector de contracte", () => {
   const form = codeOnly(readSrc("../src/components/analitza/AnalitzaForm.tsx"));
 
-  test("F1. el selector i les opcions sense dades oficials mai tornen", () => {
+  test("F1. el SELECTOR i les opcions sense dades oficials mai tornen", () => {
+    // v49 NOTA: l'etiqueta FIXA no interactiva («Tipus de contracte: Habitatge
+    // habitual», demanada explícitament a v49) és legítima; el que mai pot
+    // tornar és el <select> interactiu amb les opcions sense dades oficials.
     expect(form).not.toContain('id="analitza-tipus"');
-    expect(form).not.toContain("Tipus de contracte");
-    expect(form).not.toContain("Tipo de contrato");
+    expect(form).not.toContain("<select");
+    expect(form).not.toContain("<option");
     expect(form).not.toContain('value="TEMPORADA"');
     expect(form).not.toContain('value="HABITACIO"');
     expect(form).not.toContain("ContractType");
+    expect(form).not.toContain("set({ contractType");
   });
 
   test("F2. el body no envia contractType i l'esborrany llegat es saneja", () => {

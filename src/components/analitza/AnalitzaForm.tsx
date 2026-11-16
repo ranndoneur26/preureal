@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Search, Loader2, ChevronDown } from "lucide-react";
+import { MapPin, Search, Loader2, ChevronDown, BadgeCheck } from "lucide-react";
 import { useApp } from "@/components/app-context";
 import {
   EmailFirstField,
@@ -391,12 +391,22 @@ export default function AnalitzaForm({
         </div>
       </div>
 
-      {/* v48 — el selector «Tipus de contracte» desapareix: de les 3 opcions
-          (HABITATGE / TEMPORADA / HABITACIO) només l'habitatge habitual té
-          dades oficials aplicables (fiances Incasòl). El servidor fixa
-          HABITATGE i l'informe ho documenta («Tipus de contracte: Habitatge
-          habitual»). El select del mapa (avisos ciutadans) és una altra cosa
-          i es manté intacte. */}
+      {/* v49 — etiqueta FIXA visible (mai un selector): «habitatge habitual»
+          és l'única modalitat amb dades oficials aplicables (fiances Incasòl);
+          el servidor fixa HABITATGE (v48) i l'informe ho documenta. */}
+      <div>
+        <span className={labelCls}>{ca ? "Tipus de contracte" : "Tipo de contrato"}</span>
+        <div className="flex items-center gap-2 rounded-xl border border-line bg-cream px-3.5 min-h-[44px] text-sm font-semibold text-moss" aria-live="polite">
+          <BadgeCheck className="w-4 h-4 text-pine shrink-0" aria-hidden="true" />
+          <span>{ca ? "Habitatge habitual" : "Vivienda habitual"}</span>
+          <span className="ml-auto text-[10px] font-semibold text-stone uppercase tracking-wide">{ca ? "fixat" : "fijo"}</span>
+        </div>
+        <p className="mt-1 text-[11px] text-stone leading-relaxed">
+          {ca
+            ? "Única modalitat amb dades oficials aplicables (fiances Incasòl): la comparació és per a l'habitatge habitual."
+            : "Única modalidad con datos oficiales aplicables (fianzas Incasòl): la comparación es para la vivienda habitual."}
+        </p>
+      </div>
 
       {/* camps avançats */}
       <details className="rounded-xl border border-line bg-card px-3.5 py-2">
