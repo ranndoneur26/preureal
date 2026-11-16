@@ -7,14 +7,17 @@ import { useApp } from "@/components/app-context";
 /**
  * #/usos — Casos d'ús reals de Preureal.
  * Tres perfils amb captures reals de la web en producció (public/usos/*.jpg,
- * capturades el novembre de 2026). No inventem testimonis ni persones:
- * descrivim com s'usa la plataforma pas a pas per a cada perfil.
+ * novembre de 2026, refrescades el 16-11 amb les noves funcions v45).
+ * No inventem testimonis ni persones: descrivim com s'usa la plataforma pas a
+ * pas per a cada perfil.
  */
 
 const CAPTURES = [
-  { img: "/usos/mapa-inquilino.jpg", alt: "Mapa del lloguer real amb Barcelona carregada, buscador i llegenda de preus" },
-  { img: "/usos/comparador-agente.jpg", alt: "Comparador immobiliari amb exemples de municipis (Barcelona, Girona, Tarragona, Lleida, Sabadell, Badalona)" },
-  { img: "/usos/fitxa-periodista.jpg", alt: "Fitxa pública de Barcelona: 1.135 €/mes, sèrie històrica 2005-2025 i marca d'àrea tensada" },
+  { img: "/usos/mapa-inquilino.jpg", alt: "Mapa del lloguer real amb Barcelona carregada, buscador i llegenda de preus", data: "11-11-2026" },
+  { img: "/usos/comparador-agente.jpg", alt: "Comparador immobiliari amb exemples de municipis (Barcelona, Girona, Tarragona, Lleida, Sabadell, Badalona)", data: "11-11-2026" },
+  { img: "/usos/fitxa-periodista.jpg", alt: "Fitxa pública de Barcelona: 1.135 €/mes, sèrie històrica 2005-2025 i marca d'àrea tensada", data: "11-11-2026" },
+  { img: "/usos/analitza-inquilino.jpg", alt: "Analitzador d'una vivenda concreta: característiques, renda oferta i informe A-D (v45)", data: "16-11-2026" },
+  { img: "/usos/analisi-analista.jpg", alt: "Anàlisi del mercat residencial: sèries creuades de preu, contractes, població i volum (v45)", data: "16-11-2026" },
 ];
 
 export default function UsosView() {
@@ -31,10 +34,11 @@ export default function UsosView() {
             "Cerques el teu municipi al mapa (els 947 de Catalunya tenen dada oficial de fiances).",
             "Fes clic sobre l'edifici concret (cartografia real de l'ICGC) i veus el preu mitjà registrat oficialment.",
             "Introdueixes la renda que t'ofereixen: la fitxa et diu en quin percentatge està per sobre o per sota del preu real.",
+            "Obres l'analitzador d'una vivenda concreta (gratuït amb registre): preu de referència del municipi, valoració per característiques, normativa aplicable (àrea tensada, índex de referència, IRAV) i serveis propers en un informe A-D imprimible.",
             "Comproves si el municipi és àrea de mercat residencial tensat (regulació de preus vigent del DOGC).",
           ],
-          captura: 0,
-          cta: { label: "Prova el mapa gratis", to: "/mapa" },
+          captures: [0, 3],
+          cta: { label: "Prova l'analitzador", to: "/analitza" },
         },
         {
           icon: Building2,
@@ -42,11 +46,11 @@ export default function UsosView() {
           claim: "Argumentari amb dades oficials, no impressions",
           passos: [
             "Compares fins a 6 municipis a la vegada amb el comparador (mitjanes oficials de fiances Incasòl).",
-            "Generes informes PDF de 9 pàgines amb històric, indicadors INE i banda de referència per lliurar al client.",
+            "Generes informes PDF de 10 pàgines amb històric, indicadors INE, anàlisi del mercat (contractes, volum i dinamisme) i banda de referència per lliurar al client.",
             "Exportes les dades en CSV per treballar-les al teu CRM (pla Pro).",
             "Factura nominal per a despeses professionals.",
           ],
-          captura: 1,
+          captures: [1],
           cta: { label: "Obre el comparador", to: "/comparador" },
         },
         {
@@ -55,12 +59,13 @@ export default function UsosView() {
           claim: "Sèries citables amb font, període i URL estable",
           passos: [
             "Cada municipi té una fitxa pública amb URL estable (p. ex. /lloguer/barcelona) amb el preu mitjà vigent.",
+            "A l'eina «Anàlisi del mercat» creues el preu de les fiances amb el flux de contractes amb fiança i la població del Padró: volum aproximat, contractes per cada 1.000 habitants i lectures citables.",
             "La sèrie històrica completa (2005-2025) és visible i verificable contra la publicació oficial d'Incasòl.",
             "Cada xifra cita font, unitat i període de referència; la metodologia completa és pública a la pàgina de fonts.",
             "Les fitxes inclouen la marca d'àrea tensada amb la resolució del DOGC que la declara.",
           ],
-          captura: 2,
-          cta: { label: "Mira la fitxa de Barcelona", to: "/lloguer/barcelona", href: true },
+          captures: [2, 4],
+          cta: { label: "Obre l'anàlisi del mercat", to: "/analisi" },
         },
       ]
     : [
@@ -72,10 +77,11 @@ export default function UsosView() {
             "Buscas tu municipio en el mapa (los 947 de Cataluña tienen dato oficial de fianzas).",
             "Haces clic sobre el edificio concreto (cartografía real del ICGC) y ves el precio medio registrado oficialmente.",
             "Introduces la renta que te ofrecen: la ficha te dice en qué porcentaje está por encima o por debajo del precio real.",
+            "Abres el analizador de una vivienda concreta (gratuito con registro): precio de referencia del municipio, valoración por características, normativa aplicable (área tensionada, índice de referencia, IRAV) y servicios cercanos en un informe A-D imprimible.",
             "Compruebas si el municipio es área de mercado residencial tensionado (regulación de precios vigente del DOGC).",
           ],
-          captura: 0,
-          cta: { label: "Prueba el mapa gratis", to: "/mapa" },
+          captures: [0, 3],
+          cta: { label: "Prueba el analizador", to: "/analitza" },
         },
         {
           icon: Building2,
@@ -83,11 +89,11 @@ export default function UsosView() {
           claim: "Argumentario con datos oficiales, no impresiones",
           passos: [
             "Compara hasta 6 municipios a la vez con el comparador (medias oficiales de fianzas Incasòl).",
-            "Generas informes PDF de 9 páginas con histórico, indicadores INE y banda de referencia para entregar al cliente.",
+            "Generas informes PDF de 10 páginas con histórico, indicadores INE, análisis del mercado (contratos, volumen y dinamismo) y banda de referencia para entregar al cliente.",
             "Exportas los datos en CSV para trabajarlos en tu CRM (plan Pro).",
             "Factura nominal para gastos profesionales.",
           ],
-          captura: 1,
+          captures: [1],
           cta: { label: "Abre el comparador", to: "/comparador" },
         },
         {
@@ -96,12 +102,13 @@ export default function UsosView() {
           claim: "Series citables con fuente, período y URL estable",
           passos: [
             "Cada municipio tiene una ficha pública con URL estable (p. ej. /lloguer/barcelona) con el precio medio vigente.",
+            "En la herramienta «Análisis del mercado» cruzas el precio de las fianzas con el flujo de contratos con fianza y la población del Padrón: volumen aproximado, contratos por cada 1.000 habitantes y lecturas citables.",
             "La serie histórica completa (2005-2025) es visible y verificable contra la publicación oficial de Incasòl.",
             "Cada cifra cita fuente, unidad y período de referencia; la metodología completa es pública en la página de fuentes.",
             "Las fichas incluyen la marca de área tensionada con la resolución del DOGC que la declara.",
           ],
-          captura: 2,
-          cta: { label: "Ver la ficha de Barcelona", to: "/lloguer/barcelona", href: true },
+          captures: [2, 4],
+          cta: { label: "Abre el análisis del mercado", to: "/analisi" },
         },
       ];
 
@@ -117,7 +124,6 @@ export default function UsosView() {
       <div className="mt-8 space-y-10">
         {perfiles.map((p, i) => {
           const Icon = p.icon;
-          const cap = CAPTURES[p.captura];
           return (
             <section key={i} className="grid gap-6 lg:grid-cols-2 lg:items-start">
               <div>
@@ -141,24 +147,26 @@ export default function UsosView() {
                   ))}
                 </ol>
                 <div className="mt-4">
-                  {p.cta.href ? (
-                    <a href={p.cta.to} target="_blank" rel="noopener noreferrer" className="inline-flex px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 transition-colors">
-                      {p.cta.label}
-                    </a>
-                  ) : (
-                    <button onClick={() => navigate(p.cta.to)} className="inline-flex px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 transition-colors">
-                      {p.cta.label}
-                    </button>
-                  )}
+                  {/* v45: totes les CTA són internes (navigate) */}
+                  <button onClick={() => navigate(p.cta.to)} className="inline-flex px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 transition-colors">
+                    {p.cta.label}
+                  </button>
                 </div>
               </div>
-              <figure className="rounded-2xl border border-line overflow-hidden bg-card shadow-sm">
-                {/* captura real servida des de /public/usos (JPEG ja optimitzat) */}
-                <img src={cap.img} alt={cap.alt} loading="lazy" className="w-full h-auto" />
-                <figcaption className="px-4 py-2.5 text-xs text-stone border-t border-line bg-cream">
-                  {ca ? "Captura real de la web en producció (11-11-2026)" : "Captura real de la web en producción (11-11-2026)"}
-                </figcaption>
-              </figure>
+              <div className="space-y-4">
+                {p.captures.map((ci) => {
+                  const cap = CAPTURES[ci];
+                  return (
+                    <figure key={ci} className="rounded-2xl border border-line overflow-hidden bg-card shadow-sm">
+                      {/* captura real servida des de /public/usos (JPEG ja optimitzat) */}
+                      <img src={cap.img} alt={cap.alt} loading="lazy" className="w-full h-auto" />
+                      <figcaption className="px-4 py-2.5 text-xs text-stone border-t border-line bg-cream">
+                        {ca ? `Captura real de la web en producció (${cap.data})` : `Captura real de la web en producción (${cap.data})`}
+                      </figcaption>
+                    </figure>
+                  );
+                })}
+              </div>
             </section>
           );
         })}

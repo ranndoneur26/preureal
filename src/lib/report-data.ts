@@ -11,7 +11,8 @@ import type { Building, Municipality } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getMuniIndicators } from "@/lib/indicators-data";
 import { getMuniDemografia, interpretacioDemografica } from "@/lib/demografia";
-import type { ReportInput } from "@/lib/pdf-report";
+import { getMuniAnalisi } from "@/lib/analisi";
+import type { ReportInput, ReportMarket } from "@/lib/pdf-report";
 import seedAids from "@/data/rental_aid_seed.json";
 
 /** P1.3: màscara de correu per al peu de l'informe (ma***@exemple.cat). */
@@ -129,6 +130,37 @@ export async function gatherMuniDemo(munCode: string, locale: "ca" | "es" = "ca"
   };
 }
 
+/**
+ * v45 — Anàlisi del mercat (sèries creuades) per al capítol nou del PDF.
+ * Reutilitza EXACTAMENT la mateixa font que la vista #/analisi
+ * (/api/analisi/muni/[code] → getMuniAnalisi): un sol principi, mai dues
+ * versions dels números. Degradació elegant: sense sèries → null.
+ */
+export async function gatherMuniMarket(munCode: string, locale: "ca" | "es" = "ca"): Promise<ReportMarket | null> {
+  const a = await getMuniAnalisi(munCode, locale).catch(() => null);
+  if (!a || !a.muni) return null;
+  const lastCp1k = [...a.crossover].reverse().find((c) => c.contractsPer1k != null);
+  return {
+    contracts: a.contracts
+      ? {
+          serie: a.contracts.serie,
+          latest: a.contracts.latest,
+          latestYear: a.contracts.latestYear,
+          g5Pct: a.contracts.g5.pct,
+          seriesFromImport: a.contracts.seriesFromImport,
+        }
+      : null,
+    volume: { serie: a.crossover.map((c) => ({ year: c.year, value: c.volumeEur })) },
+    census: a.census
+      ? { pct: a.census.pct, year: a.census.year, catalunyaPct: a.census.catalunyaPct }
+      : null,
+    contractsPer1k: lastCp1k && lastCp1k.contractsPer1k != null
+      ? { value: lastCp1k.contractsPer1k, year: lastCp1k.year }
+      : null,
+    interpretacio: a.interpretacio,
+  };
+}
+
 /** Mun el ReportInput COMPLET del municipi (i opcionalment l'edifici PRO). */
 export async function gatherMuniReportInput(
   mun: Municipality,
@@ -136,7 +168,11 @@ export async function gatherMuniReportInput(
 ): Promise<ReportInput> {
   const building = opts.building ?? null;
   const ind = await gatherMuniIndicators(mun.code, building?.avgRentEurMonth ?? null);
-  const [aids, demo] = await Promise.all([gatherRentalAids(), gatherMuniDemo(mun.code, opts.locale ?? "ca")]);
+  const [aids, demo, market] = await Promise.all([
+    gatherRentalAids(),
+    gatherMuniDemo(mun.code, opts.locale ?? "ca"),
+    gatherMuniMarket(mun.code, opts.locale ?? "ca"),
+  ]);
   return {
     mun: {
       name: mun.name,
@@ -166,6 +202,7 @@ export async function gatherMuniReportInput(
       : null,
     ind,
     demo,
+    market,
     aids,
     subscriberMasked: opts.subscriberMasked,
     planLabel: opts.planLabel,

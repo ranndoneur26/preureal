@@ -7,7 +7,7 @@ import { FileText, Home, Scale, ShoppingCart, X, AlertCircle, Loader2 } from "lu
 /**
  * v38.8 — secció «Informes individuals» de la pàgina de preus: 3 productes de
  * PAGAMENT ÚNIC (Stripe mode payment, sense subscripció):
- *  - Informe municipal PDF (4,99 €): el mateix document de 8 pàgines que Premium.
+ *  - Informe municipal PDF (4,99 €): el mateix document de 10 pàgines que Premium.
  *  - Valoració d'habitatge (6,99 €): horquilla del motor v2 per a UNA vivenda.
  *  - Comparativa de municipis (7,99 €): fins a 6 municipis en un PDF.
  * Els preus venen de /api/reports/shop/catalog (mateixa font que el checkout):

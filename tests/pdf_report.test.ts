@@ -1,12 +1,12 @@
 /**
- * Fase 6 (v34) — tests de l'informe PDF de 8 pàgines (src/lib/pdf-report.ts).
+ * Fase 6 (v34) + v45 — tests de l'informe PDF de 10 pàgines (src/lib/pdf-report.ts).
  * Execució: bun test tests/pdf_report.test.ts
  * El constructor és PURA: cap BD ni auth; dades d'exemple completes i degradades.
  */
 import { describe, expect, test } from "bun:test";
 import { inflateSync } from "zlib";
 import { PDFDocument } from "pdf-lib";
-import { buildReportPdf, REPORT_PAGES, winAnsi, type ReportInput } from "../src/lib/pdf-report";
+import { buildReportPdf, REPORT_PAGES, winAnsi, type ReportInput, type ReportMarket } from "../src/lib/pdf-report";
 
 const base: ReportInput = {
   mun: {
@@ -78,6 +78,33 @@ const base: ReportInput = {
       reviewed: "2026-11-10",
     },
   ],
+  // v45 — anàlisi del mercat (sèries creuades, fixture amb la forma de /api/analisi)
+  market: {
+    contracts: {
+      serie: [
+        { year: "2019", value: 21400 }, { year: "2020", value: 19800 },
+        { year: "2021", value: 22600 }, { year: "2022", value: 24100 },
+        { year: "2023", value: 24900 }, { year: "2024", value: 25340 },
+      ],
+      latest: 25340,
+      latestYear: "2024",
+      g5Pct: 18.4,
+      seriesFromImport: true,
+    },
+    volume: {
+      serie: [
+        { year: "2019", value: 285000000 }, { year: "2020", value: 268000000 },
+        { year: "2021", value: 308000000 }, { year: "2022", value: 332000000 },
+        { year: "2023", value: 341000000 }, { year: "2024", value: 345000000 },
+      ],
+    },
+    census: { pct: 24.72, year: "2021", catalunyaPct: 17.31 },
+    contractsPer1k: { value: 14.64, year: "2024" },
+    interpretacio: [
+      "El preu mitjà creix un +7,9% mentre el flux de contractes creix un +18,4% en 5 anys: el mercat registra més activitat i preus al alça (lectura descriptiva, sense causalitat).",
+      "El volum de mercat aproximat arriba als ~345 M€ l'any 2024 (mediana × 12 × contractes).",
+    ],
+  },
   subscriberMasked: "ma***@exemple.cat",
   planLabel: "Premium",
   genDate: "11 de novembre de 2026",
@@ -118,19 +145,24 @@ function extractText(bytes: Uint8Array): string {
   });
 }
 
-describe("Fase 6: informe PDF de 9 pàgines", () => {
-  test("municipi amb totes les dades → 9 pàgines i magic bytes %PDF", async () => {
+describe("Fase 6: informe PDF de 10 pàgines", () => {
+  test("REPORT_PAGES és 10 (v45: + pàgina anàlisi del mercat)", () => {
+    expect(REPORT_PAGES).toBe(10);
+  });
+
+  test("municipi amb totes les dades → 10 pàgines i magic bytes %PDF", async () => {
     const bytes = await buildReportPdf(base);
     const head = String.fromCharCode(...bytes.slice(0, 5));
     expect(head).toBe("%PDF-");
     expect(await pageCount(bytes)).toBe(REPORT_PAGES);
   });
 
-  test("degradació: sense indicadors, sense ajudes, sense històric, sense demografia → igualment 9 pàgines", async () => {
+  test("degradació: sense indicadors, sense ajudes, sense històric, sense demografia ni mercat → igualment 10 pàgines", async () => {
     const deg: ReportInput = {
       ...base,
       ind: null,
       demo: null,
+      market: null,
       aids: [],
       mun: { ...base.mun, rentHistory: null, rentLatest: null, rentPrevYear: null, contractsLatest: null, isTense: false, tenseList: null },
     };
@@ -138,9 +170,10 @@ describe("Fase 6: informe PDF de 9 pàgines", () => {
     expect(await pageCount(bytes)).toBe(REPORT_PAGES);
     const text = extractText(bytes);
     expect(text.includes("Encara no hi ha indicadors demogràfics")).toBe(true);
+    expect(text.includes("no estan importades")).toBe(true);
   });
 
-  test("edifici nau industrial (tipus ind) → 9 pàgines i nota industrial", async () => {
+  test("edifici nau industrial (tipus ind) → 10 pàgines i nota industrial", async () => {
     const nau: ReportInput = {
       ...base,
       building: {
@@ -178,6 +211,58 @@ describe("Fase 6: informe PDF de 9 pàgines", () => {
     expect(text.includes("nacionalitat estrangera")).toBe(true);
     expect(text.includes("Lectura dels indicadors")).toBe(true);
     expect(text.includes("Padró continu")).toBe(true); // cita de font
+  });
+});
+
+describe("v45 — Anàlisi del mercat al PDF (sèries creuades Incasòl/Padró/Cens)", () => {
+  test("capítol amb contractes, volum, cens, dinamisme i lectura creuada", async () => {
+    const bytes = await buildReportPdf(base);
+    expect(await pageCount(bytes)).toBe(REPORT_PAGES);
+    const text = extractText(bytes);
+    expect(text.includes("Anàlisi del mercat: contractes, volum i dinamisme")).toBe(true);
+    expect(text.includes("Contractes amb fiança depositada per any (flux anual)")).toBe(true);
+    expect(text.includes("Volum de mercat registrat aproximat")).toBe(true);
+    expect(text.includes("Contractes per 1.000 habitants")).toBe(true);
+    expect(text.includes("25.340")).toBe(true); // contractes últims formatejats
+    expect(text.includes("24,72%")).toBe(true); // cens 2021 formatat ca-ES
+    expect(text.includes("14,64")).toBe(true); // contractes per 1k
+    expect(text.includes("Lectura creuada de les sèries")).toBe(true);
+    expect(text.includes("Registre de fiances d'Incasòl")).toBe(true);
+    expect(text.includes("mediana mensual × 12")).toBe(true);
+  });
+
+  test("la portada inclou el capítol 6 nou en l'índex", async () => {
+    const bytes = await buildReportPdf(base);
+    const text = extractText(bytes);
+    expect(text.includes("6. Anàlisi del mercat: contractes, volum i dinamisme")).toBe(true);
+    expect(text.includes("10. Metodologia, fonts, limitacions estadístiques i avís legal")).toBe(true);
+  });
+
+  test("sèrie de contractes d'un sol punt → degradació elegant amb el valor publicat", async () => {
+    const unPunt: ReportInput = {
+      ...base,
+      market: {
+        ...base.market!,
+        contracts: { serie: [{ year: "2024", value: 25340 }], latest: 25340, latestYear: "2024", g5Pct: null, seriesFromImport: false },
+      },
+    };
+    const bytes = await buildReportPdf(unPunt);
+    expect(await pageCount(bytes)).toBe(REPORT_PAGES);
+    const text = extractText(bytes);
+    expect(text.includes("punt únic publicat")).toBe(true);
+  });
+
+  test("market amb text no-WinAnsi (≥, →) no trenca el capítol", async () => {
+    const symbols: ReportMarket = {
+      ...base.market!,
+      interpretacio: [
+        "Símbols de prova: creixement ≥ 5% → lectura descriptiva.",
+      ],
+    };
+    const bytes = await buildReportPdf({ ...base, market: symbols });
+    expect(await pageCount(bytes)).toBe(REPORT_PAGES);
+    const text = extractText(bytes);
+    expect(text.includes(">= 5% -> lectura")).toBe(true);
   });
 });
 

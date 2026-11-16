@@ -98,7 +98,7 @@ export default function PricingView() {
       )}
 
       <div className="mt-10 grid md:grid-cols-3 gap-5 items-stretch">
-        {/* FREE */}
+        {/* FREE — v45: les 3 consultes/mes destaquen en negreta (són el límit del pla gratuït) */}
         <PlanCard
           name={t.plans.free.name}
           price={priceFree}
@@ -106,6 +106,7 @@ export default function PricingView() {
           cta={currentPlan === "FREE" ? (locale === "ca" ? "Pla actual" : "Plan actual") : t.plans.free.cta}
           onCta={currentPlan === "FREE" ? undefined : () => navigate("/mapa")}
           feats={t.plans.free.feats}
+          boldFeats={[1]}
         />
         {/* PREMIUM */}
         <PlanCard
@@ -145,11 +146,13 @@ export default function PricingView() {
 }
 
 function PlanCard({
-  name, price, per, cta, onCta, feats, highlight, popular, busy, icon,
+  name, price, per, cta, onCta, feats, highlight, popular, busy, icon, boldFeats,
 }: {
   name: string; price: string; per: string; cta: string;
   onCta?: () => void; feats: readonly string[];
   highlight?: boolean; popular?: string; busy?: boolean; icon?: React.ReactNode;
+  /** v45: índexs de feats que es mostren en negreta (p. ex. el límit de consultes) */
+  boldFeats?: number[];
 }) {
   return (
     <div
@@ -177,7 +180,7 @@ function PlanCard({
         {feats.map((f, i) => (
           <li key={i} className="flex gap-2 items-start">
             <Check className={`w-4 h-4 mt-0.5 shrink-0 ${highlight ? "text-mint" : "text-green2"}`} />
-            {f}
+            {boldFeats?.includes(i) ? <span className="font-bold">{f}</span> : f}
           </li>
         ))}
       </ul>

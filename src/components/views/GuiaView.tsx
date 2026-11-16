@@ -5,7 +5,7 @@ import { useApp } from "@/components/app-context";
 import {
   BookOpen, Calculator, Coins, Receipt, CalendarClock, ListChecks,
   HandHeart, ExternalLink, ShieldAlert, Info, Home, ChevronDown,
-  Scale, Gavel,
+  Scale, Gavel, WandSparkles, BarChart3,
 } from "lucide-react";
 import { GUIA_VIVIENDA } from "./guia-vivienda";
 import { GUIA_DRETS, GUIA_DESNONAMENT } from "./guia-drets";
@@ -106,6 +106,28 @@ const S = {
     consultorNote:
       "És raonable el preu que et demanen? Amb Premium pots veure la banda de referència P25–P75, la posició del teu preu i l'esforç econòmic del municipi amb dades oficials.",
     consultorCta: "Veure les referències oficials (mapa)",
+    // v45 — noves funcions explicades fàcil (analitzador d'una vivenda + anàlisi del mercat)
+    novaT: "Noves funcions: analitza abans de signar",
+    novaIntro:
+      "PreuReal ja no és només el mapa del preu mitjà d'un municipi. Ara pots analitzar UNA vivenda concreta abans de signar i creuar les sèries oficials del mercat de cada municipi. Les dues eines estan incloses al pla Gratuït (amb el teu registre, fins a 3 consultes detallades al mes).",
+    novaA_t: "1) Analitza el teu futur lloguer — una vivenda concreta",
+    novaA: [
+      "Què és: un analitzador que combina el preu de referència oficial del municipi (fiances d'Incasòl) amb les característiques reals de la vivenda (superfície, estat, habitacions) i l'estat normatiu del municipi on és.",
+      "Com s'usa: prem «Analitza» al menú, escriu el municipi o l'adreça, tria les característiques de la vivenda i la renda que t'ofereixen. En un segon tens el resultat, sense instal·lar res.",
+      "Què obtens (informe A–D): (A) el preu de referència registrat del municipi; (B) una valoració orientativa segons les característiques de la vivenda; (C) la normativa aplicable — si és àrea de mercat residencial tensat, l'índex de referència de lloguers, el gran tenidor (SERPAVI) i l'IRAV; i (D) els serveis propers (transport, escoles, comerç — dades d'OpenStreetMap, aproximades).",
+      "Checklist i descàrrega: el resultat porta una llista de comprovacions marcables abans de signar i un informe imprimible que pots desar en PDF o portar imprès a la signatura.",
+      "Important: és una referència orientativa amb dades oficials citades. No és una valoració immobiliària formal ni assessorament jurídic.",
+    ],
+    novaB_t: "2) Anàlisi del mercat residencial — sèries oficials creuades",
+    novaB: [
+      "Què és: una eina que creua, per a cada municipi, les tres sèries oficials del mercat: el preu mitjà de les fiances d'Incasòl, el flux anual de contractes amb fiança depositada i la població del Padró continu (IDESCAT), més el contrast del Cens 2021 (% de vivendes principals en lloguer).",
+      "Què obtens: quatre gràfics (preu registrat, contractes per any, població i volum de mercat aproximat), variacions a 5 i 10 anys, contractes per cada 1.000 habitants i una lectura escrita de les sèries, sempre descriptiva i sense relacions causals.",
+      "Comparativa: pots afegir fins a 4 municipis i comparar en una sola taula el preu vigent, el dinamisme de contractes, el volum aproximat i el pes censal del lloguer.",
+      "Per a què serveix: per distingir un mercat en expansió (més contractes i població creixent) d'un mercat on el preu puja per escassetat d'oferta — abans de fixar la renda d'un nou contracte o de recomanar una zona a un client.",
+      "Cada xifra cita la font oficial i el període; on no hi ha dada, l'eina ho diu explícitament i no inventa cap valor.",
+    ],
+    novaCta: "Obre l'analitzador",
+    novaCta2: "Obre l'anàlisi del mercat",
     loadingAids: "Carregant ajudes…",
     aidsError: "Ara mateix no podem carregar les ajudes. Torna-ho a provar més tard.",
     noAids: "No hi ha ajudes publicades ara mateix. Consulta la font oficial.",
@@ -177,6 +199,28 @@ const S = {
     consultorNote:
       "¿Es razonable el precio que te piden? Con Premium puedes ver la banda de referencia P25–P75, la posición de tu precio y el esfuerzo económico del municipio con datos oficiales.",
     consultorCta: "Ver las referencias oficiales (mapa)",
+    // v45 — funciones nuevas explicadas de forma sencilla (analizador + análisis de mercado)
+    novaT: "Funciones nuevas: analiza antes de firmar",
+    novaIntro:
+      "PreuReal ya no es solo el mapa del precio medio de un municipio. Ahora puedes analizar UNA vivienda concreta antes de firmar y cruzar las series oficiales del mercado de cada municipio. Las dos herramientas están incluidas en el plan Gratuito (con tu registro, hasta 3 consultas detalladas al mes).",
+    novaA_t: "1) Analiza tu futuro alquiler — una vivienda concreta",
+    novaA: [
+      "Qué es: un analizador que combina el precio de referencia oficial del municipio (fianzas de Incasòl) con las características reales de la vivienda (superficie, estado, habitaciones) y el estado normativo del municipio donde está.",
+      "Cómo se usa: pulsa «Analiza» en el menú, escribe el municipio o la dirección, elige las características de la vivienda y la renta que te ofrecen. En un segundo tienes el resultado, sin instalar nada.",
+      "Qué obtienes (informe A–D): (A) el precio de referencia registrado del municipio; (B) una valoración orientativa según las características de la vivienda; (C) la normativa aplicable — si es área de mercado residencial tensionado, el índice de referencia de alquileres, el gran tenedor (SERPAVI) y el IRAV; y (D) los servicios cercanos (transporte, escuelas, comercio — datos de OpenStreetMap, aproximados).",
+      "Checklist y descarga: el resultado incluye una lista de comprobaciones marcables antes de firmar y un informe imprimible que puedes guardar en PDF o llevar impreso a la firma.",
+      "Importante: es una referencia orientativa con datos oficiales citados. No es una valoración inmobiliaria formal ni asesoramiento jurídico.",
+    ],
+    novaB_t: "2) Análisis del mercado residencial — series oficiales cruzadas",
+    novaB: [
+      "Qué es: una herramienta que cruza, para cada municipio, las tres series oficiales del mercado: el precio medio de las fianzas de Incasòl, el flujo anual de contratos con fianza depositada y la población del Padrón continuo (IDESCAT), más el contraste del Censo 2021 (% de viviendas principales en alquiler).",
+      "Qué obtienes: cuatro gráficos (precio registrado, contratos por año, población y volumen de mercado aproximado), variaciones a 5 y 10 años, contratos por cada 1.000 habitantes y una lectura escrita de las series, siempre descriptiva y sin relaciones causales.",
+      "Comparativa: puedes añadir hasta 4 municipios y comparar en una sola tabla el precio vigente, el dinamismo de contratos, el volumen aproximado y el peso censal del alquiler.",
+      "Para qué sirve: para distinguir un mercado en expansión (más contratos y población creciente) de un mercado donde el precio sube por escasez de oferta — antes de fijar la renta de un nuevo contrato o de recomendar una zona a un cliente.",
+      "Cada cifra cita la fuente oficial y el período; donde no hay dato, la herramienta lo dice explícitamente y no inventa ningún valor.",
+    ],
+    novaCta: "Abre el analizador",
+    novaCta2: "Abre el análisis del mercado",
     loadingAids: "Cargando ayudas…",
     aidsError: "Ahora mismo no podemos cargar las ayudas. Inténtalo más tarde.",
     noAids: "No hay ayudas publicadas ahora mismo. Consulta la fuente oficial.",
@@ -360,6 +404,32 @@ export default function GuiaView() {
           {t.consultorCta}
         </button>
       </section>
+
+      {/* v45 — noves funcions: analitzador d'una vivenda + anàlisi del mercat */}
+      <Card icon={<WandSparkles className="w-4 h-4 text-pine" />} title={t.novaT}>
+        <p className="text-sm text-moss">{t.novaIntro}</p>
+        <div className="mt-3 font-semibold text-sm text-pine">{t.novaA_t}</div>
+        <Bullets items={t.novaA} />
+        <div className="mt-4 font-semibold text-sm text-pine flex items-center gap-1.5">
+          <BarChart3 className="w-3.5 h-3.5" />
+          {t.novaB_t}
+        </div>
+        <Bullets items={t.novaB} />
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            onClick={() => navigate("/analitza")}
+            className="inline-flex px-4 py-2 rounded-lg bg-pine text-white text-sm font-semibold hover:bg-pine2 transition-colors"
+          >
+            {t.novaCta}
+          </button>
+          <button
+            onClick={() => navigate("/analisi")}
+            className="inline-flex px-4 py-2 rounded-lg border border-pine text-pine text-sm font-semibold hover:bg-sand transition-colors"
+          >
+            {t.novaCta2}
+          </button>
+        </div>
+      </Card>
 
       {/* fonts */}
       <Card icon={<ExternalLink className="w-4 h-4 text-pine" />} title={t.s7t}>

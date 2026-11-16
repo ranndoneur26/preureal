@@ -64,9 +64,14 @@ export default function LandingView() {
                 )}
               </div>
             </div>
-            <div className="absolute -top-3 -right-3 rotate-3 bg-ember text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
-              {ca ? "gratuït · sense registre" : "gratuito · sin registro"}
-            </div>
+            {/* v45 — el pla gratuït exigeix registre (3 consultes/mes): el
+                badge és un enllaç real a #/preus, no un adorno mort */}
+            <button
+              onClick={() => navigate("/preus")}
+              className="absolute -top-3 -right-3 rotate-3 bg-ember text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg hover:bg-ember2 transition-colors"
+            >
+              {ca ? "Gratuït amb registre" : "Gratuito con registro"}
+            </button>
           </div>
         </div>
       </section>

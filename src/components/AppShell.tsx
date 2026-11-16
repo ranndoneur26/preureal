@@ -290,6 +290,10 @@ function Footer() {
       {(ctx) => {
         const { t, navigate, locale } = ctx;
         const ca = locale === "ca";
+        // v45 — Recursos i transparència: metodologia, estat del servei i
+        // sistema de disseny es reserven a l'ADMIN (el públic no els ve al
+        // peu). Guia del lloguer i Casos d'ús continuen sent públics.
+        const isAdmin = ctx.auth.user?.role === "ADMIN";
         const footLink = (to: string, label: string) => (
           <button onClick={() => navigate(to)} className="text-left hover:text-white">{label}</button>
         );
@@ -317,10 +321,10 @@ function Footer() {
                 <div className="font-semibold text-white mb-2">{ca ? "Recursos i transparència" : "Recursos y transparencia"}</div>
                 <div className="flex flex-col gap-1.5">
                   {footLink("/guia", ca ? "Guia del lloguer" : "Guía del alquiler")}
-                  {footLink("/metodologia", ca ? "Fonts i metodologia" : "Fuentes y metodología")}
+                  {isAdmin && footLink("/metodologia", ca ? "Fonts i metodologia" : "Fuentes y metodología")}
                   {footLink("/usos", ca ? "Casos d'ús" : "Casos de uso")}
-                  {footLink("/estat", ca ? "Estat del servei" : "Estado del servicio")}
-                  {footLink("/design", ca ? "Sistema de disseny" : "Sistema de diseño")}
+                  {isAdmin && footLink("/estat", ca ? "Estat del servei" : "Estado del servicio")}
+                  {isAdmin && footLink("/design", ca ? "Sistema de disseny" : "Sistema de diseño")}
                 </div>
               </div>
               <div className="text-sm">

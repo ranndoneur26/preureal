@@ -42,8 +42,8 @@ export function reportProduct(kind: ReportKind): ReportProduct {
       priceCents: priceFromEnv("REPORT_PRICE_MUNICIPI_CENTS", 499),
       nameCa: "Informe municipal PDF",
       nameEs: "Informe municipal PDF",
-      descCa: "Informe professional de 9 pàgines d'un municipi: preu real registrat, banda P25-P75, indicadors oficials, històric i ajuts.",
-      descEs: "Informe profesional de 9 páginas de un municipio: precio real registrado, banda P25-P75, indicadores oficiales, histórico y ayudas.",
+      descCa: "Informe professional de 10 pàgines d'un municipi: preu real registrat, banda P25-P75, indicadors oficials, anàlisi del mercat (contractes, volum i dinamisme), històric i ajuts.",
+      descEs: "Informe profesional de 10 páginas de un municipio: precio real registrado, banda P25-P75, indicadores oficiales, análisis del mercado (contratos, volumen y dinamismo), histórico y ayudas.",
     },
     VALORACIO: {
       kind,

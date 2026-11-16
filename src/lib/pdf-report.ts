@@ -18,7 +18,26 @@ const WHITE = rgb(1, 1, 1);
 const BAND = rgb(0.87, 0.85, 0.94);     // lila suau per a la banda P25-P75
 const W = 595; // A4
 const H = 842;
-export const REPORT_PAGES = 9; // v39: +1 pàgina «Contexte demogràfic i territorial»
+export const REPORT_PAGES = 10; // v45: +1 pàgina «Anàlisi del mercat» (v42 sèries creuades)
+
+/**
+ * v45 — Anàlisi del mercat (sèries creuades) per al capítol nou del PDF.
+ * Origen: /api/analisi/muni/[code] (src/lib/analisi.ts) → report-data.ts.
+ * Tot opcional/null: sense sèries importades el capítol ho diu explícitament.
+ */
+export interface ReportMarket {
+  contracts: {
+    serie: Array<{ year: string; value: number }>;
+    latest: number | null;
+    latestYear: string | null;
+    g5Pct: number | null;
+    seriesFromImport: boolean;
+  } | null;
+  volume: { serie: Array<{ year: string; value: number }> } | null; // mediana × 12 × contractes (aproximació)
+  census: { pct: number | null; year: string | null; catalunyaPct: number | null } | null;
+  contractsPer1k: { value: number | null; year: string | null } | null;
+  interpretacio: string[]; // lectures descriptives, sense causalitat
+}
 
 export interface ReportMun {
   name: string;
@@ -104,6 +123,7 @@ export interface ReportInput {
   building: ReportBuilding | null;
   ind: ReportIndicators | null;
   demo: ReportDemo | null; // v39: context demogràfic (null = sense dades importades)
+  market: ReportMarket | null; // v45: anàlisi del mercat (null = sèries no importades)
   aids: ReportAid[];
   subscriberMasked: string;
   planLabel: string;
@@ -198,6 +218,32 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
           interpretacio: rawInput.demo.interpretacio.map(winAnsi),
         }
       : null,
+    // v45: les sèries de mercat (anàlisi) també passen pel sanejament WinAnsi
+    market: rawInput.market
+      ? {
+          contracts: rawInput.market.contracts
+            ? {
+                serie: rawInput.market.contracts.serie,
+                latest: rawInput.market.contracts.latest,
+                latestYear: ns(rawInput.market.contracts.latestYear),
+                g5Pct: rawInput.market.contracts.g5Pct,
+                seriesFromImport: rawInput.market.contracts.seriesFromImport,
+              }
+            : null,
+          volume: rawInput.market.volume ? { serie: rawInput.market.volume.serie } : null,
+          census: rawInput.market.census
+            ? {
+                pct: rawInput.market.census.pct,
+                year: ns(rawInput.market.census.year),
+                catalunyaPct: rawInput.market.census.catalunyaPct,
+              }
+            : null,
+          contractsPer1k: rawInput.market.contractsPer1k
+            ? { value: rawInput.market.contractsPer1k.value, year: ns(rawInput.market.contractsPer1k.year) }
+            : null,
+          interpretacio: rawInput.market.interpretacio.map(winAnsi),
+        }
+      : null,
     aids: rawInput.aids.map((a) => ({
       title: winAnsi(a.title),
       amount: ns(a.amount),
@@ -268,7 +314,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   newPage(true);
   page.drawRectangle({ x: 0, y: H - 262, width: W, height: 262, color: DARK });
   page.drawText("Preureal", { x: 40, y: H - 96, size: 34, font: bold, color: WHITE });
-  page.drawText("Informe professional de lloguer · 9 pàgines", { x: 40, y: H - 126, size: 12, font, color: rgb(0.79, 0.83, 0.8) });
+  page.drawText("Informe professional de lloguer · 10 pàgines", { x: 40, y: H - 126, size: 12, font, color: rgb(0.79, 0.83, 0.8) });
   page.drawText(`Generat el ${input.genDate}`, { x: 40, y: H - 146, size: 10, font, color: rgb(0.79, 0.83, 0.8) });
 
   // el contingut comença SOTA el bloc fosc de marca (el bloc arriba fins a H-262)
@@ -303,10 +349,11 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     "3. Evolució del lloguer mitjà (sèrie històrica Incasòl)",
     "4. Referència oficial: banda P25-P75, esforç, renda i IPVA",
     "5. Contexte demogràfic i territorial (IDESCAT)",
-    building ? "6. Edifici/illa analitzat i relació amb la dada municipal" : "6. Com llegir aquest mercat (interpretació de la mitjana)",
-    "7. Regulació: zona tensada, índex de referència i contractes",
-    "8. Ajudes al lloguer vigents (fonts oficials)",
-    "9. Metodologia, fonts, limitacions estadístiques i avís legal",
+    "6. Anàlisi del mercat: contractes, volum i dinamisme (Incasòl + Padró)",
+    building ? "7. Edifici/illa analitzat i relació amb la dada municipal" : "7. Com llegir aquest mercat (interpretació de la mitjana)",
+    "8. Regulació: zona tensada, índex de referència i contractes",
+    "9. Ajudes al lloguer vigents (fonts oficials)",
+    "10. Metodologia, fonts, limitacions estadístiques i avís legal",
   ].forEach((s) => {
     line(s, 10);
     y -= 2;
@@ -589,7 +636,100 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     y -= 10;
   }
 
-  // ---------- P6 · EDIFICI / LECTURA DEL MERCAT ----------
+  // ---------- P6 · ANÀLISI DEL MERCAT (v45 — sèries creuades Incasòl/Padró/Cens) ----------
+  newPage();
+  section("Anàlisi del mercat: contractes, volum i dinamisme");
+  const market = input.market;
+  const contractsSerie = market?.contracts?.serie ?? [];
+  if (contractsSerie.length >= 1) {
+    // fila de KPI (4 caixes, patró de la pàgina 5)
+    const g5c = market?.contracts?.g5Pct ?? null;
+    const cp1k = market?.contractsPer1k ?? null;
+    const census = market?.census ?? null;
+    const fmtPct2 = (v: number) => `${v.toFixed(2).replace(".", ",")}%`;
+    const mkBoxes: Array<[string, string, string]> = [
+      [
+        "Contractes amb fiança (últim any)",
+        market?.contracts?.latest != null ? fmt0(market.contracts.latest) : "—",
+        market?.contracts?.latestYear && market.contracts.latestYear !== "n.d." ? `flux anual ${market.contracts.latestYear}` : "",
+      ],
+      ["Variació de contractes (5 anys)", g5c != null ? `${g5c > 0 ? "+" : ""}${fmt1(g5c)}%` : "—", g5c == null ? "sense sèrie comparable" : "activitat del mercat"],
+      ["Contractes per 1.000 habitants", cp1k?.value != null ? cp1k.value.toFixed(2).replace(".", ",") : "—", cp1k?.year ? `any ${cp1k.year}` : "dinamisme del mercat"],
+      [
+        "Vivendes principals en lloguer",
+        census?.pct != null ? fmtPct2(census.pct) : "—",
+        census?.year ? `Cens ${census.year}${census.catalunyaPct != null ? ` · Catalunya ${fmtPct2(census.catalunyaPct)}` : ""}` : "",
+      ],
+    ];
+    const mkw = 125, mkh = 58;
+    mkBoxes.forEach(([label, value, sub], i) => {
+      const bx = 40 + i * (mkw + 5);
+      const by = y - mkh;
+      page.drawRectangle({ x: bx, y: by, width: mkw, height: mkh, color: LIGHT });
+      page.drawText(label, { x: bx + 8, y: by + mkh - 14, size: 7.5, font, color: GRAY });
+      page.drawText(value, { x: bx + 8, y: by + mkh - 34, size: 13, font: bold, color: i === 0 ? ACCENT : DARK });
+      if (sub) page.drawText(winAnsi(sub), { x: bx + 8, y: by + 8, size: 6.5, font, color: GRAY });
+    });
+    y -= mkh + 16;
+
+    // gràfic de barres: contractes amb fiança per any (flux anual)
+    text("Contractes amb fiança depositada per any (flux anual)", 10, DARK, true);
+    y -= 10;
+    if (contractsSerie.length >= 2) {
+      const cTop = y - 6;
+      const cH = 100;
+      const maxC = Math.max(...contractsSerie.map((s) => s.value), 1);
+      const barW = 495 / contractsSerie.length;
+      contractsSerie.forEach((s, i) => {
+        const h = Math.max(2, (s.value / maxC) * cH);
+        page.drawRectangle({ x: 50 + i * barW, y: cTop - h, width: Math.max(3, barW - 5), height: h, color: i === contractsSerie.length - 1 ? ACCENT : DARK });
+        page.drawText(String(s.year).slice(2), { x: 50 + i * barW + (barW - 10) / 2, y: cTop - h - 11, size: 6.5, font, color: GRAY });
+      });
+      y = cTop - cH - 26;
+      line(`Sèrie ${contractsSerie[0].year}–${contractsSerie[contractsSerie.length - 1].year} · Font: Registre de fiances d'Incasòl (flux anual de contractes, ingesta mensual). L'últim any (taronja) és el vigent.`, 8.5, GRAY);
+    } else {
+      const s0 = contractsSerie[0];
+      line(`${s0.year}: ${fmt0(s0.value)} contractes amb fiança (punt únic publicat; la sèrie completa s'activarà amb la ingesta mensual).`, 9.5);
+      y -= 8;
+    }
+    y -= 6;
+
+    // gràfic: volum de mercat registrat aproximat (€/any)
+    const volSerie = (market?.volume?.serie ?? []).filter((v) => v.value > 0);
+    if (volSerie.length >= 2) {
+      text("Volum de mercat registrat aproximat (€/any)", 10, DARK, true);
+      y -= 10;
+      const vTop = y - 6;
+      const vH = 90;
+      const maxV = Math.max(...volSerie.map((s) => s.value), 1);
+      const barW = 495 / volSerie.length;
+      volSerie.forEach((s, i) => {
+        const h = Math.max(2, (s.value / maxV) * vH);
+        page.drawRectangle({ x: 50 + i * barW, y: vTop - h, width: Math.max(3, barW - 5), height: h, color: i === volSerie.length - 1 ? ACCENT : DARK });
+        page.drawText(String(s.year).slice(2), { x: 50 + i * barW + (barW - 10) / 2, y: vTop - h - 11, size: 6.5, font, color: GRAY });
+      });
+      y = vTop - vH - 26;
+      line(`Aproximació elaborada per PreuReal: mediana mensual × 12 × contractes de l'any. No és una xifra oficial: és una estimació del volum registrat.`, 8.5, GRAY);
+      y -= 6;
+    }
+
+    // lectura creuada (lectures descriptives de les sèries, sense causalitat)
+    if (market && market.interpretacio.length > 0) {
+      text("Lectura creuada de les sèries", 10, DARK, true);
+      y -= 12;
+      for (const s of market.interpretacio.slice(0, 4)) {
+        line(`• ${s}`, 9);
+        y -= 3;
+      }
+      y -= 4;
+    }
+    line("Totes les sèries provenen de fonts oficials citades (Incasòl, IDESCAT/INE). Les lectures són descriptives i NO estabeleixen cap relació causal; on no hi ha dada, no s'inventa.", 8.5, GRAY);
+  } else {
+    line("Les sèries de contractes amb fiança i de volum de mercat encara no estan importades per a aquest municipi (la ingesta mensual del Registre de fiances d'Incasòl les portarà automàticament). Mentrestant, no s'estima cap valor.", 9, GRAY);
+    y -= 10;
+  }
+
+  // ---------- P7 · EDIFICI / LECTURA DEL MERCAT ----------
   newPage();
   if (building) {
     section("Edifici / illa analitzat");
@@ -628,7 +768,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     });
   }
 
-  // ---------- P6 · REGULACIÓ ----------
+  // ---------- P8 · REGULACIÓ ----------
   newPage();
   section("Regulació: zona tensada i contractes");
   if (mun.isTense) {
@@ -649,9 +789,9 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     y -= 3;
   });
   y -= 6;
-  line("Avís: aquest resum és orientatiu i no substitueix el text legal vigent ni l'assessorament professional. Consulta les fonts a la pàgina 8.", 8.5, GRAY);
+  line("Avís: aquest resum és orientatiu i no substitueix el text legal vigent ni l'assessorament professional. Consulta les fonts a la pàgina 10.", 8.5, GRAY);
 
-  // ---------- P7 · AJUDES ----------
+  // ---------- P9 · AJUDES ----------
   newPage();
   section("Ajudes al lloguer vigents (fonts oficials)");
   if (aids.length > 0) {
@@ -669,7 +809,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   }
   line("Informació orientativa: els requisits i terminis canvien. Verifica sempre la convocatòria a la font oficial abans de prendre decisions.", 8.5, GRAY);
 
-  // ---------- P8 · METODOLOGIA I LEGAL ----------
+  // ---------- P10 · METODOLOGIA I LEGAL ----------
   newPage();
   section("Fonts i metodologia");
   [
@@ -679,7 +819,8 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     "Renda neta mitjana i esforç: Atlas de Distribució de Renda dels Llars (INE). IPVA: Índex de Preus de Vivienda en Alquiler (INE), base 2015=100.",
     "Contexte demogràfic i territorial (pàgina 5): IDESCAT — Padró continu d'habitants (INE), Censos de població i habitatges i «El municipi en xifres». Llicència Oberta d'Ús d'Informació — Catalunya; percentatges calculats sobre categories oficials; població estrangera = total - nacionalitat espanyola; mai s'interpolen sèries.",
     "Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026 del DOGC (19-10-2026).",
-    "Ajudes al lloguer: catàleg editorial propi amb verificació de la font oficial i data de darrera revisió (pàgina 7).",
+    "Anàlisi del mercat (pàgina 6): flux anual de contractes amb fiança (Registre de fiances d'Incasòl, ingesta mensual), població del Padró continu (IDESCAT/INE), % de vivendes principals en lloguer (Cens 2021, INE) i volum aproximat = mediana mensual × 12 × contractes de l'any (aproximació elaborada per PreuReal; lectures descriptives, sense causalitat).",
+    "Ajudes al lloguer: catàleg editorial propi amb verificació de la font oficial i data de darrera revisió (pàgina 9).",
   ].forEach((s) => {
     line("• " + s, 9);
     y -= 2;

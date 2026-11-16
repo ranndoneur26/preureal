@@ -12,7 +12,7 @@ export const STRINGS = {
       title: "Descobreix si et cobren de més abans de signar el lloguer",
       subtitle: "Consulta el preu mitjà real del lloguer registrat oficialment a qualsevol municipi de Catalunya (947), la zona si és àrea de mercat residencial tensat i l'any de construcció de l'edifici, directament sobre el mapa.",
       ctaPrimary: "Obre el mapa gratis",
-      trust: "Sense targeta · 3 consultes detallades gratis cada mes",
+      trust: "Registre gratuït · sense targeta · 3 consultes detallades cada mes",
     },
     how: {
       title: "Com funciona",
@@ -43,9 +43,9 @@ export const STRINGS = {
     plans: {
       title: "Preus clars, sense sorpreses",
       subtitle: "Comença gratis. Passa't a Premium quan estiguis buscant pis de debò.",
-      free: { name: "Gratuït", price: "0 €", per: "per sempre", cta: "Comença gratis", feats: ["Mapa de tota Catalunya", "3 consultes detallades cada mes", "Preu mitjà real per municipi", "Marcador d'àrea tensada", "Comparador fins a 2 municipis"] },
-      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultes il·limitades", "Banda de referència P25–P75 i posició del teu preu", "Indicadors oficials INE: IPVA, renda i esforç econòmic", "Històric de lloguer per municipi (2005–2025)", "Comparador fins a 6 municipis amb columnes avançades", "Informe PDF professional de 9 pàgines (5/mes)", "Suport prioritari"], popular: "El més triat" },
-      pro: { name: "Pro · agents", price: "19,99 €", per: "al mes", cta: "Activa Pro", feats: ["Tot el de Premium", "Exportació CSV de dades per municipi", "Informes PDF de 9 pàgines, també d'edifici (30/mes)", "Ideal per a agents i gestors", "Accés prioritari a noves dades", "Factura nominal"] },
+      free: { name: "Gratuït", price: "0 €", per: "per sempre", cta: "Comença gratis", feats: ["Mapa de tota Catalunya", "Fins a 3 consultes detallades cada mes", "Preu mitjà real per municipi", "Marcador d'àrea tensada", "Comparador fins a 2 municipis"] },
+      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultes il·limitades", "Banda de referència P25–P75 i posició del teu preu", "Indicadors oficials INE: IPVA, renda i esforç econòmic", "Històric de lloguer per municipi (2005–2025)", "Comparador fins a 6 municipis amb columnes avançades", "Informe PDF professional de 10 pàgines (5/mes)", "Suport prioritari"], popular: "El més triat" },
+      pro: { name: "Pro · agents", price: "19,99 €", per: "al mes", cta: "Activa Pro", feats: ["Tot el de Premium", "Exportació CSV de dades per municipi", "Informes PDF de 10 pàgines amb anàlisi del mercat, també d'edifici (30/mes)", "Ideal per a agents i gestors", "Accés prioritari a noves dades", "Factura nominal"] },
       demoNote: "MODE DE PROVA: la compra està simulada (sense cobrament real) fins que el propietari connecti el seu compte de Stripe.",
       // v38.8 — informes individuals de pagament únic (Stripe mode payment)
       informes: {
@@ -54,7 +54,7 @@ export const STRINGS = {
         oneOff: "pagament únic",
         muni: {
           name: "Informe municipal PDF",
-          feats: ["El mateix informe professional de 8 pàgines que Premium", "Preu real registrat, banda P25–P75 i indicadors INE", "Històric, regulació d'àrees tensades i ajuts vigents"],
+          feats: ["El mateix informe professional de 10 pàgines que Premium", "Preu real registrat, banda P25–P75 i indicadors INE", "Històric, regulació d'àrees tensades i ajuts vigents"],
         },
         val: {
           name: "Valoració d'habitatge",
@@ -279,7 +279,7 @@ export const STRINGS = {
       title: "Sé si te cobra de más antes de firmar el alquiler",
       subtitle: "Consulta el precio medio real del alquiler registrado oficialmente en cualquiera de los 947 municipios de Cataluña, si la zona es área de mercado residencial tensionado y el año de construcción del edificio, directamente sobre el mapa.",
       ctaPrimary: "Abrir el mapa gratis",
-      trust: "Sin tarjeta · 3 consultas detalladas gratis cada mes",
+      trust: "Registro gratuito · sin tarjeta · 3 consultas detalladas cada mes",
     },
     how: {
       title: "Cómo funciona",
@@ -310,9 +310,9 @@ export const STRINGS = {
     plans: {
       title: "Precios claros, sin sorpresas",
       subtitle: "Empieza gratis. Pásate a Premium cuando estés buscando piso de verdad.",
-      free: { name: "Gratuito", price: "0 €", per: "para siempre", cta: "Empieza gratis", feats: ["Mapa de toda Cataluña", "3 consultas detalladas cada mes", "Precio medio real por municipio", "Marcador de área tensionada", "Comparador hasta 2 municipios"] },
-      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultas ilimitadas", "Banda de referencia P25–P75 y posición de tu precio", "Indicadores oficiales INE: IPVA, renta y esfuerzo económico", "Histórico de alquiler por municipio (2005–2025)", "Comparador hasta 6 municipios con columnas avanzadas", "Informe PDF profesional de 8 páginas (5/mes)", "Soporte prioritario"], popular: "El más elegido" },
-      pro: { name: "Pro · agentes", price: "19,99 €", per: "al mes", cta: "Activa Pro", feats: ["Todo lo de Premium", "Exportación CSV de datos por municipio", "Informes PDF de 8 páginas, también de edificio (30/mes)", "Ideal para agentes y gestores", "Acceso prioritario a nuevos datos", "Factura nominal"] },
+      free: { name: "Gratuito", price: "0 €", per: "para siempre", cta: "Empieza gratis", feats: ["Mapa de toda Cataluña", "Hasta 3 consultas detalladas cada mes", "Precio medio real por municipio", "Marcador de área tensionada", "Comparador hasta 2 municipios"] },
+      premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultas ilimitadas", "Banda de referencia P25–P75 y posición de tu precio", "Indicadores oficiales INE: IPVA, renta y esfuerzo económico", "Histórico de alquiler por municipio (2005–2025)", "Comparador hasta 6 municipios con columnas avanzadas", "Informe PDF profesional de 10 páginas (5/mes)", "Soporte prioritario"], popular: "El más elegido" },
+      pro: { name: "Pro · agentes", price: "19,99 €", per: "al mes", cta: "Activa Pro", feats: ["Todo lo de Premium", "Exportación CSV de datos por municipio", "Informes PDF de 10 páginas con análisis del mercado, también de edificio (30/mes)", "Ideal para agentes y gestores", "Acceso prioritario a nuevos datos", "Factura nominal"] },
       demoNote: "MODO PRUEBA: la compra está simulada (sin cobro real) hasta que el propietario conecte su cuenta de Stripe.",
       stripeOff: "Los pagos aún no están activos: el propietario debe conectar su cuenta de Stripe.",
       // v38.8 — informes individuales de pago único (Stripe mode payment)
@@ -322,7 +322,7 @@ export const STRINGS = {
         oneOff: "pago único",
         muni: {
           name: "Informe municipal PDF",
-          feats: ["El mismo informe profesional de 8 páginas que Premium", "Precio real registrado, banda P25–P75 e indicadores INE", "Histórico, regulación de áreas tensionadas y ayudas vigentes"],
+          feats: ["El mismo informe profesional de 10 páginas que Premium", "Precio real registrado, banda P25–P75 e indicadores INE", "Histórico, regulación de áreas tensionadas y ayudas vigentes"],
         },
         val: {
           name: "Valoración de vivienda",
