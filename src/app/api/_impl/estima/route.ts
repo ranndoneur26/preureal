@@ -2,22 +2,38 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
-import { buildEstimation, sanitizeEstimaSurface, ESTIMA_DISCLAIMER, ESTIMA_LIMITATIONS, ESTIMA_SOURCES, ESTIMA_SERPAVI_URL, type EstimaFailureReason } from "@/lib/estima";
+import {
+  buildEstimation,
+  sanitizeEstimaSurface,
+  sanitizeEstimaRooms,
+  sanitizeEstimaEstat,
+  ESTIMA_DISCLAIMER,
+  ESTIMA_LIMITATIONS,
+  ESTIMA_SOURCES,
+  ESTIMA_SERPAVI_URL,
+  type EstimaFailureReason,
+} from "@/lib/estima";
 import { getMuniRentRows } from "@/lib/indicators-data";
 import { valueForYear, yearOfPeriod } from "@/lib/territorial";
 
 /**
- * POST /api/estima — F2 «Estima el lloguer del teu habitatge» (nivell N1).
+ * POST /api/estima — F2/F3 «Estima el lloguer del teu habitatge» (N1 + N2).
  *
- * Entrada MÍNIMA (regla d'or: no demanar dades que el càlcul no usa): municipi
- * (codi 6 dígits) + superfície (5–500 m²). Res de dades personals: sense auth,
- * sense adreça, sense referència catastral; només registre anònim d'ús (Event)
- * amb municipi i superfície arrodonida per a mètriques agregades.
+ * Entrada (regla d'or: no demanar dades que el càlcul no usa): municipi
+ * (codi 6 dígits) + superfície (5–500 m²) + característiques OPCIONALS amb
+ * coeficient documentat al motor validat (habitacions 0–12; estat de
+ * conservació A_REFORMAR|BON_ESTAT|REFORMADA|OBRA_NOVA). Les demés variables
+ * SERPAVI (ascensor, aparcament, any construcció, moblat, planta, energia,
+ * piscina, zones comunitàries) NO s'accepten: sense coeficient documentat no
+ * s'apliquen ni es demanen. Res de dades personals: sense auth, sense adreça,
+ * sense referència catastral; només registre anònim d'ús (Event) amb municipi,
+ * superfície arrodonida i nivell real (N1/N2).
  *
  * Sortida: SEMPRE un RANG orientatiu amb traçabilitat completa (base Incasòl,
- * període, nº contractes, dispersió mesurada, confiança) o degradació honesta
- * (available:false → «dades insuficients» + SERPAVI). Mai una xifra única de
- * taxació i mai una consulta oficial SERPAVI simulada.
+ * període, nº contractes, ajustos aplicats amb factor, dispersió mesurada,
+ * confiança) o degradació honesta (available:false → «dades insuficients» +
+ * SERPAVI). Mai una xifra única de taxació i mai una consulta oficial SERPAVI
+ * simulada.
  */
 
 export async function POST(req: Request) {
@@ -40,6 +56,9 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
+  // F3 (N2): característiques opcionals amb coeficient documentat.
+  const rooms = sanitizeEstimaRooms(body.rooms);
+  const estat = sanitizeEstimaEstat(body.estat);
 
   const mun = await db.municipality.findUnique({
     where: { code: munCode },
@@ -97,6 +116,8 @@ export async function POST(req: Request) {
       municipalityCode: mun.code,
       municipalityName: mun.name,
       surfaceM2: surface,
+      rooms,
+      estat,
     },
   );
 
@@ -105,7 +126,12 @@ export async function POST(req: Request) {
     .create({
       data: {
         type: "ESTIMA",
-        meta: JSON.stringify({ mun: mun.code, m2: Math.round(surface), tense: mun.isTense }),
+        meta: JSON.stringify({
+          mun: mun.code,
+          m2: Math.round(surface),
+          tense: mun.isTense,
+          level: outcome.ok ? outcome.result.level : "-",
+        }),
       },
     })
     .catch(() => {});
@@ -119,6 +145,8 @@ export async function POST(req: Request) {
       comarca: mun.comarca,
       province: mun.province,
       surfaceM2: surface,
+      rooms,
+      estat,
       isTense: mun.isTense,
     },
     disclaimer: ESTIMA_DISCLAIMER,

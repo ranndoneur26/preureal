@@ -32,17 +32,30 @@ import {
   buildEstimation,
   sanitizeEstimaSurface,
   sanitizeEstimaMunicipalityCode,
+  sanitizeEstimaRooms,
+  sanitizeEstimaEstat,
   ESTIMA_DISCLAIMER,
   ESTIMA_SERPAVI_URL,
   ESTIMA_SOURCES,
   ESTIMA_LIMITATIONS,
   ESTIMA_SURFACE_MIN,
   ESTIMA_SURFACE_MAX,
+  ESTIMA_ROOMS_MAX,
   type EstimaOutcome,
   type EstimationResult,
   type EstimaFailureReason,
 } from "../src/lib/estima";
-import { round1, relativeIqr, VAL_REF_M2, VAL_BETA_SUPERFICIE } from "../src/lib/territorial";
+import {
+  round1,
+  relativeIqr,
+  VAL_REF_M2,
+  VAL_BETA_SUPERFICIE,
+  VAL_ESTAT_MULT,
+  VAL_ROOMS_EXPONENT,
+  VAL_ROOMS_CLAMP,
+  VAL_REF_M2_PER_HAB,
+  type EstatConservacio,
+} from "../src/lib/territorial";
 
 const baseInput = {
   municipalityCode: "081136",
@@ -553,5 +566,150 @@ describe("F2 estima — transparència i fonts (mateix criteri que F1)", () => {
     expect(all).toContain("LIMIT_HORQUILLA_MESURADA");
     expect(all).toContain("LIMIT_SERPAVI_LEGAL");
     expect(all).toContain("LIMIT_PRIVACITAT");
+  });
+});
+
+// ── F3 (redisseny de la Home): N2 — ajustos per característiques documentades ─
+
+describe("F3 estima N2 — sanitització de característiques (mai inventar res)", () => {
+  test("habitacions: enter 0–12; buit/null/undefined → null; fora de rang o decimal → null", () => {
+    expect(sanitizeEstimaRooms(3)).toBe(3);
+    expect(sanitizeEstimaRooms("4")).toBe(4);
+    expect(sanitizeEstimaRooms(0)).toBe(0); // estudi
+    expect(sanitizeEstimaRooms(ESTIMA_ROOMS_MAX)).toBe(12);
+    expect(sanitizeEstimaRooms("")).toBeNull();
+    expect(sanitizeEstimaRooms(null)).toBeNull();
+    expect(sanitizeEstimaRooms(undefined)).toBeNull();
+    expect(sanitizeEstimaRooms(-1)).toBeNull();
+    expect(sanitizeEstimaRooms(13)).toBeNull();
+    expect(sanitizeEstimaRooms(2.5)).toBeNull(); // no-enter → null
+    expect(sanitizeEstimaRooms(Number.NaN)).toBeNull();
+  });
+
+  test("estat de conservació: només les 4 categories del motor validat", () => {
+    const estats: EstatConservacio[] = ["A_REFORMAR", "BON_ESTAT", "REFORMADA", "OBRA_NOVA"];
+    for (const e of estats) expect(sanitizeEstimaEstat(e)).toBe(e);
+    expect(sanitizeEstimaEstat("")).toBeNull();
+    expect(sanitizeEstimaEstat("REMODELADO")).toBeNull();
+    expect(sanitizeEstimaEstat("a_reformar")).toBeNull(); // exactes, sense normalitzar
+    expect(sanitizeEstimaEstat(null)).toBeNull();
+    expect(sanitizeEstimaEstat(undefined)).toBeNull();
+    expect(sanitizeEstimaEstat(123)).toBeNull();
+  });
+});
+
+describe("F3 estima N2 — multiplicadors d'estat documentats (ancoratge Fotocasa 2021)", () => {
+  test("85 m² + estat: central = base oficial × multiplicador documentat, nivell N2", () => {
+    for (const estat of ["A_REFORMAR", "BON_ESTAT", "REFORMADA", "OBRA_NOVA"] as EstatConservacio[]) {
+      const r = mustOk(buildEstimation(estimaData, { ...estimaInput, estat }));
+      expect(r.level).toBe("N2");
+      expect(r.estat).toBe(estat);
+      expect(r.rooms).toBeNull();
+      expect(r.central).toBe(round1(750 * VAL_ESTAT_MULT[estat]));
+      expect(r.baseCentral).toBe(750); // la base queda intacta (traçabilitat)
+      expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE", "AJUST_ESTAT"]);
+      expect(r.min).toBeLessThanOrEqual(r.central);
+      expect(r.max).toBeGreaterThanOrEqual(r.central);
+    }
+  });
+
+  test("valors dels multiplicadors exactes i ancorats (mai coeficients inventats)", () => {
+    expect(VAL_ESTAT_MULT.A_REFORMAR).toBe(0.8);
+    expect(VAL_ESTAT_MULT.BON_ESTAT).toBe(1);
+    expect(VAL_ESTAT_MULT.REFORMADA).toBe(1.06);
+    expect(VAL_ESTAT_MULT.OBRA_NOVA).toBe(1.12);
+  });
+
+  test("85 m² reformada: rang orientatiu ±dispersió mesurada sobre el central ajustat", () => {
+    const r = mustOk(buildEstimation(estimaData, { ...estimaInput, estat: "REFORMADA" }));
+    const disp = relativeIqr(comarcaPool) as number;
+    const central = round1(750 * 1.06); // 795
+    expect(r.central).toBe(central);
+    expect(r.min).toBe(round1(Math.max(central * 0.5, central - (central * disp) / 2)));
+    expect(r.max).toBe(round1(central + (central * disp) / 2));
+  });
+});
+
+describe("F3 estima N2 — densitat d'habitacions documentada (limitada ±5 %)", () => {
+  test("3 habitacions a 85 m²: factor de densitat dins del rang, nivell N2", () => {
+    const r = mustOk(buildEstimation(estimaData, { ...estimaInput, rooms: 3, surfaceM2: 85 }));
+    const dens = 85 / 3;
+    const raw = Math.pow(dens / VAL_REF_M2_PER_HAB, VAL_ROOMS_EXPONENT);
+    const f = Math.min(Math.max(raw, 1 - VAL_ROOMS_CLAMP), 1 + VAL_ROOMS_CLAMP);
+    expect(r.level).toBe("N2");
+    expect(r.rooms).toBe(3);
+    expect(r.estat).toBeNull();
+    expect(r.central).toBe(round1(750 * f));
+    expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE", "AJUST_HABITACIONS"]);
+    expect(f).toBeGreaterThanOrEqual(1 - VAL_ROOMS_CLAMP);
+    expect(f).toBeLessThanOrEqual(1 + VAL_ROOMS_CLAMP);
+  });
+
+  test("el clamp ±5 % aguanta formats extremats (estudi 1 hab a 85 m²)", () => {
+    const r = mustOk(buildEstimation(estimaData, { ...estimaInput, rooms: 1, surfaceM2: 85 }));
+    expect(r.central).toBe(round1(750 * (1 + VAL_ROOMS_CLAMP))); // 1,1098 → satura a 1,05
+    expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE", "AJUST_HABITACIONS"]);
+  });
+
+  test("estudi (0 habitacions): sense efecte al càlcul → el nivell segueix sent N1", () => {
+    const r = mustOk(buildEstimation(estimaData, { ...estimaInput, rooms: 0, surfaceM2: 85 }));
+    expect(r.level).toBe("N1"); // cap ajust de característica aplicat de debò
+    expect(r.rooms).toBe(0);
+    expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE"]);
+    expect(r.central).toBe(750);
+  });
+
+  test("ordre d'aplicació dels ajustos: superfície → estat → habitacions", () => {
+    const r = mustOk(
+      buildEstimation(estimaData, { ...estimaInput, rooms: 3, surfaceM2: 85, estat: "REFORMADA" }),
+    );
+    expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE", "AJUST_ESTAT", "AJUST_HABITACIONS"]);
+    expect(r.level).toBe("N2");
+    const expected = round1(750 * VAL_ESTAT_MULT.REFORMADA * Math.pow((85 / 3) / VAL_REF_M2_PER_HAB, VAL_ROOMS_EXPONENT));
+    expect(r.central).toBe(expected);
+  });
+});
+
+describe("F3 estima N2 — N1 es manté intacte quan no es demanen característiques", () => {
+  test("sense rooms/estat: mateix resultat que F2 (N1, cap característica exposada)", () => {
+    const r = mustOk(buildEstimation(estimaData, estimaInput));
+    expect(r.level).toBe("N1");
+    expect(r.rooms).toBeNull();
+    expect(r.estat).toBeNull();
+    expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE"]);
+    expect(r.adjustments.every((a) => a.key === "AJUST_SUPERFICIE")).toBe(true);
+  });
+
+  test("característiques no vàlides → null (mai estimar amb dades inventades)", () => {
+    const r = mustOk(
+      buildEstimation(estimaData, {
+        ...estimaInput,
+        rooms: 99,
+        estat: "PISELO" as unknown as EstatConservacio, // valor il·legal (p. ex. via API)
+      }),
+    );
+    expect(r.rooms).toBeNull();
+    expect(r.estat).toBeNull();
+    expect(r.level).toBe("N1");
+  });
+});
+
+describe("F3 estima N2 — transparència: limitacions noves documentades", () => {
+  test("limitacions: N2 només coeficients documentats + N3 secció censal mai simulada", () => {
+    const all = ESTIMA_LIMITATIONS.join(" ");
+    expect(all).toContain("LIMIT_N2_CARACTERISTIQUES");
+    expect(all).toContain("LIMIT_N3_SECCIO_CENSAL");
+    expect(all).toContain("secció censal");
+    expect(all).toContain("NO simula consultes oficials");
+    // les variables sense coeficient documentat NO es demanen
+    expect(all).toContain("ascensor");
+    expect(all).toContain("qualificació energètica");
+  });
+
+  test("fonts: el motor documentat inclou els multiplicadors d'estat i densitat", () => {
+    const motor = ESTIMA_SOURCES.find((s) => s.u.includes("territorial.ts"));
+    expect(motor).toBeDefined();
+    expect(motor?.d).toContain("estat de conservació");
+    expect(motor?.d).toContain("densitat m²/habitació");
   });
 });

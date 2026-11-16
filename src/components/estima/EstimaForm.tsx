@@ -3,15 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Loader2, MapPin, Ruler, WandSparkles } from "lucide-react";
 import { useApp } from "@/components/app-context";
-import { ESTIMA_SURFACE_MIN, ESTIMA_SURFACE_MAX } from "@/lib/estima";
+import { ESTIMA_SURFACE_MIN, ESTIMA_SURFACE_MAX, ESTIMA_ROOMS_MAX } from "@/lib/estima";
 
 /**
- * F2 «Estima el lloguer del teu habitatge» — formulari PROGRESSIU de 2 passos.
+ * F2/F3 «Estima el lloguer del teu habitatge» — formulari PROGRESSIU de 2 passos.
  * variant "compact": a la portada (pestanya «Estima»). variant "full": a #/estima.
  *
- * Demana EXACTAMENT el que el nivell N1 usa (regla d'or): municipi + superfície.
- * Cap adreça, cap referència catastral, cap característica que encara no es
- * calcula (estat, ascensor… arriben amb el nivell N2/F3) i cap dada personal.
+ * Demana EXACTAMENT el que el càlcul usa (regla d'or): municipi + superfície
+ * sempre (N1); estat de conservació i habitacions OPCIONALS (N2, els únics
+ * ajustos amb coeficient documentat i validat al motor). Cap adreça, cap
+ * referència catastral, cap característica sense coeficient documentat
+ * (ascensor, aparcament, moblat, planta… no es demanen) i cap dada personal.
  */
 
 export interface EstimaMuniLite {
@@ -34,6 +36,8 @@ export interface EstimaPayload {
     comarca: string | null;
     province: string | null;
     surfaceM2: number;
+    rooms?: number | null;
+    estat?: string | null;
     isTense: boolean;
   };
   estimation?: import("@/lib/estima").EstimationResult;
@@ -58,9 +62,15 @@ export default function EstimaForm({
   const [munQuery, setMunQuery] = useState("");
   const [munOptions, setMunOptions] = useState<EstimaMuniLite[]>([]);
   const [surface, setSurface] = useState("");
+  const [rooms, setRooms] = useState("");
+  const [estat, setEstat] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const munBoxRef = useRef<HTMLDivElement>(null);
+
+  // N2 real: només si un ajust de característica s'aplicarà de debò (mateixa
+  // semàntica que el motor: estat declarat, o habitacions ≥1 amb superfície).
+  const n2 = estat !== "" || (rooms !== "" && Number(rooms) >= 1);
 
   // cerca de municipis (BD local, instantània) — debounce curt; les neteges de
   // consultes curtes es fan durant el render (patró AnalitzaForm/MapView)
@@ -122,6 +132,8 @@ export default function EstimaForm({
           municipalityCode: muni.code,
           municipalityName: muni.name,
           surfaceM2: m2,
+          ...(rooms !== "" ? { rooms: Number(rooms) } : {}),
+          ...(estat !== "" ? { estat } : {}),
         }),
       });
       const d = await res.json();
@@ -160,10 +172,10 @@ export default function EstimaForm({
         {ca
           ? step === 1
             ? "Pas 1 de 2 · Municipi"
-            : `Pas 2 de 2 · Superfície — ${muni?.name ?? ""}`
+            : `Pas 2 de 2 · Superfície i característiques — ${muni?.name ?? ""}`
           : step === 1
             ? "Paso 1 de 2 · Municipio"
-            : `Paso 2 de 2 · Superficie — ${muni?.name ?? ""}`}
+            : `Paso 2 de 2 · Superficie y características — ${muni?.name ?? ""}`}
       </p>
 
       {step === 1 ? (
@@ -251,6 +263,48 @@ export default function EstimaForm({
                 : "Superficie aproximada (útil o construida): el motor la satura dentro del rango calibrado y te lo indica."}
             </p>
           </div>
+
+          {/* F3 (N2): característiques OPCIONALS amb coeficient documentat */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelCls} htmlFor="estima-rooms">
+                {ca ? "Habitacions" : "Habitaciones"} <span className="text-stone font-normal">({ca ? "opcional" : "opcional"})</span>
+              </label>
+              <input
+                id="estima-rooms"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={ESTIMA_ROOMS_MAX}
+                className={inputCls}
+                placeholder={ca ? "Ex.: 3" : "Ej.: 3"}
+                value={rooms}
+                onChange={(e) => setRooms(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={labelCls} htmlFor="estima-estat">
+                {ca ? "Estat de conservació" : "Estado de conservación"} <span className="text-stone font-normal">({ca ? "opcional" : "opcional"})</span>
+              </label>
+              <select
+                id="estima-estat"
+                className={inputCls}
+                value={estat}
+                onChange={(e) => setEstat(e.target.value)}
+              >
+                <option value="">{ca ? "No ho sé" : "No lo sé"}</option>
+                <option value="A_REFORMAR">{ca ? "A reformar" : "A reformar"}</option>
+                <option value="BON_ESTAT">{ca ? "Bon estat" : "Buen estado"}</option>
+                <option value="REFORMADA">{ca ? "Reformada" : "Reformada"}</option>
+                <option value="OBRA_NOVA">{ca ? "Obra nova" : "Obra nueva"}</option>
+              </select>
+            </div>
+          </div>
+          <p className="text-[11px] text-stone leading-relaxed">
+            {ca
+              ? "Només aquestes dues característiques tenen coeficient documentat i s'apliquen (estat i densitat m²/habitació); si les deixes en blanc, l'estimació segueix sent N1. No demanem ascensor, aparcament, moblat, planta ni energia: sense coeficient documentat, no els apliquem ni els inventem."
+              : "Solo estas dos características tienen coeficiente documentado y se aplican (estado y densidad m²/habitación); si las dejas en blanco, la estimación sigue siendo N1. No pedimos ascensor, aparcamiento, amueblado, planta ni energía: sin coeficiente documentado, no los aplicamos ni los inventamos."}
+          </p>
         </>
       )}
 
@@ -266,20 +320,22 @@ export default function EstimaForm({
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <WandSparkles className="w-5 h-5" />}
           {loading
             ? (ca ? "Calculant amb la base oficial…" : "Calculando con la base oficial…")
-            : (ca ? "Estima el rang orientatiu (N1)" : "Estima el rango orientativo (N1)")}
+            : (ca ? `Estima el rang orientatiu (N${n2 ? "2" : "1"})` : `Estima el rango orientativo (N${n2 ? "2" : "1"})`)}
         </button>
       ) : (
         <p className="text-[11px] text-stone flex items-center gap-1.5">
           <ArrowRight className="w-3.5 h-3.5 text-pine shrink-0" />
-          {ca ? "Després et demanaré només la superfície — res més." : "Después te pediré solo la superficie — nada más."}
+          {ca
+            ? "Després et demanaré la superfície i, si vols, estat i habitacions — res més."
+            : "Después te pediré la superficie y, si quieres, estado y habitaciones — nada más."}
         </p>
       )}
 
       <p className="text-[11px] text-stone leading-relaxed flex items-start gap-1.5">
         <Ruler className="w-3.5 h-3.5 text-pine shrink-0 mt-0.5" />
         {ca
-          ? "Nivell N1: base estadística oficial (fiança municipal Incasòl) escalada per superfície. Cap dada personal: no demanem adreça ni referència catastral i res no s'associa al teu usuari. El resultat és sempre un RANG orientatiu, mai una taxació."
-          : "Nivel N1: base estadística oficial (fianza municipal Incasòl) escalada por superficie. Ningún dato personal: no pedimos dirección ni referencia catastral y nada se asocia a tu usuario. El resultado es siempre un RANGO orientativo, nunca una tasación."}
+          ? "Nivells N1 i N2: base estadística oficial (fiança municipal Incasòl) escalada per superfície, amb ajustos opcionals per estat de conservació i habitacions (coeficients documentats). Cap dada personal: no demanem adreça ni referència catastral i res no s'associa al teu usuari. El resultat és sempre un RANG orientatiu, mai una taxació."
+          : "Niveles N1 y N2: base estadística oficial (fianza municipal Incasòl) escalada por superficie, con ajustos opcionales por estado de conservación y habitaciones (coeficientes documentados). Ningún dato personal: no pedimos dirección ni referencia catastral y nada se asocia a tu usuario. El resultado es siempre un RANGO orientativo, nunca una tasación."}
       </p>
     </div>
   );

@@ -8,14 +8,15 @@ import EstimaReport from "@/components/estima/EstimaReport";
 import { ESTIMA_SERPAVI_URL } from "@/lib/estima";
 
 /**
- * F2 (redisseny de la Home) — Funcionalitat «Estima el lloguer del teu
- * habitatge»: estimació progressiva que ARRANCA amb el nivell N1 (base
- * estadística oficial Incasòl escalada per superfície, resultat sempre en
- * RANG). Els nivells següents (N2 ajustos per característiques documentades,
- * N3 rang SERPAVI per parcel·la) arriben amb les fases següents del redisseny.
+ * F2/F3 (redisseny de la Home) — Funcionalitat «Estima el lloguer del teu
+ * habitatge»: estimació progressiva. N1 = base estadística oficial Incasòl
+ * escalada per superfície (sempre en RANG). N2 = ajustos opcionals per estat
+ * de conservació i habitacions, amb coeficient documentat al motor validat.
+ * El rang per parcel·la (N3, secció censal) només el calcula SERPAVI amb
+ * fonts tributàries no públiques: mai es simula, mai s'inventa — botó oficial.
  *
  * Regla d'or: mai una xifra única de taxació, mai una consulta oficial
- * SERPAVI simulada, cap dada personal (N1 no demana adreça ni ref. catastral).
+ * SERPAVI simulada, cap dada personal (no demana adreça ni ref. catastral).
  */
 export default function EstimaIntro() {
   const { locale, navigate } = useApp();
@@ -27,7 +28,7 @@ export default function EstimaIntro() {
     <div className="flex flex-col gap-3.5">
       <div className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full bg-mintsoft border border-mintline text-[11px] font-bold text-mossdeep">
         <Info className="w-3.5 h-3.5" />
-        {ca ? "Nou · estimació progressiva (nivell N1)" : "Nuevo · estimación progresiva (nivel N1)"}
+        {ca ? "Nou · estimació progressiva (nivells N1 + N2)" : "Nuevo · estimación progresiva (niveles N1 + N2)"}
       </div>
 
       <h3 className="font-extrabold text-lg leading-snug">
@@ -35,8 +36,8 @@ export default function EstimaIntro() {
       </h3>
       <p className="text-sm text-moss leading-relaxed">
         {ca
-          ? "Municipi + superfície → un RANG orientatiu amb la base oficial registrada (fiances Incasòl), traçabilitat completa i degradació honesta («dades insuficients») quan la zona no té mostra. Mai una xifra única de taxació. Els ajustos per característiques (N2) i el rang per parcel·la (N3) arriben amb les fases següents."
-          : "Municipio + superficie → un RANGO orientativo con la base oficial registrada (fianzas Incasòl), trazabilidad completa y degradación honesta («datos insuficientes») cuando la zona no tiene muestra. Nunca una cifra única de tasación. Los ajustes por características (N2) y el rango por parcela (N3) llegan con las fases siguientes."}
+          ? "Municipi + superfície → un RANG orientatiu amb la base oficial registrada (fiances Incasòl), traçabilitat completa i degradació honesta («dades insuficients») quan la zona no té mostra. Si vols, afegeix estat de conservació i habitacions: els únics ajustos amb coeficient documentat (N2). Mai una xifra única de taxació."
+          : "Municipio + superficie → un RANGO orientativo con la base oficial registrada (fianzas Incasòl), trazabilidad completa y degradación honesta («datos insuficientes») cuando la zona no tiene muestra. Nunca una cifra única de tasación. Si quieres, añade estado de conservación y habitaciones: los únicos ajustes con coeficiente documentado (N2)."}
       </p>
 
       {result ? (
@@ -44,8 +45,8 @@ export default function EstimaIntro() {
           <EstimaReport data={result} variant="compact" onRetry={() => { setResult(null); setFormKey((k) => k + 1); }} />
           <p className="text-[11px] text-stone leading-relaxed">
             {ca
-              ? "Cap dada personal: l'estimació N1 no demana adreces ni referències catastrals i no guarda res associat a usuaris."
-              : "Ningún dato personal: la estimación N1 no pide direcciones ni referencias catastrales y no guarda nada asociado a usuarios."}
+              ? "Cap dada personal: l'estimació no demana adreces ni referències catastrals i no guarda res associat a usuaris."
+              : "Ningún dato personal: la estimación no pide direcciones ni referencias catastrales y no guarda nada asociado a usuarios."}
           </p>
         </>
       ) : (

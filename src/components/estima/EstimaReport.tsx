@@ -6,12 +6,14 @@ import type { EstimationResult, EstimaFailureReason } from "@/lib/estima";
 import type { EstimaPayload } from "@/components/estima/EstimaForm";
 
 /**
- * F2 «Estima el lloguer del teu habitatge» — resultat de l'estimació N1.
+ * F2/F3 «Estima el lloguer del teu habitatge» — resultat de l'estimació (N1/N2).
  *
  * Regles de presentació (criteris del redisseny):
  *  - el cap és SEMPRE el RANG orientatiu («entre X i Y €/mes»), mai una xifra única;
  *  - traçabilitat completa visible: base Incasòl, període, nº contractes,
- *    escalat per superfície, dispersió mesurada de l'horquilla i confiança;
+ *    escalat per superfície, ajustos per característiques amb el factor,
+ *    dispersió mesurada de l'horquilla i confiança;
+ *  - el nivell (N1/N2) reflecteix el que s'ha aplicat DE BO (mai inflar);
  *  - zona tensada → avís legal (Llei 12/2023, LAU art. 17.2) + botó SERPAVI;
  *  - sense dades suficients → estat explícit + consulta oficial SERPAVI
  *    (mai una estimació poc fiable en silenci);
@@ -73,8 +75,8 @@ export default function EstimaReport({
               ? "Aquest municipi no té fiança mitjana publicada a Incasòl (mostra massa petita) i tampoc no hi ha referència de comarca amb mostra suficient. Per transparència NO mostrem cap estimació poc fiable en silenci."
               : "Este municipio no tiene fianza media publicada en Incasòl (muestra demasiado pequeña) y tampoco hay referencia de comarca con muestra suficiente. Por transparencia NO mostramos ninguna estimación poco fiable en silencio.")
             : (ca
-              ? "Les dades introduïdes no permeten calcular l'estimació. Revisa la superfície i reintenta."
-              : "Los datos introducidos no permiten calcular la estimación. Revisa la superficie y reintenta.")}
+              ? "Les dades introduïdes no permeten calcular l'estimació. Revisa la superfície i les característiques (habitacions i estat) i reintenta."
+              : "Los datos introducidos no permiten calcular la estimación. Revisa la superficie y las características (habitaciones y estado) y reintenta.")}
         </p>
         <a
           href={data.serpaviUrl || "https://serpavi.mivau.gob.es/"}
@@ -100,18 +102,30 @@ export default function EstimaReport({
     );
   }
 
-  // ── resultat N1 ──
+  // ── resultat N1/N2 ──
   const e = data.estimation;
   if (!e) return null;
   const halfPct = Math.round((e.relativeDispersion / 2) * 1000) / 10;
   const confKeys = e.confidenceKeys.map((k) => confLabel(k, ca)).filter((v): v is string => v !== null);
+  const estatLabel: Record<string, [string, string]> = {
+    A_REFORMAR: ["a reformar", "a reformar"],
+    BON_ESTAT: ["bon estat", "buen estado"],
+    REFORMADA: ["reformada", "reformada"],
+    OBRA_NOVA: ["obra nova", "obra nueva"],
+  };
+  const charParts: string[] = [];
+  if (e.rooms !== null && e.rooms >= 1) charParts.push(`${e.rooms} ${ca ? "hab." : "hab."}`);
+  if (e.estat) charParts.push(estatLabel[e.estat]?.[ca ? 0 : 1] ?? e.estat);
+  const ajustosCar = e.adjustments.filter((a) => a.key !== "AJUST_SUPERFICIE");
 
   return (
     <div className="rounded-2xl border border-line bg-card p-5 flex flex-col gap-3.5">
       <div className="flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-mintsoft border border-mintline text-[11px] font-bold text-mossdeep">
           <ShieldCheck className="w-3.5 h-3.5" />
-          {ca ? "Nivell N1 · base oficial (Incasòl)" : "Nivel N1 · base oficial (Incasòl)"}
+          {e.level === "N2"
+            ? (ca ? "Nivell N2 · base oficial + característiques" : "Nivel N2 · base oficial + características")
+            : (ca ? "Nivell N1 · base oficial (Incasòl)" : "Nivel N1 · base oficial (Incasòl)")}
         </span>
         {e.tense && (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-embersoft border border-emberline text-[11px] font-bold text-ember3">
@@ -125,8 +139,8 @@ export default function EstimaReport({
       <div className="rounded-xl bg-cream border border-line px-4 py-4">
         <p className="text-xs font-semibold text-stone">
           {ca
-            ? `Estimació orientativa per a un habitatge de ${e.surfaceM2} m² a ${data.input?.municipalityName ?? ""}:`
-            : `Estimación orientativa para una vivienda de ${e.surfaceM2} m² en ${data.input?.municipalityName ?? ""}:`}
+            ? `Estimació orientativa per a un habitatge de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} a ${data.input?.municipalityName ?? ""}:`
+            : `Estimación orientativa para una vivienda de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} en ${data.input?.municipalityName ?? ""}:`}
         </p>
         <p className="mt-1 text-2xl md:text-3xl font-black tracking-tight text-pine" aria-live="polite">
           {ca ? "entre" : "entre"} {fmtEur(e.min)} {ca ? "i" : "y"} {fmtEur(e.max)} {ca ? "€/mes" : "€/mes"}
@@ -167,6 +181,18 @@ export default function EstimaReport({
                   : `${e.surfaceM2} m² × (${fmtEur1(e.eurM2Typical ?? 0)} €/m²·mes típico, elasticidad 0,8 documentada)`}
             </dd>
           </div>
+          {ajustosCar.length > 0 && (
+            <div className="px-3.5 py-2 flex flex-wrap gap-x-2">
+              <dt className="text-stone shrink-0">{ca ? "Ajustos" : "Ajustes"}:</dt>
+              <dd className="flex-1 min-w-[12rem] text-moss">
+                {ajustosCar.map((a) =>
+                  ca
+                    ? `${a.key === "AJUST_ESTAT" ? "estat de conservació" : "densitat d'habitacions"}: ${a.detail} ×${a.factor} (coeficient documentat)`
+                    : `${a.key === "AJUST_ESTAT" ? "estado de conservación" : "densidad de habitaciones"}: ${a.detail} ×${a.factor} (coeficiente documentado)`,
+                ).join(ca ? " · " : " · ")}
+              </dd>
+            </div>
+          )}
           <div className="px-3.5 py-2 flex flex-wrap gap-x-2">
             <dt className="text-stone shrink-0">{ca ? "Horquilla" : "Horquilla"}:</dt>
             <dd className="flex-1 min-w-[12rem] text-moss">
