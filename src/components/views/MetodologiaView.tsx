@@ -239,6 +239,35 @@ export default function MetodologiaView() {
         </p>
       </div>
 
+      {/* F2 — Metodologia de l'estimació de lloguer (nivell N1) */}
+      <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
+        <Home className="w-5 h-5 text-pine" />
+        {ca
+          ? "Estimació del lloguer per superfície (N1) — «Estima el lloguer del teu habitatge»"
+          : "Estimación del alquiler por superficie (N1) — «Estima el alquiler de tu vivienda»"}
+      </h2>
+      <div className="mt-4 rounded-2xl border border-line bg-sand/50 p-5 text-sm text-moss leading-relaxed space-y-3">
+        <p>
+          {ca
+            ? "L'estimador progressiu (#/estima) arranca amb el nivell N1: la base és la fiança mitjana MUNICIPAL vigent d'Incasòl (€/mes de la vivenda típica, ≈85 m² — el centre de gravetat del contracte de lloguer segons l'Observatori del Lloguer i el parc mitjà de l'INE). Amb la superfície introduïda per l'usuari, la base s'escala amb elasticitat renta-superfície 0,8 (β < 1: el €/m² cau amb la mida; rang documentat −0,10 a −0,25 en estudis hedònics de Barcelona i Berlín). El resultat és SEMPRE un RANG orientatiu: mai una xifra única de taxació ni una valoració individualitzada."
+            : "El estimador progresivo (#/estima) arranca con el nivel N1: la base es la fianza media MUNICIPAL vigente de Incasòl (€/mes de la vivienda típica, ≈85 m² — el centro de gravedad del contrato de alquiler según el Observatorio del Alquiler y el parque medio del INE). Con la superficie introducida por el usuario, la base se escala con elasticidad renta-superficie 0,8 (β < 1: el €/m² cae con la mida; rango documentado −0,10 a −0,25 en estudios hedónicos de Barcelona y Berlín). El resultado es SIEMPRE un RANGO orientativo: nunca una cifra única de tasación ni una valoración individualizada."}
+        </p>
+        <div className="rounded-xl bg-card border border-line p-3 font-mono text-xs text-pine space-y-1">
+          <div>{(ca ? "FÓRMULA: " : "FÓRMULA: ") + (ca ? "renta estimada (m²) = fiança municipal vigent × (m² / 85)^0,8" : "renta estimada (m²) = fianza municipal vigente × (m² / 85)^0,8")}</div>
+          <div>{(ca ? "HORQUILLA: " : "HORQUILLA: ") + (ca ? "central ± (dispersió relativa mesurada / 2), amb la dispersió del pool territorial (comarca ≥5 municipis amb dada; si no província ≥10; si no sèrie històrica), saturada a ±30 % màxim" : "central ± (dispersión relativa medida / 2), con la dispersión del pool territorial (comarca ≥5 municipios con dato; si no provincia ≥10; si no serie histórica), saturada a ±30 % máximo")}</div>
+        </div>
+        <p>
+          {ca
+            ? "Quan el municipi no té fiança publicada (mostra petita d'Incasòl), la base és la referència de comarca ponderada pel nº de contractes, marcada sempre com a ESTIMACIÓ amb confiança BAIXA — mai dada municipal inventada. Si ni el municipi ni la comarca tenen mostra suficient, l'eina ho declara clarament («dades insuficients en aquesta zona») i ofereix la consulta oficial SERPAVI en lloc de mostrar una estimació poc fiable en silenci."
+            : "Cuando el municipio no tiene fianza publicada (muestra pequeña de Incasòl), la base es la referencia de comarca ponderada por el nº de contratos, marcada siempre como ESTIMACIÓN con confianza BAJA — nunca dato municipal inventado. Si ni el municipio ni la comarca tienen muestra suficiente, la herramienta lo declara claramente («datos insuficientes en esta zona») y ofrece la consulta oficial SERPAVI en lugar de mostrar una estimación poco fiable en silencio."}
+        </p>
+        <p className="text-[13px] text-stone">
+          {ca
+            ? "Els ajustos per característiques (estat de conservació, ascensor, moblat, planta…) són el nivell N2 i NO s'apliquen encara: l'N1 demana només municipi i superfície, exactament les dades que el càlcul utilitza. El rang amb validesa legal per a una parcel·la concreta només el dóna SERPAVI (MIVAU); en zones tensades (Llei 12/2023, LAU art. 17.2) l'eina ho recorda amb l'avís legal i l'enllaç oficial."
+            : "Los ajustes por características (estado de conservación, ascensor, amueblado, planta…) son el nivel N2 y NO se aplican todavía: el N1 pide solo municipio y superficie, exactamente los datos que el cálculo utiliza. El rango con validez legal para una parcela concreta solo lo da SERPAVI (MIVAU); en zonas tensionadas (Ley 12/2023, LAU art. 17.2) la herramienta lo recuerda con el aviso legal y el enlace oficial."}
+        </p>
+      </div>
+
       {/* Cicle d'actualització */}
       <h2 className="mt-10 font-bold text-xl flex items-center gap-2">
         <FileText className="w-5 h-5 text-pine" />

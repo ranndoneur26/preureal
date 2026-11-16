@@ -61,6 +61,7 @@ import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_cron_entorn from "../_impl/cron/entorn/route";
 import * as h_cron_ine from "../_impl/cron/ine/route";
 import * as h_cron_rental_share from "../_impl/cron/rental-share/route";
+import * as h_estima from "../_impl/estima/route";
 import * as h_events from "../_impl/events/route";
 import * as h_favorites from "../_impl/favorites/route";
 import * as h_geocode from "../_impl/geocode/route";
@@ -158,6 +159,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["cron", "entorn"], h: h_cron_entorn },
   { seg: ["cron", "ine"], h: h_cron_ine },
   { seg: ["cron", "rental-share"], h: h_cron_rental_share },
+  { seg: ["estima"], h: h_estima },
   { seg: ["events"], h: h_events },
   { seg: ["favorites"], h: h_favorites },
   { seg: ["geocode"], h: h_geocode },

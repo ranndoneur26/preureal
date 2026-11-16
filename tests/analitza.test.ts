@@ -28,6 +28,21 @@ import {
   SERPAVI_URL,
 } from "../src/lib/analitza";
 import { buildReportHtml, verdictNote, type AnalitzaReportData } from "../src/lib/analitza-html";
+import {
+  buildEstimation,
+  sanitizeEstimaSurface,
+  sanitizeEstimaMunicipalityCode,
+  ESTIMA_DISCLAIMER,
+  ESTIMA_SERPAVI_URL,
+  ESTIMA_SOURCES,
+  ESTIMA_LIMITATIONS,
+  ESTIMA_SURFACE_MIN,
+  ESTIMA_SURFACE_MAX,
+  type EstimaOutcome,
+  type EstimationResult,
+  type EstimaFailureReason,
+} from "../src/lib/estima";
+import { round1, relativeIqr, VAL_REF_M2, VAL_BETA_SUPERFICIE } from "../src/lib/territorial";
 
 const baseInput = {
   municipalityCode: "081136",
@@ -351,5 +366,192 @@ describe("F1 — separació UX i transparència", () => {
     senseTensio.normative.tense = false;
     const html = buildReportHtml(senseTensio, null, "ca");
     expect(html).not.toContain("Zona tensada (Llei 12/2023, LAU art. 17.2)");
+  });
+});
+
+// ── F2 (redisseny de la Home): «Estima el lloguer del teu habitatge» (N1) ────
+
+const comarcaPool = [600, 650, 700, 750, 800, 850, 900];
+
+const estimaData = {
+  rentLatest: 750,
+  rentPeriod: "2025",
+  contracts: 1468,
+  history: null,
+  comarcaValues: comarcaPool,
+  provinciaValues: [],
+  comarcaRefLatest: null,
+  comarcaRefPeriod: null,
+  tense: false,
+};
+
+const estimaInput = { municipalityCode: "081136", municipalityName: "Manresa", surfaceM2: 85 };
+
+function mustOk(out: EstimaOutcome): EstimationResult {
+  if (!out.ok) throw new Error(`esperava ok, va fallar: ${out.reason}`);
+  return out.result;
+}
+
+function mustFail(out: EstimaOutcome): EstimaFailureReason {
+  if (out.ok) throw new Error("esperava fallida, ha retornat resultat");
+  return out.reason;
+}
+
+describe("F2 estima — sanitització d'entrada (N1 només demana el que usa)", () => {
+  test("superfície: rang 5–500, res de franges lliures", () => {
+    expect(sanitizeEstimaSurface(85)).toBe(85);
+    expect(sanitizeEstimaSurface(ESTIMA_SURFACE_MIN)).toBe(5);
+    expect(sanitizeEstimaSurface(ESTIMA_SURFACE_MAX)).toBe(500);
+    expect(sanitizeEstimaSurface("120")).toBe(120);
+    expect(sanitizeEstimaSurface(0)).toBeNull();
+    expect(sanitizeEstimaSurface(501)).toBeNull();
+    expect(sanitizeEstimaSurface(-10)).toBeNull();
+    expect(sanitizeEstimaSurface(null)).toBeNull();
+    expect(sanitizeEstimaSurface(undefined)).toBeNull();
+    expect(sanitizeEstimaSurface(NaN)).toBeNull();
+    expect(sanitizeEstimaSurface(Number.POSITIVE_INFINITY)).toBeNull();
+  });
+
+  test("municipi: exactament 6 dígits", () => {
+    expect(sanitizeEstimaMunicipalityCode("081136")).toBe("081136");
+    expect(sanitizeEstimaMunicipalityCode("08113")).toBeNull();
+    expect(sanitizeEstimaMunicipalityCode("08113a")).toBeNull();
+    expect(sanitizeEstimaMunicipalityCode(undefined)).toBeNull();
+    expect(sanitizeEstimaMunicipalityCode("")).toBeNull();
+  });
+});
+
+describe("F2 estima — càlcul N1 (base oficial + elasticitat documentada)", () => {
+  test("85 m² = vivenda típica: central exactament la base oficial, horquilla mesurada", () => {
+    const r = mustOk(buildEstimation(estimaData, estimaInput));
+    expect(r.level).toBe("N1");
+    expect(r.central).toBe(750); // (85/85)^0,8 = 1
+    expect(r.baseCentral).toBe(750);
+    expect(r.baseSource).toBe("MUNICIPI");
+    expect(r.basePeriod).toBe("2025");
+    expect(r.contracts).toBe(1468);
+    expect(r.eurM2Typical).toBe(round1(750 / VAL_REF_M2)); // DERIVAT: base / 85 m² típics
+    expect(r.eurM2).toBe(round1(750 / 85)); // DERIVAT: central / 85 m² introduïts
+    expect(r.bandBasis).toBe("COMARCA");
+    expect(r.bandN).toBe(7);
+    expect(r.bandYear).toBe("2025");
+    // l'amplada surt de la dispersió MESURADA del pool, mai d'un percentil inventat
+    const disp = relativeIqr(comarcaPool) as number;
+    expect(r.relativeDispersion).toBe(round1(disp));
+    expect(r.min).toBe(round1(Math.max(750 * 0.5, 750 - (750 * disp) / 2)));
+    expect(r.max).toBe(round1(750 + (750 * disp) / 2));
+    expect(r.min).toBeLessThan(r.central);
+    expect(r.max).toBeGreaterThan(r.central);
+    expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE"]); // N1: només superfície
+    expect(r.confidence).toBe("ALTA"); // any 2025 + 1468 contractes + pool comarca
+    expect(r.tense).toBe(false);
+  });
+
+  test("50 m²: escalat amb l'elasticitat documentada (0,8) sobre la típica de 85 m²", () => {
+    const r = mustOk(buildEstimation(estimaData, { ...estimaInput, surfaceM2: 50 }));
+    const expected = round1(750 * Math.pow(50 / VAL_REF_M2, VAL_BETA_SUPERFICIE));
+    expect(r.central).toBe(expected);
+    expect(r.min).toBeLessThan(r.central);
+    expect(r.max).toBeGreaterThan(r.central);
+    expect(r.adjustmentKeys).toEqual(["AJUST_SUPERFICIE"]);
+  });
+
+  test("superfície sota el rang calibrat: satura a 20 m² i avisa d'habitabilitat (informatiu)", () => {
+    const r = mustOk(buildEstimation(estimaData, { ...estimaInput, surfaceM2: 10 }));
+    const expected = round1(750 * Math.pow(20 / VAL_REF_M2, VAL_BETA_SUPERFICIE));
+    expect(r.central).toBe(expected);
+    expect(r.warnings.length).toBeGreaterThan(0);
+    expect(r.warnings.some((w) => w.level === "ILLEGAL")).toBe(true); // 10 m² < 15 m² (Decret 141/2012)
+  });
+
+  test("el rang manté la proporció: mai horquilles per sobre de ±30 %", () => {
+    const r = mustOk(buildEstimation(estimaData, estimaInput));
+    const halfPct = ((r.max - r.central) / r.central) * 100;
+    expect(halfPct).toBeLessThanOrEqual(30);
+  });
+});
+
+describe("F2 estima — degradació honesta (mai inventar res)", () => {
+  test("municipi sense fiança publicada: base de COMARCA marcada ESTIMACIÓ + confiança BAIXA", () => {
+    const r = mustOk(
+      buildEstimation(
+        { ...estimaData, rentLatest: null, rentPeriod: null, comarcaRefLatest: 700, comarcaRefPeriod: "2025" },
+        estimaInput,
+      ),
+    );
+    expect(r.baseSource).toBe("COMARCA_REF");
+    expect(r.confidence).toBe("BAIXA");
+    expect(r.confidenceKeys).toContain("CONF_BASE_COMARCA_REF");
+    expect(r.basePeriod).toBe("2025");
+    expect(r.baseCentral).toBe(700);
+  });
+
+  test("sense fiança municipal ni referència de comarca → NO_RENT («dades insuficients»)", () => {
+    const reason = mustFail(
+      buildEstimation({ ...estimaData, rentLatest: null, comarcaRefLatest: null }, estimaInput),
+    );
+    expect(reason).toBe("NO_RENT");
+  });
+
+  test("entrada no vàlida → BAD_INPUT (mai estimar amb dades buides)", () => {
+    expect(mustFail(buildEstimation(estimaData, { ...estimaInput, surfaceM2: 0 }))).toBe("BAD_INPUT");
+    expect(mustFail(buildEstimation(estimaData, { ...estimaInput, surfaceM2: 600 }))).toBe("BAD_INPUT");
+    expect(mustFail(buildEstimation(estimaData, { ...estimaInput, surfaceM2: Number.NaN }))).toBe("BAD_INPUT");
+  });
+});
+
+describe("F2 estima — horquilla territorial traçada", () => {
+  test("pool de comarca insuficient → província (pool més ampli, sempre traçat)", () => {
+    const prov = Array.from({ length: 12 }, (_, i) => 500 + i * 60);
+    const r = mustOk(buildEstimation({ ...estimaData, comarcaValues: [], provinciaValues: prov }, estimaInput));
+    expect(r.bandBasis).toBe("PROVINCIA");
+    expect(r.bandN).toBe(12);
+    expect(r.min).toBeLessThan(r.central);
+    expect(r.max).toBeGreaterThan(r.central);
+  });
+
+  test("sense pool territorial → sèrie històrica municipal com a última xarxa", () => {
+    const r = mustOk(
+      buildEstimation(
+        { ...estimaData, comarcaValues: [], provinciaValues: [], history: { "2022": 600, "2023": 700, "2024": 750, "2025": 750 } },
+        estimaInput,
+      ),
+    );
+    expect(r.bandBasis).toBe("HISTORICA");
+    expect(r.min).toBeLessThan(r.central);
+    expect(r.max).toBeGreaterThan(r.central);
+  });
+
+  test("zona tensada: la bandera travessa el motor per a l'avís legal SERPAVI", () => {
+    const r = mustOk(buildEstimation({ ...estimaData, tense: true }, estimaInput));
+    expect(r.tense).toBe(true);
+  });
+});
+
+describe("F2 estima — transparència i fonts (mateix criteri que F1)", () => {
+  test("el text fix de transparència és el compartit amb F1 (mai taxació)", () => {
+    expect(ESTIMA_DISCLAIMER).toBe(ORIENTATION_DISCLAIMER);
+    expect(ESTIMA_DISCLAIMER.ca).toContain("No és una taxació");
+    expect(ESTIMA_DISCLAIMER.es).toContain("No es una tasación");
+  });
+
+  test("SERPAVI és el portal oficial MIVAU (mai simulació de consulta oficial)", () => {
+    expect(ESTIMA_SERPAVI_URL).toBe("https://serpavi.mivau.gob.es/");
+    expect(ESTIMA_SERPAVI_URL.startsWith("https://")).toBe(true);
+  });
+
+  test("fonts: Incasòl com a base N1 + SERPAVI oficial, totes amb URL", () => {
+    expect(ESTIMA_SOURCES.some((s) => s.u.includes("incasol.gencat.cat"))).toBe(true);
+    expect(ESTIMA_SOURCES.some((s) => s.u.includes("serpavi.mivau.gob.es"))).toBe(true);
+    expect(ESTIMA_SOURCES.every((s) => s.u.startsWith("https://") && s.d.length > 0)).toBe(true);
+  });
+
+  test("limitacions: comarca estimació, horquilla mesurada, SERPAVI legal i privacitat", () => {
+    expect(ESTIMA_LIMITATIONS.length).toBeGreaterThanOrEqual(5);
+    const all = ESTIMA_LIMITATIONS.join(" ");
+    expect(all).toContain("LIMIT_COMARCA_REF");
+    expect(all).toContain("LIMIT_HORQUILLA_MESURADA");
+    expect(all).toContain("LIMIT_SERPAVI_LEGAL");
+    expect(all).toContain("LIMIT_PRIVACITAT");
   });
 });

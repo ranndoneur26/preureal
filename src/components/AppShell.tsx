@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Locale, t as getT } from "@/lib/i18n";
 import LandingView from "@/components/views/LandingView";
 import AnalitzaView from "@/components/views/AnalitzaView";
+import EstimaView from "@/components/views/EstimaView";
 import MapView from "@/components/views/MapView";
 import PricingView from "@/components/views/PricingView";
 import AuthView from "@/components/views/AuthView";
@@ -115,6 +116,7 @@ export default function AppShell() {
           <div key={view} className="pr-view flex-1 flex flex-col">
           {view === "/" && <LandingView />}
           {view === "/analitza" && <AnalitzaView />}
+          {view === "/estima" && <EstimaView />}
           {view === "/mapa" && <MapView />}
           {view === "/comparador" && <ComparadorView />}
           {view === "/analisi" && <AnalisiView />}
@@ -176,6 +178,7 @@ function Header({ route }: { route: string }) {
               </button>
               <nav className="hidden md:flex items-center gap-1">
                 {link("/analitza", t.nav.analitza)}
+                {link("/estima", "Estima")}
                 {link("/mapa", t.nav.mapa)}
                 {link("/comparador", "Comparador")}
                 {link("/analisi", locale === "ca" ? "Anàlisi" : "Análisis")}
@@ -249,6 +252,7 @@ function Header({ route }: { route: string }) {
             </div>
             <div id="mobile-nav" className="hidden md:hidden border-t border-line bg-cream px-4 py-3 flex-col gap-1">
               {link("/analitza", t.nav.analitza)}
+              {link("/estima", "Estima")}
               {link("/mapa", t.nav.mapa)}
               {link("/comparador", "Comparador")}
               {link("/analisi", locale === "ca" ? "Anàlisi" : "Análisis")}
@@ -309,6 +313,7 @@ function Footer() {
                 <div className="font-semibold text-white mb-2">{ca ? "Producte" : "Producto"}</div>
                 <div className="flex flex-col gap-1.5">
                   {footLink("/analitza", ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado")}
+                  {footLink("/estima", ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda")}
                   {footLink("/mapa", t.nav.mapa)}
                   {footLink("/comparador", "Comparador")}
                   {footLink("/analisi", ca ? "Anàlisi del mercat" : "Análisis del mercado")}
