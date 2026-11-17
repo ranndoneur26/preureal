@@ -1,0 +1,943 @@
+{
+ "feed": {
+  "publisher": "ATM/CGIM (T-mobilitat dades obertes)",
+  "feed_version": "TMOB_GTFS_WSAGWBL",
+  "fitxers": "agency 199 operadors · stops 41449 · routes 2453 · trips 208005 · stop_times 4073635"
+ },
+ "stops_totals": 41449,
+ "modes": {
+  "200": 392,
+  "7": 9,
+  "3": 33334,
+  "2": 455,
+  "1": 214,
+  "0": 107
+ },
+ "municipis_1km": 899,
+ "municipis_2km": 919,
+ "municipis_sense_parada_2km": [
+  {
+   "name": "Argençola",
+   "comarca": "Anoia"
+  },
+  {
+   "name": "Guiamets, els",
+   "comarca": "Priorat"
+  },
+  {
+   "name": "Susqueda",
+   "comarca": "Selva"
+  },
+  {
+   "name": "Santa Cecília de Voltregà",
+   "comarca": "Osona"
+  },
+  {
+   "name": "Vallclara",
+   "comarca": "Conca de Barberà"
+  },
+  {
+   "name": "Albiol, l'",
+   "comarca": "Baix Camp"
+  },
+  {
+   "name": "Guils de Cerdanya",
+   "comarca": "Cerdanya"
+  },
+  {
+   "name": "Mont-ral",
+   "comarca": "Alt Camp"
+  },
+  {
+   "name": "Oliola",
+   "comarca": "Noguera"
+  },
+  {
+   "name": "Passanant i Belltall",
+   "comarca": "Conca de Barberà"
+  },
+  {
+   "name": "Pontils",
+   "comarca": "Conca de Barberà"
+  },
+  {
+   "name": "Forès",
+   "comarca": "Conca de Barberà"
+  },
+  {
+   "name": "Blancafort",
+   "comarca": "Conca de Barberà"
+  },
+  {
+   "name": "Capafonts",
+   "comarca": "Baix Camp"
+  },
+  {
+   "name": "Gualta",
+   "comarca": "Baix Empordà"
+  },
+  {
+   "name": "Sant Mori",
+   "comarca": "Alt Empordà"
+  },
+  {
+   "name": "Sant Sadurní d'Osormort",
+   "comarca": "Osona"
+  },
+  {
+   "name": "Vajol, la",
+   "comarca": "Alt Empordà"
+  },
+  {
+   "name": "Vilanova de l'Aguda",
+   "comarca": "Noguera"
+  },
+  {
+   "name": "Veciana",
+   "comarca": "Anoia"
+  },
+  {
+   "name": "Baronia de Rialb, la",
+   "comarca": "Noguera"
+  },
+  {
+   "name": "Tiurana",
+   "comarca": "Noguera"
+  },
+  {
+   "name": "Cabanabona",
+   "comarca": "Noguera"
+  },
+  {
+   "name": "Rubió",
+   "comarca": "Anoia"
+  },
+  {
+   "name": "Senan",
+   "comarca": "Conca de Barberà"
+  },
+  {
+   "name": "Febró, la",
+   "comarca": "Baix Camp"
+  },
+  {
+   "name": "Meranges",
+   "comarca": "Cerdanya"
+  },
+  {
+   "name": "Fontanilles",
+   "comarca": "Baix Empordà"
+  }
+ ],
+ "prove": {
+  "Barcelona": {
+   "parades_1km": 313,
+   "modes_1km": [
+    "1",
+    "2",
+    "3"
+   ],
+   "agencies_1km": [
+    "AMB_44",
+    "AMB_56",
+    "AMB_72",
+    "BGS_8",
+    "CAS_3",
+    "COS_9",
+    "FGC_",
+    "GEN_42593"
+   ],
+   "mostra": [
+    {
+     "nom": "Plaça de Catalunya",
+     "m": 22,
+     "linies": [
+      "RG1",
+      "R1",
+      "R4"
+     ]
+    }
+   ]
+  },
+  "Girona": {
+   "parades_1km": 162,
+   "modes_1km": [
+    "2",
+    "3"
+   ],
+   "agencies_1km": [
+    "COS_9",
+    "GEN_42581",
+    "GEN_42593",
+    "GEN_42602",
+    "GEN_42628",
+    "GEN_42641",
+    "GEN_42680",
+    "GEN_42710"
+   ],
+   "mostra": [
+    {
+     "nom": "rda. Antoni M. Claret 28",
+     "m": 46,
+     "linies": [
+      "L10"
+     ]
+    }
+   ]
+  },
+  "Lleida": {
+   "parades_1km": 114,
+   "modes_1km": [
+    "3"
+   ],
+   "agencies_1km": [
+    "GAM_Gamón",
+    "GEN_42555",
+    "GEN_42604",
+    "GEN_42665",
+    "GEN_42713",
+    "GEN_42714",
+    "GEN_42736",
+    "LLE_5"
+   ],
+   "mostra": [
+    {
+     "nom": "Hisenda 2",
+     "m": 96,
+     "linies": [
+      "4",
+      "6",
+      "7",
+      "8",
+      "70",
+      "N1"
+     ]
+    }
+   ]
+  },
+  "Tarragona": {
+   "parades_1km": 120,
+   "modes_1km": [
+    "200",
+    "3"
+   ],
+   "agencies_1km": [
+    "ALS_720",
+    "GEN_42569",
+    "GEN_42634",
+    "GEN_42662",
+    "GEN_42672",
+    "GEN_42675",
+    "GEN_42725",
+    "TAR_EMT"
+   ],
+   "mostra": [
+    {
+     "nom": "Pl. Imperial Tàrraco",
+     "m": 25,
+     "linies": [
+      "8",
+      "11",
+      "12",
+      "23"
+     ]
+    }
+   ]
+  },
+  "Manresa": {
+   "parades_1km": 134,
+   "modes_1km": [
+    "200",
+    "3"
+   ],
+   "agencies_1km": [
+    "ALS_720",
+    "BGE_4",
+    "BGS_8",
+    "GEN_42630",
+    "GEN_42639",
+    "GEN_42672",
+    "GEN_42675",
+    "MAN_6"
+   ],
+   "mostra": [
+    {
+     "nom": "Pl. Sant Domènec",
+     "m": 188,
+     "linies": [
+      "760"
+     ]
+    }
+   ]
+  },
+  "Vic": {
+   "parades_1km": 116,
+   "modes_1km": [
+    "2",
+    "3"
+   ],
+   "agencies_1km": [
+    "BGS_8",
+    "GEN_42639",
+    "GEN_42641",
+    "GEN_42655",
+    "GEN_42680",
+    "GEN_42710",
+    "GEN_42720",
+    "OSO_10"
+   ],
+   "mostra": [
+    {
+     "nom": "Pl. Sta. Clara",
+     "m": 56,
+     "linies": [
+      "L-1",
+      "L-2",
+      "L-3",
+      "L-4",
+      "L-6",
+      "L-8"
+     ]
+    }
+   ]
+  },
+  "Sort": {
+   "parades_1km": 0,
+   "modes_1km": [],
+   "agencies_1km": [],
+   "mostra": []
+  },
+  "Vielha e Mijaran": {
+   "parades_1km": 7,
+   "modes_1km": [
+    "200",
+    "3"
+   ],
+   "agencies_1km": [
+    "ALS_720",
+    "GEN_42675"
+   ],
+   "mostra": [
+    {
+     "nom": "Vielha (Alc. Calbetó, 3-5)",
+     "m": 367,
+     "linies": [
+      "L1105",
+      "L1645",
+      "L0066",
+      "L0092",
+      "L0292",
+      "L0970"
+     ]
+    }
+   ]
+  },
+  "Amposta": {
+   "parades_1km": 27,
+   "modes_1km": [
+    "3"
+   ],
+   "agencies_1km": [
+    "AMP_1",
+    "GEN_42725"
+   ],
+   "mostra": [
+    {
+     "nom": "C.A.P. II",
+     "m": 24,
+     "linies": [
+      "L2",
+      "L1"
+     ]
+    }
+   ]
+  },
+  "La Seu d'Urgell": {
+   "parades_1km": 3,
+   "modes_1km": [
+    "200",
+    "3"
+   ],
+   "agencies_1km": [
+    "ALS_720",
+    "GEN_42675",
+    "GEN_42748"
+   ],
+   "mostra": [
+    {
+     "nom": "Alàs (ctra. N-260, pk 223,5) (D)",
+     "m": 839,
+     "linies": [
+      "L0812",
+      "L0008",
+      "L0576",
+      "L0393"
+     ]
+    }
+   ]
+  },
+  "Puigcerdà": {
+   "parades_1km": 19,
+   "modes_1km": [
+    "2",
+    "200",
+    "3"
+   ],
+   "agencies_1km": [
+    "ALS_720",
+    "GEN_42641",
+    "GEN_42647",
+    "GEN_42675",
+    "PUI_1",
+    "RBU_1071",
+    "ROD_1071",
+    "TEI_98"
+   ],
+   "mostra": [
+    {
+     "nom": "Av. Del Segre",
+     "m": 276,
+     "linies": [
+      "TPVP"
+     ]
+    }
+   ]
+  },
+  "Figueres": {
+   "parades_1km": 85,
+   "modes_1km": [
+    "2",
+    "3"
+   ],
+   "agencies_1km": [
+    "COS_9",
+    "FIG_47",
+    "GEN_42593",
+    "GEN_42628",
+    "GEN_42641",
+    "GEN_42658",
+    "GEN_42670",
+    "REG_1071"
+   ],
+   "mostra": [
+    {
+     "nom": "Rambla",
+     "m": 104,
+     "linies": [
+      "L1",
+      "L2",
+      "L4"
+     ]
+    }
+   ]
+  },
+  "Reus": {
+   "parades_1km": 117,
+   "modes_1km": [
+    "3"
+   ],
+   "agencies_1km": [
+    "GEN_42634",
+    "GEN_42648",
+    "GEN_42672",
+    "REU_"
+   ],
+   "mostra": [
+    {
+     "nom": "Raval de Martí Folguera",
+     "m": 98,
+     "linies": [
+      "L10",
+      "L60"
+     ]
+    }
+   ]
+  },
+  "Sabadell": {
+   "parades_1km": 112,
+   "modes_1km": [
+    "2",
+    "3"
+   ],
+   "agencies_1km": [
+    "CIN_5",
+    "FGC_",
+    "FYT_12",
+    "GEN_42605",
+    "GEN_42608",
+    "GEN_42628",
+    "GEN_42673",
+    "GEN_42674"
+   ],
+   "mostra": [
+    {
+     "nom": "Casal Pere Quart",
+     "m": 135,
+     "linies": [
+      "L1",
+      "L2",
+      "L3",
+      "L11",
+      "L80"
+     ]
+    }
+   ]
+  },
+  "Terrassa": {
+   "parades_1km": 78,
+   "modes_1km": [
+    "2",
+    "3"
+   ],
+   "agencies_1km": [
+    "CIN_5",
+    "FGC_",
+    "GEN_42628",
+    "GEN_42642",
+    "GEN_42673",
+    "GEN_42674",
+    "GEN_42675",
+    "GEN_42679"
+   ],
+   "mostra": [
+    {
+     "nom": "Mercat de la Independència (A)",
+     "m": 154,
+     "linies": [
+      "N66",
+      "N61",
+      "M13",
+      "M12"
+     ]
+    }
+   ]
+  }
+ },
+ "modes_hist_rutes": {
+  "3": 2280,
+  "200": 115,
+  "2": 34,
+  "7": 4,
+  "1": 14,
+  "0": 5
+ },
+ "agencies_prefix": {
+  "GEN": 946,
+  "LIO": 325,
+  "AMB": 140,
+  "ALS": 126,
+  "TMB": 116,
+  "SAG": 84,
+  "TEI": 62,
+  "SAB": 58,
+  "OSO": 38,
+  "COS": 30,
+  "FYT": 30,
+  "SAA": 27,
+  "TUS": 26,
+  "CIN": 25,
+  "SSI": 25,
+  "CAS": 24,
+  "FGC": 22,
+  "TAR": 21,
+  "GAM": 20,
+  "TGO": 20,
+  "BGS": 19,
+  "REU": 19,
+  "COT": 18,
+  "PIE": 18,
+  "RBU": 17
+ },
+ "comarques": {
+  "Alt Camp": {
+   "n": 22,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Alt Empordà": {
+   "n": 66,
+   "sense": [
+    "Cabanelles",
+    "Masarac i Vilarnadal"
+   ],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Alt Penedès": {
+   "n": 27,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Alt Urgell": {
+   "n": 19,
+   "sense": [],
+   "modes": [
+    "200",
+    "3"
+   ]
+  },
+  "Alta Ribagorça": {
+   "n": 3,
+   "sense": [],
+   "modes": [
+    "200",
+    "3"
+   ]
+  },
+  "Anoia": {
+   "n": 30,
+   "sense": [
+    "Orpí",
+    "Bellprat"
+   ],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Aran": {
+   "n": 9,
+   "sense": [
+    "Vilamòs",
+    "Arres"
+   ],
+   "modes": [
+    "200",
+    "3"
+   ]
+  },
+  "Bages": {
+   "n": 30,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3",
+    "7"
+   ]
+  },
+  "Baix Camp": {
+   "n": 25,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Baix Ebre": {
+   "n": 14,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Baix Empordà": {
+   "n": 34,
+   "sense": [
+    "Albons"
+   ],
+   "modes": [
+    "3"
+   ]
+  },
+  "Baix Llobregat": {
+   "n": 30,
+   "sense": [],
+   "modes": [
+    "0",
+    "1",
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Baix Penedès": {
+   "n": 14,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Barcelonès": {
+   "n": 5,
+   "sense": [],
+   "modes": [
+    "0",
+    "1",
+    "2",
+    "3"
+   ]
+  },
+  "Berguedà": {
+   "n": 31,
+   "sense": [
+    "Capolat",
+    "Castellar del Riu",
+    "Sagàs"
+   ],
+   "modes": [
+    "200",
+    "3"
+   ]
+  },
+  "Cerdanya": {
+   "n": 15,
+   "sense": [
+    "Urús"
+   ],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Conca de Barberà": {
+   "n": 16,
+   "sense": [],
+   "modes": [
+    "3"
+   ]
+  },
+  "Garraf": {
+   "n": 6,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Garrigues": {
+   "n": 24,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Garrotxa": {
+   "n": 21,
+   "sense": [
+    "Sales de Llierca",
+    "Sant Ferriol"
+   ],
+   "modes": [
+    "3"
+   ]
+  },
+  "Gironès": {
+   "n": 27,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Lluçanès": {
+   "n": 8,
+   "sense": [],
+   "modes": [
+    "3"
+   ]
+  },
+  "Maresme": {
+   "n": 30,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Moianès": {
+   "n": 10,
+   "sense": [],
+   "modes": [
+    "3"
+   ]
+  },
+  "Montsià": {
+   "n": 12,
+   "sense": [],
+   "modes": [
+    "3"
+   ]
+  },
+  "Noguera": {
+   "n": 25,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Osona": {
+   "n": 41,
+   "sense": [
+    "Malla"
+   ],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Pallars Jussà": {
+   "n": 14,
+   "sense": [
+    "Castell de Mur"
+   ],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Pallars Sobirà": {
+   "n": 15,
+   "sense": [],
+   "modes": [
+    "200",
+    "3"
+   ]
+  },
+  "Pla d'Urgell": {
+   "n": 16,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Pla de l'Estany": {
+   "n": 11,
+   "sense": [
+    "Fontcoberta"
+   ],
+   "modes": [
+    "3"
+   ]
+  },
+  "Priorat": {
+   "n": 22,
+   "sense": [
+    "Torre de Fontaubella, la"
+   ],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Ribera d'Ebre": {
+   "n": 14,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Ripollès": {
+   "n": 19,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Segarra": {
+   "n": 19,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Segrià": {
+   "n": 38,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Selva": {
+   "n": 25,
+   "sense": [
+    "Fogars de la Selva",
+    "Sant Feliu de Buixalleu"
+   ],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Solsonès": {
+   "n": 17,
+   "sense": [
+    "Pinós"
+   ],
+   "modes": [
+    "200",
+    "3"
+   ]
+  },
+  "Tarragonès": {
+   "n": 22,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Terra Alta": {
+   "n": 12,
+   "sense": [],
+   "modes": [
+    "3"
+   ]
+  },
+  "Urgell": {
+   "n": 20,
+   "sense": [],
+   "modes": [
+    "2",
+    "200",
+    "3"
+   ]
+  },
+  "Vallès Occidental": {
+   "n": 23,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  },
+  "Vallès Oriental": {
+   "n": 38,
+   "sense": [],
+   "modes": [
+    "2",
+    "3"
+   ]
+  }
+ }
+}

@@ -247,13 +247,18 @@ neteja, només proposta):
 
 ## L. Transport públic (GTFS) i «Serveis de l'entorn»
 
-Investigació amb peticions reals + proposta per fases: **`docs/gtfs-investigacio-transport.md`**.
-Resum: els datasets GTFS/GTFS-RT estan catalogats al portal Socrata de la
-Generalitat (FGC: trip updates/vehicle positions/alerts; parades d'autobús
-interurbà; estat Rodalies) però el payload NO és accessible per API oberta
-d'aquest portal («non-tabular», adjunts buits) i els operadors (TMB 401 sense
-clau, AMB timeout) requereixen canals propis → **integració marcada com a
-fase FUTURA amb claus server-side**, mai al client.
+Investigació amb peticions reals + proposta per fases: **`docs/gtfs-investigacio-transport.md`**
+(ronda 1) i **`docs/fuentes-transport-matrix.md`** (ronda 2, 17-11-2026).
+**Ronda 2 — verificat completament el GTFS AGREGAT de T-mobilitat** (l'única
+font que cobreix els 947 municipis): descàrrega real de 94 MB via portal
+(navegador CDP) o NAP MIMTRANS amb ApiKey gratuïta; **41.449 parades, 2.453
+rutes, 198 operadors** (TMB, FGC, Rodalies-Renfe, AMB, interurbans…), llicència
+Ley 37/2007, actualització DIÀRIA; cobertura real mesurada: **919/947
+municipis amb parada a ≤2 km del centre** (899 a ≤1 km), Vall d'Aran 9/9,
+Sort 110 m; 28 municipis rurals petits sense parada a ≤2 km documentats per
+a la degradació elegant. Les fonts per operador (TMB/FGC/TRAM/Renfe/AMB) són
+redundants per a l'estàtic i només aporten valor per al temps real (fase T3).
+Integració (MVP capa Leaflet + indicador EntornPanel) **pendent d'aprovació**.
 
 ## M. «Com funciona» (C1 + C2)
 

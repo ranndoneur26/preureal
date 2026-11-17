@@ -2,6 +2,45 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v55 — Auditoria integral (V): matriz de fuentes de transporte VERIFICADA (GTFS agregado T-mobilitat) — 2026-11-17
+
+Entregable del BLOQUE D demanat pel propietari (matriz amb peticions reals
+ANTES de tocar el mapa). **Cap canvi de codi, cap cambio destructiu** — el
+mapa i l'EntornPanel queden intactes; la integració queda pendent d'aprovació:
+
+- **`docs/fuentes-transport-matrix.md`** (NOU): matriz completa de fonts amb
+  verificació real. El GTFS AGREGAT de T-mobilitat (portal oficial + NAP
+  MIMTRANS fichero 2060/2059 + MobilityDatabase 2826/2832) s'ha descarregat
+  i analitzat COMPLETAMENT: ZIP 94 MB, **41.449 parades, 2.453 rutes,
+  208.004 serveis, 198 operadors** (TMB, FGC, Rodalies-Renfe, AMB,
+  interurbans Generalitat, EMT Tarragona, bus urbà de Lleida/Manresa/Vic/
+  Girona/Figueres/Reus…), modos bus/tren/metro/tram/funicular, llicència
+  «Autorización según la ley 37/2007», freqüència DIÀRIA (fitxa oficial
+  «Oferta planificada de transport completa», àmbit Cataluña).
+- **Cobertura real mesurada** (`scripts/gtfs_analisi.py` ×
+  `src/data/municipalities.json`): **899/947 municipis amb parada a ≤1 km
+  del centre i 919/947 a ≤2 km**; Vall d'Aran 9/9; Sort 110 m; Puigcerdà
+  tren+bus; 28 municipis rurals petits sense parada a ≤2 km (documentats per
+  a la degradació elegant). Proves del criteri d'acceptació superades:
+  Barcelona, Girona, Lleida, Tarragona + rural (Sort).
+- Fonts per operador verificades amb peticions reals: TMB 401 (cal clau),
+  FGC Opendatasoft amb payload real (305 estacions), TRAM canal `/GTFS/`
+  buit («There aren't any GTFS files generated.»), Renfe GTFS estàtic
+  Cercanías 15,6 MB actualitzat avui + GTFS-RT viu, AMB TIMEOUT 2× (NO
+  VERIFICAT), Overpass OSM amb payload real rural (17 parades Vall d'Aran),
+  MobilityDatabase mirall 404. Conclusió: fonts per operador redundants per
+  a l'estàtic (ja dins l'agregat); valor només per al temps real (T3).
+- **Proposta MVP detallada pendent d'aprovació**: ingest setmanal del GTFS
+  simplificat via NAP (ApiKey gratuïta server-side), JSON compacte ~3 MB,
+  API `/api/entorn/transport` per radi 500-1000 m, capa Leaflet activable
+  amb icones per modo + atribucions, indicador a «Serveis i qualitat de
+  l'entorn», degradació elegant als 28 municipis sense cobertura.
+- **`docs/gtfs-investigacio-transport.md`**: nota de segona ronda + enllaç.
+- **`AUDITORIA.md` §L**: actualitzat amb els resultats verificats.
+- **`docs/gtfs-cobertura-analisi.json`**: evidència completa (12 KB).
+- **`scripts/gtfs_analisi.py`** + **`scripts/cdp_download.mjs`**: scripts
+  d'anàlisi reproducibles (documentats al mateix doc).
+
 ## v54 — Auditoria integral (IV): AUDITORIA.md + copy «Com funciona» (C1/C2) + investigació GTFS — 2026-11-17
 
 Documents d'entrega del PROMPT MASTER (cap canvi de codi):

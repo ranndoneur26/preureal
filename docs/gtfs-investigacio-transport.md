@@ -1,11 +1,20 @@
 # Investigació: transport públic de Catalunya (GTFS/GTFS-RT) — 2026-11-17
 
+> **SEGONA RONDA COMPLETADA (17-11-2026):** el GTFS AGREGAT de T-mobilitat
+> (l'única font que cobreix els 947 municipis) s'ha verificat completament —
+> descàrrega real de 94 MB, 41.449 parades, 198 operadors, **919/947
+> municipis amb parada a ≤2 km del centre**. Matriz completa de fonts i
+> resultat de la cobertura: **`docs/fuentes-transport-matrix.md`** +
+> `docs/gtfs-cobertura-analisi.json`. La integració (T1-T3) segueix pendent
+> d'aprovació.
+
 Objectiu del PROMPT MASTER: investigar i integrar transport públic al mapa
 Leaflet i a «Serveis i qualitat de l'entorn» (EntornPanel). **Aquest document
-és la FASE D'INVESTIGACIÓ**: totes les fonts s'han PROBAT amb peticions reals
-el 2026-11-17 des d'aquest entorn. La integració es proposa per fases i queda
-pendent d'aprovació (regles 2 i 8 del prompt: res de no verificat es
-presentarà com a fet; decisions ambigues → opció conservadora documentada).
+és la FASE D'INVESTIGACIÓ (ronda 1)**: totes les fonts s'han PROBAT amb
+peticions reals el 2026-11-17 des d'aquest entorn. La integració es proposa
+per fases i queda pendent d'aprovació (regles 2 i 8 del prompt: res de no
+verificat es presentarà com a fet; decisions ambigues → opció conservadora
+documentada).
 
 ---
 
