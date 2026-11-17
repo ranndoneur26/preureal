@@ -2,6 +2,17 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v52 — Auditoria integral (II): patch de seguretat de Next — 2026-11-17
+
+**Vulnerabilitat moderada tancada:** `npm audit` reportava next 16.3.0–16.4.4
+«Information disclosure across root params when a 'use cache' function is
+called through unstable_cache()» (via `unstable_cache`). FixAvailable →
+upgrade 16.4.3 → **16.4.6** (patch dins del mateix minor, API sense canvis):
+`npm audit --omit=dev` = **0 vulnerabilitats**. Verificat amb typecheck,
+suite (unit/audit_v23/email_first/f4_qa/home_premium_v49) i build de
+producció. El gate de CI (bloqueja high+) no l'hauria atrapat: el fix era
+barat i evita quedar exposats.
+
 ## v51 — Auditoria integral (I): neteja de codi mort i correccions editorial/SEO/a11y — 2026-11-17
 
 **Codi mort eliminat** (matriu completa d'evidència a `AUDITORIA.md`):
