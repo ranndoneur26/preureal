@@ -727,8 +727,9 @@ describe("email-first — guardes de font dels formularis i del registre", () =>
 
   test("G6. el text fix de transparència dels informes es manté intacte (F1, mai degradat)", () => {
     const analitza = readFileSync(new URL("../src/lib/analitza.ts", import.meta.url), "utf8");
-    expect(analitza).toContain("No és una taxació ni una valoració individualitzada de l'habitatge.");
-    expect(analitza).toContain("No es una tasación ni una valoración individualizada de la vivienda.");
+    // v56 — fórmula legal del propietari («taxació oficial», mai «estimació» ni «valoració» en negació)
+    expect(analitza).toContain("no és una taxació oficial ni una avaluació individualitzada de l'habitatge.");
+    expect(analitza).toContain("no es una tasación oficial ni una evaluación individualizada de la vivienda.");
     const estima = readFileSync(new URL("../src/lib/estima.ts", import.meta.url), "utf8");
     // l'estima REUSA el text fix (mai una còpia divergent)
     expect(estima).toContain("ESTIMA_DISCLAIMER = ORIENTATION_DISCLAIMER");

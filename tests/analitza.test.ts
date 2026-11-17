@@ -346,13 +346,18 @@ describe("F1 — separació UX i transparència", () => {
     expect(SERPAVI_URL.startsWith("https://")).toBe(true);
   });
 
-  test("el text fix de transparència nega taxació i valoració individualitzada (ca i es)", () => {
-    expect(ORIENTATION_DISCLAIMER.ca).toContain("Estimació estadística orientativa");
-    expect(ORIENTATION_DISCLAIMER.ca).toContain("No és una taxació");
-    expect(ORIENTATION_DISCLAIMER.ca).toContain("valoració individualitzada");
-    expect(ORIENTATION_DISCLAIMER.es).toContain("Estimación estadística orientativa");
-    expect(ORIENTATION_DISCLAIMER.es).toContain("No es una tasación");
-    expect(ORIENTATION_DISCLAIMER.es).toContain("valoración individualizada");
+  test("el text fix de transparència usa la fórmula legal del propietari (v56 — ca i es)", () => {
+    expect(ORIENTATION_DISCLAIMER.ca).toContain("Rang orientatiu calculat amb dades oficials");
+    expect(ORIENTATION_DISCLAIMER.ca).toContain("No és una taxació oficial");
+    expect(ORIENTATION_DISCLAIMER.ca).toContain("avaluació individualitzada");
+    expect(ORIENTATION_DISCLAIMER.es).toContain("Rango orientativo calculado con datos oficiales");
+    expect(ORIENTATION_DISCLAIMER.es).toContain("No es una tasación oficial");
+    expect(ORIENTATION_DISCLAIMER.es).toContain("evaluación individualizada");
+    // coherència del renombrat v56: mai «estimació» ni «valoració» en negació
+    expect(ORIENTATION_DISCLAIMER.ca).not.toContain("Estimació");
+    expect(ORIENTATION_DISCLAIMER.es).not.toContain("Estimación");
+    expect(ORIENTATION_DISCLAIMER.ca).not.toContain("valoració");
+    expect(ORIENTATION_DISCLAIMER.es).not.toContain("valoración");
   });
 
   test("l'informe HTML/PDF inclou el text fix a la capçalera i retiqueta la comparativa", () => {
@@ -361,7 +366,7 @@ describe("F1 — separació UX i transparència", () => {
     expect(html).toContain(ORIENTATION_DISCLAIMER.ca);
     // la comparativa per característiques ja no es presenta com a «valoració»
     expect(html).toContain("Central orientativa (comparativa estadística)");
-    expect(html).toContain("No és una taxació ni una valoració individualitzada");
+    expect(html).toContain("No és una taxació oficial ni una avaluació individualitzada");
     expect(html).not.toContain("Central ajustada per a AQUESTA vivenda");
     expect(html).not.toContain("diferència amb la valoració per característiques");
   });

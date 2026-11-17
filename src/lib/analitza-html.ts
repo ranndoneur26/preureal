@@ -343,7 +343,7 @@ export function buildReportHtml(
 <p><b>${ca ? "Lectura:" : "Lectura:"}</b> ${esc(verdict)}</p>
 ${note ? `<p class="small">${esc(note)}</p>` : ""}
 ${expectedRows ? `<table>${expectedRows.map((r) => `<tr><th>${esc(r[0])}</th><td>${esc(r[1])}</td></tr>`).join("")}</table>
-<p class="small">${ca ? "La comparativa per característiques és una ESTIMACIÓ ESTADÍSTICA ORIENTATIVA elaborada per Preureal sobre la fiança oficial (ajustos visibles i documentats). No és una taxació ni una valoració individualitzada de l'habitatge." : "La comparativa por características es una ESTIMACIÓN ESTADÍSTICA ORIENTATIVA elaborada por Preureal sobre la fianza oficial (ajustes visibles y documentados). No es una tasación ni una valoración individualizada de la vivienda."}</p>` : ""}
+<p class="small">${ca ? "La comparativa per característiques és un CÀLCUL ESTADÍSTIC ORIENTATIU elaborat per Preureal sobre la fiança oficial (ajustos visibles i documentats). No és una taxació oficial ni una avaluació individualitzada de l'habitatge." : "La comparativa por características es un CÁLCULO ESTADÍSTICO ORIENTATIVO elaborado por Preureal sobre la fianza oficial (ajustes visibles y documentados). No es una tasación oficial ni una evaluación individualizada de la vivienda."}</p>` : ""}
 <h3>${ca ? "Evolució anual registrada (Incasòl)" : "Evolución anual registrada (Incasòl)"}</h3>
 ${evRows ? `<table><tr><th>${ca ? "Any" : "Año"}</th><th>€/mes</th></tr>${evRows}</table>` : `<p class="small">${ca ? "Sèrie històrica no disponible per a aquest municipi." : "Serie histórica no disponible para este municipio."}</p>`}
 ${neighRows ? `<h3>${ca ? "Municipis propers amb dada oficial" : "Municipios próximos con dato oficial"}</h3>
