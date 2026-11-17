@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import HashBridge from "@/components/HashBridge";
 
 export const metadata: Metadata = {
-  title: "Faq",
+  title: "Preguntes freqüents",
   robots: { index: false },
 };
 

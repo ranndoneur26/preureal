@@ -195,7 +195,6 @@ export default function LandingView() {
                 <div className="text-xs font-semibold text-ember3 mt-1">TER/3740/2026 (nous)</div>
               </div>
             </div>
-            <p className="text-xs text-stone mt-4 leading-relaxed">{t.tense.desc}</p>
           </div>
         </div>
       </section>

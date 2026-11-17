@@ -19,7 +19,7 @@
  * consulta → estima) continuen aplicant intactes.
  */
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const readSrc = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 
@@ -104,5 +104,20 @@ describe("v49 — etiqueta FIXA «Habitatge habitual» al formulari (mai selecto
     expect(form).not.toContain("<select");
     expect(form).not.toContain("set({ contractType");
     expect(form).not.toContain("ContractType");
+  });
+});
+
+describe("v52 — higiene editorial de la portada i del repo (auditoria integral)", () => {
+  test("H1. el paràgraf de zones tensades apareix UNA sola vegada (mai duplicat)", () => {
+    // el vell bug: t.tense.desc renderitzat 2 cops a la mateixa secció
+    const landing = codeOnly(readSrc("../src/components/views/LandingView.tsx"));
+    const occurrences = landing.split("t.tense.desc").length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  test("H2. el config de Tailwind v3 mort no existeix (Tailwind v4 l'ignora)", () => {
+    // Tailwind v4 usa @import "tailwindcss" + @theme a globals.css; el
+    // tailwind.config.ts (content cap a ./pages inexistents) era codi mort
+    expect(existsSync(new URL("../tailwind.config.ts", import.meta.url))).toBe(false);
   });
 });

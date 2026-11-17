@@ -31,7 +31,10 @@ export const metadata: Metadata = {
   authors: [{ name: "Preureal" }],
   alternates: {
     canonical: "/",
-    languages: { "ca": "/", "es": "/" },
+    // v52 — sense languages ca/es: el lloc és bilingüe a UNA mateixa URL
+    // (canvi d'idioma client); un hreflang ca i es cap a la mateixa URL no
+    // aporta res i confon els motors de cerca (l'idioma el declara
+    // <html lang> dinàmic i el JSON-LD inLanguage).
   },
   openGraph: {
     title: "Preureal — Descobreix si et cobren de més de lloguer",

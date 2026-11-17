@@ -57,10 +57,16 @@ export default function AppShell() {
     // preferències d'idioma: s'apliquen després del muntatge (evita cascada de render)
     const id = setTimeout(() => {
       const saved = localStorage.getItem("pr_locale");
-      if (saved === "es" || saved === "ca") setLocaleState(saved);
-      else {
+      if (saved === "es" || saved === "ca") {
+        setLocaleState(saved);
+        // v52 — l'idioma restaurat del localStorage també actualitza <html lang>
+        document.documentElement.lang = saved;
+      } else {
         const wl = navigator.language.slice(0, 2);
-        if (wl === "es") setLocaleState("es");
+        if (wl === "es") {
+          setLocaleState("es");
+          document.documentElement.lang = "es";
+        }
       }
     }, 0);
     // sincronitza la sessió amb el sistema extern (API): ús legítim d'effect

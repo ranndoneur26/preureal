@@ -13,13 +13,10 @@ import { db } from "@/lib/db";
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "Lloguer mitjà per municipi — els 947 municipis de Catalunya | Preureal",
+  title: "Lloguer mitjà per municipi — els 947 municipis de Catalunya",
   description:
     "Preu mitjà real del lloguer (fiances Incasòl) de tots els municipis de Catalunya, amb sèrie històrica i àrees tensades. Barcelona, Girona, Lleida i Tarragona.",
-  alternates: {
-    canonical: "/lloguer",
-    languages: { ca: "/lloguer", es: "/lloguer" },
-  },
+  alternates: { canonical: "/lloguer" },
 };
 
 interface MuniRow {

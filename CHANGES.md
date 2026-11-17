@@ -2,6 +2,41 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v51 — Auditoria integral (I): neteja de codi mort i correccions editorial/SEO/a11y — 2026-11-17
+
+**Codi mort eliminat** (matriu completa d'evidència a `AUDITORIA.md`):
+- `tailwind.config.ts` arrel: Tailwind v4 (`@import "tailwindcss"` + `@theme` a
+  globals.css) l'ignora per complet i el seu `content` apuntava a `./pages` i
+  `./components`, rutes que no existeixen (hauria de ser `./src/...`). 0
+  referències en src/tests/scripts/configs.
+- Claus i18n huérfanes (definides, mai usades; typecheck com a xarxa):
+  `brand` (ca i es), `admin.mrr`, `admin.reports`, `admin.usersTable.actions`,
+  `map.title`, `map.panel.trend` i `plans.stripeOff` (només existia a es).
+- La feature DORMIDA «illa de cases» (conveni Incasòl) queda EXPLÍCITAMENT
+  exclosa de qualsevol neteja, igual que els 31 exports amb ús només a tests.
+
+**Bug editorial corregit:** el paràgraf de zones tensades (`t.tense.desc`)
+apareixia DOS vegades dins la mateixa secció de la portada (columna del títol
+i targeta dels 118/53). Ara un de sol; guarda H1 evita la regressió.
+
+**SEO:** els títols de /estima, /analitza, /lloguer, /lloguer/[slug] (×3) ja
+acabaven en «| Preureal» i el template del layout hi afegia un SEGON
+«| Preureal» (ex.: «Consulta el preu real registrat | Preureal | Preureal») —
+eliminat el sufix redundant dels pages. «Faq» passa a «Preguntes freqüents».
+El bloc `alternates.languages` ca/es apuntava AMBDUES llengües a la mateixa
+URL (el lloc és bilingüe amb canvi d'idioma client): eliminat a layout,
+/lloguer i /lloguer/[slug] — queda el canonical; l'idioma el declara
+`<html lang>` dinàmic i el JSON-LD `inLanguage`.
+
+**Accessibilitat:** l'idioma restaurat del localStorage o del navegador a
+l'inici també actualitza `<html lang>` (fins ara només el toggle manual).
+
+**Doc rot:** EstatView apuntava a `src/data/incidents.ts` (no existeix); el
+historial és en línia en el mateix fitxer.
+
+**Guards:** +2 a home_premium_v49 (H1 paràgraf únic, H2 config mort absent) —
+suite bloquejant en 15 fitxers, 292 tests.
+
 ## v50 — El panell demogràfic del mapa: una xifra sota l'altra i requadres grans — 2026-11-17
 
 **El problema (captura d'usuari, Barcelona):** a la fitxa municipal del

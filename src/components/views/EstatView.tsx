@@ -9,7 +9,7 @@ import { useApp } from "@/components/app-context";
  * Consumeix els endpoints públics /api/health i /api/ine/status i mostra:
  *  - estat en temps real dels components (BD, ICGC, Cadastre, Stripe, correu)
  *  - última actualització de dades (importacions INE + municipis amb dada)
- *  - incidències conegudes (historial editorial a src/data/incidents.ts)
+ *  - incidències conegudes (historial editorial en línia en aquest fitxer)
  * Auto-refresc cada 60 s. Sense dades inventades: si una sonda no respon,
  * es mostra com a no disponible.
  */

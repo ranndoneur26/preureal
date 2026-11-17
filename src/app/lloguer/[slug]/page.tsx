@@ -39,20 +39,20 @@ async function getMuni(slug: string) {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const m = await getMuni(slug).catch(() => null);
-  if (!m) return { title: "Municipi no trobat | Preureal" };
+  if (!m) return { title: "Municipi no trobat" };
   const price = m.rentLatest ?? m.comarcaRefLatest;
   const desc = m.rentLatest != null
     ? `Preu mitjà real del lloguer a ${m.name}: ${m.rentLatest.toFixed(0)} €/mes (${m.rentPeriod ?? "últim període oficial"}), dades oficials de fiances Incasòl. Sèrie històrica, àrees tensades i any de construcció dels edificis.`
     : `Preu del lloguer a ${m.name}: dades oficials de fiances Incasòl${m.comarcaRefLatest != null ? ` i referència de comarca (${m.comarcaRefLatest.toFixed(0)} €/mes)` : ""}. Sèrie històrica i mapa d'edificis reals.`;
   return {
-    title: `Lloguer mitjà a ${m.name}${price != null ? ` — ${price.toFixed(0)} €/mes` : ""} | Preureal`,
+    title: `Lloguer mitjà a ${m.name}${price != null ? ` — ${price.toFixed(0)} €/mes` : ""}`,
     description: desc,
     alternates: {
       canonical: `/lloguer/${slug}`,
-      languages: { ca: `/lloguer/${slug}`, es: `/lloguer/${slug}` },
+      // v52 — sense languages ca/es: mateixa URL bilingüe (veure layout.tsx)
     },
     openGraph: {
-      title: `Lloguer mitjà a ${m.name} | Preureal`,
+      title: `Lloguer mitjà a ${m.name}`,
       description: desc,
       url: `/lloguer/${slug}`,
       siteName: "Preureal",

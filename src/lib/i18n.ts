@@ -4,7 +4,6 @@ export type Locale = "ca" | "es";
 
 export const STRINGS = {
   ca: {
-    brand: "Preureal",
     tagline: "El preu real del lloguer, illa a illa",
     nav: { mapa: "Mapa", analitza: "Consulta", preus: "Preus", panel: "El meu compte", admin: "Admin", entrada: "Entrar", registre: "Registra't", sortida: "Sortir", faq: "Preguntes" },
     hero: {
@@ -86,7 +85,6 @@ export const STRINGS = {
       },
     },
     map: {
-      title: "Mapa del lloguer real",
       searchPlaceholder: "Cerca municipi (p. ex. Barcelona, Girona, Salou...)",
       zoomHint: "Fes zoom (nivell 16+) per carregar els edificis de la zona",
       loadingBuildings: "Carregant edificis reals...",
@@ -101,7 +99,6 @@ export const STRINGS = {
         perMonth: "€/mes",
         period: "Període",
         contracts: "Contractes amb fiança registrada",
-        trend: "Tendència",
         yearBuilt: "Any de construcció",
         refcat: "Ref. catastral",
         compare: "Estàs pagant de més?",
@@ -234,20 +231,18 @@ export const STRINGS = {
     admin: {
       title: "Panell d'administració",
       users: "Usuaris",
-      mrr: "MRR (estimat)",
       funnel: "Embut (30 dies)",
       signups: "Registres",
       queries: "Consultes detallades",
       teasers: "Aperitius sense registre",
       paywalls: "Murs de pagament vists",
       subscribes: "Subscripcions",
-      usersTable: { email: "Correu", plan: "Pla", role: "Rol", created: "Creat", actions: "Accions" },
+      usersTable: { email: "Correu", plan: "Pla", role: "Rol", created: "Creat" },
       emails: "Correus automàtics (log)",
       importTitle: "Importar dades a nivell d'illa (fase 2)",
       importDesc: "Quan tinguis les dades de fiances per illa de cases (conveni Incasòl), puja-les aquí en format JSON. El mapa les mostrarà automàticament.",
       importBtn: "Importar dades",
       integrations: "Integracions",
-      reports: "Informes de preus rebuts",
       noEmails: "Encara no hi ha correus al registre",
       search: "Cerca usuari...",
     },
@@ -271,7 +266,6 @@ export const STRINGS = {
     common: { loading: "Carregant..." },
   },
   es: {
-    brand: "Preureal",
     tagline: "El precio real del alquiler, manzana a manzana",
     nav: { mapa: "Mapa", analitza: "Consulta", preus: "Precios", panel: "Mi cuenta", admin: "Admin", entrada: "Entrar", registre: "Regístrate", sortida: "Salir", faq: "Preguntas" },
     hero: {
@@ -314,7 +308,6 @@ export const STRINGS = {
       premium: { name: "Premium", price: "7,99 €", per: "al mes", cta: "Activa Premium", feats: ["Consultas ilimitadas", "Banda de referencia P25–P75 y posición de tu precio", "Indicadores oficiales INE: IPVA, renta y esfuerzo económico", "Histórico de alquiler por municipio (2005–2025)", "Comparador hasta 6 municipios con columnas avanzadas", "Informe PDF profesional de 10 páginas (5/mes)", "Soporte prioritario"], popular: "El más elegido" },
       pro: { name: "Pro · agentes", price: "19,99 €", per: "al mes", cta: "Activa Pro", feats: ["Todo lo de Premium", "Exportación CSV de datos por municipio", "Informes PDF de 10 páginas con análisis del mercado, también de edificio (30/mes)", "Ideal para agentes y gestores", "Acceso prioritario a nuevos datos", "Factura nominal"] },
       demoNote: "MODO PRUEBA: la compra está simulada (sin cobro real) hasta que el propietario conecte su cuenta de Stripe.",
-      stripeOff: "Los pagos aún no están activos: el propietario debe conectar su cuenta de Stripe.",
       // v38.8 — informes individuales de pago único (Stripe mode payment)
       informes: {
         title: "Informes individuales",
