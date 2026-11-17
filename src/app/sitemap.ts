@@ -20,6 +20,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/`, lastModified: now, changeFrequency: "weekly", priority: 1 },
     { url: `${base}/analitza`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/estima`, lastModified: now, changeFrequency: "monthly", priority: 0.9 },
+    // v59 — BLOQUE C: guia completa «Com funciona» (contingut gratuït indexable)
+    { url: `${base}/com-funciona`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/lloguer`, lastModified: now, changeFrequency: "weekly", priority: 0.9 },
   ];
   try {

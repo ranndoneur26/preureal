@@ -170,6 +170,18 @@ export default function LandingView() {
             <Step icon={<Building2 className="w-6 h-6" />} title={t.how.s2t} desc={t.how.s2d} />
             <Step icon={<Scale className="w-6 h-6" />} title={t.how.s3t} desc={t.how.s3d} />
           </div>
+          {/* v59 — BLOQUE C: la portada manté la versió curta de 3 passos i
+              enllaça la guia completa (mai allargar la home) */}
+          <div className="mt-10 text-center">
+            <button
+              type="button"
+              onClick={() => navigate("/com-funciona")}
+              className="inline-flex items-center gap-2 rounded-xl bg-pine text-white text-sm font-bold px-5 py-3 hover:bg-pine/90 transition-colors min-h-[44px]"
+            >
+              {t.how.more}
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </section>
 

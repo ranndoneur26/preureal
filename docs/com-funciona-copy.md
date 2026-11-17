@@ -172,3 +172,41 @@ pas; termes tècnicss («fiances», «àrea tensada», «referència catastral»
 «coeficient», «N1/N2», «quota») explicats en la primera aparició + glossari
 final; mai prometem tasació ni dades que no hi són (coherència legal, regla 6
 del PROMPT MASTER).
+
+---
+
+## Implementació v59 (BLOQUE C executat — ajustos finals sobre el copy aprovat)
+
+Implementat i aprovat pel propietari («aprueba Com funciona», 2026-11-17).
+Codi: `src/lib/i18n.ts` (claus `howFull.*`, simètriques ca/es) +
+`src/components/views/ComFuncionaView.tsx` (acordeó accessible) +
+`src/app/com-funciona/page.tsx` (indexable) + sitemap + peu + CTA portada
+(`t.how.more`) + guardes `tests/how_full_v59.test.ts`.
+
+Ajustos finals aplicats en implementar (tots coherents amb el renombrado v56
+i el glosario único de docs/linguistica.md):
+
+1. **Terminologia v56**: el pas 11 passa de «Estima el teu pis» a
+   «Valora el lloguer del teu habitatge» / «Valora el alquiler de tu vivienda»
+   (frases exactes del propietari); «Pestanya «Valora»»; «Què NO és» diu
+   «No és una taxació oficial» (ca normatiu; es «tasación oficial»);
+   «estimacions» → «càlculs interns» al pas 4.
+2. **ca normatiu**: «Al aproparte» → «En apropar-te» (pas 5);
+   «Baixa't l'informe» → «Descarrega l'informe» (pas 10, DIEC2);
+   «tasació» → «taxació» a tot el ca.
+3. **«Què obtens» reescrit en frases curtes** (5 frases ≤8 paraules) per
+   complir el filtre ≤20 paraules/frase.
+4. **Exemple d2 reestructurat** en frases curtes: «La base de 585 €/mes
+   s'ajusta per la superfície (×0,856) i per les habitacions (×0,975):
+   ≈488 €/mes. El rang orientatiu: de ≈440 a ≈537 €/mes. A reformar: ×0,8 →
+   ≈391 €/mes (rang ≈352–430).» — xifres verificades AVUI amb el motor real
+   (`computeValuation`) i el títol SSR de producció
+   preureal.com/lloguer/manresa (585 €/mes, 2026-11-17).
+5. **Glossari i FAQ alineats amb el glosario único**: ítem 3 «Àrea de mercat
+   residencial tensat» (ca) / «Área de mercado residencial tensionado» (es);
+   FAQ 3 «Què és una àrea tensada?»; FAQ 8 «Puc informar d'un pis…» /
+   «¿Puedo avisar de una vivienda…»; FAQ 6 amb la fórmula legal completa
+   («No és una taxació oficial: una taxació amb validesa legal la fa un
+   servei homologat (SERPAVI)»).
+6. **Mesura objectiva del filtre de claredat**: 256 frases mesurades
+   (ca+es), màxim 19 paraules/frase (guarda C3 del test, límit 20).

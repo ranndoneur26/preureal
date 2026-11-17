@@ -20,6 +20,7 @@ import DesignView from "@/components/views/DesignView";
 import ComparadorView from "@/components/views/ComparadorView";
 import AnalisiView from "@/components/views/AnalisiView";
 import GuiaView from "@/components/views/GuiaView";
+import ComFuncionaView from "@/components/views/ComFuncionaView";
 import SubscriptionResultView from "@/components/views/SubscriptionResultView";
 import ReportResultView from "@/components/views/ReportResultView";
 import CookieConsent from "@/components/CookieConsent";
@@ -132,6 +133,7 @@ export default function AppShell() {
           {view === "/comparador" && <ComparadorView />}
           {view === "/analisi" && <AnalisiView />}
           {view === "/guia" && <GuiaView />}
+          {view === "/com-funciona" && <ComFuncionaView />}
           {view === "/preus" && <PricingView />}
           {view === "/subscripcio/exit" && <SubscriptionResultView mode="exit" />}
           {view === "/subscripcio/cancelat" && <SubscriptionResultView mode="cancelat" />}
@@ -328,6 +330,7 @@ function Footer() {
               <div className="text-sm">
                 <div className="font-semibold text-white mb-2">{ca ? "Producte" : "Producto"}</div>
                 <div className="flex flex-col gap-1.5">
+                  {footLink("/com-funciona", t.howFull.nav)}
                   {footLink("/analitza", ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado")}
                   {footLink("/estima", ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda")}
                   {footLink("/mapa", t.nav.mapa)}

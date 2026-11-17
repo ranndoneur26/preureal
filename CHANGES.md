@@ -2,6 +2,45 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v59 — Auditoria integral (IX): BLOQUE C — «Com funciona» complet implementat — 2026-11-17
+
+Implementació del C1+C2 **aprovat pel propietari** («aprueba Com funciona»).
+La portada manté els 3 passos curts; la guia COMPLETA viu a una pàgina nova,
+indexable, en llenguatge molt fàcil (frases ≤20 paraules, una acció per pas,
+cada terme tècnic explicat la primera vegada + glossari). Alineada amb el
+renombrado v56 («valora», «taxació oficial» ca, «habitatge», «renda»).
+
+- **Claus i18n `howFull.*`** (ca/es simètriques, guardes): 11 passos amb
+  `t`/`d`/`detall` (idioma → mapa → municipi → colors → edificis → fitxa →
+  entorn → comparar anunci → registre/quota → informe → valorador N1/N2),
+  «Què necessites»/«Què obtens», exemple amb XIFRES REALS verificades avui
+  (Manresa 585 €/mes, títol SSR de producció; computeValuation 70 m²/3 hab →
+  ≈488 €/mes, rang ≈440–537; a reformar ≈391), «Què NO és», límits del pla
+  Free, mini-FAQ de 8 i glossari de 10 termes.
+- **Vista `ComFuncionaView`** (acordeó accessible: `aria-expanded`,
+  `aria-controls`, panells `role="region"`; zero dependències noves) muntada
+  a AppShell a `#/com-funciona`; pàgina SSR **`/com-funciona`** indexable
+  (HashBridge, com /guia) + entrada al sitemap (priority 0.8).
+- **Punts d'entrada**: CTA «Veure la guia completa pas a pas» a la portada
+  (clau nova `how.more`, la home NO s'allarga) + primer enllaç del peu
+  («Producte»). El contingut és gratuït: cap paywall.
+- **Guardes noves `tests/how_full_v59.test.ts`** (7 tests): simetria ca/es
+  estructural, 11 passos/FAQ≥8/glossari 10, filtre de claredat MESURAT (256
+  frases ca+es, màxim 19 paraules/frase, límit 20), termes prohibits fora
+  («vivenda», arrel «estima»), negació legal «taxació oficial»/«tasación
+  oficial» per llengua, exemple coherent amb el motor (650/585 = +11,1 %;
+  488,4/585 ≈ 0,856×0,975 ±0,002), cablejament complet i NO-regressions
+  (quota server-side `gateDetailedQuery`, illa de cases intacta, 3 passos de
+  la portada intactes).
+- **Docs**: `docs/com-funciona-copy.md` + secció «Implementació v59» (ajustos
+  finals del copy aprovat: pas 5 ca normatiu «En apropar-te», pas 10
+  «Descarrega l'informe», «Què obtens» en frases curtes, glossari/FAQ amb el
+  glosari únic de `docs/linguistica.md`).
+- **Verificació en viu** (standalone + navegador): /com-funciona 200 amb
+  title SEO, sitemap.xml serveix l'entrada, acordeó funciona, canvi ca/es
+  immediat, CTA de la portada navega a #/com-funciona, peu amb «Com funciona»,
+  mòbil (iPhone 14) correcte, 0 errors de consola.
+
 ## v56 — Auditoria integral (VI): BLOQUE E — revisió lingüística experta ca/es amb la decisió terminològica del propietari — 2026-11-17
 
 Decisió OBLIGATÒRIA del propietari aplicada a tot el producte: **«estima/
