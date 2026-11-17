@@ -142,7 +142,7 @@ export default function EstimaReport({
             ? `Valoració orientativa per a un habitatge de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} a ${data.input?.municipalityName ?? ""}:`
             : `Valoración orientativa para una vivienda de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} en ${data.input?.municipalityName ?? ""}:`}
         </p>
-        <p className="mt-1 text-2xl md:text-3xl font-black tracking-tight text-pine" aria-live="polite">
+        <p className="mt-1 text-2xl md:text-3xl font-black tracking-tight tabular-nums text-pine" aria-live="polite">
           {ca ? "entre" : "entre"} {fmtEur(e.min)} {ca ? "i" : "y"} {fmtEur(e.max)} {ca ? "€/mes" : "€/mes"}
         </p>
         <p className="mt-1 text-xs text-stone">

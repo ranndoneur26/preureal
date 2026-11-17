@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { Flame, MapPin, Search, X, Building2, TrendingUp, TrendingDown, Minus, Info, ExternalLink, Star, FileDown, FileSpreadsheet, AlertTriangle, Home, MailCheck, Lock, Factory, Calculator, Hash } from "lucide-react";
 import LineChart, { type LineSeries } from "@/components/charts/LineChart";
+import { CHART_EMBER, CHART_PINE, CHART_STONE } from "@/lib/chart-palette";
 import BarChart, { type BarRow } from "@/components/charts/BarChart";
 import ValuationPanel from "@/components/views/ValuationPanel";
 import DemografiaPanel from "@/components/views/DemografiaPanel";
@@ -276,12 +277,12 @@ function IndicadorsOficials({ muniCode, muniName, price }: { muniCode: string; m
       {resp.evolucio && resp.evolucio.muni.length >= 2 && (() => {
         const evo = resp.evolucio;
         const evoSeries: LineSeries[] = [
-          { id: "muni", label: muniName, color: "#e8673c", points: evo.muni.map((p) => ({ x: p.year, y: p.value })) },
+          { id: "muni", label: muniName, color: CHART_EMBER, points: evo.muni.map((p) => ({ x: p.year, y: p.value })) },
           ...(evo.comarca && evo.comarca.length >= 2
-            ? [{ id: "comarca", label: ca ? "Comarca (mediana)" : "Comarca (mediana)", color: "#0f2e21", points: evo.comarca.map((p) => ({ x: p.year, y: p.median })), dashed: true }]
+            ? [{ id: "comarca", label: ca ? "Comarca (mediana)" : "Comarca (mediana)", color: CHART_PINE, points: evo.comarca.map((p) => ({ x: p.year, y: p.median })), dashed: true }]
             : []),
           ...(evo.provincia && evo.provincia.length >= 2
-            ? [{ id: "prov", label: ca ? "Província (mediana)" : "Provincia (mediana)", color: "#6b6f68", points: evo.provincia.map((p) => ({ x: p.year, y: p.median })), dashed: true }]
+            ? [{ id: "prov", label: ca ? "Província (mediana)" : "Provincia (mediana)", color: CHART_STONE, points: evo.provincia.map((p) => ({ x: p.year, y: p.median })), dashed: true }]
             : []),
         ];
         return (

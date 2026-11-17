@@ -10,6 +10,7 @@ import type { AnalitzaReportData, ServeisPayload, Locale2 } from "@/lib/analitza
 import { buildReportHtml, verdictNote, VERDICT_LABELS, STATE_LABELS, NORM_CHECK_LABELS, CHECKLIST_LABELS, CATEGORY_LABELS } from "@/lib/analitza-html";
 import { ORIENTATION_DISCLAIMER, SERPAVI_URL } from "@/lib/analitza";
 import { saveEmailFirstDraft } from "@/lib/email-first";
+import KpiCard from "@/components/ui/kpi";
 
 /**
  * F1 — Informe «Consulta el preu real registrat» (blocs A-D). Comparació
@@ -165,20 +166,16 @@ export default function AnalitzaReport({
     return (
       <div className="flex flex-col gap-3">
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-xl bg-card border border-line py-3">
-            <div className="font-black text-pine text-lg leading-none">{fmtEur(i.priceEurMonth, ca)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-stone mt-1">{ca ? "el teu anunci" : "tu anuncio"}</div>
-          </div>
-          <div className="rounded-xl bg-card border border-line py-3">
-            <div className="font-black text-pine text-lg leading-none">{p.reference != null ? fmtEur(p.reference, ca) : "—"}</div>
-            <div className="text-[10px] uppercase tracking-wide text-stone mt-1">
-              {refIsEstimate ? (ca ? "ref. comarca (est.)" : "ref. comarca (est.)") : (ca ? "fiança municipal" : "fianza municipal")}
-            </div>
-          </div>
-          <div className="rounded-xl bg-card border border-line py-3">
-            <div className={`font-black text-lg leading-none ${p.deltaVsReferencePct != null && p.deltaVsReferencePct > 15 ? "text-ember3" : "text-pine"}`}>{fmtPct(p.deltaVsReferencePct)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-stone mt-1">{ca ? "diferència" : "diferencia"}</div>
-          </div>
+          <KpiCard value={fmtEur(i.priceEurMonth, ca)} label={ca ? "el teu anunci" : "tu anuncio"} />
+          <KpiCard
+            value={p.reference != null ? fmtEur(p.reference, ca) : "—"}
+            label={refIsEstimate ? (ca ? "ref. comarca (est.)" : "ref. comarca (est.)") : ca ? "fiança municipal" : "fianza municipal"}
+          />
+          <KpiCard
+            value={fmtPct(p.deltaVsReferencePct)}
+            label={ca ? "diferència" : "diferencia"}
+            tone={p.deltaVsReferencePct != null && p.deltaVsReferencePct > 15 ? "alert" : "neutral"}
+          />
         </div>
         <p className="text-sm text-moss leading-relaxed">
           <b>{ca ? "Lectura:" : "Lectura:"}</b> {verdictLabel}
@@ -230,24 +227,17 @@ export default function AnalitzaReport({
       <div className="rounded-2xl border border-line bg-card p-5">
         <h3 className="font-extrabold text-lg">{ca ? "A. Anàlisi del preu" : "A. Análisis del precio"}</h3>
         <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-          <div className="rounded-xl bg-cream border border-line py-3">
-            <div className="font-black text-pine">{fmtEur(i.priceEurMonth, ca)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-stone mt-1">{ca ? "preu de l'anunci" : "precio del anuncio"}</div>
-          </div>
-          <div className="rounded-xl bg-cream border border-line py-3">
-            <div className="font-black text-pine">{p.eurM2 != null ? p.eurM2.toFixed(2).replace(".", ",") : "—"}</div>
-            <div className="text-[10px] uppercase tracking-wide text-stone mt-1">€/m²·{ca ? "mes" : "mes"}</div>
-          </div>
-          <div className="rounded-xl bg-cream border border-line py-3">
-            <div className="font-black text-pine">{p.reference != null ? fmtEur(p.reference, ca) : "—"}</div>
-            <div className="text-[10px] uppercase tracking-wide text-stone mt-1">
-              {refIsEstimate ? (ca ? "ref. comarca (aproximació)" : "ref. comarca (aproximación)") : (ca ? "fiança municipal oficial" : "fianza municipal oficial")}
-            </div>
-          </div>
-          <div className="rounded-xl bg-cream border border-line py-3">
-            <div className={`font-black ${p.deltaVsReferencePct != null && p.deltaVsReferencePct > 15 ? "text-ember3" : "text-pine"}`}>{fmtPct(p.deltaVsReferencePct)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-stone mt-1">{ca ? "diferència" : "diferencia"}</div>
-          </div>
+          <KpiCard value={fmtEur(i.priceEurMonth, ca)} label={ca ? "preu de l'anunci" : "precio del anuncio"} />
+          <KpiCard value={p.eurM2 != null ? p.eurM2.toFixed(2).replace(".", ",") : "—"} label={`€/m²·${ca ? "mes" : "mes"}`} />
+          <KpiCard
+            value={p.reference != null ? fmtEur(p.reference, ca) : "—"}
+            label={refIsEstimate ? (ca ? "ref. comarca (aproximació)" : "ref. comarca (aproximación)") : ca ? "fiança municipal oficial" : "fianza municipal oficial"}
+          />
+          <KpiCard
+            value={fmtPct(p.deltaVsReferencePct)}
+            label={ca ? "diferència" : "diferencia"}
+            tone={p.deltaVsReferencePct != null && p.deltaVsReferencePct > 15 ? "alert" : "neutral"}
+          />
         </div>
         <p className="text-sm mt-3 leading-relaxed">
           <b>{ca ? "Lectura:" : "Lectura:"}</b> {verdictLabel}

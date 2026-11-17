@@ -10,6 +10,7 @@
  */
 
 import { useMemo, useRef, useState } from "react";
+import { CHART_AXIS, CHART_GRID, CHART_PINE } from "@/lib/chart-palette";
 
 export interface LineSeries {
   id: string;
@@ -107,21 +108,21 @@ export default function LineChart({ series, height = 190, locale, unitLabel = "â
         {/* graelles + etiquetes y */}
         {ticks.map((t) => (
           <g key={t}>
-            <line x1={M.l} x2={W - M.r} y1={y(t)} y2={y(t)} stroke="#e5e1da" strokeWidth={1} />
-            <text x={M.l - 6} y={y(t) + 3.5} textAnchor="end" fontSize={9.5} fill="#6b6f68">
+            <line x1={M.l} x2={W - M.r} y1={y(t)} y2={y(t)} stroke={CHART_GRID} strokeWidth={1} />
+            <text x={M.l - 6} y={y(t) + 3.5} textAnchor="end" fontSize={9.5} fill={CHART_AXIS}>
               {fmt(t)}
             </text>
           </g>
         ))}
         {/* etiquetes x */}
         {xTicks.map((yr) => (
-          <text key={yr} x={x(yr)} y={H - 8} textAnchor="middle" fontSize={9.5} fill="#6b6f68">
+          <text key={yr} x={x(yr)} y={H - 8} textAnchor="middle" fontSize={9.5} fill={CHART_AXIS}>
             {yr}
           </text>
         ))}
         {/* guia vertical del hover */}
         {hoverYear && (
-          <line x1={x(hoverYear)} x2={x(hoverYear)} y1={M.t} y2={H - M.b} stroke="#0f2e21" strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
+          <line x1={x(hoverYear)} x2={x(hoverYear)} y1={M.t} y2={H - M.b} stroke={CHART_PINE} strokeWidth={1} strokeDasharray="3 3" opacity={0.5} />
         )}
         {/* lÃ­nies */}
         {usable.map((s) => {

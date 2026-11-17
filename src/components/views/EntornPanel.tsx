@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { Zap, Train, Bus, GraduationCap, HeartPulse, Landmark, Bike, BadgeCheck, SearchX } from "lucide-react";
+import { PanelSkeleton } from "@/components/ui/skeletons";
 
 /**
  * v40 — Bloc «SERVEIS I QUALITAT DE L'ENTORN» de la fitxa d'edifici (Fase A).
@@ -150,8 +151,9 @@ export default function EntornPanel({ buildingId }: { buildingId: string | null 
       </div>
 
       {pending && !failed && (
-        <div className="text-xs text-stone py-3 text-center">
-          {ca ? "Carregant l'entorn de l'edifici…" : "Cargando el entorno del edificio…"}
+        // v60 — esqueleto (transició sense salts entre edificis)
+        <div className="py-2" role="status" aria-live="polite">
+          <PanelSkeleton rows={2} />
         </div>
       )}
       {failed && (

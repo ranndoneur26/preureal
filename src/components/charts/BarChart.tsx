@@ -1,14 +1,18 @@
 "use client";
 
 /**
- * Preureal — Noves funcionalitats (F2): gràfic de barres horitzontals
+ * PreuReal — Noves funcionalitats (F2): gràfic de barres horitzontals
  * comparatiu (estil Tinsa adaptat a la identitat Preureal).
  *
  * CSS pur (0 dependències, responsive per disseny): cada fila = àmbit
  * territorial amb barra proporcional, valor €/mes i el seu període. El
  * municipi de l'usuari va destacat. Només mostra àmbits AMB dada real;
  * els que no la tenen el caller els marca com a «no disponible».
+ *
+ * v60 — colors des de la paleta única de charts (chart-palette.ts), mai inline.
  */
+
+import { CHART_EMBER, CHART_EMBER_DEEP, CHART_PINE } from "@/lib/chart-palette";
 
 export interface BarRow {
   label: string;
@@ -47,7 +51,7 @@ export default function BarChart({ rows, locale }: Props) {
               className="absolute inset-y-0 left-0 rounded-md transition-all"
               style={{
                 width: `${Math.max(3, (r.value / max) * 100)}%`,
-                background: r.highlight ? "linear-gradient(90deg,#e8673c,#d95a31)" : "#0f2e21",
+                background: r.highlight ? `linear-gradient(90deg,${CHART_EMBER},${CHART_EMBER_DEEP})` : CHART_PINE,
                 opacity: r.highlight ? 1 : 0.82,
               }}
             />

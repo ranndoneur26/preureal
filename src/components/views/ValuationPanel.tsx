@@ -307,7 +307,7 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                     <div className="text-[9px] text-stone">{ca ? "mínima" : "mínima"}</div>
                   </div>
                   <div className="text-center px-3">
-                    <div className="text-2xl font-black text-pine">{fmt(result.central)} €</div>
+                    <div className="text-2xl font-black tracking-tight tabular-nums text-pine">{fmt(result.central)} €</div>
                     <div className="text-[9px] text-stone">{ca ? "central / més probable" : "central / más probable"}</div>
                   </div>
                   <div className="text-center">

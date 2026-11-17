@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import LineChart, { type LineSeries } from "@/components/charts/LineChart";
+import { CHART_EMBER, CHART_PINE } from "@/lib/chart-palette";
+import { PanelSkeleton } from "@/components/ui/skeletons";
 import BarChart, { type BarRow } from "@/components/charts/BarChart";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -85,7 +87,7 @@ function Kpi({ label, value, sub, accent }: { label: string; value: string; sub?
     // llargues (p. ex. 1.731.649 habitants) respiren dins la fitxa estreta
     <div className="rounded-lg bg-sand/60 px-3.5 py-2.5">
       <div className="text-[10px] font-semibold text-stone uppercase tracking-wide">{label}</div>
-      <div className={`text-lg font-black leading-tight ${accent ? "text-ember3" : "text-pine"}`}>{value}</div>
+      <div className={`text-lg font-black leading-tight tracking-tight tabular-nums ${accent ? "text-ember3" : "text-pine"}`}>{value}</div>
       {sub && <div className="text-[10px] text-stone mt-0.5">{sub}</div>}
     </div>
   );
@@ -167,7 +169,7 @@ export default function DemografiaPanel({ muniCode, muniName }: { muniCode: stri
           {
             id: "muni",
             label: muniName,
-            color: "#0f2e21",
+            color: CHART_PINE,
             points: p.serie.slice(-12).map((pt) => ({ x: pt.year, y: pt.value })),
           },
         ]
@@ -179,7 +181,7 @@ export default function DemografiaPanel({ muniCode, muniName }: { muniCode: stri
           {
             id: "estr",
             label: ca ? "Població de nacionalitat estrangera" : "Población de nacionalidad extranjera",
-            color: "#e8673c",
+            color: CHART_EMBER,
             points: d.estrangera.serie.slice(-12).map((pt) => ({ x: pt.year, y: pt.value })),
           },
         ]
@@ -198,7 +200,12 @@ export default function DemografiaPanel({ muniCode, muniName }: { muniCode: stri
         )}
       </div>
 
-      {pending && !failed && <div className="text-xs text-stone py-3 text-center">{ca ? "Carregant dades demogràfiques…" : "Cargando datos demográficos…"}</div>}
+      {pending && !failed && (
+        // v60 — esqueleto de KPIs (mateixa forma que el contingut que arriba)
+        <div className="py-2" role="status" aria-live="polite">
+          <PanelSkeleton rows={3} />
+        </div>
+      )}
       {failed && <div className="text-xs text-stone py-2">{ca ? "Dades demogràfiques no disponibles ara mateix." : "Datos demográficos no disponibles ahora mismo."}</div>}
 
       {!pending && d && !hasPoblacio && (

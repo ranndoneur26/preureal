@@ -5,6 +5,8 @@ import { useApp } from "@/components/app-context";
 import { markStep } from "@/lib/steps";
 import { GitCompare, Plus, Save, X, TrendingUp, TrendingDown, Minus, Flame, Info, Crown, BarChart3, Factory, Download } from "lucide-react";
 import LineChart from "@/components/charts/LineChart";
+import { CHART_COLORS, rentBandGradient } from "@/lib/chart-palette";
+import { PanelSkeleton } from "@/components/ui/skeletons";
 
 interface Entity {
   type: "MUNI" | "BUILDING";
@@ -343,7 +345,12 @@ export default function ComparadorView() {
       {loadedMsg && (
         <p className="mt-4 text-sm text-green2 bg-mintsoft border border-mintline rounded-xl px-4 py-3">{loadedMsg}</p>
       )}
-      {busy && <p className="mt-4 text-sm text-stone">…</p>}
+      {busy && (
+        // v60 — esqueleto de fitxes mentre compara (mai un «…» mut)
+        <div className="mt-4" role="status" aria-live="polite">
+          <PanelSkeleton rows={4} />
+        </div>
+      )}
 
       {/* resultats */}
       {result && result.results.length > 0 && (
@@ -451,7 +458,7 @@ export default function ComparadorView() {
                           width: `${((r.rentLatest || r.comarcaRefLatest || 0) / maxRent) * 100}%`,
                           background:
                             r.rentLatest != null
-                              ? `linear-gradient(90deg, ${rentBarColor(r.rentLatest || 0)}, ${rentBarColor(r.rentLatest || 0)}cc)`
+                              ? rentBandGradient(r.rentLatest || 0)
                               : "repeating-linear-gradient(45deg, #d9a441, #d9a441 6px, #e9c47a 6px, #e9c47a 12px)",
                           opacity: r.rentLatest == null ? 0.75 : 1,
                         }}
@@ -583,7 +590,7 @@ export default function ComparadorView() {
               {/* Noves funcionalitats (F1): gràfic interactiu multi-municipi — només
                   amb historial del servidor (les fiances ja arriben gatejades pel pla) */}
               {(() => {
-                const palette = ["#e8673c", "#0f2e21", "#1e7a41", "#9a6a1a", "#5d5480", "#6b6f68"];
+                const palette = CHART_COLORS;
                 const series = result.results
                   .filter((r) => r.rentHistory && Object.keys(r.rentHistory).length >= 2)
                   .map((r, i) => ({
@@ -693,14 +700,6 @@ export default function ComparadorView() {
       )}
     </div>
   );
-}
-
-function rentBarColor(rent: number): string {
-  if (rent < 550) return "#63b57c";
-  if (rent < 700) return "#93c47d";
-  if (rent < 850) return "#e5c46a";
-  if (rent < 1000) return "#e89a4b";
-  return "#dd5a35";
 }
 
 // ── v60 — MATRIU comparativa multi-municipi (side-by-side) ───────────────────

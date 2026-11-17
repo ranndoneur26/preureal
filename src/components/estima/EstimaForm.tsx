@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Loader2, MapPin, Ruler, WandSparkles } from "lucide-react";
+import StepperHeader from "@/components/forms/Stepper";
 import { useApp } from "@/components/app-context";
 import {
   EmailFirstField,
@@ -235,14 +236,18 @@ export default function EstimaForm({
   const labelCls = "block text-xs font-bold text-moss mb-1.5";
 
   const stepIndicator = (
-    <div className="flex items-center gap-2 mb-1" aria-hidden="true">
-      {[1, 2].map((n) => (
-        <span
-          key={n}
-          className={`h-1.5 rounded-full flex-1 transition-colors ${step >= n ? "bg-pine" : "bg-line"}`}
-        />
-      ))}
-    </div>
+    // v60 — indicador de passos compartit (mateixa gramàtica visual que AnalitzaForm)
+    <StepperHeader
+      step={step}
+      total={2}
+      label={ca
+        ? step === 1
+          ? "Municipi"
+          : `Superfície i característiques — ${muni?.name ?? ""}`
+        : step === 1
+          ? "Municipio"
+          : `Superficie y características — ${muni?.name ?? ""}`}
+    />
   );
 
   // panell de bloqueig segons l'estat del flux (neix bloquejat sense compte)
@@ -279,15 +284,6 @@ export default function EstimaForm({
       />
 
       {stepIndicator}
-      <p className="text-[11px] font-semibold text-stone" aria-live="polite">
-        {ca
-          ? step === 1
-            ? "Pas 1 de 2 · Municipi"
-            : `Pas 2 de 2 · Superfície i característiques — ${muni?.name ?? ""}`
-          : step === 1
-            ? "Paso 1 de 2 · Municipio"
-            : `Paso 2 de 2 · Superficie y características — ${muni?.name ?? ""}`}
-      </p>
 
       {step === 1 ? (
         <div ref={munBoxRef} className="relative">

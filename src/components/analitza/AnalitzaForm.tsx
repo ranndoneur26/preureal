@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Search, Loader2, ChevronDown, BadgeCheck } from "lucide-react";
+import { MapPin, Search, Loader2, ChevronDown, BadgeCheck, ArrowLeft, ArrowRight } from "lucide-react";
 import { useApp } from "@/components/app-context";
+import StepperHeader from "@/components/forms/Stepper";
 import {
   EmailFirstField,
   GateLockedPanel,
@@ -103,6 +104,10 @@ export default function AnalitzaForm({
   const [geoOptions, setGeoOptions] = useState<GeocodeLite[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // v60 — formulari en passos progressius (mateixa gramàtica que l'EstimaForm):
+  // pas 1 = ubicació (e-mail + municipi + adreça + mapa), pas 2 = dades de l'anunci.
+  // Tot l'estat, el gating email-first i el draft es mantenen idèntics.
+  const [step, setStep] = useState<1 | 2>(1);
   const munBoxRef = useRef<HTMLDivElement>(null);
   const geoBoxRef = useRef<HTMLDivElement>(null);
 
@@ -186,6 +191,8 @@ export default function AnalitzaForm({
       // el servidor coacciona qualsevol valor a HABITATGE. Mai es restaura.
       delete (filled as { contractType?: unknown }).contractType;
       setV(filled);
+      // v60 — un esborrany restaurat amb dades completa salta directament al pas 2
+      if (filled.municipalityCode && Number(filled.priceEurMonth) >= 50) setStep(2);
       if (filled.lat != null && filled.lng != null) onPointChange?.({ lat: filled.lat, lng: filled.lng });
       if (d.autoRun && filled.municipalityCode && Number(filled.priceEurMonth) >= 50) {
         void executeQuery(filled);
@@ -307,69 +314,114 @@ export default function AnalitzaForm({
         onSwitchUser={() => void ef.switchUser()}
       />
 
-      {/* municipi */}
-      <div ref={munBoxRef} className="relative">
-        <label className={labelCls} htmlFor="analitza-muni">
-          {ca ? "Municipi *" : "Municipio *"}
-        </label>
-        <input
-          id="analitza-muni"
-          type="text"
-          autoComplete="off"
-          className={inputCls}
-          placeholder={ca ? "Ex.: Manresa, Barcelona, Girona…" : "Ej.: Manresa, Barcelona, Girona…"}
-          value={munQuery || v.municipalityName || ""}
-          onChange={(e) => {
-            setMunQuery(e.target.value);
-            if (e.target.value.trim() !== v.municipalityName) set({ municipalityCode: null, municipalityName: null });
-          }}
-        />
-        {munOptions.length > 0 && (
-          <ul className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-line bg-card shadow-xl max-h-56 overflow-auto">
-            {munOptions.map((m) => (
-              <li key={m.code}>
-                <button
-                  type="button"
-                  onClick={() => pickMuni(m)}
-                  className="w-full text-left px-3.5 py-2.5 text-sm hover:bg-sand"
-                >
-                  <span className="font-semibold">{m.name}</span>
-                  <span className="text-stone"> · {m.comarca ?? ""}{m.isTense ? (ca ? " · zona tensada" : " · zona tensionada") : ""}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {/* v60 — passos progressius compartits (mateixa gramàtica que l'EstimaForm) */}
+      <StepperHeader
+        step={step}
+        total={2}
+        label={step === 1 ? (ca ? "Ubicació" : "Ubicación") : (ca ? "Dades de l'anunci" : "Datos del anuncio")}
+      />
 
-      {/* adreça (ICGC) */}
-      <div ref={geoBoxRef} className="relative">
-        <label className={labelCls} htmlFor="analitza-addr">
-          {ca ? "Adreça de l'habitatge (opcional)" : "Dirección de la vivienda (opcional)"}
-        </label>
-        <input
-          id="analitza-addr"
-          type="text"
-          autoComplete="off"
-          className={inputCls}
-          placeholder={ca ? "Carrer, número, municipi — geocodificador ICGC" : "Calle, número, municipio — geocodificador ICGC"}
-          value={v.address ?? ""}
-          onChange={(e) => set({ address: e.target.value })}
-        />
-        {geoOptions.length > 0 && (
-          <ul className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-line bg-card shadow-xl max-h-56 overflow-auto">
-            {geoOptions.map((g, i) => (
-              <li key={`${g.lat}-${g.lng}-${i}`}>
-                <button type="button" onClick={() => pickGeo(g)} className="w-full text-left px-3.5 py-2.5 text-sm hover:bg-sand">
-                  <span className="inline-flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-pine shrink-0" />{g.label}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {step === 1 && (
+        <>
+          {/* municipi */}
+          <div ref={munBoxRef} className="relative">
+            <label className={labelCls} htmlFor="analitza-muni">
+              {ca ? "Municipi *" : "Municipio *"}
+            </label>
+            <input
+              id="analitza-muni"
+              type="text"
+              autoComplete="off"
+              className={inputCls}
+              placeholder={ca ? "Ex.: Manresa, Barcelona, Girona…" : "Ej.: Manresa, Barcelona, Girona…"}
+              value={munQuery || v.municipalityName || ""}
+              onChange={(e) => {
+                setMunQuery(e.target.value);
+                if (e.target.value.trim() !== v.municipalityName) set({ municipalityCode: null, municipalityName: null });
+              }}
+            />
+            {munOptions.length > 0 && (
+              <ul className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-line bg-card shadow-xl max-h-56 overflow-auto">
+                {munOptions.map((m) => (
+                  <li key={m.code}>
+                    <button
+                      type="button"
+                      onClick={() => pickMuni(m)}
+                      className="w-full text-left px-3.5 py-2.5 text-sm hover:bg-sand"
+                    >
+                      <span className="font-semibold">{m.name}</span>
+                      <span className="text-stone"> · {m.comarca ?? ""}{m.isTense ? (ca ? " · zona tensada" : " · zona tensionada") : ""}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-      {/* preu + superfície + habitacions */}
+          {/* adreça (ICGC) */}
+          <div ref={geoBoxRef} className="relative">
+            <label className={labelCls} htmlFor="analitza-addr">
+              {ca ? "Adreça de l'habitatge (opcional)" : "Dirección de la vivienda (opcional)"}
+            </label>
+            <input
+              id="analitza-addr"
+              type="text"
+              autoComplete="off"
+              className={inputCls}
+              placeholder={ca ? "Carrer, número, municipi — geocodificador ICGC" : "Calle, número, municipio — geocodificador ICGC"}
+              value={v.address ?? ""}
+              onChange={(e) => set({ address: e.target.value })}
+            />
+            {geoOptions.length > 0 && (
+              <ul className="absolute z-30 left-0 right-0 mt-1 rounded-xl border border-line bg-card shadow-xl max-h-56 overflow-auto">
+                {geoOptions.map((g, i) => (
+                  <li key={`${g.lat}-${g.lng}-${i}`}>
+                    <button type="button" onClick={() => pickGeo(g)} className="w-full text-left px-3.5 py-2.5 text-sm hover:bg-sand">
+                      <span className="inline-flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-pine shrink-0" />{g.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* v60 — continuar al pas 2 (mai envia el formulari: type="button") */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!v.municipalityCode) {
+                setError(ca ? "Tria el municipi (o escriu l'adreça exacta per omplir-lo)." : "Elige el municipio (o escribe la dirección exacta para rellenarlo).");
+                return;
+              }
+              setError(null);
+              setStep(2);
+            }}
+            className="w-full rounded-xl bg-pine text-white font-bold text-base px-6 py-3.5 hover:bg-pine2 transition-all hover:shadow-lg disabled:opacity-60 flex items-center justify-center gap-2 min-h-[48px]"
+          >
+            {ca ? "Continua amb les dades de l'anunci" : "Continúa con los datos del anuncio"}
+            <ArrowRight className="w-5 h-5" />
+          </button>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          {/* v60 — resum de la ubicació del pas 1 + enllaç per canviar-la */}
+          <div className="rounded-xl bg-sand border border-line px-3.5 py-2.5 text-sm flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-pine shrink-0" />
+            <span className="font-semibold">{v.municipalityName ?? ""}</span>
+            {v.address && <span className="text-stone text-xs truncate">{v.address}</span>}
+            <button
+              type="button"
+              onClick={() => { setStep(1); }}
+              className="ml-auto text-xs font-semibold text-pine hover:underline flex items-center gap-1 shrink-0"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              {ca ? "Canvia" : "Cambia"}
+            </button>
+          </div>
+
+          {/* preu + superfície + habitacions */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <div>
           <label className={labelCls} htmlFor="analitza-preu">
@@ -435,8 +487,12 @@ export default function AnalitzaForm({
           </div>
         </div>
       </details>
+        </>
+      )}
 
-      {/* mapa (variant full): la vista hi injecta Leaflet sobre aquest contenidor */}
+      {/* mapa (variant full): la vista hi injecta Leaflet sobre aquest contenidor.
+          v60 — SEMPRE al DOM (els dos passos): Leaflet s'acopla una sola vegada
+          i el contenidor mai es desmunta (evita una caixa grisa en tornar). */}
       {variant === "full" && (
         <div>
           <label className={labelCls}>
@@ -455,16 +511,19 @@ export default function AnalitzaForm({
         <p className="text-sm font-semibold text-ember3" role="alert">{error}</p>
       )}
 
-      <button
-        type="submit"
-        disabled={loading || ef.busy || ef.redirecting}
-        className="w-full rounded-xl bg-ember text-white font-bold text-base px-6 py-3.5 hover:bg-ember2 transition-all hover:shadow-lg hover:shadow-orange-200 disabled:opacity-60 flex items-center justify-center gap-2 min-h-[48px]"
-      >
-        {loading || ef.busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-        {loading || ef.busy
-          ? (ca ? "Comprovant el compte…" : "Comprobando la cuenta…")
-          : (ca ? "Compara l'anunci amb la referència oficial" : "Compara el anuncio con la referencia oficial")}
-      </button>
+      {/* v60 — el botó d'enviar només existeix al pas 2 (la ubicació ja és validada) */}
+      {step === 2 && (
+        <button
+          type="submit"
+          disabled={loading || ef.busy || ef.redirecting}
+          className="w-full rounded-xl bg-ember text-white font-bold text-base px-6 py-3.5 hover:bg-ember2 transition-all hover:shadow-lg hover:shadow-orange-200 disabled:opacity-60 flex items-center justify-center gap-2 min-h-[48px]"
+        >
+          {loading || ef.busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+          {loading || ef.busy
+            ? (ca ? "Comprovant el compte…" : "Comprobando la cuenta…")
+            : (ca ? "Compara l'anunci amb la referència oficial" : "Compara el anuncio con la referencia oficial")}
+        </button>
+      )}
 
       {/* v46 — panells de bloqueig del flux email-first (ara sota el botó) */}
       {gatePanel}

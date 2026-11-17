@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/app-context";
 import LineChart, { type LineSeries } from "@/components/charts/LineChart";
+import { CHART_COLORS, CHART_PINE } from "@/lib/chart-palette";
+import { ChartSkeleton } from "@/components/ui/skeletons";
 import { TrendingUp, TrendingDown, Minus, Plus, X, Search, BarChart3 } from "lucide-react";
 
 /**
@@ -180,7 +182,7 @@ export default function AnalisiView() {
           {
             id: "rent",
             label: data.muni?.name ?? "",
-            color: "#0f2e21",
+            color: CHART_PINE,
             points: data.rent.serie.map((p) => ({ x: p.year, y: p.value })),
           },
           ...(data.rent.comarcaRefSerie.length > 1
@@ -199,15 +201,15 @@ export default function AnalisiView() {
 
   const contractSeries: LineSeries[] =
     data?.contracts && data.contracts.serie.length > 1
-      ? [{ id: "contracts", label: ca ? "Contractes amb fiança (flux anual)" : "Contratos con fianza (flujo anual)", color: "#e8673c", points: data.contracts.serie.map((p) => ({ x: p.year, y: p.value })) }]
+      ? [{ id: "contracts", label: ca ? "Contractes amb fiança (flux anual)" : "Contratos con fianza (flujo anual)", color: CHART_COLORS[0], points: data.contracts.serie.map((p) => ({ x: p.year, y: p.value })) }]
       : [];
   const popSeries: LineSeries[] =
     data?.poblacio && data.poblacio.serie.length > 1
-      ? [{ id: "pop", label: ca ? "Població (Padró)" : "Población (Padrón)", color: "#2f6f4f", points: data.poblacio.serie.map((p) => ({ x: p.year, y: p.value })) }]
+      ? [{ id: "pop", label: ca ? "Població (Padró)" : "Población (Padrón)", color: CHART_COLORS[2], points: data.poblacio.serie.map((p) => ({ x: p.year, y: p.value })) }]
       : [];
   const volumeSeries: LineSeries[] =
     data && data.crossover.length > 1
-      ? [{ id: "volume", label: ca ? "Volum aproximat (mediana × 12 × contractes)" : "Volumen aproximado (mediana × 12 × contratos)", color: "#8a5a2b", points: data.crossover.map((c) => ({ x: c.year, y: c.volumeEur })) }]
+      ? [{ id: "volume", label: ca ? "Volum aproximat (mediana × 12 × contractes)" : "Volumen aproximado (mediana × 12 × contratos)", color: CHART_COLORS[3], points: data.crossover.map((c) => ({ x: c.year, y: c.volumeEur })) }]
       : [];
 
   const d = data;
@@ -264,7 +266,13 @@ export default function AnalisiView() {
         </div>
       </div>
 
-      {loading && <div className="mt-8 text-sm text-stone text-center py-8">{ca ? "Creuant sèries oficials…" : "Cruzando series oficiales…"}</div>}
+      {loading && (
+        // v60 — esqueleto de gràfics mentre es creuen les sèries oficials
+        <div className="mt-8 space-y-3" role="status" aria-live="polite">
+          <ChartSkeleton height={200} />
+          <p className="text-xs text-stone text-center">{ca ? "Creuant sèries oficials…" : "Cruzando series oficiales…"}</p>
+        </div>
+      )}
       {failed && <div className="mt-8 text-sm text-stone text-center py-8">{ca ? "Anàlisi no disponible ara mateix." : "Análisis no disponible ahora mismo."}</div>}
 
       {!loading && d?.muni && (

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
+import { Skeleton } from "@/components/ui/skeletons";
 
 /**
  * v41 — Bloc «PARC D'HABITATGES I MERCAT DEL LLOGUER» de la fitxa municipal
@@ -76,8 +77,11 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
       </div>
 
       {pending && !failed && (
-        <div className="text-xs text-stone py-3 text-center">
-          {ca ? "Carregant indicador…" : "Cargando indicador…"}
+        // v60 — esqueleto que imita la forma del contingut (transició sense salts)
+        <div className="py-3 space-y-2" role="status" aria-live="polite">
+          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-3 w-3/4" />
+          <Skeleton className="h-3 w-1/2" />
         </div>
       )}
       {failed && (
