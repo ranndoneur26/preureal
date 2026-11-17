@@ -11,6 +11,8 @@
  */
 
 import { db } from "@/lib/db";
+import { cached } from "@/lib/cache";
+import { buildLinearForecast, type ForecastResult } from "@/lib/forecast";
 import { DEMO_SOURCES } from "@/lib/demografia";
 import { getRentalShareDetail } from "@/lib/rental-share";
 import {
@@ -38,6 +40,8 @@ export interface AnalisiPayload {
     comarcaRefLatest: number | null;
     comarcaRefPeriod: string | null;
     rentSource: string | null;
+    /** v60 — tendència orientativa 12–24 mesos (regressió lineal OLS sobre la sèrie oficial). Null si la sèrie és massa curta (<4 anys). */
+    forecast: ForecastResult | null;
   } | null;
   contracts: {
     serie: SeriePoint[];
@@ -93,6 +97,10 @@ async function getPopulationSerie(code: string): Promise<{ muni: SeriePoint[]; c
 /** Anàlisi complet d'un municipi (creuament de sèries reals). */
 export async function getMuniAnalisi(code: string, locale: "ca" | "es" = "ca"): Promise<AnalisiPayload | null> {
   const codeSafe = String(code || "").slice(0, 10);
+  // v60 — cau en memòria (10 min, clau municipi+idioma): les sèries oficials no
+  // canvien entre ingestes; amb concurrència una sola execució serveix totes
+  // les peticions (PostgreSQL protegit). generatedAt reflecteix la construcció.
+  return cached(`analisi:${codeSafe}:${locale}`, 10 * 60_000, async (): Promise<AnalisiPayload | null> => {
   const m = await db.municipality.findUnique({
     where: { code: codeSafe },
     select: {
@@ -123,6 +131,8 @@ export async function getMuniAnalisi(code: string, locale: "ca" | "es" = "ca"): 
   const crossover = buildCrossover(rentSerie, contractsSerie, pob.muni);
   const rentG5 = growthPct(rentSerie, 5);
   const rentG10 = growthPct(rentSerie, 10);
+  // v60 — tendència orientativa 12–24 mesos (OLS): null amb sèries curtes o sense variància
+  const forecast = buildLinearForecast(rentSerie, 2);
   const popG5 = growthPct(pob.muni, 5);
   const popG10 = growthPct(pob.muni, 10);
   const contractsG5 = growthPct(contractsSerie, 5);
@@ -148,6 +158,10 @@ export async function getMuniAnalisi(code: string, locale: "ca" | "es" = "ca"): 
     "Incasòl — explotació estadística del Registre de fiances (preu mitjà mensual i flux anual de contractes, via Dades Obertes)",
     "IDESCAT — Padró continu d'habitants (població a 1 de gener)",
     rs.current?.censusRentalPercentage != null ? "IDESCAT/INE — Cens de població i habitatges 2021 (viviendas principals per règim de tinença)" : null,
+    // v60 — la projecció és una aproximació estadística pròpia (OLS sobre la sèrie oficial): sempre etiquetada
+    forecast != null
+      ? "PreuReal — projecció de tendència orientativa (regressió lineal sobre la sèrie Incasòl; NO és una previsió ni una valoració oficial)"
+      : null,
   ].filter(Boolean) as string[];
 
   return {
@@ -167,6 +181,7 @@ export async function getMuniAnalisi(code: string, locale: "ca" | "es" = "ca"): 
       comarcaRefLatest: m.comarcaRefLatest,
       comarcaRefPeriod: m.comarcaRefPeriod,
       rentSource: m.rentSource,
+      forecast,
     },
     contracts: {
       serie: contractsSerie,
@@ -198,5 +213,6 @@ export async function getMuniAnalisi(code: string, locale: "ca" | "es" = "ca"): 
     interpretacio,
     sources,
     generatedAt: new Date().toISOString(),
-  };
+    };
+  });
 }

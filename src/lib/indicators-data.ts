@@ -10,6 +10,8 @@
  * només: consulta → pas de dades → assemblador.
  */
 import { db } from "@/lib/db";
+import { cached } from "@/lib/cache";
+import { filterWeightedOutliersIqr } from "@/lib/stats";
 import {
   assembleMuniIndicators,
   effortEconomic,
@@ -34,7 +36,10 @@ const BASIS_FIANCES = "mercat registrat — fiances Incasòl a nivell d'edifici/
 
 /** Carrega totes les observacions rellevants per a un municipi (1 sola query). */
 async function loadRelevantObservations(ineCode: string | null, provCode: string): Promise<StatObsLite[]> {
-  const rows = await db.statObservation.findMany({
+  // v60 — cau en memòria (10 min): les observacions oficials no canvien entre
+  // ingesta i ingesta; amb concurrència una sola query serveix totes les peticions.
+  return cached(`obs:${ineCode ?? "-"}:${provCode}`, 10 * 60_000, async () => {
+    const rows = await db.statObservation.findMany({
     where: {
       OR: [
         // àmbits superiors: Espanya, Catalunya i la província del municipi
@@ -56,33 +61,40 @@ async function loadRelevantObservations(ineCode: string | null, provCode: string
       value: true,
       unit: true,
     },
+    });
+    return rows.map((r) => ({
+      sourceCode: r.source.code,
+      variable: r.variable,
+      geoLevel: r.geoLevel,
+      geoCode: r.geoCode,
+      geoName: r.geoName,
+      municipalityCode: r.municipalityCode,
+      period: r.period,
+      value: r.value,
+      unit: r.unit,
+    }));
   });
-  return rows.map((r) => ({
-    sourceCode: r.source.code,
-    variable: r.variable,
-    geoLevel: r.geoLevel,
-    geoCode: r.geoCode,
-    geoName: r.geoName,
-    municipalityCode: r.municipalityCode,
-    period: r.period,
-    value: r.value,
-    unit: r.unit,
-  }));
 }
 
 /**
  * Mostres del mercat registrat (edificis/illes amb mitjana de fiances
  * importada) del municipi, ponderades pel nº de contractes.
+ * v60 — FILTRE D'ATÍPICS IQR ponderat (k=1.5, mín. 8 edificis): un error de
+ * font o tipogràfic a un edifici amb mitjana extrema ja no desplaca la banda
+ * P25/mediana/P75. Amb pocs edificis el filtre és no-op (zero regressió en
+ * municipis petits) i el nº d'exclusions surt a la base de la banda (traçabilitat).
  */
-async function loadBandSamples(muniCode: string): Promise<BandSample[]> {
+async function loadBandSamples(muniCode: string): Promise<{ samples: BandSample[]; removed: number }> {
   const rows = await db.building.findMany({
     where: { municipalityCode: muniCode, avgRentEurMonth: { not: null } },
     select: { avgRentEurMonth: true, sampleSize: true },
   });
-  return rows
+  const raw: BandSample[] = rows
     .filter((r): r is { avgRentEurMonth: number; sampleSize: number | null } => r.avgRentEurMonth !== null)
     .filter((r) => r.avgRentEurMonth > 0)
     .map((r) => ({ value: r.avgRentEurMonth, weight: r.sampleSize && r.sampleSize >= 1 ? r.sampleSize : 1 }));
+  const f = filterWeightedOutliersIqr(raw, 1.5, 8);
+  return { samples: f.kept.map((s) => ({ value: s.value, weight: s.weight ?? undefined })), removed: f.removedCount };
 }
 
 export interface MuniIndicatorsOptions {
@@ -98,54 +110,62 @@ export async function getMuniIndicators(
   muniCode: string,
   opts: MuniIndicatorsOptions = {},
 ): Promise<MuniIndicators | null> {
-  const muni = await db.municipality.findUnique({
-    where: { code: muniCode },
-    select: {
-      code: true,
-      ineCode: true,
-      name: true,
-      comarca: true,
-      province: true,
-      rentLatest: true,
-      rentPeriod: true,
-      rentHistory: true, // noves funcionalitats F1-F4 (sèrie històrica)
-    },
-  });
-  if (!muni) return null;
+  // v60 — cau en memòria (10 min) per clau municipi+preu: la fitxa, el
+  // comparador i el PDF repeteixen la mateixa agregació; amb concurrència
+  // una sola execució serveix totes les peticions (PostgreSQL protegit).
+  return cached(`indicators:${muniCode}:p${opts.price ?? "none"}`, 10 * 60_000, async () => {
+    const muni = await db.municipality.findUnique({
+      where: { code: muniCode },
+      select: {
+        code: true,
+        ineCode: true,
+        name: true,
+        comarca: true,
+        province: true,
+        rentLatest: true,
+        rentPeriod: true,
+        rentHistory: true, // noves funcionalitats F1-F4 (sèrie històrica)
+      },
+    });
+    if (!muni) return null;
 
-  const provCode = muni.code.slice(0, 2);
-  const [observations, bandSamples] = await Promise.all([
-    loadRelevantObservations(muni.ineCode, provCode),
-    loadBandSamples(muniCode),
-  ]);
+    const provCode = muni.code.slice(0, 2);
+    const [observations, band] = await Promise.all([
+      loadRelevantObservations(muni.ineCode, provCode),
+      loadBandSamples(muniCode),
+    ]);
 
-  const full = assembleMuniIndicators({
-    muni,
-    observations,
-    bandSamples,
-    bandBasis: BASIS_FIANCES,
-    price: opts.price ?? null,
-  });
+    const full = assembleMuniIndicators({
+      muni,
+      observations,
+      bandSamples: band.samples,
+      bandBasis:
+        band.removed > 0
+          ? `${BASIS_FIANCES} — ${band.removed} valor${band.removed === 1 ? "" : "s"} extrem${band.removed === 1 ? "" : "s"} exclòs${band.removed === 1 ? "" : "s"} (filtre IQR)`
+          : BASIS_FIANCES,
+      price: opts.price ?? null,
+    });
 
-  // ── Noves funcionalitats (F1-F4): bundles territorials + esforç Catalunya ──
-  // Els bundles NO depenen de cap autorització aquí (el gating els talla per
-  // pla a la ruta); el càlcul és additiu i amb degradació elegant.
-  try {
-    const bundles = await buildTerritorialBundles(muni);
-    full.evolucio = bundles.evolucio;
-    full.comparativa = bundles.comparativa;
-    full.catalunyaRentYear = bundles.catalunyaRentYear;
-    const rentaCat = full.renta.catalunya ?? null;
-    if (rentaCat?.latest && bundles.catalunyaRentYear?.median) {
-      full.effortCatalunya = effortEconomic(bundles.catalunyaRentYear.median, rentaCat.latest.value, {
-        rentPeriod: muni.rentPeriod,
-        rentaPeriod: rentaCat.latest.period,
-      });
+    // ── Noves funcionalitats (F1-F4): bundles territorials + esforç Catalunya ──
+    // Els bundles NO depenen de cap autorització aquí (el gating els talla per
+    // pla a la ruta); el càlcul és additiu i amb degradació elegant.
+    try {
+      const bundles = await buildTerritorialBundles(muni);
+      full.evolucio = bundles.evolucio;
+      full.comparativa = bundles.comparativa;
+      full.catalunyaRentYear = bundles.catalunyaRentYear;
+      const rentaCat = full.renta.catalunya ?? null;
+      if (rentaCat?.latest && bundles.catalunyaRentYear?.median) {
+        full.effortCatalunya = effortEconomic(bundles.catalunyaRentYear.median, rentaCat.latest.value, {
+          rentPeriod: muni.rentPeriod,
+          rentaPeriod: rentaCat.latest.period,
+        });
+      }
+    } catch (e) {
+      console.error("getMuniIndicators: bundles territorials no disponibles", e);
     }
-  } catch (e) {
-    console.error("getMuniIndicators: bundles territorials no disponibles", e);
-  }
-  return full;
+    return full;
+  });
 }
 
 // ── Noves funcionalitats (F1-F4): files de fiances amb cau en memòria ───────
