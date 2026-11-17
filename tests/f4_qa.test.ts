@@ -228,8 +228,8 @@ describe("F4 QA — RGPD a la ruta /api/estima (mai PII ni persistència persona
       sources: unknown[];
       limitations: unknown[];
     };
-    expect(body.disclaimer.ca).toContain("No és una taxació");
-    expect(body.disclaimer.es).toContain("No es una tasación");
+    expect(body.disclaimer.ca).toContain("no és una taxació oficial");
+    expect(body.disclaimer.es).toContain("no es una tasación oficial");
     expect(body.serpaviUrl).toBe("https://serpavi.mivau.gob.es/");
     expect(body.sources.length).toBeGreaterThanOrEqual(3);
     expect(body.limitations.length).toBeGreaterThanOrEqual(5);

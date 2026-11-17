@@ -348,10 +348,10 @@ describe("F1 — separació UX i transparència", () => {
 
   test("el text fix de transparència usa la fórmula legal del propietari (v56 — ca i es)", () => {
     expect(ORIENTATION_DISCLAIMER.ca).toContain("Rang orientatiu calculat amb dades oficials");
-    expect(ORIENTATION_DISCLAIMER.ca).toContain("No és una taxació oficial");
+    expect(ORIENTATION_DISCLAIMER.ca).toContain("no és una taxació oficial");
     expect(ORIENTATION_DISCLAIMER.ca).toContain("avaluació individualitzada");
     expect(ORIENTATION_DISCLAIMER.es).toContain("Rango orientativo calculado con datos oficiales");
-    expect(ORIENTATION_DISCLAIMER.es).toContain("No es una tasación oficial");
+    expect(ORIENTATION_DISCLAIMER.es).toContain("no es una tasación oficial");
     expect(ORIENTATION_DISCLAIMER.es).toContain("evaluación individualizada");
     // coherència del renombrat v56: mai «estimació» ni «valoració» en negació
     expect(ORIENTATION_DISCLAIMER.ca).not.toContain("Estimació");
@@ -490,7 +490,7 @@ describe("F2 estima — càlcul N1 (base oficial + elasticitat documentada)", ()
 });
 
 describe("F2 estima — degradació honesta (mai inventar res)", () => {
-  test("municipi sense fiança publicada: base de COMARCA marcada ESTIMACIÓ + confiança BAIXA", () => {
+  test("municipi sense fiança publicada: base de COMARCA marcada APROXIMACIÓ + confiança BAIXA", () => {
     const r = mustOk(
       buildEstimation(
         { ...estimaData, rentLatest: null, rentPeriod: null, comarcaRefLatest: 700, comarcaRefPeriod: "2025" },
@@ -549,8 +549,8 @@ describe("F2 estima — horquilla territorial traçada", () => {
 describe("F2 estima — transparència i fonts (mateix criteri que F1)", () => {
   test("el text fix de transparència és el compartit amb F1 (mai taxació)", () => {
     expect(ESTIMA_DISCLAIMER).toBe(ORIENTATION_DISCLAIMER);
-    expect(ESTIMA_DISCLAIMER.ca).toContain("No és una taxació");
-    expect(ESTIMA_DISCLAIMER.es).toContain("No es una tasación");
+    expect(ESTIMA_DISCLAIMER.ca).toContain("no és una taxació oficial");
+    expect(ESTIMA_DISCLAIMER.es).toContain("no es una tasación oficial");
   });
 
   test("SERPAVI és el portal oficial MIVAU (mai simulació de consulta oficial)", () => {
@@ -564,7 +564,7 @@ describe("F2 estima — transparència i fonts (mateix criteri que F1)", () => {
     expect(ESTIMA_SOURCES.every((s) => s.u.startsWith("https://") && s.d.length > 0)).toBe(true);
   });
 
-  test("limitacions: comarca estimació, horquilla mesurada, SERPAVI legal i privacitat", () => {
+  test("limitacions: comarca aproximació, horquilla mesurada, SERPAVI legal i privacitat", () => {
     expect(ESTIMA_LIMITATIONS.length).toBeGreaterThanOrEqual(5);
     const all = ESTIMA_LIMITATIONS.join(" ");
     expect(all).toContain("LIMIT_COMARCA_REF");

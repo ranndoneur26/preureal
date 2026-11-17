@@ -42,7 +42,7 @@ describe("v47 — descàrrega PDF de l'informe (fix del botó mut)", () => {
 
   test("P3. l'informe complet té el CTA creuat cap a /estima", () => {
     expect(code).toContain('navigate("/estima")');
-    expect(report).toContain("Estima el lloguer del teu habitatge");
+    expect(report).toContain("Valora el lloguer del teu habitatge");
   });
 });
 
@@ -52,7 +52,7 @@ describe("v47 — enllaç consulta → estima (text resumit i propi)", () => {
 
   test("L1. la pestanya consulta té un CTA que obre la pestanya estima", () => {
     expect(landing).toContain('setTab("estima")');
-    expect(landing).toContain("Obre «Estima el lloguer del teu habitatge»");
+    expect(landing).toContain("Obre «Valora el lloguer del teu habitatge»");
   });
 
   test("L2. el teaser és RESUMIT i amb redacció pròpia (mai còpia del text llarg)", () => {
@@ -62,9 +62,9 @@ describe("v47 — enllaç consulta → estima (text resumit i propi)", () => {
     // repetir-se a la portada (el requisit és un text resumit i DIFERENT);
     // a «estima» el text llarg continua intacte
     const longPhrases = [
-      "Una estimació progressiva per passos: el nivell N1 calcula un RANG orientatiu",
+      "Una valoració progressiva per passos: el nivell N1 calcula un RANG orientatiu",
       "Cada xifra ve amb la seva font, el període, els contractes, els ajustos amb el seu factor i les limitacions",
-      "Aquesta eina NO fa taxacions ni valoracions individualitzades",
+      "Aquesta eina NO fa taxacions oficials ni avaluacions individualitzades",
     ];
     for (const ph of longPhrases) {
       expect(landing.includes(ph)).toBe(false);
