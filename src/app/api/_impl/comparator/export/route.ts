@@ -60,7 +60,12 @@ export async function POST(req: NextRequest) {
     return /^[=+\-@]/.test(s) ? `'${s}` : s;
   };
 
-  const rows: XlsxCell[][] = [["entitat", "tipus", "codi", "nom", "any", "lloguer_mitja_eur_mes", "contractes", "periode_vigent", "area_tensada", "font"]];
+  // v63 — capçalera ALINEADA amb les dades reals de cada fila (bug v37/v60: la
+  // capçalera «tipus,codi,nom» desplaçava tot el contingut una columna a la
+  // dreta des del codi: tipus rebia el codi, codi rebia el nom i nom rebia la
+  // comarca, tant al CSV com al XLSX). Cada columna ara és veraç:
+  //  entitat=MUNICIPI|EDIFICI · codi · nom · comarca_o_municipi · any · …
+  const rows: XlsxCell[][] = [["entitat", "codi", "nom", "comarca_o_municipi", "any", "lloguer_mitja_eur_mes", "contractes", "periode_vigent", "area_tensada", "font"]];
 
   const num = (v: unknown): XlsxCell => {
     if (v == null || v === "") return v ?? "";
@@ -69,7 +74,7 @@ export async function POST(req: NextRequest) {
   };
 
   for (const m of muns) {
-    const base: XlsxCell[] = ["MUNICIPI", m.code, m.name, m.comarca || ""];
+    const base: XlsxCell[] = ["MUNICIPI", safe(m.code), m.name, m.comarca || ""];
     rows.push([
       ...base,
       "vigent",

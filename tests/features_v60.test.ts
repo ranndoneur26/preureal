@@ -159,6 +159,18 @@ describe("F2 — exports existents: xlsx opcional amb el mateix gating (zero reg
     expect(exp).toContain("PLAN_REQUIRED");
     expect(cmp).toContain('planAllows(plan, "exportCsv")');
   });
+
+  test("v63 — la capçalera de la comparació està ALINEADA amb les dades (mai «tipus,codi,nom» desplaçat)", () => {
+    // bug v37/v60: la capçalera anava descol·locada respecte les dades (tipus
+    // rebia el codi, codi el nom, nom la comarca). La guarda fixa l'alineació:
+    expect(cmp).toContain('"entitat", "codi", "nom", "comarca_o_municipi"');
+    expect(cmp).toContain('"MUNICIPI", safe(m.code), m.name, m.comarca');
+    expect(cmp).toContain('"EDIFICI",');
+    expect(cmp).toContain("b.id,");
+    // cap resta de la capçalera antiga descol·locada
+    expect(cmp).not.toContain('"entitat", "tipus", "codi", "nom"');
+    expect(cmp).toContain("v63 — capçalera ALINEADA");
+  });
 });
 
 describe("F3 — /api/export/dataset (exportació massiva filtrable)", () => {
