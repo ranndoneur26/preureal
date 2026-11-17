@@ -61,6 +61,7 @@ import * as h_comparisons from "../_impl/comparisons/route";
 import * as h_cron_demografia from "../_impl/cron/demografia/route";
 import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_cron_entorn from "../_impl/cron/entorn/route";
+import * as h_cron_history_ttl from "../_impl/cron/history-ttl/route";
 import * as h_cron_ine from "../_impl/cron/ine/route";
 import * as h_cron_rental_share from "../_impl/cron/rental-share/route";
 import * as h_email_status from "../_impl/email-status/route";
@@ -163,6 +164,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["cron", "demografia"], h: h_cron_demografia },
   { seg: ["cron", "emails"], h: h_cron_emails },
   { seg: ["cron", "entorn"], h: h_cron_entorn },
+  { seg: ["cron", "history-ttl"], h: h_cron_history_ttl },
   { seg: ["cron", "ine"], h: h_cron_ine },
   { seg: ["cron", "rental-share"], h: h_cron_rental_share },
   { seg: ["email-status"], h: h_email_status },

@@ -43,6 +43,12 @@ export const PLANS: Record<
       comparativaTerritorial: boolean;
       valoracio: boolean;
       valoracionsMonth: number;
+      // FASE 1 (plans migració progressiva) — historial de consultes amb TTL
+      // per pla: 7 dies al Gratuït (Nou, sense treure res), 0 = sense historial
+      // (upsell Premium, comportament vigent), -1 = il·limitat (pla amb
+      // features.historial actiu). L'admin el pot retocar via PlanSetting
+      // (merge JSON sobre aquests defaults) sense desplegar.
+      historialTtlDies: number;
     };
   }
 > = {
@@ -50,21 +56,21 @@ export const PLANS: Record<
     quotaMonth: 3,
     priceEur: 0,
     comparatorMax: 2,
-    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false, pdfMonth: 0, evolucioTemporal: false, comparativaTerritorial: false, valoracio: false, valoracionsMonth: 0 },
+    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false, pdfMonth: 0, evolucioTemporal: false, comparativaTerritorial: false, valoracio: false, valoracionsMonth: 0, historialTtlDies: 7 },
   },
   PREMIUM: {
     quotaMonth: -1,
     priceEur: 7.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
-    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 5, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 5 },
+    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 5, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 5, historialTtlDies: 0 },
   },
   PRO: {
     quotaMonth: -1,
     priceEur: 19.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
-    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 30, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 30 },
+    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 30, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 30, historialTtlDies: -1 },
   },
 };
 
@@ -157,6 +163,29 @@ export async function pdfLimitForPlan(plan: PlanId): Promise<number> {
   const v = s[plan]?.features.pdfMonth;
   if (Number.isFinite(v)) return v as number;
   return PLANS[plan].features.pdfMonth;
+}
+
+/** FASE 1 (plans migració progressiva) — accés a l'historial de consultes segons
+ *  els features efectius del pla:
+ *   - full: historial complet sense límit de temps (features.historial actiu,
+ *     avui només quan la BD el tingui actiu — Pro; mai canviem el vigent).
+ *   - ttlDies: dies que es guarden les consultes quan full=false (Gratuït = 7;
+ *     0 = sense historial → upsell, comportament vigent intacte).
+ *  Pura i sense BD: testable directament (plans_fase1). */
+export function historialAccess(features: EffectivePlan["features"]): {
+  full: boolean;
+  ttlDies: number;
+} {
+  if (Boolean(features.historial)) return { full: true, ttlDies: -1 };
+  const ttl = Number(features.historialTtlDies);
+  return { full: false, ttlDies: Number.isFinite(ttl) && ttl > 0 ? Math.floor(ttl) : 0 };
+}
+
+/** Data de retallada del TTL de l'historial (null = sense retallada: full o
+ *  sense historial). Mai llança: TTL no finit o <= 0 → null. */
+export function historialCutoff(now: Date, ttlDies: number): Date | null {
+  if (!Number.isFinite(ttlDies) || ttlDies <= 0) return null;
+  return new Date(now.getTime() - ttlDies * 24 * 60 * 60 * 1000);
 }
 
 /** Noves funcionalitats — quota de valoracions/mes (features.valoracionsMonth).

@@ -641,8 +641,9 @@ export default function PanelView() {
           >
             <Icon className="w-4 h-4" />
             {label}
-            {/* Fase 5 — candado visible en las pestañas que el plan gratuito tiene bloqueadas */}
-            {(id === "historial" || id === "preferits") && u.plan === "FREE" && (
+            {/* Fase 5 — candado visible en las pestañas que el plan gratuito tiene bloqueadas.
+                FASE 1 (plans migració): «historial» ja NO es blocada al Gratuït (TTL 7 dies). */}
+            {id === "preferits" && u.plan === "FREE" && (
               <Lock className="w-3 h-3 opacity-60" aria-hidden />
             )}
           </button>
@@ -1049,12 +1050,21 @@ export default function PanelView() {
       {tab === "historial" && (
         <div className="mt-6 bg-card rounded-2xl border border-line p-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold">{locale === "ca" ? "Historial de consultes (Premium)" : "Historial de consultas (Premium)"}</h3>
+            <h3 className="font-bold">{locale === "ca" ? "Historial de consultes" : "Historial de consultas"}</h3>
             {history && history.length > 0 && (
               <button onClick={() => deleteHistory()} className="text-xs text-ember3 underline">{locale === "ca" ? "Buida-ho tot" : "Vaciar todo"}</button>
             )}
           </div>
-          {/* Fase 5 — pla gratuït: pestanya blocada amb teaser (la API torna 403 PLAN_REQUIRED) */}
+          {/* FASE 1 (plans migració): el Gratuït té historial amb TTL de 7 dies;
+              els plans de pagament el mantenen sense límit de temps. */}
+          {u.plan === "FREE" && !historyLocked && (
+            <p className="text-xs text-stone mb-3">
+              {locale === "ca"
+                ? "Al pla gratuït, l'historial es guarda 7 dies. Amb els plans de pagament no té límit de temps."
+                : "En el plan gratuito, el historial se guarda 7 días. Con los planes de pago no tiene límite de tiempo."}
+            </p>
+          )}
+          {/* Fase 5 — pestanya blocada amb teaser (la API torna 403 PLAN_REQUIRED) */}
           {historyLocked ? (
             <div className="text-center py-5">
               <div className="mx-auto w-10 h-10 rounded-full bg-ambersoft2 border border-amberline2 flex items-center justify-center">
@@ -1076,7 +1086,7 @@ export default function PanelView() {
             <p className="text-sm text-stone">…</p>
           ) : history.length === 0 ? (
             <div className="text-center py-4">
-              <p className="text-sm text-stone">{locale === "ca" ? "Cap consulta registrada (el pla gratuït no desa historial)." : "Ninguna consulta registrada (el plan gratuito no guarda historial)."}</p>
+              <p className="text-sm text-stone">{locale === "ca" ? "Cap consulta registrada." : "Ninguna consulta registrada."}</p>
               <button onClick={() => navigate("/mapa")} className="mt-3 px-4 py-2 rounded-lg bg-pine text-white text-xs font-bold">
                 {locale === "ca" ? "Explora el mapa" : "Explora el mapa"}
               </button>

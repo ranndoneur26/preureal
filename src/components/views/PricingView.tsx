@@ -107,6 +107,11 @@ export default function PricingView() {
           onCta={currentPlan === "FREE" ? undefined : () => navigate("/mapa")}
           feats={t.plans.free.feats}
           boldFeats={[1]}
+          // FASE 1 (plans migració) — punts nous marcats amb badge, mai substituint res
+          nouLabel={locale === "ca" ? "Nou" : "Nuevo"}
+          nouFeats={t.plans.free.featsNou}
+          links={[{ at: 5, to: "/analitza", label: locale === "ca" ? "Obre l'eina Consulta" : "Abrir la herramienta Consulta" }]}
+          onNavigate={navigate}
         />
         {/* PREMIUM */}
         <PlanCard
@@ -146,13 +151,20 @@ export default function PricingView() {
 }
 
 function PlanCard({
-  name, price, per, cta, onCta, feats, highlight, popular, busy, icon, boldFeats,
+  name, price, per, cta, onCta, feats, highlight, popular, busy, icon, boldFeats, nouLabel, nouFeats, links, onNavigate,
 }: {
   name: string; price: string; per: string; cta: string;
   onCta?: () => void; feats: readonly string[];
   highlight?: boolean; popular?: string; busy?: boolean; icon?: React.ReactNode;
   /** v45: índexs de feats que es mostren en negreta (p. ex. el límit de consultes) */
   boldFeats?: number[];
+  /** FASE 1 (plans migració): punts afegits (índexs) que es marquen amb un badge «Nou»;
+   *  els textos existents es conserven LITERALMENT (mai es reescriuen). */
+  nouLabel?: string;
+  nouFeats?: readonly number[];
+  /** FASE 1: enllaç inline dins d'un bullet (p. ex. el checklist A–D → eina Consulta). */
+  links?: readonly { at: number; to: string; label: string }[];
+  onNavigate?: (to: string) => void;
 }) {
   return (
     <div
@@ -178,9 +190,26 @@ function PlanCard({
       </div>
       <ul className={`mt-5 space-y-2.5 text-sm flex-1 ${highlight ? "text-white/90" : "text-moss"}`}>
         {feats.map((f, i) => (
-          <li key={i} className="flex gap-2 items-start">
+          <li key={i} className="flex gap-2 items-start flex-wrap">
             <Check className={`w-4 h-4 mt-0.5 shrink-0 ${highlight ? "text-mint" : "text-green2"}`} />
-            {boldFeats?.includes(i) ? <span className="font-bold">{f}</span> : f}
+            {boldFeats?.includes(i) ? <span className="font-bold">{f}</span> : <span>{f}</span>}
+            {nouFeats?.includes(i) && nouLabel && (
+              <span
+                className="shrink-0 rounded-full bg-ambersoft border border-amberline text-ambertext text-[10px] font-bold px-1.5 py-0.5 leading-none"
+                aria-label={nouLabel}
+              >
+                {nouLabel}
+              </span>
+            )}
+            {links?.filter((l) => l.at === i).map((l) => (
+              <button
+                key={l.to}
+                onClick={() => onNavigate?.(l.to)}
+                className="shrink-0 text-xs font-semibold text-pine underline underline-offset-2 hover:text-pine2"
+              >
+                {l.label}
+              </button>
+            ))}
           </li>
         ))}
       </ul>
