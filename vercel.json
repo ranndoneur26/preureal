@@ -5,6 +5,10 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/alertes",
+      "schedule": "15 3 * * *"
+    },
+    {
       "path": "/api/cron/history-ttl",
       "schedule": "50 3 * * *"
     },

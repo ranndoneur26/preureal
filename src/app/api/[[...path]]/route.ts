@@ -26,6 +26,7 @@ import * as h_admin_seed_municipalities from "../_impl/admin/seed-municipalities
 import * as h_admin_stats from "../_impl/admin/stats/route";
 import * as h_admin_users from "../_impl/admin/users/route";
 import * as h_aid from "../_impl/aid/route";
+import * as h_alertes from "../_impl/alertes/route";
 import * as h_analitza from "../_impl/analitza/route";
 import * as h_analitza_serveis from "../_impl/analitza/serveis/route";
 import * as h_auth_2fa_disable from "../_impl/auth/2fa/disable/route";
@@ -58,6 +59,7 @@ import * as h_buildings from "../_impl/buildings/route";
 import * as h_comparator from "../_impl/comparator/route";
 import * as h_comparator_export from "../_impl/comparator/export/route";
 import * as h_comparisons from "../_impl/comparisons/route";
+import * as h_cron_alertes from "../_impl/cron/alertes/route";
 import * as h_cron_demografia from "../_impl/cron/demografia/route";
 import * as h_cron_emails from "../_impl/cron/emails/route";
 import * as h_cron_entorn from "../_impl/cron/entorn/route";
@@ -104,6 +106,7 @@ import * as h_entorn_id from "../_impl/entorn/[id]/route";
 import * as h_export_code from "../_impl/export/[code]/route";
 import * as h_indicators_muni_code from "../_impl/indicators/muni/[code]/route";
 import * as h_municipalities_code from "../_impl/municipalities/[code]/route";
+import * as h_normativa_code from "../_impl/normativa/[code]/route";
 
 type Ctx = { params: Promise<Record<string, string>> };
 type Handler = (req: NextRequest, ctx: Ctx) => Promise<Response> | Response;
@@ -129,6 +132,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "stats"], h: h_admin_stats },
   { seg: ["admin", "users"], h: h_admin_users },
   { seg: ["aid"], h: h_aid },
+  { seg: ["alertes"], h: h_alertes },
   { seg: ["analitza"], h: h_analitza },
   { seg: ["analitza", "serveis"], h: h_analitza_serveis },
   { seg: ["auth", "2fa", "disable"], h: h_auth_2fa_disable },
@@ -161,6 +165,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["comparator"], h: h_comparator },
   { seg: ["comparator", "export"], h: h_comparator_export },
   { seg: ["comparisons"], h: h_comparisons },
+  { seg: ["cron", "alertes"], h: h_cron_alertes },
   { seg: ["cron", "demografia"], h: h_cron_demografia },
   { seg: ["cron", "emails"], h: h_cron_emails },
   { seg: ["cron", "entorn"], h: h_cron_entorn },
@@ -207,6 +212,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["export", ":code"], h: h_export_code },
   { seg: ["indicators", "muni", ":code"], h: h_indicators_muni_code },
   { seg: ["municipalities", ":code"], h: h_municipalities_code },
+  { seg: ["normativa", ":code"], h: h_normativa_code },
 ];
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;

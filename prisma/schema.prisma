@@ -399,6 +399,34 @@ model PriceAlertLog {
   @@index([userId])
 }
 
+// FASE 2 (plans migració progressiva) — «alertes_usuari» del model §5: alertes
+// CONFIGURADES per l'usuari (Premium/Pro, feature "alertes") sobre un municipi,
+// revisades cada dia pel cron /api/cron/alertes contra FONTS OFICIALS (fiances
+// Incasòl via habitatge.gencat.cat, llistes d'àrees tensades DOGC, IRAV/INE).
+// tipus segueix la convenció de PriceAlertLog (String amb valors fixes, sense
+// enum PG per coherència amb la resta del schema):
+//   PRICE      — canvi de preu oficial del municipi (rentPeriod avança)
+//   TENSE      — el municipi entra/surt de les llistes d'àrea tensada (DOGC)
+//   NORMATIVA  — canvi de la normativa vigent consolidada (IRAV, resolucions)
+// Idempotència dels avisos: PriceAlertLog (kind PRICE/TENSE/NORMATIVA, únic per
+// usuari+entitat+període) — la mateixa taula que ja faig servir el flux de
+// preferits v37, perquè cap usuari rebi DOBLE notificació del mateix fet.
+// Si l'usuari baixa de pla, les alertes NO s'esborren: el cron les omet (pausa)
+// i es reprendre'n si torna a Premium/Pro (no destructiu).
+model UserAlert {
+  id                String    @id @default(cuid())
+  userId            String
+  entityKey         String // "MUNI:<code>" (mateixa convenció que Favorite/PriceAlertLog)
+  tipus             String // PRICE | TENSE | NORMATIVA
+  activa            Boolean   @default(true)
+  ultimaComprovacio DateTime?
+  createdAt         DateTime  @default(now())
+
+  @@unique([userId, entityKey, tipus])
+  @@index([userId])
+  @@index([activa, tipus])
+}
+
 // v37.1 — Passkeys (WebAuthn): credencials d'accés sense contrasenya.
 // `id` és el credential ID base64url (PK). publicKey base64url (COSE).
 // counter: anti-clonatge (s'incrementa a cada ús i es compara amb la BD).

@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { useUserPlan } from "@/hooks/use-user-plan";
 import { diffPlanKeys, labelForDiffKey, dataNote, type PlanIdLite, type PlanShapeLite } from "@/lib/plan-change";
-import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen, Check, X as XIcon, AlertCircle, Lock, Fingerprint } from "lucide-react";
+import { User, CreditCard, History, Star, GitCompare, FileText, Shield, Trash2, Settings, BadgeCheck, MailWarning, Download, ExternalLink, Search, BookOpen, Check, X as XIcon, AlertCircle, Lock, Fingerprint, Bell, Scale } from "lucide-react";
 
 interface BillingData {
   subscriptions: Array<{ id: string; plan: string; status: string; demo: boolean; currentPeriodEnd: string | null; createdAt: string }>;
@@ -14,7 +14,16 @@ interface BillingData {
 
 export default function PanelView() {
   const { t, auth, navigate, locale, setLocale } = useApp();
-  const [tab, setTab] = useState("resum");
+  // FASE 2 (plans migració): la pestanya es pot arribar a deep-link (des de la
+  // targeta de preus: /panell?tab=alertes) — es llegeix del hash i es saneeza
+  // contra la llista de pestanyes conegudes (mai res d'estrany des de l'URL).
+  const [tab, setTab] = useState(() => {
+    if (typeof window === "undefined") return "resum";
+    const hq = window.location.hash.split("?")[1] || "";
+    const t = hq ? new URLSearchParams(hq).get("tab") : null;
+    const KNOWN = ["resum", "perfil", "facturacio", "historial", "preferits", "comparacions", "informes", "alertes", "normativa", "seguretat"];
+    return t && KNOWN.includes(t) ? t : "resum";
+  });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   // lint v2: el codi de verificació del hash s'inicialitza directament a l'estat
@@ -51,6 +60,25 @@ export default function PanelView() {
   // v60 — exportació massiva del dataset (Pro): filtre per comarca o província
   const [dsScope, setDsScope] = useState("");
   const [dsKind, setDsKind] = useState<"comarca" | "provincia">("comarca");
+  // FASE 2 (plans migració) — alertes configurades (UserAlert, Premium/Pro) i
+  // mòdul normatiu complet per municipi (la API torna 403 PLAN_REQUIRED amb
+  // pla gratuït: la pestanya es mostra BLOCADA amb teaser, mateix patró v5).
+  const [alerts, setAlerts] = useState<any[] | null>(null);
+  const [alertsLimit, setAlertsLimit] = useState(20);
+  const [alertsLocked, setAlertsLocked] = useState(false);
+  const [alertMuniQ, setAlertMuniQ] = useState("");
+  const [alertMuniOpts, setAlertMuniOpts] = useState<Array<{ code: string; name: string }>>([]);
+  const [alertMuniSel, setAlertMuniSel] = useState<{ code: string; name: string } | null>(null);
+  const [alertTipus, setAlertTipus] = useState<"PRICE" | "TENSE" | "NORMATIVA">("PRICE");
+  const [alertBusy, setAlertBusy] = useState(false);
+  const [normData, setNormData] = useState<any | null>(null);
+  const [normQ, setNormQ] = useState("");
+  const [normOpts, setNormOpts] = useState<Array<{ code: string; name: string }>>([]);
+  const [normBusy, setNormBusy] = useState(false);
+  // timers de cerca (debounce) — SEMPRE abans del primer return condicional
+  // (regla dels hooks: mateix ordre a cada render).
+  const timerAlerts = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timerNorm = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // seguretat
   const [currentPassword, setCurrentPassword] = useState("");
@@ -121,6 +149,12 @@ export default function PanelView() {
       if (r?.ok && r.d) setComparisons(r.d.comparisons);
       else setComparisons([]);
     }
+    if (tabId === "alertes" && alerts === null) {
+      const r = await j("/api/alertes");
+      if (r?.ok && r.d) { setAlerts(r.d.alerts); setAlertsLimit(r.d.limit || 20); }
+      else if (r?.status === 403) { setAlertsLocked(true); setAlerts([]); }
+      else setAlerts([]);
+    }
     if (tabId === "facturacio") {
       if (billing === null) {
         const r = await j("/api/billing/history");
@@ -141,7 +175,7 @@ export default function PanelView() {
         setLastLoginAt(r.d.lastLoginAt || null);
       } else setActivity([]);
     }
-  }, [history, favorites, comparisons, billing, myReports, activity]);
+  }, [history, favorites, comparisons, alerts, billing, myReports, activity]);
 
   // lint v2: la càrrega de la pestanya s'arrenca en una continuació asíncrona
   // (loadTab posa estat; mai síncron dins de l'efecte)
@@ -585,6 +619,68 @@ export default function PanelView() {
   const favoriteMapHref = (f: any) =>
     f.buildingId ? `/mapa?edifici=${encodeURIComponent(f.buildingId)}` : `/mapa?mun=${encodeURIComponent(f.municipalityCode || "")}`;
 
+  // ── FASE 2 (plans migració): helpers d'alertes (UserAlert) i mòdul normatiu ──
+  // (els useRef dels timers viuen AMUNT, amb la resta de hooks)
+
+  /** Cerca de municipis (debounce 250 ms) compartida per Alertes i Normativa. */
+  const cercaMunis = (
+    q: string,
+    setOpts: (o: Array<{ code: string; name: string }>) => void,
+    timer: { current: ReturnType<typeof setTimeout> | null }
+  ) => {
+    if (timer.current) clearTimeout(timer.current);
+    if (q.trim().length < 2) { setOpts([]); return; }
+    timer.current = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/municipalities?q=${encodeURIComponent(q.trim())}&limit=8`);
+        const d = await r.json();
+        setOpts((d?.municipalities || []).map((m: { code: string; name: string }) => ({ code: m.code, name: m.name })));
+      } catch { setOpts([]); }
+    }, 250);
+  };
+
+  const addAlert = async () => {
+    if (!alertMuniSel || alertBusy) return;
+    setAlertBusy(true);
+    try {
+      const r = await fetch("/api/alertes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ municipalityCode: alertMuniSel.code, tipus: alertTipus }),
+      });
+      const d = await r.json();
+      if (r.ok && d?.alerts) {
+        setAlerts(d.alerts);
+        setAlertsLimit(d.limit || 20);
+        setAlertMuniSel(null); setAlertMuniQ(""); setAlertMuniOpts([]);
+      } else {
+        setMsg(
+          d?.error === "ALERT_LIMIT"
+            ? (locale === "ca" ? `Màxim de ${d.limit} alertes actives. Esborra'n una per-ne afegir una de nova.` : `Máximo de ${d.limit} alertas activas. Borra una para añadir una nueva.`)
+            : (locale === "ca" ? "No s'ha pogut afegir l'alerta." : "No se ha podido añadir la alerta.")
+        );
+      }
+    } finally { setAlertBusy(false); }
+  };
+
+  const delAlert = async (id: string) => {
+    try {
+      const r = await fetch(`/api/alertes?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (r.ok) { const d = await r.json(); setAlerts(d.alerts); }
+    } catch { /* mai blocuem la UI per un error de xarxa */ }
+  };
+
+  const carregaNorm = async (code: string) => {
+    setNormBusy(true);
+    try {
+      const r = await fetch(`/api/normativa/${encodeURIComponent(code)}`);
+      const d = await r.json();
+      if (r.ok) setNormData(d);
+      else setNormData({ error: d?.error || "ERROR" });
+    } catch { setNormData({ error: "ERROR" }); }
+    finally { setNormBusy(false); }
+  };
+
   const tabs = [
     ["resum", t.panel.title, User],
     ["perfil", locale === "ca" ? "Dades personals" : "Datos personales", Settings],
@@ -593,6 +689,10 @@ export default function PanelView() {
     ["preferits", locale === "ca" ? "Preferits" : "Favoritos", Star],
     ["comparacions", locale === "ca" ? "Comparacions" : "Comparaciones", GitCompare],
     ["informes", locale === "ca" ? "Informes meus" : "Mis informes", FileText],
+    // FASE 2 (plans migració) — pestanyes noves de Premium («Nou»); el Gratuït
+    // les veu amb candau i teaser d'upgrade (mai llista buida que confon).
+    ["alertes", locale === "ca" ? "Alertes" : "Alertas", Bell],
+    ["normativa", locale === "ca" ? "Normativa" : "Normativa", Scale],
     ["seguretat", locale === "ca" ? "Seguretat" : "Seguridad", Shield],
   ] as const;
 
@@ -642,8 +742,9 @@ export default function PanelView() {
             <Icon className="w-4 h-4" />
             {label}
             {/* Fase 5 — candado visible en las pestañas que el plan gratuito tiene bloqueadas.
-                FASE 1 (plans migració): «historial» ja NO es blocada al Gratuït (TTL 7 dies). */}
-            {id === "preferits" && u.plan === "FREE" && (
+                FASE 1 (plans migració): «historial» ja NO es blocada al Gratuït (TTL 7 dies).
+                FASE 2 (plans migració): «alertes» i «normativa» són del pla Premium («Nou»). */}
+            {((id === "preferits") || (id === "alertes" || id === "normativa")) && u.plan === "FREE" && (
               <Lock className="w-3 h-3 opacity-60" aria-hidden />
             )}
           </button>
@@ -1281,6 +1382,262 @@ export default function PanelView() {
               ))}
               <p className="text-xs text-stone">{locale === "ca" ? "Els informes passen per moderació abans de ser útils estadísticament." : "Los informes pasan por moderación antes de ser útiles estadísticamente."}</p>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ALERTES (FASE 2 — Nou Premium): preu i normativa per municipi, revisió diària */}
+      {tab === "alertes" && (
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6">
+          <h3 className="font-bold flex items-center gap-2 mb-1">
+            {locale === "ca" ? "Alertes de preu i normativa" : "Alertas de precio y normativa"}
+            <span className="shrink-0 rounded-full bg-ambersoft border border-amberline text-ambertext text-[10px] font-bold px-1.5 py-0.5 leading-none" aria-label={locale === "ca" ? "Nou" : "Nuevo"}>
+              {locale === "ca" ? "Nou" : "Nuevo"}
+            </span>
+          </h3>
+          <p className="text-xs text-stone mb-4 leading-relaxed">
+            {locale === "ca"
+              ? "Revisió diària contra FONTS OFICIALS: fiances Incasòl via habitatge.gencat.cat, llistes d'àrees tensades (DOGC) i normativa vigent (IRAV/INE). Reps UN correu consolidat quan canvia la dada oficial — mai dobles avisos del mateix fet."
+              : "Revisión diaria contra FUENTES OFICIALES: fianzas Incasòl via habitatge.gencat.cat, listas de áreas tensadas (DOGC) y normativa vigente (IRAV/INE). Recibes UN correo consolidado cuando cambia el dato oficial — nunca avisos duplicados del mismo hecho."}
+          </p>
+          {alertsLocked ? (
+            <div className="text-center py-5">
+              <div className="mx-auto w-10 h-10 rounded-full bg-ambersoft2 border border-amberline2 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-ember3" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-pine">
+                {locale === "ca" ? "Les alertes són del pla Premium" : "Las alertas son del plan Premium"}
+              </p>
+              <p className="mt-1 text-sm text-moss max-w-md mx-auto leading-relaxed">
+                {locale === "ca"
+                  ? "Amb Premium pots vigilar municipis i rebre un avís quan el preu oficial canviï, quan un municipi entri o surti d'àrea tensada o quan canviï la normativa vigent."
+                  : "Con Premium puedes vigilar municipios y recibir un aviso cuando el precio oficial cambie, cuando un municipio entre o salga de área tensada o cuando cambie la normativa vigente."}
+              </p>
+              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-ember text-white text-xs font-bold hover:bg-ember2">
+                {locale === "ca" ? "Veure Premium" : "Ver Premium"}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* formulari: municipi + tipus */}
+              <div className="border border-sand2 rounded-xl p-4 mb-4">
+                <label className="block text-xs font-semibold text-moss mb-1.5" htmlFor="alerta-muni">
+                  {locale === "ca" ? "Municipi a vigilar" : "Municipio a vigilar"}
+                </label>
+                <input
+                  id="alerta-muni"
+                  value={alertMuniSel ? alertMuniSel.name : alertMuniQ}
+                  onChange={(e) => {
+                    setAlertMuniSel(null);
+                    setAlertMuniQ(e.target.value);
+                    cercaMunis(e.target.value, setAlertMuniOpts, timerAlerts);
+                  }}
+                  placeholder={locale === "ca" ? "Cerca municipi (mín. 2 lletres)..." : "Busca municipio (mín. 2 letras)..."}
+                  className="w-full rounded-lg border border-line bg-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pine/30"
+                />
+                {alertMuniOpts.length > 0 && (
+                  <div className="mt-1.5 border border-line rounded-lg divide-y divide-sand2 bg-cream overflow-hidden">
+                    {alertMuniOpts.map((m) => (
+                      <button
+                        key={m.code}
+                        onClick={() => { setAlertMuniSel(m); setAlertMuniOpts([]); }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-sand flex items-center justify-between gap-2"
+                      >
+                        <span>{m.name}</span>
+                        <span className="text-xs text-stone">{m.code}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-3 flex gap-1.5 flex-wrap">
+                  {([
+                    ["PRICE", locale === "ca" ? "Preu oficial" : "Precio oficial"],
+                    ["TENSE", locale === "ca" ? "Àrea tensa" : "Área tensada"],
+                    ["NORMATIVA", "Normativa"],
+                  ] as const).map(([v, lab]) => (
+                    <button
+                      key={v}
+                      onClick={() => setAlertTipus(v)}
+                      aria-pressed={alertTipus === v}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                        alertTipus === v ? "bg-pine text-white border-pine" : "bg-card border-line text-moss hover:bg-sand"
+                      }`}
+                    >
+                      {lab}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={addAlert}
+                  disabled={!alertMuniSel || alertBusy}
+                  className="mt-3 px-4 py-2 rounded-lg bg-pine text-white text-xs font-bold hover:bg-pine2 disabled:opacity-50"
+                >
+                  {alertBusy ? "..." : (locale === "ca" ? "Afegeix alerta" : "Añadir alerta")}
+                </button>
+              </div>
+              {/* llista */}
+              {alerts === null ? (
+                <p className="text-sm text-stone">…</p>
+              ) : alerts.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-stone">
+                    {locale === "ca" ? "Cap alerta configurada encara." : "Ninguna alerta configurada todavía."}
+                  </p>
+                  <p className="mt-1 text-xs text-stone">
+                    {locale === "ca" ? `Fins a ${alertsLimit} alertes actives.` : `Hasta ${alertsLimit} alertas activas.`}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {alerts.map((a) => (
+                    <div key={a.id} className="flex items-center justify-between gap-2 text-sm border border-sand2 rounded-lg px-3 py-2">
+                      <span>
+                        <b>{a.municipi?.name || a.entityKey}</b>
+                        {a.municipi?.rentLatest != null && (
+                          <span className="text-stone"> · {a.municipi.rentLatest.toFixed(0)} €/mes ({a.municipi.rentPeriod})</span>
+                        )}
+                        <span className="block text-xs text-stone">
+                          {a.tipus === "PRICE"
+                            ? (locale === "ca" ? "Preu oficial (Incasòl)" : "Precio oficial (Incasòl)")
+                            : a.tipus === "TENSE"
+                              ? (locale === "ca" ? "Àrea tensa (DOGC)" : "Área tensada (DOGC)")
+                              : "Normativa (IRAV/INE · DOGC)"}
+                          {a.ultimaComprovacio && ` · ${locale === "ca" ? "darrera comprovació" : "última comprobación"}: ${new Date(a.ultimaComprovacio).toLocaleDateString()}`}
+                        </span>
+                      </span>
+                      <button onClick={() => delAlert(a.id)} className="text-xs text-stone underline shrink-0">
+                        {locale === "ca" ? "Esborra" : "Borra"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* NORMATIVA (FASE 2 — Nou Premium): mòdul normatiu complet per municipi */}
+      {tab === "normativa" && (
+        <div className="mt-6 bg-card rounded-2xl border border-line p-6">
+          <h3 className="font-bold flex items-center gap-2 mb-1">
+            {locale === "ca" ? "Mòdul normatiu complet" : "Módulo normativo completo"}
+            <span className="shrink-0 rounded-full bg-ambersoft border border-amberline text-ambertext text-[10px] font-bold px-1.5 py-0.5 leading-none" aria-label={locale === "ca" ? "Nou" : "Nuevo"}>
+              {locale === "ca" ? "Nou" : "Nuevo"}
+            </span>
+          </h3>
+          <p className="text-xs text-stone mb-4 leading-relaxed">
+            {locale === "ca"
+              ? "Índex de referència vigent, IRAV (INE), gran tenedor i SERPAVI, límits de contracte i àrees tensades — amb la font i el període de cada dada. Comparació estadística, no és una taxació."
+              : "Índice de referencia vigente, IRAV (INE), gran tenedor y SERPAVI, límites de contrato y áreas tensadas — con la fuente y el período de cada dato. Comparación estadística, no es una tasación."}
+          </p>
+          {normData?.error === "PLAN_REQUIRED" ? (
+            <div className="text-center py-5">
+              <div className="mx-auto w-10 h-10 rounded-full bg-ambersoft2 border border-amberline2 flex items-center justify-center">
+                <Scale className="w-5 h-5 text-ember3" />
+              </div>
+              <p className="mt-3 text-sm font-semibold text-pine">
+                {locale === "ca" ? "El mòdul normatiu complet és del pla Premium" : "El módulo normativo completo es del plan Premium"}
+              </p>
+              <p className="mt-1 text-sm text-moss max-w-md mx-auto leading-relaxed">
+                {locale === "ca"
+                  ? "Amb Premium tens tota la regulació aplicable a un municipi en un sol lloc: referència vigent, IRAV, gran tenedor/SERPAVI, àrees tensades i límits de contracte, amb fonts oficials."
+                  : "Con Premium tienes toda la regulación aplicable a un municipio en un solo lugar: referencia vigente, IRAV, gran tenedor/SERPAVI, áreas tensadas y límites de contrato, con fuentes oficiales."}
+              </p>
+              <button onClick={() => navigate("/preus")} className="mt-4 px-4 py-2 rounded-lg bg-ember text-white text-xs font-bold hover:bg-ember2">
+                {locale === "ca" ? "Veure Premium" : "Ver Premium"}
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* cerca de municipi */}
+              <div className="border border-sand2 rounded-xl p-4 mb-4">
+                <label className="block text-xs font-semibold text-moss mb-1.5" htmlFor="norm-muni">
+                  {locale === "ca" ? "Municipi" : "Municipio"}
+                </label>
+                <input
+                  id="norm-muni"
+                  value={normData && !normData.error ? normData.municipi?.name : normQ}
+                  onChange={(e) => { setNormData(null); setNormQ(e.target.value); cercaMunis(e.target.value, setNormOpts, timerNorm); }}
+                  placeholder={locale === "ca" ? "Cerca municipi (mín. 2 lletres)..." : "Busca municipio (mín. 2 letras)..."}
+                  className="w-full rounded-lg border border-line bg-cream px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pine/30"
+                />
+                {normOpts.length > 0 && (
+                  <div className="mt-1.5 border border-line rounded-lg divide-y divide-sand2 bg-cream overflow-hidden">
+                    {normOpts.map((m) => (
+                      <button
+                        key={m.code}
+                        onClick={() => { setNormOpts([]); setNormQ(m.name); carregaNorm(m.code); }}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-sand flex items-center justify-between gap-2"
+                      >
+                        <span>{m.name}</span>
+                        <span className="text-xs text-stone">{m.code}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {normBusy && <p className="text-sm text-stone">…</p>}
+              {!normBusy && normData && !normData.error && (
+                <div className="space-y-3 text-sm">
+                  {/* A. índex de referència vigent */}
+                  <div className="border border-sand2 rounded-lg px-3 py-2.5">
+                    <p className="font-semibold">
+                      {locale === "ca" ? "Índex de referència vigent" : "Índice de referencia vigente"}
+                      {normData.indexReferencia?.estimacio && (
+                        <span className="ml-2 text-[10px] font-bold uppercase text-ember3">
+                          {locale === "ca" ? "estimació (comarca)" : "estimación (comarca)"}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-stone mt-0.5">
+                      {normData.indexReferencia?.valor != null
+                        ? <><b className="text-pine">{normData.indexReferencia.valor.toFixed(0)} €/mes</b> · {normData.indexReferencia.period}{normData.indexReferencia.variacioInteranualPct != null ? ` · ${normData.indexReferencia.variacioInteranualPct > 0 ? "+" : ""}${normData.indexReferencia.variacioInteranualPct}% ${locale === "ca" ? "interanual" : "interanual"}` : ""}</>
+                        : (locale === "ca" ? "Encara sense valor publicat per a aquest municipi." : "Todavía sin valor publicado para este municipio.")}
+                    </p>
+                    <p className="text-xs text-stone mt-0.5">{normData.indexReferencia?.font}</p>
+                  </div>
+                  {/* B. àrea tensa */}
+                  <div className="border border-sand2 rounded-lg px-3 py-2.5">
+                    <p className="font-semibold">{locale === "ca" ? "Àrea de mercat residencial tensat" : "Área de mercado residencial tensionado"}</p>
+                    <p className="text-stone mt-0.5">
+                      {normData.areaTensa?.tense
+                        ? (locale === "ca" ? <span><b className="text-ember3">Sí</b> — llista {normData.areaTensa.llista === "A" ? "TER/3739/2026 (pròrroga)" : normData.areaTensa.llista === "C" ? "TER/3740/2026 (nous)" : normData.areaTensa.llista} · nous contractes amb límit de renta (LAU art. 17.2)</span> : <span><b className="text-ember3">Sí</b> — los nuevos contratos tienen límite de renta (LAU art. 17.2)</span>)
+                        : (locale === "ca" ? "No consta a les llistes vigents." : "No consta en las listas vigentes.")}
+                    </p>
+                    <p className="text-xs text-stone mt-0.5">{normData.areaTensa?.resolucionsVigents?.join(" · ")} · {normData.areaTensa?.publicacio}</p>
+                  </div>
+                  {/* C. IRAV */}
+                  <div className="border border-sand2 rounded-lg px-3 py-2.5">
+                    <p className="font-semibold">IRAV — {locale === "ca" ? "actualització anual de renta (INE)" : "actualización anual de renta (INE)"}</p>
+                    <p className="text-stone mt-0.5">+{normData.irav?.pct}% · {normData.irav?.periode}</p>
+                    <p className="text-xs text-stone mt-0.5">{normData.irav?.font}</p>
+                  </div>
+                  {/* D. gran tenedor / SERPAVI */}
+                  <div className="border border-sand2 rounded-lg px-3 py-2.5">
+                    <p className="font-semibold">{locale === "ca" ? "Gran tenedor i SERPAVI" : "Gran tenedor y SERPAVI"}</p>
+                    <p className="text-stone mt-0.5">{normData.granTenedorSerpavi?.vigencia}</p>
+                    <p className="text-stone mt-0.5">{normData.granTenedorSerpavi?.granTenedor}</p>
+                    <p className="text-xs text-stone mt-0.5">
+                      {normData.granTenedorSerpavi?.nota}{" "}
+                      <a href={normData.granTenedorSerpavi?.consultaOficial} target="_blank" rel="noopener noreferrer" className="underline text-pine">serpavi.mivau.gob.es</a>
+                    </p>
+                  </div>
+                  {/* E. altres límits */}
+                  <div className="border border-sand2 rounded-lg px-3 py-2.5">
+                    <p className="font-semibold">{locale === "ca" ? "Altres regles vigents" : "Otras reglas vigentes"}</p>
+                    <p className="text-stone mt-0.5">{normData.limits?.nouContracte}</p>
+                    <p className="text-stone">{normData.limits?.temporada}</p>
+                    <p className="text-stone">{normData.altres?.amiant}</p>
+                  </div>
+                  <p className="text-xs text-stone leading-relaxed">
+                    {normData.disclaimer?.[locale === "es" ? "es" : "ca"]}
+                    {" "}
+                    {locale === "ca" ? "Consulta feta" : "Consulta hecha"} {new Date(normData.consultedAt).toLocaleString()}.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

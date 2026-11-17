@@ -124,6 +124,12 @@ export default function PricingView() {
           onCta={currentPlan === "PREMIUM" ? undefined : () => checkout("PREMIUM")}
           feats={t.plans.premium.feats}
           busy={busy === "PREMIUM"}
+          // FASE 2 (plans migració) — 4 punts nous amb badge «Nou» (els 7
+          // publicats es conserven LITERALMENT als índexs 0–6)
+          nouLabel={locale === "ca" ? "Nou" : "Nuevo"}
+          nouFeats={t.plans.premium.featsNou}
+          links={[{ at: 9, to: "/panell?tab=alertes", label: locale === "ca" ? "Gestiona les alertes al panell" : "Gestiona las alertas en el panel" }]}
+          onNavigate={navigate}
         />
         {/* PRO */}
         <PlanCard

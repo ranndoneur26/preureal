@@ -35,16 +35,18 @@ describe("P1 — historialAccess(): gate pur del TTL de l'historial", () => {
     expect(historialAccess(PLANS_PRO_FEATURES)).toEqual({ full: true, ttlDies: -1 });
   });
 
-  test("Premium amb la BD que té historial=false (config vigent): upsell intacte", () => {
-    // això és el que ara mateix torna /api/plans en producció per a PREMIUM
-    const premiumProd: Record<string, unknown> = {
+  test("Premium amb historial=false (config PRE-FASE 2): upsell intacte", () => {
+    // mateix contracte que sempre: sense features.historial no hi ha historial
+    // (des de la FASE 2 la BD de Premium l'activa; la funció continua sent
+    // conservadora per a qualsevol config que no el tingui).
+    const premiumPre: Record<string, unknown> = {
       comparador: true,
       exportCsv: false,
       historial: false,
       pdfMonth: false,
       valoracionsMonth: 5,
     };
-    expect(historialAccess(premiumProd as never)).toEqual({ full: false, ttlDies: 0 });
+    expect(historialAccess(premiumPre as never)).toEqual({ full: false, ttlDies: 0 });
   });
 
   test("TTL no finit, negatiu o zero mai activa la finestra", () => {
@@ -110,15 +112,23 @@ describe("P3 — i18n: bullets del Gratuït (ca/es simètrics, existents intacte
     expect(es[7]).toBe("Sin tarjeta: registro solo con e-mail");
   });
 
-  test("featsNou = [5, 6, 7] a les dues llengües; Premium i Pro no en tenen", () => {
+  test("featsNou: Gratuït [5,6,7] i Premium [7,8,9,10] (FASE 2); Pro no en té", () => {
     expect([...STRINGS.ca.plans.free.featsNou]).toEqual([5, 6, 7]);
     expect([...STRINGS.es.plans.free.featsNou]).toEqual([5, 6, 7]);
-    expect(Object.keys(STRINGS.ca.plans.premium)).not.toContain("featsNou");
+    // FASE 2 (plans migració): Premium incorpora 4 punts «Nou» amb el mateix
+    // patró; Pro NO en té fins a la FASE 3 (mai substituint res).
+    expect([...STRINGS.ca.plans.premium.featsNou]).toEqual([7, 8, 9, 10]);
+    expect([...STRINGS.es.plans.premium.featsNou]).toEqual([7, 8, 9, 10]);
     expect(Object.keys(STRINGS.ca.plans.pro)).not.toContain("featsNou");
+    expect(Object.keys(STRINGS.es.plans.pro)).not.toContain("featsNou");
   });
 
-  test("NO-regressió: Premium (7) i Pro (6) bullets idèntics, en l'ordre original", () => {
-    expect([...STRINGS.ca.plans.premium.feats]).toEqual([
+  test("NO-regressió: els 7 bullets publicats de Premium es conserven LITERALMENT, en l'ordre original (FASE 2 només AFEGEIX)", () => {
+    const ca = [...STRINGS.ca.plans.premium.feats];
+    const es = [...STRINGS.es.plans.premium.feats];
+    expect(ca.length).toBe(11); // 7 publicats + 4 nous
+    expect(es.length).toBe(11);
+    expect(ca.slice(0, 7)).toEqual([
       "Consultes il·limitades",
       "Banda de referència P25–P75 i posició del teu preu",
       "Indicadors oficials INE: IPVA, renda i esforç econòmic",
@@ -127,15 +137,7 @@ describe("P3 — i18n: bullets del Gratuït (ca/es simètrics, existents intacte
       "Informe PDF professional de 10 pàgines (5/mes)",
       "Suport prioritari",
     ]);
-    expect([...STRINGS.ca.plans.pro.feats]).toEqual([
-      "Tot el de Premium",
-      "Exportació CSV de dades per municipi",
-      "Informes PDF de 10 pàgines amb anàlisi del mercat, també d'edifici (30/mes)",
-      "Ideal per a agents i gestors",
-      "Accés prioritari a noves dades",
-      "Factura nominal",
-    ]);
-    expect([...STRINGS.es.plans.premium.feats]).toEqual([
+    expect(es.slice(0, 7)).toEqual([
       "Consultas ilimitadas",
       "Banda de referencia P25–P75 y posición de tu precio",
       "Indicadores oficiales INE: IPVA, renta y esfuerzo económico",
@@ -143,14 +145,6 @@ describe("P3 — i18n: bullets del Gratuït (ca/es simètrics, existents intacte
       "Comparador hasta 6 municipios con columnas avanzadas",
       "Informe PDF profesional de 10 páginas (5/mes)",
       "Soporte prioritario",
-    ]);
-    expect([...STRINGS.es.plans.pro.feats]).toEqual([
-      "Todo lo de Premium",
-      "Exportación CSV de datos por municipio",
-      "Informes PDF de 10 páginas con análisis del mercado, también de edificio (30/mes)",
-      "Ideal para agentes y gestores",
-      "Acceso prioritario a nuevos datos",
-      "Factura nominal",
     ]);
   });
 });
@@ -197,10 +191,12 @@ describe("P4 — cablejament FASE 1 (API + cron + migració + UI)", () => {
     expect(migration).toContain("- 'historialTtlDies'");
   });
 
-  test("plans.ts: defaults amb TTL 7/0/-1 i helpers exportats", () => {
+  test("plans.ts: defaults amb TTL 7 (FREE) i -1 (Premium/Pro, FASE 2) i helpers exportats", () => {
     expect(plans).toContain("historialTtlDies: 7");
-    expect(plans).toContain("historialTtlDies: 0");
+    // FASE 2: Premium ja no té 0 (upsell) — «historial il·limitat» és un dels
+    // 4 punts nous; el default de codi i la migració s'alineen a -1.
     expect(plans).toContain("historialTtlDies: -1");
+    expect(plans).not.toContain("historialTtlDies: 0");
     expect(plans).toContain("export function historialAccess");
     expect(plans).toContain("export function historialCutoff");
   });
@@ -209,7 +205,9 @@ describe("P4 — cablejament FASE 1 (API + cron + migració + UI)", () => {
     expect(pricing).toContain("nouFeats");
     expect(pricing).toContain('to: "/analitza"');
     expect(panel).not.toContain('(id === "historial" || id === "preferits")');
-    expect(panel).toContain('id === "preferits" && u.plan === "FREE"');
+    // FASE 2: el candau FREE s'estén a «alertes» i «normativa»; «preferits»
+    // continua blocat (mateixa condició, ara composta).
+    expect(panel).toContain('id === "preferits") || (id === "alertes" || id === "normativa")) && u.plan === "FREE"');
   });
 });
 

@@ -518,3 +518,38 @@ export function dataUpdateMail(items: DataUpdateEntry[], locale: "ca" | "es") {
     : `<p>La fuente oficial (fianzas Incasòl via habitatge.gencat.cat) ha publicado datos nuevos de alguno de tus municipios favoritos:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Recibes este aviso porque tienes las alertas activadas. Gestiónalas en el panel → Favoritos.</p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
+
+// ── FASE 2 (plans migració progressiva): avís de les ALERTES configurades ──
+// (UserAlert — panell → Alertes; revisió diària del cron /api/cron/alertes)
+
+export interface AlertaEntry {
+  /** Nom del municipi (p. ex. "Barcelona") */
+  label: string;
+  /** Línia ja LOCALITZADA pel cron segons l'idioma de l'usuari (ca/es) */
+  detail: string;
+  /** Enllaç relatiu a la fitxa del municipi (p. ex. "/#/mapa?mun=080193") */
+  url: string;
+}
+
+/**
+ * FASE 2 — avís consolidat de les alertes de l'usuari (taula UserAlert): preu
+ * oficial (Incasòl), àrea tensa (DOGC) i normativa vigent (IRAV/INE, RDL
+ * 29/2026). Idempotent via PriceAlertLog (kind PRICE/TENSE/NORMATIVA): un
+ * sol correu per fet oficial, mai rajades. Diferència amb dataUpdateMail
+ * (v60): aquí l'usuari ha CONFIGURAT l'alerta al panell (panell → Alertes,
+ * Premium/Pro), no depén del flag alertsEnabled ni dels preferits.
+ */
+export function alertaMail(items: AlertaEntry[], locale: "ca" | "es") {
+  const ca = locale === "ca";
+  const title = ca ? "Les teves alertes: canvis a les fonts oficials" : "Tus alertas: cambios en las fuentes oficiales";
+  const rows = items
+    .map(
+      (it) =>
+        `<tr><td style="padding:8px 0;border-bottom:1px solid #eee"><a href="${getSiteUrlOrigin()}${it.url}" style="color:#0f2e21;font-weight:600;text-decoration:none">${escapeHtml(it.label)}</a><br>◆ ${it.detail}</td></tr>`
+    )
+    .join("");
+  const body = ca
+    ? `<p>El cron diari de Preureal ha detectat canvis a les FONTS OFICIALS que tens vigilades (fiances Incasòl via habitatge.gencat.cat, àrees tensades DOGC, IRAV/INE):</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Reps aquest avís perquè tens alertes actives. Gestiona-les al panell → Alertes. Recorda: és una comparació estadística, no és una taxació.</p>`
+    : `<p>El cron diario de Preureal ha detectado cambios en las FUENTES OFICIALES que tienes vigiladas (fianzas Incasòl via habitatge.gencat.cat, áreas tensadas DOGC, IRAV/INE):</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Recibes este aviso porque tienes alertas activas. Gestiónalas en el panel → Alertas. Recuerda: es una comparación estadística, no es una tasación.</p>`;
+  return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
+}

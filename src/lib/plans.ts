@@ -49,6 +49,15 @@ export const PLANS: Record<
       // features.historial actiu). L'admin el pot retocar via PlanSetting
       // (merge JSON sobre aquests defaults) sense desplegar.
       historialTtlDies: number;
+      // FASE 2 (plans migració progressiva) — 2 flags nous de Premium (Pro els
+      // hereda: «Tot el de Premium» publicat), amb el mateix patró additiu:
+      //  - normativaCompleta: mòdul normatiu consolidat per municipi
+      //    (índex de referència vigent, IRAV, gran tenedor/SERPAVI, LAU) via
+      //    /api/normativa/[code] — fonts oficials citades amb període.
+      //  - alertes: alertes de preu/normativa per municipi configurades per
+      //    l'usuari (UserAlert + cron diari /api/cron/alertes).
+      normativaCompleta: boolean;
+      alertes: boolean;
     };
   }
 > = {
@@ -56,21 +65,27 @@ export const PLANS: Record<
     quotaMonth: 3,
     priceEur: 0,
     comparatorMax: 2,
-    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false, pdfMonth: 0, evolucioTemporal: false, comparativaTerritorial: false, valoracio: false, valoracionsMonth: 0, historialTtlDies: 7 },
+    features: { comparador: true, exportCsv: false, historial: false, preferits: false, pdfMunicipi: false, pdfEdifici: false, referenciaAmpliada: false, indicadorsTerritorials: false, comparadorAvancat: false, pdfMonth: 0, evolucioTemporal: false, comparativaTerritorial: false, valoracio: false, valoracionsMonth: 0, historialTtlDies: 7, normativaCompleta: false, alertes: false },
   },
+  // FASE 2 (plans migració progressiva): defaults alineats amb la migració
+  // 20261118130000_plans_fase2_premium i amb el publicat a la pàgina de preus
+  // (aprovació explícita del propietari): Premium 8,99 €/mes i Pro 24,99 €/mes
+  // (els valors 7,99/19,99 anteriors eren defaults caducats, mai efectius amb
+  // la BD de producció), Valora v2 il·limitat, historial il·limitat i els 2
+  // flags nous. La BD (PlanSetting) continua sent la font de veritat.
   PREMIUM: {
     quotaMonth: -1,
-    priceEur: 7.99,
+    priceEur: 8.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PREMIUM_PRICE_ID",
-    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 5, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 5, historialTtlDies: 0 },
+    features: { comparador: true, exportCsv: false, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: false, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 5, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: -1, historialTtlDies: -1, normativaCompleta: true, alertes: true },
   },
   PRO: {
     quotaMonth: -1,
-    priceEur: 19.99,
+    priceEur: 24.99,
     comparatorMax: 6,
     stripePriceEnv: "STRIPE_PRO_AGENTS_PRICE_ID",
-    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 30, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: 30, historialTtlDies: -1 },
+    features: { comparador: true, exportCsv: true, historial: true, preferits: true, pdfMunicipi: true, pdfEdifici: true, referenciaAmpliada: true, indicadorsTerritorials: true, comparadorAvancat: true, pdfMonth: 30, evolucioTemporal: true, comparativaTerritorial: true, valoracio: true, valoracionsMonth: -1, historialTtlDies: -1, normativaCompleta: true, alertes: true },
   },
 };
 
@@ -167,8 +182,9 @@ export async function pdfLimitForPlan(plan: PlanId): Promise<number> {
 
 /** FASE 1 (plans migració progressiva) — accés a l'historial de consultes segons
  *  els features efectius del pla:
- *   - full: historial complet sense límit de temps (features.historial actiu,
- *     avui només quan la BD el tingui actiu — Pro; mai canviem el vigent).
+ *   - full: historial complet sense límit de temps (features.historial actiu:
+ *     Pro de sempre i, des de la FASE 2, Premium — «historial il·limitat» és un
+ *     dels 4 punts «Nou» del pla; la migració 20261118130000 alinea la BD).
  *   - ttlDies: dies que es guarden les consultes quan full=false (Gratuït = 7;
  *     0 = sense historial → upsell, comportament vigent intacte).
  *  Pura i sense BD: testable directament (plans_fase1). */
