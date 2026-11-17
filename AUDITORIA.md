@@ -213,10 +213,18 @@ neteja, només proposta):
 
 ## J. Qualitat lingüística (ca/es — filologia)
 
-- **J-0 (verificat)** Auditor automàtic (castellanismes a ca, errades
-  ortogràfiques, espais): **117 incidències analitzades → 0 reals** (totes
-  INFO fals-positiu — «mes», «renta» són català vàlid — i 1 «errada» que és la
-  URL `#/analisi`). La copy ca és neta ortogràficament.
+- **J-0 (actualitzat v56)** Auditor automàtic (castellanismes a ca, errades
+  ortogràfiques, espais): **117 incidències analitzades → 0 errades
+  ortogràfiques reals**. NOTA: la ronda inicial considerà «renta» català
+  vàlid (Optimot admet variants econòmiques), però la **decisió
+  terminològica del PROPIETARI (obligatòria, v56)** prevaleix: a ca
+  «renta»→«renda», «vivenda»→«habitatge» i «estima/estimar»→«valora/valorar»
+  a AMBDUES llengües. Taula completa + glosari: **`docs/linguistica.md`**.
+  Criteri d'acceptació verificat amb barrida automatitzada sense comentaris:
+  **0 strings user-facing amb «vivenda», «renta» (ca) o arrel «estima-»**
+  (els identificadors de codi — ruta `/estima`, clau i18n `estima.*`, camp
+  API `estimation`, paràmetre `source=estimat` — es conserven com a noms
+  tècnics, decisió documentada).
 - **J-1 (verificat)** 0 catalanismes clars a es: els 4 matches de grep són
   marques/URLs legítimes (Incasòl, habitatge.gencat.cat).
 - **J-2 (tancat v51)** Títols SEO doblats i «Faq» sense traduir al títol.

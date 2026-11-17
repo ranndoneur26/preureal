@@ -16,7 +16,7 @@ const CAPTURES = [
   { img: "/usos/mapa-inquilino.jpg", alt: "Mapa del lloguer real amb Barcelona carregada, buscador i llegenda de preus", data: "11-11-2026" },
   { img: "/usos/comparador-agente.jpg", alt: "Comparador immobiliari amb exemples de municipis (Barcelona, Girona, Tarragona, Lleida, Sabadell, Badalona)", data: "11-11-2026" },
   { img: "/usos/fitxa-periodista.jpg", alt: "Fitxa pública de Barcelona: 1.135 €/mes, sèrie històrica 2005-2025 i marca d'àrea tensada", data: "11-11-2026" },
-  { img: "/usos/analitza-inquilino.jpg", alt: "Analitzador d'una vivenda concreta: característiques, renda oferta i informe A-D (v45)", data: "16-11-2026" },
+  { img: "/usos/analitza-inquilino.jpg", alt: "Analitzador d'un habitatge concret: característiques, renda oferta i informe A-D (v45)", data: "16-11-2026" },
   { img: "/usos/analisi-analista.jpg", alt: "Anàlisi del mercat residencial: sèries creuades de preu, contractes, població i volum (v45)", data: "16-11-2026" },
 ];
 
@@ -34,7 +34,7 @@ export default function UsosView() {
             "Cerques el teu municipi al mapa (els 947 de Catalunya tenen dada oficial de fiances).",
             "Fes clic sobre l'edifici concret (cartografia real de l'ICGC) i veus el preu mitjà registrat oficialment.",
             "Introdueixes la renda que t'ofereixen: la fitxa et diu en quin percentatge està per sobre o per sota del preu real.",
-            "Obres l'eina de consulta d'una vivenda concreta (gratuït amb registre): preu de referència del municipi, comparativa per característiques (estimació orientativa, mai taxació), normativa aplicable (àrea tensada, índex de referència, IRAV) i serveis propers en un informe A-D imprimible.",
+            "Obres l'eina de consulta d'un habitatge concret (gratuït amb registre): preu de referència del municipi, comparativa per característiques (referència orientativa, mai taxació), normativa aplicable (àrea tensada, índex de referència, IRAV) i serveis propers en un informe A-D imprimible.",
             "Comproves si el municipi és àrea de mercat residencial tensat (regulació de preus vigent del DOGC).",
           ],
           captures: [0, 3],
@@ -77,7 +77,7 @@ export default function UsosView() {
             "Buscas tu municipio en el mapa (los 947 de Cataluña tienen dato oficial de fianzas).",
             "Haces clic sobre el edificio concreto (cartografía real del ICGC) y ves el precio medio registrado oficialmente.",
             "Introduces la renta que te ofrecen: la ficha te dice en qué porcentaje está por encima o por debajo del precio real.",
-            "Abres la herramienta de consulta de una vivienda concreta (gratuito con registro): precio de referencia del municipio, comparativa por características (estimación orientativa, nunca tasación), normativa aplicable (área tensionada, índice de referencia, IRAV) y servicios cercanos en un informe A-D imprimible.",
+            "Abres la herramienta de consulta de una vivienda concreta (gratuito con registro): precio de referencia del municipio, comparativa por características (referencia orientativa, nunca tasación), normativa aplicable (área tensionada, índice de referencia, IRAV) y servicios cercanos en un informe A-D imprimible.",
             "Compruebas si el municipio es área de mercado residencial tensionado (regulación de precios vigente del DOGC).",
           ],
           captures: [0, 3],

@@ -446,7 +446,7 @@ export default function ComparadorView() {
                         </span>
                       )}
                       {r.rentLatest == null && r.comarcaRefLatest != null && (
-                        <span className="text-ambertext">{ca ? "≈ referència de comarca (estimació, sense dada municipal oficial)" : "≈ referencia de comarca (estimación, sin dato municipal oficial)"}</span>
+                        <span className="text-ambertext">{ca ? "≈ referència de comarca (aproximació, sense dada municipal oficial)" : "≈ referencia de comarca (aproximación, sin dato municipal oficial)"}</span>
                       )}
                       {r.rentLatest == null && r.comarcaRefLatest == null && <span className="text-ember3">{ca ? "sense dades oficials per aquest municipi (no s'inventa)" : "sin datos oficiales para este municipio (no se inventa)"}</span>}
                     </div>
@@ -500,7 +500,7 @@ export default function ComparadorView() {
                         )}
                         {r.rentalShare?.estimatPct != null && (
                           <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-embersoft text-ember3">
-                            {ca ? "% estimat sobre parc residencial" : "% estimado sobre parque residencial"} {r.rentalShare.estimatPct.toFixed(1).replace(".", ",")} %
+                            {ca ? "% aproximat sobre parc residencial" : "% aproximado sobre parque residencial"} {r.rentalShare.estimatPct.toFixed(1).replace(".", ",")} %
                           </span>
                         )}
                         {r.rentalShare?.flujoLatest != null && (
@@ -629,8 +629,8 @@ export default function ComparadorView() {
           </h2>
           <p className="mt-1 text-sm text-moss">
             {ca
-              ? "Tria municipis amb el cercador de dalt o toca un dels exemples. Els preus són la mitjana oficial de fiances Incasòl, no una estimació."
-              : "Elige municipios con el buscador de arriba o toca uno de los ejemplos. Los precios son la media oficial de fianzas Incasòl, no una estimación."}
+              ? "Tria municipis amb el cercador de dalt o toca un dels exemples. Els preus són la mitjana oficial de fiances Incasòl, no un càlcul."
+              : "Elige municipios con el buscador de arriba o toca uno de los ejemplos. Los precios son la media oficial de fianzas Incasòl, no un cálculo."}
           </p>
           <div className="mt-3 flex gap-2 flex-wrap">
             {[

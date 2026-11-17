@@ -62,7 +62,7 @@ const EDAT_SOURCE = {
   unit: "habitants",
   periodicity: "ANUAL",
   methodology:
-    "Sèries d'edats quinquennals (API Taules pmh/9548/10494) agregades en grans grups oficials: 0-14, 15-64, 65-84 i 85 o més. Un grup només es desa si TOTS els components quinquennals de l'any existeixen (mai s'estima la part que falta). Distribució vigent: grans grups directes d'emex (IDESCAT_EMEX).",
+    "Sèries d'edats quinquennals (API Taules pmh/9548/10494) agregades en grans grups oficials: 0-14, 15-64, 65-84 i 85 o més. Un grup només es desa si TOTS els components quinquennals de l'any existeixen (mai s'interpol·la la part que falta). Distribució vigent: grans grups directes d'emex (IDESCAT_EMEX).",
 };
 
 const NAC_SOURCE = {

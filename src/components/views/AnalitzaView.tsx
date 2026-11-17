@@ -102,8 +102,8 @@ export default function AnalitzaView() {
           </h1>
           <p className="mt-3 text-moss leading-relaxed">
             {ca
-              ? "Compara el preu de l'anunci amb la referència oficial registrada (fiances Incasòl) i obtens un informe transparent abans de signar: comparació estadística del preu, comprovacions normatives de la zona i serveis propers. Dades oficials i estimacions sempre separades i explicades. Aquesta eina NO valora el teu habitatge."
-              : "Compara el precio del anuncio con la referencia oficial registrada (fianzas Incasòl) y obtén un informe transparente antes de firmar: comparación estadística del precio, comprobaciones normativas de la zona y servicios próximos. Datos oficiales y estimaciones siempre separados y explicados. Esta herramienta NO valora tu vivienda."}
+              ? "Compara el preu de l'anunci amb la referència oficial registrada (fiances Incasòl) i obtens un informe transparent abans de signar: comparació estadística del preu, comprovacions normatives de la zona i serveis propers. Dades oficials i càlculs orientatius sempre separats i explicats. Aquesta eina NO valora el teu habitatge."
+              : "Compara el precio del anuncio con la referencia oficial registrada (fianzas Incasòl) y obtén un informe transparente antes de firmar: comparación estadística del precio, comprobaciones normativas de la zona y servicios próximos. Datos oficiales y cálculos orientativos siempre separados y explicados. Esta herramienta NO valora tu vivienda."}
           </p>
           <p className="mt-2 text-xs text-stone leading-relaxed">
             {ca ? ORIENTATION_DISCLAIMER.ca : ORIENTATION_DISCLAIMER.es}
@@ -113,7 +113,7 @@ export default function AnalitzaView() {
         <div className="mt-8 grid lg:grid-cols-2 gap-8 items-start">
           {/* formulari + mapa */}
           <div className="rounded-2xl border border-line bg-card p-5 md:p-6 shadow-xl shadow-black/5">
-            <h2 className="font-extrabold text-lg mb-1">{ca ? "Les dades de la vivenda" : "Los datos de la vivienda"}</h2>
+            <h2 className="font-extrabold text-lg mb-1">{ca ? "Les dades de l'habitatge" : "Los datos de la vivienda"}</h2>
             <p className="text-xs text-stone mb-4">{ca ? "Només el municipi i el preu són obligatoris — la resta millora la precisió." : "Solo el municipio y el precio son obligatorios — el resto mejora la precisión."}</p>
             <AnalitzaForm
               variant="full"

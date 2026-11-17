@@ -47,7 +47,7 @@ export const RS_CENS_SOURCE = {
   unit: "viviendas principales",
   periodicity: "CENSAL",
   methodology:
-    "Taula censph/310/20419 de l'API Taules (JSON-stat): viviendas principals per règim de tinença (PROPERTY / RENTAL / OTH / _U). Cobertura municipal: 615 de 947 municipis + Catalunya; els municipis petits resten a agrupacions censals (/ac). El Cens 2021 publica resultats arrodonits aleatòriament a múltiples de 3 (secret estadístic). Funció a PreuReal: referència censal oficial de contrast (mai numerador del % estimat).",
+    "Taula censph/310/20419 de l'API Taules (JSON-stat): viviendas principals per règim de tinença (PROPERTY / RENTAL / OTH / _U). Cobertura municipal: 615 de 947 municipis + Catalunya; els municipis petits resten a agrupacions censals (/ac). El Cens 2021 publica resultats arrodonits aleatòriament a múltiples de 3 (secret estadístic). Funció a PreuReal: referència censal oficial de contrast (mai numerador del % aproximat).",
 };
 
 export const RS_FLUX_SOURCE = {
@@ -59,7 +59,7 @@ export const RS_FLUX_SOURCE = {
   unit: "contractes amb fiança depositada (flux anual)",
   periodicity: "TRIMESTRAL",
   methodology:
-    `Dataset ${FLUX_DATASET} «Preu mitjà del lloguer d'habitatges per municipi»: habitatges = contractes donats d'alta al Registre de fiances en el període considerat. PreuReal importa NOMÉS el període anual (gener-desembre), nivell municipi, com a referència de mercat. És un FLUX (operacions de l'any), mai un estoc: no s'utilitza com a numerador del % estimat de lloguer sobre el parc.`,
+    `Dataset ${FLUX_DATASET} «Preu mitjà del lloguer d'habitatges per municipi»: habitatges = contractes donats d'alta al Registre de fiances en el període considerat. PreuReal importa NOMÉS el període anual (gener-desembre), nivell municipi, com a referència de mercat. És un FLUX (operacions de l'any), mai un estoc: no s'utilitza com a numerador del % aproximat de lloguer sobre el parc.`,
 };
 
 export const RS_VIGENTS_SOURCE = {
@@ -71,7 +71,7 @@ export const RS_VIGENTS_SOURCE = {
   unit: "fiances vigents (estoc)",
   periodicity: "PENDENT",
   methodology:
-    "Numerador oficial del % estimat. VERIFICAT 2026-11-15: no existeix publicació municipal oberta de fiances vigents (el catàleg de Dades Obertes només publica flux qww9-bvhh, i el saldo net d'alta/baixa és XLSX agregat només per a Catalunya). Conector: POST /api/admin/import-rental-share — s'activarà quan hi hagi dades oficials. El flux anual MAI el substitueix.",
+    "Numerador oficial del % aproximat. VERIFICAT 2026-11-15: no existeix publicació municipal oberta de fiances vigents (el catàleg de Dades Obertes només publica flux qww9-bvhh, i el saldo net d'alta/baixa és XLSX agregat només per a Catalunya). Conector: POST /api/admin/import-rental-share — s'activarà quan hi hagi dades oficials. El flux anual MAI el substitueix.",
 };
 
 export const RS_PARC_SOURCE = {
@@ -83,12 +83,12 @@ export const RS_PARC_SOURCE = {
   unit: "immobles d'ús residencial (estoc)",
   periodicity: "PENDENT",
   methodology:
-    "Denominador oficial del % estimat: immobles amb ús principal residencial (exclou locals, oficines, garatges i trasters). VERIFICAT 2026-11-15: el portal del DNP i la disseminació INE no són accessibles des de l'entorn de treball (DNS bloquejat); descàrrega pendent de verificació. Conector: POST /api/admin/import-rental-share — s'activarà quan la font estigui verificada.",
+    "Denominador oficial del % aproximat: immobles amb ús principal residencial (exclou locals, oficines, garatges i trasters). VERIFICAT 2026-11-15: el portal del DNP i la disseminació INE no són accessibles des de l'entorn de treball (DNS bloquejat); descàrrega pendent de verificació. Conector: POST /api/admin/import-rental-share — s'activarà quan la font estigui verificada.",
 };
 
 export const RS_CALC_SOURCE = {
   code: "PREUREAL_CALC_RENTAL_SHARE",
-  name: "PreuReal — indicador compost «% estimat de lloguer sobre el parc residencial»",
+  name: "PreuReal — indicador compost «% aproximat de lloguer sobre el parc residencial»",
   institution: "PreuReal (elaboració pròpia a partir de components oficials)",
   url: "https://www.preureal.com/metodologia",
   license: "—",
@@ -517,8 +517,8 @@ export async function recalcRentalShare(
 
 export const RENTAL_SHARE_METODOLOGIA = {
   formula: "(fiances vigents INCASÒL / immobles d'ús residencial del Cadastre) × 100",
-  ca: "El percentatge estimat de vivendes en lloguer es calcula dividint el nombre de fiances vigents registrades a l'INCASÒL entre el nombre d'immobles d'ús residencial del Cadastre, multiplicat per 100. Aquest indicador permet aproximar el pes del lloguer sobre el parc residencial de cada municipi. No equival exactament al percentatge censal de vivendes principals en lloguer, perquè el Cadastre no distingeix entre vivendes principals, secundàries i buides. Els resultats són una elaboració estadística pròpia a partir de fonts oficials. El contrast censal oficial (Cens de població i habitatges 2021, sobre vivendes principals) es mostra sempre per separat, amb el seu any de referència.",
-  es: "El porcentaje estimado de viviendas en alquiler se calcula dividiendo el número de fianzas vigentes registradas en INCASÒL entre el número de inmuebles de uso residencial del Catastro, multiplicado por 100. Este indicador permite aproximar el peso del alquiler sobre el parque residencial de cada municipio. No equivale exactamente al porcentaje censal de viviendas principales en alquiler, ya que el Catastro no distingue entre viviendas principales, secundarias y vacías. Los resultados son una elaboración estadística propia a partir de fuentes oficiales. El contraste censal oficial (Censo de población y viviendas 2021, sobre viviendas principales) se muestra siempre por separado, con su año de referencia.",
+  ca: "El percentatge aproximat de vivendes en lloguer es calcula dividint el nombre de fiances vigents registrades a l'INCASÒL entre el nombre d'immobles d'ús residencial del Cadastre, multiplicat per 100. Aquest indicador permet aproximar el pes del lloguer sobre el parc residencial de cada municipi. No equival exactament al percentatge censal de vivendes principals en lloguer, perquè el Cadastre no distingeix entre vivendes principals, secundàries i buides. Els resultats són una elaboració estadística pròpia a partir de fonts oficials. El contrast censal oficial (Cens de població i habitatges 2021, sobre vivendes principals) es mostra sempre per separat, amb el seu any de referència.",
+  es: "El porcentaje aproximado de viviendas en alquiler se calcula dividiendo el número de fianzas vigentes registradas en INCASÒL entre el número de inmuebles de uso residencial del Catastro, multiplicado por 100. Este indicador permite aproximar el peso del alquiler sobre el parque residencial de cada municipio. No equivale exactamente al porcentaje censal de viviendas principales en alquiler, ya que el Catastro no distingue entre viviendas principales, secundarias y vacías. Los resultados son una elaboración estadística propia a partir de fuentes oficiales. El contraste censal oficial (Censo de población y viviendas 2021, sobre viviendas principales) se muestra siempre por separado, con su año de referencia.",
   limitations: [
     "INCASÒL: pot haver-hi contractes sense fiança depositada, retards en altes/baixes, fiances que no equivalen a vivendes úniques i modalitats amb tractament estadístic diferent.",
     "Cadastre: pot incloure immobles que no siguin vivendes habitables i no distingeix principals/secundàries/buides; pot haver-hi diferències entre immobles catastrals i vivendes físiques.",

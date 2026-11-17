@@ -345,7 +345,7 @@ export default function AnalitzaForm({
       {/* adreça (ICGC) */}
       <div ref={geoBoxRef} className="relative">
         <label className={labelCls} htmlFor="analitza-addr">
-          {ca ? "Adreça de la vivenda (opcional)" : "Dirección de la vivienda (opcional)"}
+          {ca ? "Adreça de l'habitatge (opcional)" : "Dirección de la vivienda (opcional)"}
         </label>
         <input
           id="analitza-addr"
@@ -423,7 +423,7 @@ export default function AnalitzaForm({
           </div>
           <div>
             <label className={labelCls} htmlFor="analitza-ant">
-              {ca ? "Renta del contracte anterior (€/mes)" : "Renta del contrato anterior (€/mes)"}
+              {ca ? "Renda del contracte anterior (€/mes)" : "Renta del contrato anterior (€/mes)"}
             </label>
             <input id="analitza-ant" type="number" min={50} max={20000} className={inputCls} value={v.previousRent} onChange={(e) => set({ previousRent: e.target.value })} />
           </div>
@@ -446,7 +446,7 @@ export default function AnalitzaForm({
           <p className="mt-1 text-[11px] text-stone">
             {v.lat != null && v.lng != null
               ? `${ca ? "Punt marcat" : "Punto marcado"}: ${v.lat.toFixed(5)}, ${v.lng.toFixed(5)}`
-              : (ca ? "Clic al mapa per marcar la ubicació de la vivenda (cartografia ICGC)." : "Haz clic en el mapa para marcar la ubicación de la vivienda (cartografía ICGC).")}
+              : (ca ? "Clic al mapa per marcar la ubicació de l'habitatge (cartografia ICGC)." : "Haz clic en el mapa para marcar la ubicación de la vivienda (cartografía ICGC).")}
           </p>
         </div>
       )}

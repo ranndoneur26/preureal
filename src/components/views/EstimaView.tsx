@@ -27,15 +27,15 @@ export default function EstimaView() {
   const passos = ca
     ? [
         { icon: <MapPin className="w-5 h-5" />, t: "1 · Municipi", d: "Trieu el municipi de l'habitatge: la base és la fiança mitjana registrada a Incasòl per aquell municipi (dada oficial, amb període i nº de contractes visibles)." },
-        { icon: <Ruler className="w-5 h-5" />, t: "2 · Superfície i característiques", d: "Introduïu els m² aproximats: la base s'escala amb elasticitat renta-superfície documentada (0,8) sobre la vivenda típica de 85 m². Estat de conservació i habitacions són OPCIONALS: són els únics ajustos amb coeficient documentat (N2)." },
+        { icon: <Ruler className="w-5 h-5" />, t: "2 · Superfície i característiques", d: "Introduïu els m² aproximats: la base s'escala amb elasticitat renda-superfície documentada (0,8) sobre l'habitatge típic de 85 m². Estat de conservació i habitacions són OPCIONALS: són els únics ajustos amb coeficient documentat (N2)." },
         { icon: <ListChecks className="w-5 h-5" />, t: "3 · Rang mesurat", d: "L'horquilla no s'inventa: és la dispersió relativa MESURADA dels municipis de la comarca (≥5 amb dada; si no, província ≥10; si no, sèrie històrica)." },
-        { icon: <ShieldCheck className="w-5 h-5" />, t: "4 · Traçabilitat i límits", d: "Veureu font, període, nº contractes, fórmula i confiança; si la zona no té mostra suficient, ho direm clarament i t'oferirem SERPAVI — mai una estimació poc fiable en silenci." },
+        { icon: <ShieldCheck className="w-5 h-5" />, t: "4 · Traçabilitat i límits", d: "Veureu font, període, nº contractes, fórmula i confiança; si la zona no té mostra suficient, ho direm clarament i t'oferirem SERPAVI — mai cap càlcul poc fiable en silenci." },
       ]
     : [
         { icon: <MapPin className="w-5 h-5" />, t: "1 · Municipio", d: "Elige el municipio de la vivienda: la base es la fianza media registrada en Incasòl para ese municipio (dato oficial, con período y nº de contratos visibles)." },
         { icon: <Ruler className="w-5 h-5" />, t: "2 · Superficie y características", d: "Introduce los m² aproximados: la base se escala con elasticidad renta-superficie documentada (0,8) sobre la vivienda típica de 85 m². Estado de conservación y habitaciones son OPCIONALES: son los únicos ajustes con coeficiente documentado (N2)." },
         { icon: <ListChecks className="w-5 h-5" />, t: "3 · Rango medido", d: "La horquilla no se inventa: es la dispersión relativa MEDIDA de los municipios de la comarca (≥5 con dato; si no, provincia ≥10; si no, serie histórica)." },
-        { icon: <ShieldCheck className="w-5 h-5" />, t: "4 · Trazabilidad y límites", d: "Verás fuente, período, nº contratos, fórmula y confianza; si la zona no tiene muestra suficiente, lo diremos claramente y te ofreceremos SERPAVI — nunca una estimación poco fiable en silencio." },
+        { icon: <ShieldCheck className="w-5 h-5" />, t: "4 · Trazabilidad y límites", d: "Verás fuente, período, nº contratos, fórmula y confianza; si la zona no tiene muestra suficiente, lo diremos claramente y te ofreceremos SERPAVI — nunca un cálculo poco fiable en silencio." },
       ];
 
   return (
@@ -48,12 +48,12 @@ export default function EstimaView() {
             {ca ? "Nou · nivells N1 + N2 · gratuït amb registre Free" : "Nuevo · niveles N1 + N2 · gratuito con registro Free"}
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            {ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda"}
+            {ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda"}
           </h1>
           <p className="mt-3 text-moss leading-relaxed">
             {ca
-              ? "Una estimació progressiva per passos: el nivell N1 calcula un RANG orientatiu amb la base oficial registrada (fiances Incasòl) escalada per superfície, i el nivell N2 hi afegeix els ajustos opcionals amb coeficient documentat (estat de conservació i habitacions). Cada xifra ve amb la seva font, el període, els contractes, els ajustos amb el seu factor i les limitacions. Aquesta eina NO fa taxacions ni valoracions individualitzades."
-              : "Una estimación progresiva por pasos: el nivel N1 calcula un RANGO orientativo con la base oficial registrada (fianzas Incasòl) escalada por superficie, y el nivel N2 añade los ajustos opcionales con coeficiente documentado (estado de conservación y habitaciones). Cada cifra viene con su fuente, el período, los contratos, los ajustos con su factor y las limitaciones. Esta herramienta NO hace tasaciones ni valoraciones individualizadas."}
+              ? "Una valoració progressiva per passos: el nivell N1 calcula un RANG orientatiu amb la base oficial registrada (fiances Incasòl) escalada per superfície, i el nivell N2 hi afegeix els ajustos opcionals amb coeficient documentat (estat de conservació i habitacions). Cada xifra ve amb la seva font, el període, els contractes, els ajustos amb el seu factor i les limitacions. Aquesta eina NO fa taxacions oficials ni avaluacions individualitzades."
+              : "Una valoración progresiva por pasos: el nivel N1 calcula un RANGO orientativo con la base oficial registrada (fianzas Incasòl) escalada por superficie, y el nivel N2 añade los ajustos opcionales con coeficiente documentado (estado de conservación y habitaciones). Cada cifra viene con su fuente, el período, los contratos, los ajustos con su factor y las limitaciones. Esta herramienta NO hace tasaciones oficiales ni evaluaciones individualizadas."}
           </p>
           <p className="mt-2 text-xs text-stone leading-relaxed">
             {ca ? ORIENTATION_DISCLAIMER.ca : ORIENTATION_DISCLAIMER.es}

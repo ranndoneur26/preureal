@@ -593,8 +593,8 @@ export default function MapView() {
             ? "Nau industrial · sense estadística de lloguer d'habitatges"
             : "Nave industrial · sin estadística de alquiler de viviendas")
           : (locale === "ca"
-            ? "≈ Estimació per referència de comarca (municipi sense dada oficial)"
-            : "≈ Estimación por referencia de comarca (municipio sin dato oficial)");
+            ? "≈ Aproximació per referència de comarca (municipi sense dada oficial)"
+            : "≈ Aproximación por referencia de comarca (municipio sin dato oficial)");
         poly.bindTooltip(tip, { sticky: true, direction: "top", opacity: 0.9 });
       }
       poly.on("click", (e: any) => {
@@ -1181,7 +1181,7 @@ export default function MapView() {
                       {m.rentLatest ? (
                         <span className="font-bold text-pine">{Math.round(m.rentLatest)} €/mes</span>
                       ) : m.comarcaRefLatest ? (
-                        <span className="italic text-ambertext" title={locale === "ca" ? "Referència de comarca (estimació)" : "Referencia de comarca (estimación)"}>
+                        <span className="italic text-ambertext" title={locale === "ca" ? "Referència de comarca (aproximació)" : "Referencia de comarca (aproximación)"}>
                           ≈{Math.round(m.comarcaRefLatest)} €
                         </span>
                       ) : (

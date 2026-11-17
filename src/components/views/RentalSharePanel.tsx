@@ -92,7 +92,7 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
           {c?.rentalPercentage != null ? (
             <div className="rounded-lg bg-sand/60 px-3 py-2">
               <div className="text-[10px] font-semibold text-stone uppercase tracking-wide">
-                {ca ? "% estimat de lloguer sobre el parc residencial" : "% estimado de alquiler sobre el parque residencial"}
+                {ca ? "% aproximat de lloguer sobre el parc residencial" : "% aproximado de alquiler sobre el parque residencial"}
               </div>
               <div className="text-2xl font-black text-ember3 leading-tight">{fmtPct(c.rentalPercentage)}%</div>
               <div className="text-[10px] text-stone">
@@ -110,7 +110,7 @@ export default function RentalSharePanel({ muniCode }: { muniCode: string }) {
             </div>
           ) : (
             <div className="rounded-lg bg-sand/60 px-3 py-2 text-[11px] text-moss leading-relaxed">
-              <b className="text-pine">{ca ? "% estimat de lloguer sobre el parc residencial — sense informació suficient" : "% estimado de alquiler sobre el parque residencial — sin información suficiente"}.</b>{" "}
+              <b className="text-pine">{ca ? "% aproximat de lloguer sobre el parc residencial — sense informació suficient" : "% aproximado de alquiler sobre el parque residencial — sin información suficiente"}.</b>{" "}
               {ca
                 ? "El numerador (fiances vigents Incasòl) i el denominador (parc residencial catastral) no tenen publicació oficial municipal oberta encara. Mai s'inventen valors."
                 : "El numerador (fianzas vigentes Incasòl) y el denominador (parque residencial catastral) no tienen todavía publicación oficial municipal abierta. Nunca se inventan valores."}

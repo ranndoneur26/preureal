@@ -84,39 +84,39 @@ export type Locale2 = "ca" | "es";
 
 export const NORM_CHECK_LABELS: Record<string, { ca: string; es: string }> = {
   "ZONA_TENSADA|MUNI_TENSAT": {
-    ca: "Municipi en zona de mercat residencial tensat (Resolucions TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026): els límits de renta del nou contracte d'habitatge habitual apliquen.",
+    ca: "Municipi en zona de mercat residencial tensat (Resolucions TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026): els límits de renda del nou contracte d'habitatge habitual apliquen.",
     es: "Municipio en zona de mercado residencial tensionado (Resoluciones TER/3739/2026 y TER/3740/2026, DOGC 19-10-2026): aplican los límites de renta del nuevo contrato de vivienda habitual.",
   },
   "ZONA_TENSADA|MUNI_NO_TENSAT": {
-    ca: "Municipi fora de les zones tensades vigents: sense límits de renta de nous contractes de la Llei 12/2023.",
+    ca: "Municipi fora de les zones tensades vigents: sense límits de renda de nous contractes de la Llei 12/2023.",
     es: "Municipio fuera de las zonas tensionadas vigentes: sin límites de renta de nuevos contratos de la Ley 12/2023.",
   },
   "LIMIT_RENTA_ART172|TEMPORADA_FORA_LIMIT": {
-    ca: "Contracte de temporada (ús diferent d'habitatge habitual, LAU art. 3): fora dels límits de renta de l'art. 17.2; les altres regles del contracte apliquen igualment.",
+    ca: "Contracte de temporada (ús diferent d'habitatge habitual, LAU art. 3): fora dels límits de renda de l'art. 17.2; les altres regles del contracte apliquen igualment.",
     es: "Contrato de temporada (uso distinto de vivienda habitual, LAU art. 3): fuera de los límites de renta del art. 17.2; las demás reglas del contrato aplican igualmente.",
   },
   "LIMIT_RENTA_ART172|HABITACIO_FORA_LIMIT": {
-    ca: "Lloguer d'habitació: fora dels límits de renta de l'art. 17.2; comprova sempre la cèdula d'habitabilitat i les regles de convivència del contracte.",
+    ca: "Lloguer d'habitació: fora dels límits de renda de l'art. 17.2; comprova sempre la cèdula d'habitabilitat i les regles de convivència del contracte.",
     es: "Alquiler de habitación: fuera de los límites de renta del art. 17.2; comprueba siempre la cédula de habitabilidad y las reglas de convivencia del contrato.",
   },
   "LIMIT_RENTA_ART172|NO_TENSAT_LLIURE": {
-    ca: "Municipi no tensat: la renta d'un contracte nou es pot acordar lliurement (l'actualització anual segueix limitada per l'IRAV).",
+    ca: "Municipi no tensat: la renda d'un contracte nou es pot acordar lliurement (l'actualització anual segueix limitada per l'IRAV).",
     es: "Municipio no tensionado: la renta de un contrato nuevo se puede acordar libremente (la actualización anual sigue limitada por el IRAV).",
   },
   "LIMIT_RENTA_ART172|FALTA_RENTA_ANTERIOR": {
-    ca: "Requereix comprovacions addicionals: cal saber si hi ha hagut contracte d'habitatge en els 5 anys anteriors i amb quina renta. En zona tensada, la renta nova no pot superar la darrera renta (excepcions tipificades amb màxim +10 %).",
+    ca: "Requereix comprovacions addicionals: cal saber si hi ha hagut contracte d'habitatge en els 5 anys anteriors i amb quina renda. En zona tensada, la renda nova no pot superar la darrera renda (excepcions tipificades amb màxim +10 %).",
     es: "Requiere comprobaciones adicionales: hace falta saber si ha habido contrato de vivienda en los 5 años anteriores y con qué renta. En zona tensionada, la renta nueva no puede superar la última renta (excepciones tipificadas con máximo +10 %).",
   },
   "LIMIT_RENTA_ART172|SUPERIOR_ANTERIOR": {
-    ca: "Possible incompliment: revisar. La renta introduïda supera la del contracte anterior i el municipi és zona tensada: la renta nova no pot superar la darrera renta dels 5 anys anteriors (les excepcions —rehabilitació, eficiència energètica, accessibilitat o llarga durada— permeten màxim +10 %). Comprova-ho amb la calculadora oficial.",
+    ca: "Possible incompliment: revisar. La renda introduïda supera la del contracte anterior i el municipi és zona tensada: la renda nova no pot superar la darrera renda dels 5 anys anteriors (les excepcions —rehabilitació, eficiència energètica, accessibilitat o llarga durada— permeten màxim +10 %). Comprova-ho amb la calculadora oficial.",
     es: "Posible incumplimiento: revisar. La renta introducida supera la del contrato anterior y el municipio es zona tensionada: la renta nueva no puede superar la última renta de los 5 años anteriores (las excepciones —rehabilitación, eficiencia energética, accesibilidad o larga duración— permiten máximo +10 %). Compruébalo con la calculadora oficial.",
   },
   "LIMIT_RENTA_ART172|NO_SUPERIOR_ANTERIOR": {
-    ca: "Compatible amb les dades consultades: la renta introduïda no supera la del contracte anterior (mantén l'evidència: contracte anterior amb les seves clàusules d'actualització).",
+    ca: "Compatible amb les dades consultades: la renda introduïda no supera la del contracte anterior (mantén l'evidència: contracte anterior amb les seves clàusules d'actualització).",
     es: "Compatible con los datos consultados: la renta introducida no supera la del contrato anterior (conserva la evidencia: contrato anterior con sus cláusulas de actualización).",
   },
   "GRAN_TENEDOR_SERPAVI|CONSULTA_SERPAVI": {
-    ca: "Requereix comprovacions addicionals: si l'arrendador és gran tenedor (10+ vivendes, o 5+ dins la mateixa zona tensada — LAU art. 2), la renta no pot superar l'índex de referència estatal per parcel·la (SERPAVI, obligatori des del 8-10-2026). Consulta la calculadora oficial del MIVAU amb la referència catastral.",
+    ca: "Requereix comprovacions addicionals: si l'arrendador és gran tenedor (10+ vivendes, o 5+ dins la mateixa zona tensada — LAU art. 2), la renda no pot superar l'índex de referència estatal per parcel·la (SERPAVI, obligatori des del 8-10-2026). Consulta la calculadora oficial del MIVAU amb la referència catastral.",
     es: "Requiere comprobaciones adicionales: si el arrendador es gran tenedor (10+ viviendas, o 5+ dentro de la misma zona tensionada — LAU art. 2), la renta no puede superar el índice de referencia estatal por parcela (SERPAVI, obligatorio desde el 8-10-2026). Consulta la calculadora oficial del MIVAU con la referencia catastral.",
   },
   "GRAN_TENEDOR_SERPAVI|NO_APLICA_SERPAVI": {
@@ -124,7 +124,7 @@ export const NORM_CHECK_LABELS: Record<string, { ca: string; es: string }> = {
     es: "El límite del sistema estatal (SERPAVI) para grandes tenedores no aplica a esta combinación de municipio y tipo de contrato.",
   },
   "ACTUALITZACIO_IRAV|IRAV_VIGENT": {
-    ca: "Actualització anual de la renta durant el contracte: màxim IRAV (índex oficial de l'INE; últim valor +2,54 %, setembre 2026). Contractes signats després del 26-5-2023.",
+    ca: "Actualització anual de la renda durant el contracte: màxim IRAV (índex oficial de l'INE; últim valor +2,54 %, setembre 2026). Contractes signats després del 26-5-2023.",
     es: "Actualización anual de la renta durante el contrato: máximo IRAV (índice oficial del INE; último valor +2,54 %, septiembre 2026). Contratos firmados tras el 26-5-2023.",
   },
 };
@@ -175,12 +175,12 @@ export const VERDICT_LABELS: Record<string, { ca: string; es: string }> = {
 export function verdictNote(verdict: PriceVerdict, locale: Locale2): string | null {
   if (verdict === "VERY_BELOW") {
     return locale === "ca"
-      ? "Un preu molt per sota de la referència també cal llegir-lo amb compte: pot ser un anunci esbiaixat (sense despeses, superfície menor de la real) o una vivenda amb problemes d'habitabilitat. Comprova-ho tot abans de signar."
+      ? "Un preu molt per sota de la referència també cal llegir-lo amb compte: pot ser un anunci esbiaixat (sense despeses, superfície menor de la real) o un habitatge amb problemes d'habitabilitat. Comprova-ho tot abans de signar."
       : "Un precio muy por debajo de la referencia también hay que leerlo con cuidado: puede ser un anuncio sesgado (sin gastos, superficie menor de la real) o una vivienda con problemas de habitabilidad. Compruébalo todo antes de firmar.";
   }
   if (verdict === "VERY_ABOVE") {
     return locale === "ca"
-      ? "La diferència és gran respecte al que es registra oficialment al municipi: pot respondre a característiques diferents de la vivenda típica (reformada, més gran, millor ubicació) — o a un preu justificat només parcialment. Usa la banda d'ajust per característiques i pregunta el motiu."
+      ? "La diferència és gran respecte al que es registra oficialment al municipi: pot respondre a característiques diferents de l'habitatge típic (reformada, més gran, millor ubicació) — o a un preu justificat només parcialment. Usa la banda d'ajust per característiques i pregunta el motiu."
       : "La diferencia es grande respecto a lo que se registra oficialmente en el municipio: puede responder a características distintas de la vivienda típica (reformada, más grande, mejor ubicación) — o a un precio justificado solo parcialmente. Usa la banda de ajuste por características y pregunta el motivo.";
   }
   return null;
@@ -255,14 +255,14 @@ export function buildReportHtml(
     [ca ? "Habitacions" : "Habitaciones", i.rooms != null ? String(i.rooms) : "—"],
     [ca ? "Tipus de contracte" : "Tipo de contrato", contractLabel],
     [ca ? "Any de construcció" : "Año de construcción", i.builtYear ?? "—"],
-    [ca ? "Renta del contracte anterior" : "Renta del contrato anterior", i.previousRent ? `${eur(i.previousRent)}/mes` : "—"],
+    [ca ? "Renda del contracte anterior" : "Renta del contrato anterior", i.previousRent ? `${eur(i.previousRent)}/mes` : "—"],
     [ca ? "Notes de l'usuari" : "Notas del usuario", i.notes ?? "—"],
   ];
 
   // A. Preu
   const refLabel = p.referenceScope === "MUNICIPI"
-    ? L({ ca: "Fiança mitjana municipal registrada (Incasòl, vivenda típica)", es: "Fianza media municipal registrada (Incasòl, vivienda típica)" })
-    : L({ ca: "Referència de comarca (ESTIMACIÓ: sense fiança municipal publicada)", es: "Referencia de comarca (ESTIMACIÓN: sin fianza municipal publicada)" });
+    ? L({ ca: "Fiança mitjana municipal registrada (Incasòl, habitatge típic)", es: "Fianza media municipal registrada (Incasòl, vivienda típica)" })
+    : L({ ca: "Referència de comarca (APROXIMACIÓ: sense fiança municipal publicada)", es: "Referencia de comarca (APROXIMACIÓN: sin fianza municipal publicada)" });
   const verdict = p.verdict ? L(VERDICT_LABELS[p.verdict]) : (ca ? "sense referència comparable" : "sin referencia comparable");
   const note = verdictNote(p.verdict, locale);
 
@@ -270,7 +270,7 @@ export function buildReportHtml(
   const neighRows = p.neighbours
     .map((n) => {
       const rentCell = n.rentLatest
-        ? eur(n.rentLatest) + "/mes" + (n.rentSource && n.rentSource !== "INCASOL" ? " (" + (ca ? "estim. comarca" : "estim. comarca") + ")" : "")
+        ? eur(n.rentLatest) + "/mes" + (n.rentSource && n.rentSource !== "INCASOL" ? " (" + (ca ? "aprox. comarca" : "aprox. comarca") + ")" : "")
         : "—";
       return `<tr><td>${esc(n.name)}</td><td>${n.distanceKm.toFixed(1).replace(".", ",")} km</td><td>${rentCell}</td><td>${esc(n.rentPeriod ?? "—")}</td></tr>`;
     })
@@ -351,7 +351,7 @@ ${neighRows ? `<h3>${ca ? "Municipis propers amb dada oficial" : "Municipios pr�
 
 <h2>${ca ? "3. Comprovació normativa" : "3. Comprobación normativa"}</h2>
 <table><tr><th>${ca ? "Estat" : "Estado"}</th><th>${ca ? "Explicació" : "Explicación"}</th></tr>${normRows}</table>
-${data.normative.tense ? `<p class="small"><b>${ca ? "Zona tensada (Llei 12/2023, LAU art. 17.2):" : "Zona tensionada (Ley 12/2023, LAU art. 17.2):"}</b> ${ca ? "els nous contractes d'habitatge habitual de grans tenidors tenen el límit de renta del darrer contracte dels 5 anys anteriors; si l'habitatge porta 5 anys o més sense llogar (o és de nova construcció), el límit és el rang oficial de referència." : "los nuevos contratos de vivienda habitual de grandes tenedores tienen el límite de renta del último contrato de los 5 años anteriores; si la vivienda lleva 5 años o más sin alquilar (o es de nueva construcción), el límite es el rango oficial de referencia."} <a href="${SERPAVI_URL}">${SERPAVI_URL}</a></p>` : ""}
+${data.normative.tense ? `<p class="small"><b>${ca ? "Zona tensada (Llei 12/2023, LAU art. 17.2):" : "Zona tensionada (Ley 12/2023, LAU art. 17.2):"}</b> ${ca ? "els nous contractes d'habitatge habitual de grans tenidors tenen el límit de renda del darrer contracte dels 5 anys anteriors; si l'habitatge porta 5 anys o més sense llogar (o és de nova construcció), el límit és el rang oficial de referència." : "los nuevos contratos de vivienda habitual de grandes tenedores tienen el límite de renta del último contrato de los 5 años anteriores; si la vivienda lleva 5 años o más sin alquilar (o es de nueva construcción), el límite es el rango oficial de referencia."} <a href="${SERPAVI_URL}">${SERPAVI_URL}</a></p>` : ""}
 <p class="small">${ca ? "Consulta oficial del sistema estatal de referència (SERPAVI):" : "Consulta oficial del sistema estatal de referencia (SERPAVI):"} <a href="${esc(data.normative.serpaviUrl)}">${esc(data.normative.serpaviUrl)}</a><br/>
 ${ca ? "Data de consulta normativa:" : "Fecha de consulta normativa:"} ${esc(data.normative.consultedAt)} · ${data.normative.resolutions.map((r) => esc(r)).join(" · ")}<br/>
 ${ca ? "La comprovació és informativa i no substitueix l'assessorament jurídic ni el text vigent de la norma." : "La comprobación es informativa y no sustituye el asesoramiento jurídico ni el texto vigente de la norma."}</p>

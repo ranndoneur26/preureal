@@ -58,8 +58,8 @@ export function reportProduct(kind: ReportKind): ReportProduct {
       priceCents: priceFromEnv("REPORT_PRICE_COMPARATIVA_CENTS", 799),
       nameCa: "Comparativa de municipis",
       nameEs: "Comparativa de municipios",
-      descCa: "PDF comparatiu de fins a 6 municipis: preu vigent, evolució, contractes, àrea tensada i €/m² estimat de l'habitatge típic.",
-      descEs: "PDF comparativo de hasta 6 municipios: precio vigente, evolución, contratos, área tensionada y €/m² estimado de la vivienda típica.",
+      descCa: "PDF comparatiu de fins a 6 municipis: preu vigent, evolució, contractes, àrea tensada i €/m² orientatiu de l'habitatge típic.",
+      descEs: "PDF comparativo de hasta 6 municipios: precio vigente, evolución, contratos, área tensionada y €/m² orientativo de la vivienda típica.",
     },
   };
   return products[kind];

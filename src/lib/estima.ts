@@ -241,7 +241,7 @@ export const ESTIMA_SOURCES = [
   {
     t: "Metodologia del motor de valoració (constants documentades)",
     u: "https://github.com/ranndoneur26/preureal/blob/main/src/lib/territorial.ts",
-    d: "superfície de referència (85 m², Observatori del Lloguer + INE 2023), elasticitat renta-superfície (0,8; estudis hedònics UB/DIW), multiplicadors per estat de conservació (ancoratge Fotocasa 2021) i densitat m²/habitació (±5%)",
+    d: "superfície de referència (85 m², Observatori del Lloguer + INE 2023), elasticitat renda-superfície (0,8; estudis hedònics UB/DIW), multiplicadors per estat de conservació (ancoratge Fotocasa 2021) i densitat m²/habitació (±5%)",
   },
   {
     t: "SERPAVI — Sistema Estatal de Referència de Preus de lloguer (MIVAU)",
@@ -256,12 +256,12 @@ export const ESTIMA_SOURCES = [
 ] as const;
 
 export const ESTIMA_LIMITATIONS = [
-  "LIMIT_N1_BASE_MUNICIPAL: la base és la fiança mitjana MUNICIPAL de la vivenda típica registrada a Incasòl (≈85 m²); l'escalat per superfície és estadístic (elasticitat 0,8 documentada).",
+  "LIMIT_N1_BASE_MUNICIPAL: la base és la fiança mitjana MUNICIPAL de l'habitatge típic registrada a Incasòl (≈85 m²); l'escalat per superfície és estadístic (elasticitat 0,8 documentada).",
   "LIMIT_N2_CARACTERISTIQUES: només s'apliquen els ajustos amb coeficient documentat i validat al motor (estat de conservació i densitat m²/habitació, limitada ±5%). Les altres variables SERPAVI (ascensor, aparcament, any de construcció, moblat, planta, qualificació energètica, piscina, zones comunitàries) NO es demanen ni s'apliquen: sense coeficient documentat, demanar-les seria fer servir dades que el càlcul no usa.",
   "LIMIT_N3_SECCIO_CENSAL: el rang oficial per parcel·la (per secció censal) només el calcula SERPAVI (MIVAU) amb fonts tributàries no públiques en bloc; aquesta eina NO simula consultes oficials ni inventa rangs per secció: sempre ofereix el botó oficial.",
-  "LIMIT_COMARCA_REF: si el municipi no té fiança publicada (mostra petita), la base és la referència de comarca ponderada pel nº de contractes, marcada sempre com a ESTIMACIÓ amb confiança BAIXA — mai dada municipal inventada.",
+  "LIMIT_COMARCA_REF: si el municipi no té fiança publicada (mostra petita), la base és la referència de comarca ponderada pel nº de contractes, marcada sempre com a APROXIMACIÓ amb confiança BAIXA — mai dada municipal inventada.",
   "LIMIT_HORQUILLA_MESURADA: l'amplada del rang és la dispersió relativa mesurada (IQR) del pool territorial (comarca ≥5 municipis amb dada; si no, província ≥10; si no, sèrie històrica municipal) — mai un percentil inventat.",
-  "LIMIT_SERPAVI_LEGAL: aquest rang és una estimació estadística orientativa; el rang amb validesa legal per a la teva parcel·la només el dóna SERPAVI (MIVAU), sobretot en zones tensades i per a grans tenedores.",
+  "LIMIT_SERPAVI_LEGAL: aquest rang és un càlcul estadístic orientatiu; el rang amb validesa legal per a la teva parcel·la només el dóna SERPAVI (MIVAU), sobretot en zones tensades i per a grans tenedores.",
   "LIMIT_HABITABILITAT: superfícies < 20 m² (o < 5 m² per habitació) generen avisos informatius d'habitabilitat (Decret 141/2012) que no alteren el càlcul.",
   "LIMIT_PRIVACITAT: el nivell N1 no demana adreça ni referència catastral; no es guarda cap dada personal ni s'associa la consulta a cap usuari.",
 ] as const;
@@ -315,7 +315,7 @@ export const ESTIMA_VIABILITY: {
       es: "A — aplicada: coeficiente documentado con fuente citada y validado en el motor de cálculo.",
     },
     B: {
-      ca: "B — parcial: la dada existeix en font pública, però sense coeficient d'ajust publicat: no multiplica mai la renta i no es demana aquí.",
+      ca: "B — parcial: la dada existeix en font pública, però sense coeficient d'ajust publicat: no multiplica mai la renda i no es demana aquí.",
       es: "B — parcial: el dato existe en fuente pública, pero sin coeficiente de ajuste publicado: nunca multiplica la renta y no se pide aquí.",
     },
     C: {
@@ -329,7 +329,7 @@ export const ESTIMA_VIABILITY: {
       variable: { ca: "Superfície (m²)", es: "Superficie (m²)" },
       cls: "A",
       tractament: {
-        ca: "APLICADA: la fiança municipal oficial (€/mes de la vivenda típica de 85 m²) s'escala amb elasticitat renta-superfície 0,8.",
+        ca: "APLICADA: la fiança municipal oficial (€/mes de l'habitatge típic de 85 m²) s'escala amb elasticitat renda-superfície 0,8.",
         es: "APLICADA: la fianza municipal oficial (€/mes de la vivienda típica de 85 m²) se escala con elasticidad renta-superficie 0,8.",
       },
       font: "Elasticitat documentada (β 0,8; rang −0,10 a −0,25 en estudis hedònics de Barcelona i Berlín) — src/lib/territorial.ts",
@@ -342,7 +342,7 @@ export const ESTIMA_VIABILITY: {
         ca: "APLICADA: a reformar ×0,80; bon estat ×1,00 (referència del parc); reformada ×1,06; obra nova ×1,12.",
         es: "APLICADA: a reformar ×0,80; buen estado ×1,00 (referencia del parque); reformada ×1,06; obra nueva ×1,12.",
       },
-      font: "Multiplicadors ancorats al salt de renta en reformar (Fotocasa 2021) — src/lib/territorial.ts",
+      font: "Multiplicadors ancorats al salt de renda en reformar (Fotocasa 2021) — src/lib/territorial.ts",
     },
     {
       id: "HABITACIONS",
@@ -379,7 +379,7 @@ export const ESTIMA_VIABILITY: {
       variable: { ca: "Aparcament", es: "Aparcamiento" },
       cls: "C",
       tractament: {
-        ca: "NO demanada NI aplicada: sense coeficient publicat aplicable a la renta de l'habitatge.",
+        ca: "NO demanada NI aplicada: sense coeficient publicat aplicable a la renda de l'habitatge.",
         es: "NO pedida NI aplicada: sin coeficiente publicado aplicable a la renta de la vivienda.",
       },
       font: "Sense coeficient documentat (regla d'or: no s'inventa res)",

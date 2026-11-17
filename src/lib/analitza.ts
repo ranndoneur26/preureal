@@ -179,8 +179,8 @@ export const SERPAVI_URL = "https://serpavi.mivau.gob.es/";
  * (compacta, completa i PDF). Mai «taxació» ni «valoració individualitzada».
  */
 export const ORIENTATION_DISCLAIMER = {
-  ca: "Estimació estadística orientativa. No és una taxació ni una valoració individualitzada de l'habitatge.",
-  es: "Estimación estadística orientativa. No es una tasación ni una valoración individualizada de la vivienda.",
+  ca: "Rang orientatiu calculat amb dades oficials: no és una taxació oficial ni una avaluació individualitzada de l'habitatge.",
+  es: "Rango orientativo calculado con datos oficiales: no es una tasación oficial ni una evaluación individualizada de la vivienda.",
 } as const;
 
 export interface NormCheck {
@@ -389,7 +389,7 @@ export const CHECKLIST: ChecklistItem[] = [
 export const ANALITZA_SOURCES = [
   { t: "Fiances de lloguer (Incasòl)", u: "https://incasol.gencat.cat/", d: "preu mitjà mensual i contractes per municipi; explotació d'habitatge.gencat.cat" },
   { t: "Geocodificador ICGC", u: "https://openicgc.github.io/geocodificador-doc/", d: "adreces i punts sobre el mapa (CC-BY 4.0)" },
-  { t: "Cartografia base ICGC", u: "https://www.icgc.cat/", d: "mapa base per marcar la vivenda" },
+  { t: "Cartografia base ICGC", u: "https://www.icgc.cat/", d: "mapa base per marcar l'habitatge" },
   { t: "Serveis d'entorn (OpenStreetMap)", u: "https://www.openstreetmap.org/copyright", d: "transport, salut, educació, comerç i zones verdes propers; dades col·laboratives ODbL — distances en línia recta, aprox." },
   { t: "Zones tensades", u: NORM_FACTS.tenseSource, d: `${NORM_FACTS.tenseResolutions.join(" · ")} (DOGC 19-10-2026)` },
   { t: "Calculadora oficial de preus i límits (MIVAU)", u: NORM_FACTS.serpaviSource, d: "sistema estatal de referència per parcel·la (SERPAVI)" },
@@ -398,8 +398,8 @@ export const ANALITZA_SOURCES = [
 ];
 
 export const ANALITZA_LIMITATIONS = [
-  "LIMIT_REF_MUNICIPAL: la referència és la fiança mitjana MUNICIPAL de la vivenda típica registrada a Incasòl; mai el preu real de l'edifici ni de la vivenda concreta.",
-  "LIMIT_ESTIMACIO_COMARCA: si el municipi no té fiança publicada, es mostra la referència de comarca marcada explícitament com a ESTIMACIÓ (mai dada municipal inventada).",
+  "LIMIT_REF_MUNICIPAL: la referència és la fiança mitjana MUNICIPAL de l'habitatge típic registrada a Incasòl; mai el preu real de l'edifici ni de l'habitatge concret.",
+  "LIMIT_ESTIMACIO_COMARCA: si el municipi no té fiança publicada, es mostra la referència de comarca marcada explícitament com a APROXIMACIÓ (mai dada municipal inventada).",
   "LIMIT_SERVEIS_APROX: distàncies en línia recta (no temps reals ni recorreguts) amb dades col·laboratives OpenStreetMap de resolució variable.",
   "LIMIT_NORMATIU: la comprovació normativa és informativa, no assessorament jurídic; cal consultar la calculadora oficial (MIVAU) i les fonts per determinar la legalitat.",
   "LIMIT_PENDENTS: soroll, qualitat de l'aire, risc d'inundació i cobertura de fibra queden pendents d'integració amb fonts oficials (mapa de soroll, XVPCA, SINCRO/ICGC); no s'inventen valors.",

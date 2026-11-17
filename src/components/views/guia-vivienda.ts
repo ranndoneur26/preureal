@@ -109,7 +109,7 @@ export const GUIA_VIVIENDA: { ca: ViviendaLocale; es: ViviendaLocale } = {
         title: "Eficiència energètica i confort",
         qa: [
           ["Certificat d'eficiència (CEE)", "Obligatori per llogar des de 2013, etiqueta A–G; a Catalunya es registra a l'ICAEN i val un màxim de 10 anys. El propietari ha de lliurar-te'l abans de firmar."],
-          ["Consum estimat", "El kWh/m²·any de l'etiqueta permet estimar factures: la diferència entre un F/G i un B/C pot ser de centenars d'euros a l'hivern."],
+          ["Consum aproximat", "El kWh/m²·any de l'etiqueta permet calcular les factures per aproximació: la diferència entre un F/G i un B/C pot ser de centenars d'euros a l'hivern."],
           ["Tipus de calefacció", "Gas natural o bomba de calor ≪ elèctrica en factura mensual. Demana la mitjana de gener (hivern): és la dada que marca la factura real."],
           ["Aire acondicionat", "Si és bomba de calor refreda i escalfa; pregunta quan es va mantenir (filtres). En un interior sense instal·lació, afegir-ho no sempre és possible."],
           ["Finestres i aïllament", "Doble vidre amb cambra d'aire = menys soroll i factura. Passa la mà pels marcs a l'hivern: si notes corrent d'aire, ho notaràs cada mes."],
@@ -230,7 +230,7 @@ export const GUIA_VIVIENDA: { ca: ViviendaLocale; es: ViviendaLocale } = {
         title: "Eficiencia energética y confort",
         qa: [
           ["Certificado de eficiencia (CEE)", "Obligatorio para alquilar desde 2013, etiqueta A–G; en Cataluña se registra en el ICAEN y vale un máximo de 10 años. El propietario debe entregártelo antes de firmar."],
-          ["Consumo estimado", "El kWh/m²·año de la etiqueta permite estimar facturas: la diferencia entre un F/G y un B/C puede ser de cientos de euros en invierno."],
+          ["Consumo aproximado", "El kWh/m²·año de la etiqueta permite calcular las facturas por aproximación: la diferencia entre un F/G y un B/C puede ser de cientos de euros en invierno."],
           ["Tipo de calefacción", "Gas natural o bomba de calor ≪ eléctrica en factura mensual. Pide la media de enero (invierno): es el dato que marca tu factura real."],
           ["Aire acondicionado", "Si es bomba de calor enfría y calienta; pregunta cuándo se mantuvo (filtros). En un interior sin instalación, añadirlo no siempre es posible."],
           ["Ventanas y aislamiento", "Doble vidrio con cámara de aire = menos ruido y factura. Pasa la mano por los marcos en invierno: si notas corriente de aire, lo notarás cada mes."],

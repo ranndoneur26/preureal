@@ -337,7 +337,7 @@ export async function buildValuationPdf(rawInput: ValuationReportInput): Promise
       ]
     : [
         "Base: fiança municipal vigent publicada per Incasòl (Agència de l'Habitatge de Catalunya) via habitatge.gencat.cat; si el municipi no la publica (mostra petita), referència de comarca ponderada per contractes.",
-        "Motor v2: renta(m²) = base × (m²/85)^0,8 (elasticitat renta-superfície documentada en estudis hedònics, β=0,8); estat: a reformar ×0,8 · reformada ×1,06 · obra nova ×1,12; habitacions: densitat m²/hab limitada a ±5%.",
+        "Motor v2: renta(m²) = base × (m²/85)^0,8 (elasticidad renta-superficie documentada en estudios hedónicos, β=0,8); estado: a reformar ×0,8 · reformada ×1,06 · obra nueva ×1,12; habitaciones: densidad m²/hab limitada a ±5%.",
         "Horquilla: dispersió MESURADA (quartils) del pool territorial el mateix any del període vigent (comarca ≥5 municipis; si no, província ≥10; si no, rang històric).",
         "Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026 (DOGC 19-10-2026).",
         "Habitabilitat: Decret 141/2012, de 30 d'octubre (DOGC 6254).",

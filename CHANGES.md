@@ -2,6 +2,56 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v56 — Auditoria integral (VI): BLOQUE E — revisió lingüística experta ca/es amb la decisió terminològica del propietari — 2026-11-17
+
+Decisió OBLIGATÒRIA del propietari aplicada a tot el producte: **«estima/
+estimar» → «valora/valorar» a AMBDUES llengües** (ca: «Valora el lloguer del
+teu habitatge»; es: «Valora el alquiler de tu vivienda»), i a català
+**«vivenda» → «habitatge»** i **«renta» → «renda»** (en castellà «renta» i
+«vivienda» són correctes: cada correcció amb el seu par). Taula completa de
+correccions (~60+ parells ca/es) + glosari únic del producte:
+**`docs/linguistica.md`** (entregable 3 del PROMPT MASTER).
+
+- **Coherència legal reformulada (regla 6):** els disclaimers que deien
+  «no és una valoració del teu habitatge» passen a la fórmula del propietari
+  — ca «no és una taxació oficial; és un rang orientatiu basat en dades
+  oficials» / es «no es una tasación oficial; es un rango orientativo basado
+  en datos oficiales» — a ORIENTATION_DISCLAIMER, intro de la portada,
+  footer, metodologia, PDFs i SEO. La paraula «valoració» només apareix ara
+  en afirmatiu (nom del resultat orientatiu); les negacions legals sempre
+  «taxació oficial»/«tasación oficial».
+- **Renombrat coherent en 25 fitxers** (pestaña de la portada, nav i footer,
+  h1/h3, badges, CTA, formularis, informes en pantalla, 3 generadors de PDF,
+  textos legals, metades SEO de /estima i /analitza, FAQ, metodologia,
+  limitacions del motor, fonts citades i alt texts). Sustantius derivats
+  uniformes: «el valorador» (mai «estimador»), «valoració orientativa»,
+  «aproximació» per a les marques estadístiques, «càlcul» per a l'operació.
+- **Indicador v41 renombrat** a UI/SEO/provenance: «% aproximat de lloguer
+  sobre el parc residencial» / «% aproximado de alquiler sobre el parque
+  residencial» (RentalSharePanel ×2, MetodologiaView, ComparadorView,
+  /lloguer/[slug] ×2, rental-share.ts fonts+metodologia).
+- **Criteri d'acceptació verificat:** barrida automatitzada sense comentaris
+  (`scripts/residus_linguistics.py`) = **0 strings user-facing amb
+  «vivenda», «renta» (ca) o arrel «estima-»**. Els identificadors de codi es
+  conserven com a noms tècnics documentats (ruta `/estima`, clau i18n
+  `estima.*`, tipus `EstimaInput`, camp API `estimation`, paràmetre
+  `source=estimat`): zero trencaments de URLs/SEO/API.
+- **Extra del barrida:** clau i18n es `admin.mrr` huérfana (el seu par ca va
+  sortir a v51) eliminada; es «cae con la mida» (interferència del català)
+  → «cae con el tamaño»; ca «mai s'estima la part que falta» (idescat) →
+  «mai s'interpol·la».
+- **docs/com-funciona-copy.md** actualitzat a la terminologia nova (pas 11
+  «Valora el teu pis», FAQ 6 reformulada, inventari C1) — llest per a la
+  implementació pendent d'aprovació. **AUDITORIA.md §J-0** actualitzat amb la
+  decisió del propietari.
+- **Guardes (+6, `tests/linguistica_v56.test.ts` al bucle CI):** E1 cap
+  «vivenda»; E2 cap «renta» ca (es intacte); E3 «Valora» a ca/es i mai
+  «Estima el lloguer»; E4 disclaimers «taxació oficial» a les dues llengües
+  i mai «no és una valoració del teu habitatge»; E5 marques «aproximació» i
+  fórmula «renda orientativa»; E6 no-regressions (motor VAL_BETA,
+  gateDetailedQuery, illa de cases). Suite: **16 fitxers · 298 tests verdes**;
+  tsc + build de producció OK; mapa/quota/comparador/motor intactes.
+
 ## v55 — Auditoria integral (V): matriz de fuentes de transporte VERIFICADA (GTFS agregado T-mobilitat) — 2026-11-17
 
 Entregable del BLOQUE D demanat pel propietari (matriz amb peticions reals

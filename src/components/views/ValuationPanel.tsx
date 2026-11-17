@@ -82,11 +82,11 @@ function roomsNote(id: string | null, ca: boolean): string | null {
   if (!id) return null;
   if (id === "ROOMS_LOW")
     return ca
-      ? "Formats petits (1-2 hab): la superfície típica estimada és menor que la vivenda mitjana i el preu s'ajusta a la baixa."
-      : "Formatos pequeños (1-2 hab): la superficie típica estimada es menor que la vivienda media y el precio se ajusta a la baja.";
+      ? "Formats petits (1-2 hab): la superfície típica orientativa és menor que l'habitatge mitjà i el preu s'ajusta a la baixa."
+      : "Formatos pequeños (1-2 hab): la superficie típica orientativa es menor que la vivienda media y el precio se ajusta a la baja.";
   if (id === "ROOMS_MID")
     return ca
-      ? "Format modal del mercat (3-4 hab): superfície típica propera a la vivenda mitjana (~85 m²)."
+      ? "Format modal del mercat (3-4 hab): superfície típica propera a l'habitatge mitjà (~85 m²)."
       : "Formato modal del mercado (3-4 hab): superficie típica cercana a la vivienda media (~85 m²).";
   return ca
     ? "Formats grans: més superfície típica, però amb €/m² menor (efecte mida)."
@@ -275,7 +275,7 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
               </button>
               <p className="text-[10px] text-stone">
                 {ca
-                  ? "Central: fiança municipal oficial d'Incasòl per a la vivenda típica (~85 m²). Superfície, habitacions i estat apliquen ajustos aproximats de mercat que veuràs desglossats. Horquilla: dispersió real de la comarca el mateix any."
+                  ? "Central: fiança municipal oficial d'Incasòl per a l'habitatge típic (~85 m²). Superfície, habitacions i estat apliquen ajustos aproximats de mercat que veuràs desglossats. Horquilla: dispersió real de la comarca el mateix any."
                   : "Central: fianza municipal oficial de Incasòl para la vivienda típica (~85 m²). Superficie, habitaciones y estado aplican ajustes aproximados de mercado que verás desglosados. Horquilla: dispersión real de la comarca el mismo año."}
               </p>
             </div>
@@ -342,10 +342,10 @@ export default function ValuationPanel({ muniCode, muniName }: { muniCode: strin
                   <span>
                     {result.baseSource === "COMARCA_REF"
                       ? ca
-                        ? "Referència de comarca (estimació, sense dada municipal)"
-                        : "Referencia de comarca (estimación, sin dato municipal)"
+                        ? "Referència de comarca (aproximació, sense dada municipal)"
+                        : "Referencia de comarca (aproximación, sin dato municipal)"
                       : ca
-                        ? "Fiança municipal (vivenda típica)"
+                        ? "Fiança municipal (habitatge típic)"
                         : "Fianza municipal (vivienda típica)"}
                   </span>
                   <b>{fmt(result.baseCentral)} €</b>

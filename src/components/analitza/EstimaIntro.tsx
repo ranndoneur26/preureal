@@ -31,11 +31,11 @@ export default function EstimaIntro() {
     <div className="flex flex-col gap-3.5">
       <div className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full bg-mintsoft border border-mintline text-[11px] font-bold text-mossdeep">
         <Info className="w-3.5 h-3.5" />
-        {ca ? "Nou · estimació progressiva (nivells N1 + N2)" : "Nuevo · estimación progresiva (niveles N1 + N2)"}
+        {ca ? "Nou · valoració progressiva (nivells N1 + N2)" : "Nuevo · valoración progresiva (niveles N1 + N2)"}
       </div>
 
       <h3 className="font-extrabold text-lg leading-snug">
-        {ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda"}
+        {ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda"}
       </h3>
       <p className="text-sm text-moss leading-relaxed">
         {ca
@@ -48,8 +48,8 @@ export default function EstimaIntro() {
           <EstimaReport data={result} variant="compact" onRetry={() => { setResult(null); setFormKey((k) => k + 1); }} />
           <p className="text-[11px] text-stone leading-relaxed">
             {ca
-              ? "L'estimació no demana adreces ni referències catastrals; l'e-mail només identifica el teu compte Free i la seva quota (3 consultes detallades al mes)."
-              : "La estimación no pide direcciones ni referencias catastrales; el e-mail solo identifica tu cuenta Free y su cuota (3 consultas detalladas al mes)."}
+              ? "La valoració no demana adreces ni referències catastrals; l'e-mail només identifica el teu compte Free i la seva quota (3 consultes detallades al mes)."
+              : "La valoración no pide direcciones ni referencias catastrales; el e-mail solo identifica tu cuenta Free y su cuota (3 consultas detalladas al mes)."}
           </p>
         </>
       ) : (
@@ -78,7 +78,7 @@ export default function EstimaIntro() {
             className="w-full rounded-xl border border-line bg-card font-semibold text-sm hover:bg-sand transition-colors flex items-center justify-center gap-2 min-h-[44px]"
           >
             <Home className="w-4 h-4" />
-            {ca ? "Obre l'estimador complet" : "Abre el estimador completo"}
+            {ca ? "Obre el valorador complet" : "Abre el valorador completo"}
           </button>
         </>
       )}

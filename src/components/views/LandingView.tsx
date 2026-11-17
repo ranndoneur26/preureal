@@ -96,7 +96,7 @@ export default function LandingView() {
                   className={`px-2.5 sm:px-3 py-3 text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors min-h-[48px] ${tab === "estima" ? "bg-pine" : "bg-pine/60 text-white/75 hover:bg-pine/80"}`}
                 >
                   <WandSparkles className="w-4 h-4 shrink-0" />
-                  <span className="text-left">{ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda"}</span>
+                  <span className="text-left">{ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda"}</span>
                 </button>
               </div>
               <div className="p-5 bg-sand2">
@@ -106,8 +106,8 @@ export default function LandingView() {
                   <>
                     <p className="text-[11px] text-stone leading-relaxed mb-3">
                       {ca
-                        ? "Comparació estadística del preu de l'anunci amb la referència oficial registrada (fiances Incasòl): no és una valoració del teu habitatge."
-                        : "Comparación estadística del precio del anuncio con la referencia oficial registrada (fianzas Incasòl): no es una valoración de tu vivienda."}
+                        ? "Comparació estadística del preu de l'anunci amb la referència oficial registrada (fiances Incasòl): no és una taxació oficial; és una referència orientativa basada en dades oficials."
+                        : "Comparación estadística del precio del anuncio con la referencia oficial registrada (fianzas Incasòl): no es una tasación oficial; es una referencia orientativa basada en datos oficiales."}
                     </p>
                     {/* v47 — enllaç creuat clar cap a «estima» dins la secció
                         consulta: text RESUMIT i amb redacció pròpia (el text
@@ -117,17 +117,17 @@ export default function LandingView() {
                         <WandSparkles className="w-4 h-4 text-pine shrink-0 mt-0.5" aria-hidden="true" />
                         <span>
                           {ca
-                            ? "I si el que vols és estimar el lloguer del TEU habitatge (no comparar un anunci)? «Estima el lloguer del teu habitatge» calcula per passos un rang orientatiu: part de la base oficial de fiances (Incasòl) escalada per superfície (N1) i hi afegeix ajustos opcionals amb coeficient documentat, com l'estat de conservació o les habitacions (N2). Cada xifra amb la seva font, el seu període i les seves limitacions — mai una taxació."
-                            : "¿Y si lo que quieres es estimar el alquiler de TU vivienda (no comparar un anuncio)? «Estima el alquiler de tu vivienda» calcula por pasos un rango orientativo: parte de la base oficial de fianzas (Incasòl) escalada por superficie (N1) y añade ajustes opcionales con coeficiente documentado, como el estado de conservación o las habitaciones (N2). Cada cifra con su fuente, su período y sus limitaciones — nunca una tasación."}
+                            ? "I si el que vols és valorar el lloguer del TEU habitatge (no comparar un anunci)? «Valora el lloguer del teu habitatge» calcula per passos un rang orientatiu: part de la base oficial de fiances (Incasòl) escalada per superfície (N1) i hi afegeix ajustos opcionals amb coeficient documentat, com l'estat de conservació o les habitacions (N2). Cada xifra amb la seva font, el seu període i les seves limitacions — mai una taxació oficial."
+                            : "¿Y si lo que quieres es valorar el alquiler de TU vivienda (no comparar un anuncio)? «Valora el alquiler de tu vivienda» calcula por pasos un rango orientativo: parte de la base oficial de fianzas (Incasòl) escalada por superficie (N1) y añade ajustes opcionales con coeficiente documentado, como el estado de conservación o las habitaciones (N2). Cada cifra con su fuente, su período y sus limitaciones — nunca una tasación oficial."}
                         </span>
                       </p>
                       <button
                         type="button"
                         onClick={() => setTab("estima")}
-                        aria-label={ca ? "Obre la pestanya Estima el lloguer del teu habitatge" : "Abre la pestaña Estima el alquiler de tu vivienda"}
+                        aria-label={ca ? "Obre la pestanya Valora el lloguer del teu habitatge" : "Abre la pestaña Valora el alquiler de tu vivienda"}
                         className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-pine text-white text-xs font-bold px-3.5 py-2.5 hover:bg-pine/90 transition-colors min-h-[44px]"
                       >
-                        {ca ? "Obre «Estima el lloguer del teu habitatge»" : "Abre «Estima el alquiler de tu vivienda»"}
+                        {ca ? "Obre «Valora el lloguer del teu habitatge»" : "Abre «Valora el alquiler de tu vivienda»"}
                         <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>

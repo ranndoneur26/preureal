@@ -169,7 +169,7 @@ export default function EstimaForm({
       if (!res.ok || !d?.ok) {
         // v46 — bloquejos del SERVIDOR al panell de bloqueig (mai un error sec)
         if (ef.applyServerError(res.status, d)) return;
-        setError(d?.message || (ca ? "No s'ha pogut calcular l'estimació. Revisa les dades." : "No se ha podido calcular la estimación. Revisa los datos."));
+        setError(d?.message || (ca ? "No s'ha pogut calcular la valoració. Revisa les dades." : "No se ha podido calcular la valoración. Revisa los datos."));
         return;
       }
       onResult(d as EstimaPayload);
@@ -413,8 +413,8 @@ export default function EstimaForm({
           </div>
           <p className="text-[11px] text-stone leading-relaxed">
             {ca
-              ? "Només aquestes dues característiques tenen coeficient documentat i s'apliquen (estat i densitat m²/habitació); si les deixes en blanc, l'estimació segueix sent N1. No demanem ascensor, aparcament, moblat, planta ni energia: sense coeficient documentat, no els apliquem ni els inventem."
-              : "Solo estas dos características tienen coeficiente documentado y se aplican (estado y densidad m²/habitación); si las dejas en blanco, la estimación sigue siendo N1. No pedimos ascensor, aparcamiento, amueblado, planta ni energía: sin coeficiente documentado, no los aplicamos ni los inventamos."}
+              ? "Només aquestes dues característiques tenen coeficient documentat i s'apliquen (estat i densitat m²/habitació); si les deixes en blanc, el càlcul segueix sent N1. No demanem ascensor, aparcament, moblat, planta ni energia: sense coeficient documentat, no els apliquem ni els inventem."
+              : "Solo estas dos características tienen coeficiente documentado y se aplican (estado y densidad m²/habitación); si las dejas en blanco, el cálculo sigue siendo N1. No pedimos ascensor, aparcamiento, amueblado, planta ni energía: sin coeficiente documentado, no los aplicamos ni los inventamos."}
           </p>
         </>
       )}

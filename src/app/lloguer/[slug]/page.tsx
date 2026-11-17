@@ -158,7 +158,7 @@ export default async function MunicipiPage({ params }: Props) {
             <>
               Sense dada municipal vigent en aquest període
               {m.comarcaRefLatest != null ? (
-                <> — el valor mostrat és la <b>referència de comarca</b> ({m.comarcaRefPeriod ?? ""}), marcada sempre com a estimació.</>
+                <> — el valor mostrat és la <b>referència de comarca</b> ({m.comarcaRefPeriod ?? ""}), marcada sempre com a aproximació.</>
               ) : (
                 <> per aquest municipi.</>
               )}
@@ -217,7 +217,7 @@ export default async function MunicipiPage({ params }: Props) {
           {rs?.current?.rentalPercentage != null ? (
             <div className="mt-4 rounded-xl border border-sand bg-sand/50 p-4">
               <div className="text-[10px] font-semibold text-stone uppercase tracking-wide">
-                % estimat de lloguer sobre el parc residencial
+                % aproximat de lloguer sobre el parc residencial
               </div>
               <div className="text-3xl font-black text-ember leading-tight">
                 {fmtPct(rs.current.rentalPercentage)}%
@@ -244,7 +244,7 @@ export default async function MunicipiPage({ params }: Props) {
           ) : (
             <div className="mt-4 rounded-xl border border-sand bg-sand/50 p-4 text-xs text-moss leading-relaxed">
               <div className="text-[10px] font-semibold text-stone uppercase tracking-wide mb-1">
-                % estimat de lloguer sobre el parc residencial
+                % aproximat de lloguer sobre el parc residencial
               </div>
               <b className="text-pine">Sense informació suficient</b> per calcular-lo a {m.name}: el numerador
               (fiances <b>vigents</b> del Registre de fiances d&apos;Incasòl) i el denominador (immobles

@@ -241,7 +241,7 @@ export default function AnalitzaReport({
           <div className="rounded-xl bg-cream border border-line py-3">
             <div className="font-black text-pine">{p.reference != null ? fmtEur(p.reference, ca) : "—"}</div>
             <div className="text-[10px] uppercase tracking-wide text-stone mt-1">
-              {refIsEstimate ? (ca ? "ref. comarca (estimació)" : "ref. comarca (estimación)") : (ca ? "fiança municipal oficial" : "fianza municipal oficial")}
+              {refIsEstimate ? (ca ? "ref. comarca (aproximació)" : "ref. comarca (aproximación)") : (ca ? "fiança municipal oficial" : "fianza municipal oficial")}
             </div>
           </div>
           <div className="rounded-xl bg-cream border border-line py-3">
@@ -257,14 +257,14 @@ export default function AnalitzaReport({
         {note && <p className="text-xs text-moss mt-2 leading-relaxed bg-sand2 rounded-xl p-3">{note}</p>}
         <p className="text-[11px] text-stone mt-2 leading-relaxed">
           {ca
-            ? "La referència és la fiança mitjana de la vivenda TÍPICA del municipi (Incasòl): no és el preu real de l'edifici ni de la vivenda concreta."
+            ? "La referència és la fiança mitjana de l'habitatge TÍPIC del municipi (Incasòl): no és el preu real de l'edifici ni de l'habitatge concret."
             : "La referencia es la fianza media de la vivienda TÍPICA del municipio (Incasòl): no es el precio real del edificio ni de la vivienda concreta."}
         </p>
 
         {/* comparativa per característiques (estimació orientativa, mai taxació) */}
         {p.expected && (
           <div className="mt-3 rounded-xl border border-sand3 bg-cream p-4">
-            <div className="text-xs font-bold text-pine">{ca ? "Comparativa per a aquestes característiques (estimació orientativa amb ajustos visibles)" : "Comparativa para estas características (estimación orientativa con ajustes visibles)"}</div>
+            <div className="text-xs font-bold text-pine">{ca ? "Comparativa per a aquestes característiques (valoració orientativa amb ajustos visibles)" : "Comparativa para estas características (valoración orientativa con ajustos visibles)"}</div>
             <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
               <span><b>{fmtEur(p.expected.central, ca)}</b> {ca ? "central orientativa" : "central orientativa"}</span>
               <span className="text-stone">{fmtEur(p.expected.min, ca)} – {fmtEur(p.expected.max, ca)} {ca ? "banda" : "banda"}</span>
@@ -460,7 +460,7 @@ export default function AnalitzaReport({
             <MapPin className="w-4 h-4" />{ca ? "Torna al mapa" : "Vuelve al mapa"}
           </button>
           <button onClick={() => navigate("/estima")} className="rounded-xl border border-line bg-card font-semibold hover:bg-sand transition-colors flex items-center gap-2 px-4 min-h-[44px] text-sm">
-            <WandSparkles className="w-4 h-4" />{ca ? "Estima el lloguer del teu habitatge" : "Estima el alquiler de tu vivienda"}<ArrowRight className="w-4 h-4" />
+            <WandSparkles className="w-4 h-4" />{ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda"}<ArrowRight className="w-4 h-4" />
           </button>
           <button onClick={() => navigate("/comparador")} className="rounded-xl border border-line bg-card font-semibold hover:bg-sand transition-colors flex items-center gap-2 px-4 min-h-[44px] text-sm">
             {ca ? "Anar al comparador" : "Ir al comparador"}<ArrowRight className="w-4 h-4" />

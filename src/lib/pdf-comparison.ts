@@ -322,13 +322,13 @@ export async function buildComparisonPdf(rawInput: ComparisonReportInput): Promi
   (es
     ? [
         "Fianza media por municipio y serie histórica: fiances depositadas en Incasòl (Agència de l'Habitatge de Catalunya), vía habitatge.gencat.cat. Media de contratos de vivienda registrados; no describe ningún inmueble concreto.",
-        "€/m² estimado: DERIVADO como renta ÷ 85 m² (superficie de la vivienda típica, mismo modelo que la valoración de Preureal). La fuente oficial NO publica €/m².",
+        "€/m² aproximado: DERIVADO como renta ÷ 85 m² (superficie de la vivienda típica, mismo modelo que la valoración de Preureal). La fuente oficial NO publica €/m².",
         "Variación anual: comparación con el año anterior publicado por la misma fuente.",
         "Áreas tensionadas: Resoluciones TER/3739/2026 y TER/3740/2026 del DOGC (19-10-2026); en estos municipios los nuevos contratos pueden aplicar el Índice de Referencia de Alquileres (IRL).",
       ]
     : [
         "Fiança mitja per municipi i sèrie històrica: fiances dipositades a Incasòl (Agència de l'Habitatge de Catalunya), via habitatge.gencat.cat. Mitjana de contractes d'habitatge registrats; no descriu cap immoble concret.",
-        "€/m² estimat: DERIVAT com a renda ÷ 85 m² (superfície de l'habitatge típic, mateix model que la valoració de Preureal). La font oficial NO publica €/m².",
+        "€/m² aproximat: DERIVAT com a renda ÷ 85 m² (superfície de l'habitatge típic, mateix model que la valoració de Preureal). La font oficial NO publica €/m².",
         "Variació anual: comparació amb l'any anterior publicat per la mateixa font.",
         "Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026 del DOGC (19-10-2026); en aquests municipis els contractes nous poden aplicar l'Índex de Referència de Lloguers (IRL).",
       ]

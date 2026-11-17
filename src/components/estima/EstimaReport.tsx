@@ -30,7 +30,7 @@ function confLabel(key: string, ca: boolean): string | null {
     CONF_BASE_COMARCA: ["Horquilla calculada amb municipis de la comarca", "Horquilla calculada con municipios de la comarca"],
     CONF_BASE_AMPLA: ["Horquilla calculada amb un pool territorial més ampli", "Horquilla calculada con un pool territorial más amplio"],
     CONF_DADES_MIGUES: ["Dades amb limitacions: contrasta sempre amb les fonts oficials", "Datos con limitaciones: contrasta siempre con las fuentes oficiales"],
-    CONF_BASE_COMARCA_REF: ["Base de COMARCA (el municipi no té fiança publicada): estimació, mai dada municipal", "Base de COMARCA (el municipio no tiene fianza publicada): estimación, nunca dato municipal"],
+    CONF_BASE_COMARCA_REF: ["Base de COMARCA (el municipi no té fiança publicada): aproximació, mai dada municipal", "Base de COMARCA (el municipio no tiene fianza publicada): aproximación, nunca dato municipal"],
   };
   const v = m[key];
   if (!v) return null;
@@ -66,17 +66,17 @@ export default function EstimaReport({
         </div>
         <h3 className="font-extrabold text-lg leading-snug">
           {ca
-            ? `No podem estimar amb garanties a ${data.input?.municipalityName ?? "aquest municipi"}`
-            : `No podemos estimar con garantías en ${data.input?.municipalityName ?? "este municipio"}`}
+            ? `No podem valorar amb garanties a ${data.input?.municipalityName ?? "aquest municipi"}`
+            : `No podemos valorar con garantías en ${data.input?.municipalityName ?? "este municipio"}`}
         </h3>
         <p className="text-sm text-moss leading-relaxed">
           {reason === "NO_RENT"
             ? (ca
-              ? "Aquest municipi no té fiança mitjana publicada a Incasòl (mostra massa petita) i tampoc no hi ha referència de comarca amb mostra suficient. Per transparència NO mostrem cap estimació poc fiable en silenci."
-              : "Este municipio no tiene fianza media publicada en Incasòl (muestra demasiado pequeña) y tampoco hay referencia de comarca con muestra suficiente. Por transparencia NO mostramos ninguna estimación poco fiable en silencio.")
+              ? "Aquest municipi no té fiança mitjana publicada a Incasòl (mostra massa petita) i tampoc no hi ha referència de comarca amb mostra suficient. Per transparència NO mostrem cap càlcul poc fiable en silenci."
+              : "Este municipio no tiene fianza media publicada en Incasòl (muestra demasiado pequeña) y tampoco hay referencia de comarca con muestra suficiente. Por transparencia NO mostramos ningún cálculo poco fiable en silencio.")
             : (ca
-              ? "Les dades introduïdes no permeten calcular l'estimació. Revisa la superfície i les característiques (habitacions i estat) i reintenta."
-              : "Los datos introducidos no permiten calcular la estimación. Revisa la superficie y las características (habitaciones y estado) y reintenta.")}
+              ? "Les dades introduïdes no permeten completar el càlcul. Revisa la superfície i les característiques (habitacions i estat) i reintenta."
+              : "Los datos introducidos no permiten completar el cálculo. Revisa la superficie y las características (habitaciones y estado) y reintenta.")}
         </p>
         <a
           href={data.serpaviUrl || "https://serpavi.mivau.gob.es/"}
@@ -139,8 +139,8 @@ export default function EstimaReport({
       <div className="rounded-xl bg-cream border border-line px-4 py-4">
         <p className="text-xs font-semibold text-stone">
           {ca
-            ? `Estimació orientativa per a un habitatge de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} a ${data.input?.municipalityName ?? ""}:`
-            : `Estimación orientativa para una vivienda de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} en ${data.input?.municipalityName ?? ""}:`}
+            ? `Valoració orientativa per a un habitatge de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} a ${data.input?.municipalityName ?? ""}:`
+            : `Valoración orientativa para una vivienda de ${e.surfaceM2} m²${charParts.length > 0 ? `, ${charParts.join(", ")},` : ""} en ${data.input?.municipalityName ?? ""}:`}
         </p>
         <p className="mt-1 text-2xl md:text-3xl font-black tracking-tight text-pine" aria-live="polite">
           {ca ? "entre" : "entre"} {fmtEur(e.min)} {ca ? "i" : "y"} {fmtEur(e.max)} {ca ? "€/mes" : "€/mes"}
@@ -175,7 +175,7 @@ export default function EstimaReport({
             <dt className="text-stone shrink-0">{ca ? "Escalat" : "Escalado"}:</dt>
             <dd className="flex-1 min-w-[12rem] text-moss">
               {ca
-                ? `superfície: ${e.central === e.baseCentral ? `la vivenda introduïda coincideix amb la típica (${fmtEur1(e.eurM2Typical ?? 0)} €/m²·mes típic)` : `${e.surfaceM2} m² × (${fmtEur1(e.eurM2Typical ?? 0)} €/m²·mes típic, elasticitat 0,8 documentada)`}`
+                ? `superfície: ${e.central === e.baseCentral ? `l'habitatge introduït coincideix amb el típic (${fmtEur1(e.eurM2Typical ?? 0)} €/m²·mes típic)` : `${e.surfaceM2} m² × (${fmtEur1(e.eurM2Typical ?? 0)} €/m²·mes típic, elasticitat 0,8 documentada)`}`
                 : e.central === e.baseCentral
                   ? `la vivienda introducida coincide con la típica (${fmtEur1(e.eurM2Typical ?? 0)} €/m²·mes típico)`
                   : `${e.surfaceM2} m² × (${fmtEur1(e.eurM2Typical ?? 0)} €/m²·mes típico, elasticidad 0,8 documentada)`}
@@ -224,7 +224,7 @@ export default function EstimaReport({
                   : w.level === "EXCEPCIONAL"
                     ? (ca ? "només excepcional amb cèdula vigent" : "solo excepcional con cédula vigente")
                     : w.level === "ADVERTENCIA"
-                      ? (ca ? "vivenda compacta: risc d'incomplir sales mínimes" : "vivienda compacta: riesgo de incumplir salas mínimas")
+                      ? (ca ? "habitatge compacte: risc d'incomplir sales mínimes" : "vivienda compacta: riesgo de incumplir salas mínimas")
                       : w.detail}
                 {" "}{w.detail}
               </span>
@@ -239,8 +239,8 @@ export default function EstimaReport({
           <p className="text-[13px] text-ember3 leading-relaxed">
             <b>{ca ? "Zona tensada (Llei 12/2023, LAU art. 17.2): " : "Zona tensionada (Ley 12/2023, LAU art. 17.2): "}</b>
             {ca
-              ? "en contractes nous d'habitatge habitual la renta no pot superar la de l'últim contracte dels darrers 5 anys, i els grans tenedores han de consultar el rang oficial SERPAVI. Aquesta estimació NO substitueix la consulta oficial."
-              : "en contratos nuevos de vivienda habitual la renta no puede superar la del último contrato de los últimos 5 años, y los grandes tenedores deben consultar el rango oficial SERPAVI. Esta estimación NO sustituye la consulta oficial."}
+              ? "en contractes nous d'habitatge habitual la renda no pot superar la de l'últim contracte dels darrers 5 anys, i els grans tenedores han de consultar el rang oficial SERPAVI. Aquest càlcul NO substitueix la consulta oficial."
+              : "en contratos nuevos de vivienda habitual la renta no puede superar la del último contrato de los últimos 5 años, y los grandes tenedores deben consultar el rango oficial SERPAVI. Este cálculo NO sustituye la consulta oficial."}
           </p>
           <a
             href={data.serpaviUrl || "https://serpavi.mivau.gob.es/"}

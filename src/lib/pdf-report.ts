@@ -474,12 +474,12 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     line(`Construïda amb ${band.n} illes/edificis del municipi amb dada importada (${band.totalWeight} contractes ponderats). Base: fiances Incasòl.`, 8.5, GRAY);
     y -= 8;
   } else {
-    line("Banda P25-P75: no disponible (mostres municipals insuficients; no s'estima).", 9, GRAY);
+    line("Banda P25-P75: no disponible (mostres municipals insuficients; no s'aproxima).", 9, GRAY);
     y -= 10;
   }
   const effort = ind?.effortHogar ?? null;
   if (effort) {
-    text("Esforç econòmic estimat", 10, DARK, true);
+    text("Esforç econòmic aproximat", 10, DARK, true);
     y -= 14;
     line(`El lloguer mitjà municipal (${fmt0(effort.rentEurMonth)} €/mes, període ${effort.rentPeriod || "—"}) suposa un ${fmt1(effort.pct)}% de la renda neta mitjana per llar del municipi (${fmt0(effort.rentaAnual)} €/any, Atlas ${effort.rentaPeriod}).`, 9.5);
     y -= 8;
@@ -632,7 +632,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     }
     line("Aquest context demogràfic NO altera el càlcul del lloguer mitjà ni els indicadors de mercat: serveix per interpretar-los. Cada xifra cita la seva font oficial i l'any de referència; on no hi ha dada, no s'inventa.", 8.5, GRAY);
   } else {
-    line("Encara no hi ha indicadors demogràfics oficials importats per a aquest municipi (IDESCAT, padró continu i censos). El sistema d'actualització els portarà automàticament; mentrestant no s'estima cap valor.", 9, GRAY);
+    line("Encara no hi ha indicadors demogràfics oficials importats per a aquest municipi (IDESCAT, padró continu i censos). El sistema d'actualització els portarà automàticament; mentrestant no s'aproxima cap valor.", 9, GRAY);
     y -= 10;
   }
 
@@ -709,7 +709,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
         page.drawText(String(s.year).slice(2), { x: 50 + i * barW + (barW - 10) / 2, y: vTop - h - 11, size: 6.5, font, color: GRAY });
       });
       y = vTop - vH - 26;
-      line(`Aproximació elaborada per PreuReal: mediana mensual × 12 × contractes de l'any. No és una xifra oficial: és una estimació del volum registrat.`, 8.5, GRAY);
+      line(`Aproximació elaborada per PreuReal: mediana mensual × 12 × contractes de l'any. No és una xifra oficial: és una aproximació del volum registrat.`, 8.5, GRAY);
       y -= 6;
     }
 
@@ -725,7 +725,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     }
     line("Totes les sèries provenen de fonts oficials citades (Incasòl, IDESCAT/INE). Les lectures són descriptives i NO estabeleixen cap relació causal; on no hi ha dada, no s'inventa.", 8.5, GRAY);
   } else {
-    line("Les sèries de contractes amb fiança i de volum de mercat encara no estan importades per a aquest municipi (la ingesta mensual del Registre de fiances d'Incasòl les portarà automàticament). Mentrestant, no s'estima cap valor.", 9, GRAY);
+    line("Les sèries de contractes amb fiança i de volum de mercat encara no estan importades per a aquest municipi (la ingesta mensual del Registre de fiances d'Incasòl les portarà automàticament). Mentrestant, no s'aproxima cap valor.", 9, GRAY);
     y -= 10;
   }
 
@@ -739,7 +739,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
       ["Tipus (ICGC RTT)", building.tipus === "ind" ? "Nau industrial (\"ind\")" : building.tipus === "ill" ? "Illa de cases (\"ill\")" : building.tipus === "edi" ? "Edifici (\"edi\")" : building.tipus || "—"],
       ["Any de construcció", building.yearBuilt != null ? String(building.yearBuilt) : "No disponible (Cadastre)"],
       ["Ref. catastral", building.refcat || "No coneguda"],
-      ["Altura estimada", building.altura != null ? `${fmt1(building.altura)} m` : "—"],
+      ["Altura aproximada", building.altura != null ? `${fmt1(building.altura)} m` : "—"],
       ["Dada de fiances de l'illa", building.avgRentEurMonth != null ? `${fmt0(building.avgRentEurMonth)} €/mes (${building.sampleSize ?? "?"} mostres, importació pròpia)` : "No disponible"],
       ["Municipi de referència", `${mun.name} (mitjana ${mun.rentLatest != null ? fmt0(mun.rentLatest) + " €/mes" : "sense dada"})`],
     ];

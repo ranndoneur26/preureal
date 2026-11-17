@@ -109,14 +109,14 @@ const S = {
     // v45 — noves funcions explicades fàcil (analitzador d'una vivenda + anàlisi del mercat)
     novaT: "Noves funcions: analitza abans de signar",
     novaIntro:
-      "PreuReal ja no és només el mapa del preu mitjà d'un municipi. Ara pots analitzar UNA vivenda concreta abans de signar i creuar les sèries oficials del mercat de cada municipi. Les dues eines estan incloses al pla Gratuït (amb el teu registre, fins a 3 consultes detallades al mes).",
-    novaA_t: "1) Consulta el preu real registrat — una vivenda concreta",
+      "PreuReal ja no és només el mapa del preu mitjà d'un municipi. Ara pots analitzar UN habitatge concret abans de signar i creuar les sèries oficials del mercat de cada municipi. Les dues eines estan incloses al pla Gratuït (amb el teu registre, fins a 3 consultes detallades al mes).",
+    novaA_t: "1) Consulta el preu real registrat — un habitatge concret",
     novaA: [
-      "Què és: una eina de consulta que compara el preu de l'anunci amb la referència oficial del municipi (fiances d'Incasòl), tenint en compte les característiques reals de la vivenda (superfície, estat, habitacions) i l'estat normatiu del municipi on és. És una comparació estadística, no una valoració de la vivenda.",
-      "Com s'usa: prem «Consulta» al menú, escriu el municipi o l'adreça, tria les característiques de la vivenda i la renda que t'ofereixen. En un segon tens el resultat, sense instal·lar res.",
-      "Què obtens (informe A–D): (A) el preu de referència registrat del municipi; (B) una comparativa orientativa segons les característiques de la vivenda (estimació estadística, mai una taxació); (C) la normativa aplicable — si és àrea de mercat residencial tensat, l'índex de referència de lloguers, el gran tenidor (SERPAVI) i l'IRAV; i (D) els serveis propers (transport, escoles, comerç — dades d'OpenStreetMap, aproximades).",
+      "Què és: una eina de consulta que compara el preu de l'anunci amb la referència oficial del municipi (fiances d'Incasòl), tenint en compte les característiques reals de l'habitatge (superfície, estat, habitacions) i l'estat normatiu del municipi on és. És una comparació estadística, no una taxació oficial de l'habitatge.",
+      "Com s'usa: prem «Consulta» al menú, escriu el municipi o l'adreça, tria les característiques de l'habitatge i la renda que t'ofereixen. En un segon tens el resultat, sense instal·lar res.",
+      "Què obtens (informe A–D): (A) el preu de referència registrat del municipi; (B) una comparativa orientativa segons les característiques de l'habitatge (càlcul estadístic, mai una taxació oficial); (C) la normativa aplicable — si és àrea de mercat residencial tensat, l'índex de referència de lloguers, el gran tenidor (SERPAVI) i l'IRAV; i (D) els serveis propers (transport, escoles, comerç — dades d'OpenStreetMap, aproximades).",
       "Checklist i descàrrega: el resultat porta una llista de comprovacions marcables abans de signar i un informe imprimible que pots desar en PDF o portar imprès a la signatura.",
-      "Important: és una referència orientativa amb dades oficials citades. No és una valoració immobiliària formal ni assessorament jurídic.",
+      "Important: és una referència orientativa amb dades oficials citades. No és una taxació oficial ni una avaluació immobiliària formal ni assessorament jurídic.",
     ],
     novaB_t: "2) Anàlisi del mercat residencial — sèries oficials creuades",
     novaB: [
@@ -205,11 +205,11 @@ const S = {
       "PreuReal ya no es solo el mapa del precio medio de un municipio. Ahora puedes analizar UNA vivienda concreta antes de firmar y cruzar las series oficiales del mercado de cada municipio. Las dos herramientas están incluidas en el plan Gratuito (con tu registro, hasta 3 consultas detalladas al mes).",
     novaA_t: "1) Consulta el precio real registrado — una vivienda concreta",
     novaA: [
-      "Qué es: una herramienta de consulta que compara el precio del anuncio con la referencia oficial del municipio (fianzas de Incasòl), teniendo en cuenta las características reales de la vivienda (superficie, estado, habitaciones) y el estado normativo del municipio donde está. Es una comparación estadística, no una valoración de la vivienda.",
+      "Qué es: una herramienta de consulta que compara el precio del anuncio con la referencia oficial del municipio (fianzas de Incasòl), teniendo en cuenta las características reales de la vivienda (superficie, estado, habitaciones) y el estado normativo del municipio donde está. Es una comparación estadística, no una tasación oficial de la vivienda.",
       "Cómo se usa: pulsa «Consulta» en el menú, escribe el municipio o la dirección, elige las características de la vivienda y la renta que te ofrecen. En un segundo tienes el resultado, sin instalar nada.",
-      "Qué obtienes (informe A–D): (A) el precio de referencia registrado del municipio; (B) una comparativa orientativa según las características de la vivienda (estimación estadística, nunca una tasación); (C) la normativa aplicable — si es área de mercado residencial tensionado, el índice de referencia de alquileres, el gran tenedor (SERPAVI) y el IRAV; y (D) los servicios cercanos (transporte, escuelas, comercio — datos de OpenStreetMap, aproximados).",
+      "Qué obtienes (informe A–D): (A) el precio de referencia registrado del municipio; (B) una comparativa orientativa según las características de la vivienda (cálculo estadístico, nunca una tasación oficial); (C) la normativa aplicable — si es área de mercado residencial tensionado, el índice de referencia de alquileres, el gran tenedor (SERPAVI) y el IRAV; y (D) los servicios cercanos (transporte, escuelas, comercio — datos de OpenStreetMap, aproximados).",
       "Checklist y descarga: el resultado incluye una lista de comprobaciones marcables antes de firmar y un informe imprimible que puedes guardar en PDF o llevar impreso a la firma.",
-      "Importante: es una referencia orientativa con datos oficiales citados. No es una valoración inmobiliaria formal ni asesoramiento jurídico.",
+      "Importante: es una referencia orientativa con datos oficiales citados. No es una tasación oficial ni una evaluación inmobiliaria formal ni asesoramiento jurídico.",
     ],
     novaB_t: "2) Análisis del mercado residencial — series oficiales cruzadas",
     novaB: [

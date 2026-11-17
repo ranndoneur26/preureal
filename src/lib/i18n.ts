@@ -61,7 +61,7 @@ export const STRINGS = {
         },
         comp: {
           name: "Comparativa de municipis",
-          feats: ["Fins a 6 municipis en un sol PDF", "Preu vigent, variació anual i €/m² estimat", "Gràfic comparatiu i fitxa per municipi"],
+          feats: ["Fins a 6 municipis en un sol PDF", "Preu vigent, variació anual i €/m² orientatiu", "Gràfic comparatiu i fitxa per municipi"],
         },
         buy: "Comprar informe",
         formMuni: "Municipi",
@@ -88,7 +88,7 @@ export const STRINGS = {
       searchPlaceholder: "Cerca municipi (p. ex. Barcelona, Girona, Salou...)",
       zoomHint: "Fes zoom (nivell 16+) per carregar els edificis de la zona",
       loadingBuildings: "Carregant edificis reals...",
-      legend: { low: "Preu baix", high: "Preu alt", tense: "Municipi tensat", industrial: "Nau industrial (sense estadística d'habitatges)", refComarca: "≈ Ref. de comarca (estimació, sense dada municipal)" },
+      legend: { low: "Preu baix", high: "Preu alt", tense: "Municipi tensat", industrial: "Nau industrial (sense estadística d'habitatges)", refComarca: "≈ Ref. de comarca (aproximació, sense dada municipal)" },
       panel: {
         avgRent: "Preu mitjà real registrat",
         // v33 — fitxa d'una nau industrial: el preu municipal és d'habitatges
@@ -114,7 +114,7 @@ export const STRINGS = {
         aboveSurface: "per sobre del típic per a aquesta superfície",
         belowSurface: "per sota del típic per a aquesta superfície",
         atSurface: "a nivell del típic per a aquesta superfície",
-        surfaceTypicalRent: "Renda típica estimada per a aquesta superfície",
+        surfaceTypicalRent: "Renda típica orientativa per a aquesta superfície",
         eurM2Offer: "La teva oferta",
         approxNote: "Ajust aproximat per superfície: renda(m²) = mitjana municipal × (m²/85)^0,8 (elasticitat de mercat documentada, mateix model que la valoració). La font oficial no publica €/m². Per una horquilla amb estat i habitacions: «Valoració orientativa» (Premium).",
         tipAbove: "Molt per sobre del típic: pots negociar amb aquestes dades davant de qui t'ofereix el pis.",
@@ -135,10 +135,10 @@ export const STRINGS = {
         source: "Font: fiances Incasòl (habitatge.gencat.cat)",
         historyPairNote: "Sense sèrie publicada: es comparen l'any anterior i el període vigent.",
         historyNoSeries: "Aquest municipi no té sèrie històrica publicada de fiances (Incasòl).",
-        // 255 municipis sense dada oficial: referència de comarca (estimació)
-        refComarcaLabel: "Referència de comarca (estimació)",
+        // 255 municipis sense dada oficial: referència de comarca (aproximació)
+        refComarcaLabel: "Referència de comarca (aproximació)",
         refComarcaNote: "Incasòl no publica la renda mitjana d'aquest municipi (mostra petita). La xifra és la mitjana ponderada pels contractes dels municipis de la comarca: NO és dada municipal oficial.",
-        historyRefNote: "Sèrie de la COMARCA (estimació ponderada Incasòl): el municipi no té sèrie municipal publicada.",
+        historyRefNote: "Sèrie de la COMARCA (càlcul ponderat Incasòl): el municipi no té sèrie municipal publicada.",
       },
       // Buscador per referència catastral (2026-11-11)
       rc: {
@@ -261,7 +261,7 @@ export const STRINGS = {
     },
     footer: {
       made: "Fet amb dades obertes de la Generalitat, Incasòl, ICGC i Cadastre",
-      disclaimer: "Preureal ofereix informació estadística oficial agregada. No és una estimació de preu d'un habitatge concret ni assessorament jurídic.",
+      disclaimer: "Preureal ofereix informació estadística oficial agregada. No és una taxació oficial d'un habitatge concret ni assessorament jurídic: les valoracions del producte són sempre rangs orientatius amb la font a la vista.",
     },
     common: { loading: "Carregant..." },
   },
@@ -323,7 +323,7 @@ export const STRINGS = {
         },
         comp: {
           name: "Comparativa de municipios",
-          feats: ["Hasta 6 municipios en un solo PDF", "Precio vigente, variación anual y €/m² estimado", "Gráfico comparativo y ficha por municipio"],
+          feats: ["Hasta 6 municipios en un solo PDF", "Precio vigente, variación anual y €/m² orientativo", "Gráfico comparativo y ficha por municipio"],
         },
         buy: "Comprar informe",
         formMuni: "Municipio",
@@ -351,7 +351,7 @@ export const STRINGS = {
       searchPlaceholder: "Busca municipio (p. ej. Barcelona, Girona, Salou...)",
       zoomHint: "Haz zoom (nivel 16+) para cargar los edificios de la zona",
       loadingBuildings: "Cargando edificios reales...",
-      legend: { low: "Precio bajo", high: "Precio alto", tense: "Municipio tensionado", industrial: "Nave industrial (sin estadística de viviendas)", refComarca: "≈ Ref. de comarca (estimación, sin dato municipal)" },
+      legend: { low: "Precio bajo", high: "Precio alto", tense: "Municipio tensionado", industrial: "Nave industrial (sin estadística de viviendas)", refComarca: "≈ Ref. de comarca (aproximación, sin dato municipal)" },
       panel: {
         avgRent: "Precio medio real registrado",
         // v33 — ficha de una nave industrial: el precio municipal es de viviendas
@@ -376,7 +376,7 @@ export const STRINGS = {
         aboveSurface: "por encima de lo típico para esta superficie",
         belowSurface: "por debajo de lo típico para esta superficie",
         atSurface: "a nivel de lo típico para esta superficie",
-        surfaceTypicalRent: "Renta típica estimada para esta superficie",
+        surfaceTypicalRent: "Renta típica orientativa para esta superficie",
         eurM2Offer: "Tu oferta",
         approxNote: "Ajuste aproximado por superficie: renta(m²) = media municipal × (m²/85)^0,8 (elasticidad de mercado documentada, mismo modelo que la valoración). La fuente oficial no publica €/m². Para una horquilla con estado y habitaciones: «Valoración orientativa» (Premium).",
         tipAbove: "Muy por encima de lo típico: puedes negociar con estos datos ante quien te ofrece el piso.",
@@ -397,10 +397,10 @@ export const STRINGS = {
         source: "Fuente: fianzas Incasòl (habitatge.gencat.cat)",
         historyPairNote: "Sin serie publicada: se comparan el año anterior y el periodo vigente.",
         historyNoSeries: "Este municipio no tiene serie histórica publicada de fianzas (Incasòl).",
-        // 255 municipios sin dato oficial: referencia de comarca (estimación)
-        refComarcaLabel: "Referencia de comarca (estimación)",
+        // 255 municipios sin dato oficial: referencia de comarca (aproximación)
+        refComarcaLabel: "Referencia de comarca (aproximación)",
         refComarcaNote: "Incasòl no publica la renta media de este municipio (muestra pequeña). La cifra es la media ponderada por los contratos de los municipios de la comarca: NO es dato municipal oficial.",
-        historyRefNote: "Serie de la COMARCA (estimación ponderada Incasòl): el municipio no tiene serie municipal publicada.",
+        historyRefNote: "Serie de la COMARCA (cálculo ponderado Incasòl): el municipio no tiene serie municipal publicada.",
       },
       // Buscador por referencia catastral (2026-11-11)
       rc: {
@@ -493,7 +493,6 @@ export const STRINGS = {
     admin: {
       title: "Panel de administración",
       users: "Usuarios",
-      mrr: "MRR (estimado)",
       funnel: "Embudo (30 días)",
       signups: "Registros",
       queries: "Consultas detalladas",
@@ -525,7 +524,7 @@ export const STRINGS = {
     },
     footer: {
       made: "Hecho con datos abiertos de la Generalitat, Incasòl, ICGC y Cadastre",
-      disclaimer: "Preureal ofrece información estadística oficial agregada. No es una estimación de precio de una vivienda concreta ni asesoramiento jurídico.",
+      disclaimer: "Preureal ofrece información estadística oficial agregada. No es una tasación oficial de una vivienda concreta ni asesoramiento jurídico: las valoraciones del producto son siempre rangos orientativos con la fuente a la vista.",
     },
     common: { loading: "Cargando..." },
   },
