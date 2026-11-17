@@ -2,6 +2,34 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v54 — Auditoria integral (IV): AUDITORIA.md + copy «Com funciona» (C1/C2) + investigació GTFS — 2026-11-17
+
+Documents d'entrega del PROMPT MASTER (cap canvi de codi):
+
+- **`AUDITORIA.md`**: auditoria completa amb hallazgos P0/P1/P2 i evidència
+  reproducible. Veredicte: **P0=0, P1=0 obertes** (3 trobades i tancades al
+  moment a v51/v52), **P2=16** accions. Verificat EN VIU: TLS 1.3 + HSTS
+  preload, CSP completa, XCTO/XFO/RP/PP, brotli (40,3 kB → 9,4 kB), API amb
+  405/401 `REGISTRAT_PRIMER` reals, preflight creuat sense ACAO, 0 trackers,
+  quota server-side, llicències permissives, `/estat` amb sondes viu. Inclou
+  la matriu final de codi mort i el pla d'acció prioritzat.
+- **`docs/com-funciona-copy.md`**: C1 inventari funcional REAL (20
+  funcionalitats amb evidència de fitxer — la home només explicava 6-8) +
+  C2 copy final ca/es amb claus `howFull.*`: què necessites, què obtens, 11
+  passos amb una acció per pas, exemple numèric amb dades REALS (base
+  Manresa 585 €/mes verificada a producció; càlcul executat amb la funció
+  real `computeValuation`: 70 m²/3 hab bon estat → 488,4 €/mes, rang
+  439,6-537,3; a reformar → 390,7), «què NO és», límits del Free, mini-FAQ
+  (8) i glossari (10). Proposta d'implementació (ComFuncionaView acordeó
+  accessible + /com-funciona + sitemap + guards) — PENDENT d'aprovació.
+- **`docs/gtfs-investigacio-transport.md`**: fonts de transport provades amb
+  peticions reals. Catàleg Socrata gencat VERIFICAT (FGC GTFS-RT ×3, parades
+  d'autobús interurbà, estat Rodalies; llicència «See Terms of Use») però el
+  payload NO és accessible per API oberta («non-tabular», adjunts buits);
+  TMB 401 sense clau; AMB timeout (NO VERIFICAT). Integració per fases T1-T3
+  (EntornPanel → GTFS estàtic → RT) PENDENT d'aprovació; claus sempre
+  server-side; segona ronda proposta: OSM Overpass (ODbL, sense clau).
+
 ## v53 — Auditoria integral (III): darrers exports morts confirmats — 2026-11-17
 
 Matriu de codi mort completada: `DemoBlock<T>` (demografia.ts) i
