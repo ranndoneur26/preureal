@@ -97,6 +97,9 @@ export default function ComparadorView() {
   const [loadedMsg, setLoadedMsg] = useState<string | null>(null);
   const [planLimitMsg, setPlanLimitMsg] = useState<string | null>(null);
   const [csvMsg, setCsvMsg] = useState<string | null>(null);
+  // v60 — vista «Matriu»: 3-4+ municipis cara a cara en variables clau (zero
+  // regressió: per defecte es manté la vista de fitxes actual)
+  const [mode, setMode] = useState<"fitxes" | "matriu">("fitxes");
 
   // v25 — límit d'entitats per pla: gratuït 2, Premium i Pro (agents) 6.
   // El client el fa servir per a la UX; el límit real l'aplica sempre el servidor.
@@ -345,6 +348,29 @@ export default function ComparadorView() {
       {/* resultats */}
       {result && result.results.length > 0 && (
         <>
+          {/* v60 — commutador de vista: fitxes (actual) o matriu side-by-side */}
+          <div className="mt-6 flex items-center gap-1.5" role="tablist" aria-label={ca ? "Vista dels resultats" : "Vista de los resultados"}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "fitxes"}
+              onClick={() => setMode("fitxes")}
+              className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 min-h-[44px] ${mode === "fitxes" ? "bg-pine text-white" : "bg-card border border-line text-moss hover:bg-sand"}`}
+            >
+              <BarChart3 className="w-4 h-4" /> {ca ? "Fitxes" : "Fichas"}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mode === "matriu"}
+              onClick={() => setMode("matriu")}
+              className={`px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-1.5 min-h-[44px] ${mode === "matriu" ? "bg-pine text-white" : "bg-card border border-line text-moss hover:bg-sand"}`}
+            >
+              <GitCompare className="w-4 h-4" /> {ca ? "Matriu" : "Matriz"}
+            </button>
+          </div>
+
+          {mode === "fitxes" && (
           <div className="mt-6 bg-card rounded-2xl border border-line p-5">
             <h2 className="font-bold flex items-center gap-2">
               <BarChart3 className="w-4 h-4 text-pine" />
@@ -528,6 +554,12 @@ export default function ComparadorView() {
                 : "Comparación estadística entre agregados oficiales; no es una valoración individual. Fuente: Incasòl via habitatge.gencat.cat. «Comunidad»: mediana anónima de precios enviados por usuarios desde la ficha del mapa (no verificado; mediana solo con 3 informes o más, por privacidad)."}
             </div>
           </div>
+          )}
+
+          {/* v60 — MATRIU side-by-side: municipis enfrontats en variables clau */}
+          {mode === "matriu" && (
+            <ComparatorMatrix results={result.results} advanced={result.advanced === true} ca={ca} />
+          )}
 
           {/* Fase 4 — teaser de columnes avançades per al pla gratuït */}
           {result && result.advanced === false && (
@@ -669,4 +701,195 @@ function rentBarColor(rent: number): string {
   if (rent < 850) return "#e5c46a";
   if (rent < 1000) return "#e89a4b";
   return "#dd5a35";
+}
+
+// ── v60 — MATRIU comparativa multi-municipi (side-by-side) ───────────────────
+
+interface MatrixRow {
+  key: string;
+  label: (ca: boolean) => string;
+  /** millor valor de la fila: el més baix (preu/esforç), el més alt o cap */
+  better: "low" | "high" | null;
+  /** fila reservada a plans amb comparadorAvancat (la decisió és del servidor) */
+  advancedOnly?: boolean;
+  get: (r: ComparatorResult) => number | null;
+  fmt: (v: number, ca: boolean) => string;
+}
+
+const nf = (ca: boolean) => (ca ? "ca-ES" : "es-ES");
+const numFmt = (v: number, ca: boolean, decimals = 0) =>
+  v.toLocaleString(nf(ca), { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+
+/** Definició de les variables clau de la matriu (dades reals del servidor). */
+const MATRIX_ROWS: MatrixRow[] = [
+  {
+    key: "rent",
+    label: (ca) => (ca ? "Lloguer vigent (€/mes)" : "Alquiler vigente (€/mes)"),
+    better: "low",
+    get: (r) => (r.rentLatest != null ? r.rentLatest : r.comarcaRefLatest != null ? r.comarcaRefLatest : null),
+    fmt: (v) => `${numFmt(v, true)} €/mes`,
+  },
+  {
+    key: "interanual",
+    label: (ca) => (ca ? "Variació interanual (%)" : "Variación interanual (%)"),
+    better: null,
+    get: (r) =>
+      r.rentLatest != null && r.rentPrevYear != null && r.rentPrevYear > 0
+        ? ((r.rentLatest - r.rentPrevYear) / r.rentPrevYear) * 100
+        : null,
+    fmt: (v, ca) => `${v > 0 ? "+" : ""}${v.toFixed(1).replace(".", ",")} %`,
+  },
+  {
+    key: "median",
+    label: (ca) => (ca ? "Mediana històrica (€/mes)" : "Mediana histórica (€/mes)"),
+    better: "low",
+    get: (r) => r.median,
+    fmt: (v) => `${numFmt(v, true)} €/mes`,
+  },
+  {
+    key: "contracts",
+    label: (ca) => (ca ? "Contractes amb fiança (mostra)" : "Contratos con fianza (muestra)"),
+    better: "high",
+    get: (r) => (r.type === "BUILDING" ? r.samples : r.contractsLatest),
+    fmt: (v, ca) => numFmt(v, ca),
+  },
+  {
+    key: "poblacio",
+    label: (ca) => (ca ? "Població (Padró)" : "Población (Padrón)"),
+    better: null,
+    get: (r) => r.demografia?.poblacio ?? null,
+    fmt: (v, ca) => numFmt(v, ca),
+  },
+  {
+    key: "densitat",
+    label: (ca) => (ca ? "Densitat (hab/km²)" : "Densidad (hab/km²)"),
+    better: null,
+    get: (r) => r.demografia?.densitat ?? null,
+    fmt: (v, ca) => numFmt(v, ca, v >= 1000 ? 0 : 1),
+  },
+  {
+    key: "censusPct",
+    label: (ca) => (ca ? "Lloguer sobre parc (Cens 2021, %)" : "Alquiler sobre parque (Censo 2021, %)"),
+    better: null,
+    get: (r) => r.rentalShare?.censusPct ?? null,
+    fmt: (v, ca) => `${v.toFixed(1).replace(".", ",")} %`,
+  },
+  {
+    key: "estimatPct",
+    label: (ca) => (ca ? "% aproximat sobre parc residencial" : "% aproximado sobre parque residencial"),
+    better: null,
+    get: (r) => r.rentalShare?.estimatPct ?? null,
+    fmt: (v, ca) => `${v.toFixed(1).replace(".", ",")} %`,
+  },
+  {
+    key: "renda",
+    label: (ca) => (ca ? "Renda mitjana per llar (€/any, INE)" : "Renta media por hogar (€/año, INE)"),
+    better: "high",
+    advancedOnly: true,
+    get: (r) => r.indicators?.rentaHogar ?? null,
+    fmt: (v, ca) => `${numFmt(v, ca)} €/any`,
+  },
+  {
+    key: "effort",
+    label: (ca) => (ca ? "Esforç econòmic (% de la renda)" : "Esfuerzo económico (% de la renta)"),
+    better: "low",
+    advancedOnly: true,
+    get: (r) => r.indicators?.effortHogarPct ?? null,
+    fmt: (v, ca) => `${v.toFixed(1).replace(".", ",")} %`,
+  },
+  {
+    key: "ipva",
+    label: (ca) => (ca ? "IPVA acumulat des de 2015 (%)" : "IPVA acumulado desde 2015 (%)"),
+    better: null,
+    advancedOnly: true,
+    get: (r) => r.indicators?.ipvaCatAcum ?? null,
+    fmt: (v, ca) => `+${v.toFixed(1).replace(".", ",")} %`,
+  },
+];
+
+/**
+ * Matriu 3-4+ municipis enfrontats en variables clau (encàrrec «comparador
+ * multi-municipio avanzado»). Cada fila marca el millor valor (verd) i el pitjor
+ * (ambre controlat) entre les entitats amb dada real; sense dada → «—» (mai
+ * inventat). Les variables avançades (renda/esforç/IPVA) respecten el gating
+ * del servidor: amb pla gratuït es mostren amb cadenat i sense valor.
+ */
+function ComparatorMatrix({ results, advanced, ca }: { results: ComparatorResult[]; advanced: boolean; ca: boolean }) {
+  const cols = results.slice(0, 6);
+  return (
+    <div className="mt-4 bg-card rounded-2xl border border-line p-5 overflow-x-auto">
+      <h2 className="font-bold flex items-center gap-2">
+        <GitCompare className="w-4 h-4 text-pine" />
+        {ca ? "Matriu comparativa · variables clau cara a cara" : "Matriz comparativa · variables clave cara a cara"}
+      </h2>
+      <p className="mt-1 mb-3 text-xs text-stone">
+        {ca
+          ? "Verd = millor valor de la fila entre els comparats; ambre = pitjor. Lectura descriptiva de les sèries oficials, sense relació causal."
+          : "Verde = mejor valor de la fila entre los comparados; ámbar = peor. Lectura descriptiva de las series oficiales, sin relación causal."}
+      </p>
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr>
+            <th scope="col" className="text-left py-2 pr-3 text-stone font-semibold sticky left-0 bg-card min-w-[150px]">
+              {ca ? "Variable" : "Variable"}
+            </th>
+            {cols.map((r) => (
+              <th scope="col" key={`${r.type}-${r.code}`} className="py-2 px-2 text-center min-w-[110px]">
+                <span className="font-bold text-pine block truncate" title={r.name}>{r.name}</span>
+                <span className="text-[10px] font-semibold text-stone">
+                  {r.isTense ? (ca ? "zona tensada" : "zona tensionada") : r.type === "BUILDING" ? (ca ? "edifici" : "edificio") : (r.comarca || "")}
+                </span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {MATRIX_ROWS.map((row) => {
+            if (row.advancedOnly && !advanced) {
+              return (
+                <tr key={row.key} className="border-t border-sand2">
+                  <th scope="row" className="text-left py-2 pr-3 font-semibold text-stone">{row.label(ca)}</th>
+                  {cols.map((r) => (
+                    <td key={`${r.type}-${r.code}`} className="py-2 px-2 text-center text-stone">
+                      <span className="inline-flex items-center gap-1"><Crown className="w-3 h-3 text-ambergold" /> —</span>
+                    </td>
+                  ))}
+                </tr>
+              );
+            }
+            const vals = cols.map((r) => row.get(r));
+            const nums = vals.filter((v): v is number => v != null);
+            const best = row.better && nums.length >= 2 ? (row.better === "low" ? Math.min(...nums) : Math.max(...nums)) : null;
+            const worst = row.better && nums.length >= 2 ? (row.better === "low" ? Math.max(...nums) : Math.min(...nums)) : null;
+            return (
+              <tr key={row.key} className="border-t border-sand2">
+                <th scope="row" className="text-left py-2 pr-3 font-semibold text-moss">{row.label(ca)}</th>
+                {cols.map((r, i) => {
+                  const v = vals[i];
+                  const isBest = v != null && best != null && v === best && row.better != null;
+                  const isWorst = v != null && worst != null && v === worst && row.better != null && worst !== best;
+                  return (
+                    <td
+                      key={`${r.type}-${r.code}`}
+                      className={`py-2 px-2 text-center tabular-nums ${isBest ? "bg-mintsoft text-green2 font-bold rounded-lg" : isWorst ? "bg-ambersoft2 text-ambertext font-semibold rounded-lg" : "text-ink"}`}
+                    >
+                      {v != null ? row.fmt(v, ca) : "—"}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="mt-3 flex items-start gap-1.5 text-[10px] text-stone">
+        <Info className="w-3 h-3 mt-0.5 shrink-0" />
+        <span>
+          {ca
+            ? "Font: fiances Incasòl (habitatge.gencat.cat), IDESCAT/INE, Cens 2021. Les variables avançades (renda, esforç, IPVA) requereixen Premium o Pro. Renda mensual disponible mitjana per càlcul d'esforç; mai és una taxació oficial."
+            : "Fuente: fianzas Incasòl (habitatge.gencat.cat), IDESCAT/INE, Censo 2021. Las variables avanzadas (renta, esfuerzo, IPVA) requieren Premium o Pro. Renta mensual disponible media para el cálculo de esfuerzo; nunca es una tasación oficial."}
+        </span>
+      </p>
+    </div>
+  );
 }

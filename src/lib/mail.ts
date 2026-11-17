@@ -479,3 +479,42 @@ export function priceAlertMail(items: PriceAlertEntry[], locale: "ca" | "es") {
     : `<p>Ha cambiado el valor vigente de alquiler registrado (fianzas Incasòl) de alguno de tus favoritos con alerta activada:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Gestiona las alertas en el panel → Favoritos. Puedes ajustar el umbral % o desactivarlas cuando quieras.</p>`;
   return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
 }
+
+// ── v60: avís d'actualització de dades oficials (favorits tipus municipi) ──
+
+export interface DataUpdateEntry {
+  label: string;
+  /** nou valor vigent del municipi (pot ser null si la font encara no el publica) */
+  newValue: number | null;
+  /** període anterior conegut (p. ex. "2025") */
+  prevPeriod: string;
+  /** període nou publicat (p. ex. "2026") */
+  period: string;
+  url: string;
+}
+
+/**
+ * Avís de NOVA PUBLICACIÓ oficial (v60): el cron detecta que el període vigent
+ * d'un municipi preferit ha avançat (p. ex. "2025" → "2026") i informa el
+ * usuari amb alertsEnabled. Diferència amb l'alerta de preu v37: aquí l'avís
+ * dispara per ACTUALITZACIÓ DE DADES (nou període publicat), sense llindar %,
+ * i és idempotent via PriceAlertLog kind "DATA" per període.
+ */
+export function dataUpdateMail(items: DataUpdateEntry[], locale: "ca" | "es") {
+  const ca = locale === "ca";
+  const title = ca ? "Dades oficials actualitzades als teus preferits" : "Datos oficiales actualizados en tus favoritos";
+  const rows = items
+    .map((it) => {
+      const rent =
+        it.newValue != null
+          ? `<b>${it.newValue.toFixed(0)} €/mes</b>`
+          : ca ? "encara sense valor publicat" : "todavía sin valor publicado";
+      const periodPart = ` <span style="color:#777">· ${escapeHtml(it.prevPeriod)} → ${escapeHtml(it.period)}</span>`;
+      return `<tr><td style="padding:8px 0;border-bottom:1px solid #eee"><a href="${getSiteUrlOrigin()}${it.url}" style="color:#0f2e21;font-weight:600;text-decoration:none">${escapeHtml(it.label)}</a><br>◆ ${rent}${periodPart}</td></tr>`;
+    })
+    .join("");
+  const body = ca
+    ? `<p>La font oficial (fiances Incasòl via habitatge.gencat.cat) ha publicat dades noves d'algun dels teus municipis preferits:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Reps aquest avís perquè tens les alertes activades. Gestiona-les al panell → Preferits.</p>`
+    : `<p>La fuente oficial (fianzas Incasòl via habitatge.gencat.cat) ha publicado datos nuevos de alguno de tus municipios favoritos:</p><table style="width:100%;border-collapse:collapse">${rows}</table><p style="font-size:12px;color:#777">Recibes este aviso porque tienes las alertas activadas. Gestiónalas en el panel → Favoritos.</p>`;
+  return { subject: `${BRAND} — ${title}`, html: layout(title, body, locale) };
+}

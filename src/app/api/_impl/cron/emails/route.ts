@@ -8,8 +8,10 @@ import {
   deliverWithResend,
   favoritesDigestMail,
   priceAlertMail,
+  dataUpdateMail,
   mailProvider,
   redactSecrets,
+  type DataUpdateEntry,
   type DigestItem,
   type MailType,
   type PriceAlertEntry,
@@ -66,6 +68,9 @@ export async function GET(req: Request) {
     priceAlertsQueued: 0,
     priceAlertEntries: 0,
     priceBaselinesSet: 0,
+    dataUpdatesQueued: 0,
+    dataUpdateEntries: 0,
+    dataBaselinesSet: 0,
     retried: 0,
     sent: 0,
     tokensPurged: 0,
@@ -315,6 +320,109 @@ export async function GET(req: Request) {
     }
   } catch (e) {
     console.error("cron emails: alertes de preu fallades", e);
+  }
+
+  // ── 0.6. v60: ACTUALITZACIONS DE DADES OFICIALS (favorits tipus municipi) ──
+  // Encàrrec: saber QUAN la font oficial publica dades noves del municipi
+  // d'interès, sense necessitat de llindar %: quan rentPeriod avança
+  // (p. ex. "2025" → "2026") s'avisa els usuaris amb alertsEnabled que tenen
+  // aquell municipi als preferits. Idempotència: PriceAlertLog kind "DATA"
+  // únic per usuari+entitat+període. La PRIMERA passada només ancla el període
+  // vigent com a línia base (mai una rajada d'avisos amb dades velles).
+  try {
+    const users = await db.user.findMany({
+      where: {
+        active: true,
+        alertsEnabled: true,
+        emailVerifiedAt: { not: null },
+        plan: { in: ["PREMIUM", "PRO"] },
+        favorites: { some: { municipalityCode: { not: null } } },
+      },
+      select: { id: true, email: true, locale: true },
+      take: 500,
+    });
+    for (const u of users) {
+      const favs = await db.favorite.findMany({
+        where: { userId: u.id, municipalityCode: { not: null } },
+        take: 50,
+      });
+      const codes = [...new Set(favs.map((f) => f.municipalityCode as string))];
+      const muns = codes.length
+        ? await db.municipality.findMany({
+            where: { code: { in: codes } },
+            select: { code: true, name: true, rentLatest: true, rentPeriod: true },
+          })
+        : [];
+      const munMap = new Map(muns.map((m) => [m.code, m]));
+
+      const entries: DataUpdateEntry[] = [];
+      for (const f of favs) {
+        const m = munMap.get(f.municipalityCode as string);
+        if (!m?.rentPeriod) continue;
+        const prev = await db.priceAlertLog.findFirst({
+          where: { userId: u.id, entityKey: f.entityKey, kind: "DATA" },
+          orderBy: { period: "desc" },
+        });
+        const url = `/#/mapa?mun=${encodeURIComponent(m.code)}`;
+        if (!prev) {
+          // línia base sense establir: la PRIMERA passada només ancla (mai avís)
+          await db.priceAlertLog
+            .create({ data: { userId: u.id, entityKey: f.entityKey, kind: "DATA", period: m.rentPeriod, newValue: m.rentLatest } })
+            .catch(() => null);
+          summary.dataBaselinesSet++;
+          continue;
+        }
+        // avís NOMÉS quan el període oficial avança (mai correccions cap enrere)
+        if (m.rentPeriod > prev.period) {
+          await db.priceAlertLog
+            .create({
+              data: {
+                userId: u.id,
+                entityKey: f.entityKey,
+                kind: "DATA",
+                period: m.rentPeriod,
+                prevValue: prev.newValue ?? null,
+                newValue: m.rentLatest,
+              },
+            })
+            .catch(() => null);
+          entries.push({
+            label: m.name || (f.label || m.code),
+            newValue: m.rentLatest ?? null,
+            prevPeriod: prev.period,
+            period: m.rentPeriod,
+            url,
+          });
+        }
+      }
+
+      if (entries.length > 0) {
+        const dayKey = new Date().toISOString().slice(0, 10);
+        const mail = dataUpdateMail(entries, u.locale === "es" ? "es" : "ca");
+        try {
+          await db.emailLog.create({
+            data: {
+              to: u.email,
+              subject: mail.subject,
+              body: redactSecrets(mail.html),
+              provider: summary.provider,
+              status: summary.provider === "resend" ? "pending" : "logged",
+              type: "ALERT",
+              userId: u.id,
+              attempts: 0,
+              nextRetryAt: summary.provider === "resend" ? new Date() : null,
+              idempotencyKey: `data-updates:${u.id}:${dayKey}`,
+            },
+          });
+          summary.dataUpdatesQueued++;
+          summary.dataUpdateEntries += entries.length;
+        } catch {
+          // idempotència diària (P2002) o altre: mai bloqueja la resta
+        }
+      }
+    }
+  } catch (e) {
+    console.error("cron emails: actualitzacions de dades fallades", e);
   }
 
   // ── 1. OUTBOX: reposar enviaments encallats (només tipus no sensibles) ──

@@ -66,6 +66,7 @@ import * as h_cron_rental_share from "../_impl/cron/rental-share/route";
 import * as h_email_status from "../_impl/email-status/route";
 import * as h_estima from "../_impl/estima/route";
 import * as h_events from "../_impl/events/route";
+import * as h_export_dataset from "../_impl/export/dataset/route";
 import * as h_favorites from "../_impl/favorites/route";
 import * as h_geocode from "../_impl/geocode/route";
 import * as h_history from "../_impl/history/route";
@@ -167,6 +168,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["email-status"], h: h_email_status },
   { seg: ["estima"], h: h_estima },
   { seg: ["events"], h: h_events },
+  { seg: ["export", "dataset"], h: h_export_dataset },
   { seg: ["favorites"], h: h_favorites },
   { seg: ["geocode"], h: h_geocode },
   { seg: ["history"], h: h_history },

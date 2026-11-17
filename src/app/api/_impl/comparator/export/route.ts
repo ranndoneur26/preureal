@@ -3,13 +3,15 @@ import { db } from "@/lib/db";
 import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 import { planAllows } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
+import { buildXlsx, XLSX_MIME, type XlsxCell } from "@/lib/xlsx";
 
 /**
- * POST /api/comparator/export — exportació CSV de la COMPARACIÓ (v37, pla PRO,
- * mateixa política que /api/export/[code]). Una fila per entitat i any:
- * els valors vigents + tota la sèrie històrica dels municipis comparats
+ * POST /api/comparator/export — exportació CSV o XLSX de la COMPARACIÓ (v37,
+ * pla PRO, mateixa política que /api/export/[code]). Una fila per entitat i
+ * any: els valors vigents + tota la sèrie històrica dels municipis comparats
  * (els edificis no tenen sèrie: surten només amb el valor vigent).
  * Dades 100% de la BD (mai del client) + defensa anti-CSV-injection.
+ * v60 — body { format: "xlsx" } retorna llibre Excel (per defecte CSV).
  */
 export async function POST(req: NextRequest) {
   let user;
@@ -31,6 +33,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const raw = Array.isArray(body?.entities) ? body.entities.slice(0, 6) : [];
+  const format = body?.format === "xlsx" ? "xlsx" : "csv";
   if (raw.length < 2) {
     return NextResponse.json({ error: "BAD_INPUT", message: "Selecciona almenys 2 entitats." }, { status: 400 });
   }
@@ -57,15 +60,21 @@ export async function POST(req: NextRequest) {
     return /^[=+\-@]/.test(s) ? `'${s}` : s;
   };
 
-  const rows: string[][] = [["entitat", "tipus", "codi", "nom", "any", "lloguer_mitja_eur_mes", "contractes", "periode_vigent", "area_tensada", "font"]];
+  const rows: XlsxCell[][] = [["entitat", "tipus", "codi", "nom", "any", "lloguer_mitja_eur_mes", "contractes", "periode_vigent", "area_tensada", "font"]];
+
+  const num = (v: unknown): XlsxCell => {
+    if (v == null || v === "") return v ?? "";
+    const n = Number(v);
+    return Number.isFinite(n) && String(v).trim() !== "" ? n : String(v);
+  };
 
   for (const m of muns) {
-    const base = ["MUNICIPI", m.code, m.name, m.comarca || ""];
+    const base: XlsxCell[] = ["MUNICIPI", m.code, m.name, m.comarca || ""];
     rows.push([
       ...base,
       "vigent",
-      safe(m.rentLatest ?? ""),
-      safe(m.contractsLatest ?? ""),
+      num(m.rentLatest),
+      num(m.contractsLatest ?? ""),
       safe(m.rentPeriod ?? ""),
       m.isTense ? "SI" : "NO",
       "Incasòl (fiances) via habitatge.gencat.cat",
@@ -80,7 +89,7 @@ export async function POST(req: NextRequest) {
     }
     if (hist && typeof hist === "object" && !Array.isArray(hist)) {
       for (const [year, value] of Object.entries(hist)) {
-        rows.push([...base, safe(year), safe(value), "", "", m.isTense ? "SI" : "NO", "Incasòl (fiances) via habitatge.gencat.cat"]);
+        rows.push([...base, /^[=+\-@]/.test(year) ? `'${year}` : year, num(value), "", "", m.isTense ? "SI" : "NO", "Incasòl (fiances) via habitatge.gencat.cat"]);
       }
     }
   }
@@ -91,20 +100,31 @@ export async function POST(req: NextRequest) {
       safe(b.nom || b.refcat || `Edifici ${b.id.slice(-6)}`),
       b.municipalityCode || "",
       "vigent",
-      safe(b.avgRentEurMonth ?? ""),
-      safe(b.sampleSize ?? ""),
+      num(b.avgRentEurMonth),
+      num(b.sampleSize ?? ""),
       "",
       "",
       "Incasòl (importació illa/edifici)",
     ]);
   }
 
-  const csv = rows.map((r) => r.map((c) => safe(c)).join(";")).join("\n");
   await db.event
-    .create({ data: { type: "EXPORT", userId: user.id, meta: JSON.stringify({ comparator: true, entities: raw.length }) } })
+    .create({ data: { type: "EXPORT", userId: user.id, meta: JSON.stringify({ comparator: true, entities: raw.length, format }) } })
     .catch(() => {});
 
   const fname = raw.map((e: any) => String(e.code || "").slice(0, 8)).join("_").replace(/[^\p{L}\p{N}_-]+/gu, "") || "comparacio";
+
+  if (format === "xlsx") {
+    const file = buildXlsx([{ name: "Comparació", rows }]);
+    return new NextResponse(file as unknown as BodyInit, {
+      headers: {
+        "Content-Type": XLSX_MIME,
+        "Content-Disposition": `attachment; filename="preureal_comparacio_${fname}.xlsx"`,
+      },
+    });
+  }
+
+  const csv = rows.map((r) => r.map((c) => safe(c)).join(";")).join("\n");
   return new NextResponse(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",

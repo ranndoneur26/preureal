@@ -48,6 +48,9 @@ export default function PanelView() {
   const [retentionOpen, setRetentionOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelFeedback, setCancelFeedback] = useState("");
+  // v60 — exportació massiva del dataset (Pro): filtre per comarca o província
+  const [dsScope, setDsScope] = useState("");
+  const [dsKind, setDsKind] = useState<"comarca" | "provincia">("comarca");
 
   // seguretat
   const [currentPassword, setCurrentPassword] = useState("");
@@ -683,6 +686,65 @@ export default function PanelView() {
               <button onClick={resendVerification} disabled={busy} className="text-xs text-ember3 flex items-center gap-1 underline disabled:opacity-50">
                 <MailWarning className="w-4 h-4" /> {locale === "ca" ? "No verificat — reenviar" : "No verificado — reenviar"}
               </button>
+            )}
+          </div>
+          {/* v60 — exportació massiva del dataset municipal (pla Pro) */}
+          <div className="pt-2 border-t border-sand">
+            <div className="text-xs font-bold text-moss uppercase tracking-wide mb-1.5">
+              {locale === "ca" ? "Exportació de dades (Pro)" : "Exportación de datos (Pro)"}
+            </div>
+            {u.plan === "PRO" ? (
+              <div className="space-y-2">
+                <p className="text-xs text-stone">
+                  {locale === "ca"
+                    ? "Dataset municipal en brut: lloguer mitjà, històric i contractes per municipi i any. Filtra per comarca o província, o exporta tota Catalunya."
+                    : "Dataset municipal en bruto: alquiler medio, histórico y contratos por municipio y año. Filtra por comarca o provincia, o exporta toda Cataluña."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={dsKind}
+                    onChange={(e) => setDsKind(e.target.value as "comarca" | "provincia")}
+                    className="px-3 py-2 rounded-lg border border-line text-sm bg-card"
+                    aria-label={locale === "ca" ? "Tipus de filtre" : "Tipo de filtro"}
+                  >
+                    <option value="comarca">{locale === "ca" ? "Comarca" : "Comarca"}</option>
+                    <option value="provincia">{locale === "ca" ? "Província" : "Provincia"}</option>
+                  </select>
+                  <input
+                    value={dsScope}
+                    onChange={(e) => setDsScope(e.target.value.slice(0, 60))}
+                    placeholder={locale === "ca" ? "Ex.: Bages (buit = tota Catalunya)" : "Ej.: Bages (vacío = toda Cataluña)"}
+                    className="flex-1 min-w-[200px] px-3 py-2 rounded-lg border border-line text-sm"
+                  />
+                  <a
+                    href={`/api/export/dataset?${dsScope.trim() ? `${dsKind}=${encodeURIComponent(dsScope.trim())}` : ""}&format=csv`.replace("?&", "?")}
+                    className="px-4 py-2 rounded-lg border border-pine text-pine text-sm font-bold flex items-center gap-1.5 hover:bg-sand"
+                  >
+                    <Download className="w-4 h-4" /> CSV
+                  </a>
+                  <a
+                    href={`/api/export/dataset?${dsScope.trim() ? `${dsKind}=${encodeURIComponent(dsScope.trim())}` : ""}&format=xlsx`.replace("?&", "?")}
+                    className="px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold flex items-center gap-1.5 hover:bg-pine2"
+                  >
+                    <Download className="w-4 h-4" /> Excel (.xlsx)
+                  </a>
+                </div>
+                <p className="text-[11px] text-stone">
+                  {locale === "ca"
+                    ? "Font: Incasòl (fiances) via habitatge.gencat.cat. El límit de ritme és 10 exportacions per minut."
+                    : "Fuente: Incasòl (fianzas) via habitatge.gencat.cat. El límite de ritmo es 10 exportaciones por minuto."}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-stone flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-ambergold shrink-0" />
+                {locale === "ca"
+                  ? "Amb el pla Pro: descàrrega del dataset municipal filtrat per comarca o província en CSV o Excel."
+                  : "Con el plan Pro: descarga del dataset municipal filtrado por comarca o provincia en CSV o Excel."}
+                <button onClick={() => navigate("/preus")} className="text-ember3 font-bold underline shrink-0">
+                  {locale === "ca" ? "Veure plans" : "Ver planes"}
+                </button>
+              </p>
             )}
           </div>
           {u.plan === "FREE" && (
