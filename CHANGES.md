@@ -2,6 +2,15 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v53 — Auditoria integral (III): darrers exports morts confirmats — 2026-11-17
+
+Matriu de codi mort completada: `DemoBlock<T>` (demografia.ts) i
+`EMAIL_FIRST_QUOTA_NOTE` (email-first.ts) tenien 0 referències en producció,
+tests i scripts → eliminats. En canvi, `clearEmailFirstDraft()` (mai
+invocada) NO s'elimina: la seva morta existència documenta una decisió de
+producte pendent (els esborranys sessionStorage del flux email-first potser
+mai no es netegen — P2 a l'auditoria amb proposta).
+
 ## v52 — Auditoria integral (II): patch de seguretat de Next — 2026-11-17
 
 **Vulnerabilitat moderada tancada:** `npm audit` reportava next 16.3.0–16.4.4

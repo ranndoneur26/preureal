@@ -36,11 +36,6 @@ export interface DemoFont {
   updated: string | null; // darrera importació
 }
 
-export interface DemoBlock<T> {
-  data: T | null;
-  font: DemoFont | null;
-}
-
 export interface DemografiaMuni {
   poblacio: {
     actual: number | null;

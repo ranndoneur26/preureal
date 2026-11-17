@@ -72,11 +72,6 @@ export const EMAIL_FIRST_SWITCH_USER = {
   es: "Cambia de usuario",
 } as const;
 
-export const EMAIL_FIRST_QUOTA_NOTE = {
-  ca: "Les consultes dels formularis compten dins de la quota del pla (3 consultes detallades al mes amb el pla Free).",
-  es: "Las consultas de los formularios computan dentro de la cuota del plan (3 consultas detalladas al mes con el plan Free).",
-} as const;
-
 // ── Validació i normalització (client) ──────────────────────────────────────
 
 /**
