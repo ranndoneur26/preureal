@@ -1,0 +1,9 @@
+pandas>=2.0
+numpy>=1.26
+geopandas>=0.14
+pyarrow>=15
+shapely>=2.0
+pyproj>=3.6
+psycopg2-binary>=2.9
+scikit-learn>=1.4   # opcional (extensió GWR/RF del PASO 3 en versions futures)
+# OSMnx>=1.8         # opcional (--osm): distàncies d'entorn; mai font de renda

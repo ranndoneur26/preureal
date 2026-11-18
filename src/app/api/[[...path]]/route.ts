@@ -71,6 +71,8 @@ import * as h_estima from "../_impl/estima/route";
 import * as h_events from "../_impl/events/route";
 import * as h_export_dataset from "../_impl/export/dataset/route";
 import * as h_favorites from "../_impl/favorites/route";
+import * as h_geo_edifici from "../_impl/geo/edifici/route";
+import * as h_geo_illes from "../_impl/geo/illes/route";
 import * as h_geocode from "../_impl/geocode/route";
 import * as h_history from "../_impl/history/route";
 import * as h_indicators_status from "../_impl/indicators/status/route";
@@ -177,6 +179,8 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["events"], h: h_events },
   { seg: ["export", "dataset"], h: h_export_dataset },
   { seg: ["favorites"], h: h_favorites },
+  { seg: ["geo", "edifici"], h: h_geo_edifici },
+  { seg: ["geo", "illes"], h: h_geo_illes },
   { seg: ["geocode"], h: h_geocode },
   { seg: ["history"], h: h_history },
   { seg: ["indicators", "status"], h: h_indicators_status },

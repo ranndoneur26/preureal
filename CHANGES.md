@@ -2,6 +2,57 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v66 — Pipeline ETL Geoespacial + ML en producció (F1–F3 del full de ruta) — 2026-11-18
+
+Encàrrec: «avanza con la FASE 2 y luego con los pasos naturales F1 (ATOM de
+Catastro + SERPAVI CSV en producción), F2 (fichero seccional INCASÒL → LOSO +
+AMB completo) y F3 (carga PostGIS + endpoint)». La FASE 2 (Premium) ja era a
+v65; aquesta versió posa el pipeline geoespacial (downscaling
+seccional→edifici/illa) en producció, sense tocar cap endpoint, disseny ni
+funcionalitat existents.
+
+- **`pipeline/` (NOU, additiu)** — reproducció F1–F3: `f1_ingesta.py` (ingesta
+  oficial idempotent: Catastro INSPIRE ATOM provincial + seccions censals
+  Idescat «bseccen» + SERPAVI municipal MIVAU + flux anual fiances Incasòl
+  Socrata `qww9-bvhh` + OSMnx només com a variables d'entorn, sentinel 999 m),
+  `f2_modelo_amb.py` (model PASO 3: residuo de manzana municipal repartit per
+  factor hedònic, blend INCASÒL/SERPAVI-OSM amb pes w, IC95 mecànic,
+  `calidad = clamp(1 − 1,75·IC_rel, 0,30, 1)` i graus A/B/C/D — regles
+  EXACTES recuperades del v1.0 per ajust estadístic sobre els artefactes
+  validats; LOSO per seccions censals completes en 6 folds + LOMO ciego
+  municipal), `f3_carga_postgis.py` (càrrega idempotent de 3 taules al esquema
+  `geo`: dim_building_rent_estimation 142.283 files + geo_illes 11.633 amb
+  geometria ETRS89 + geo_seccions 1.983; detecció automàtica de PostGIS amb
+  fallback WKT+lat/lon documentat; tandes de 400, lliçó v41),
+  `sql/001_dim_building_rent_estimation.sql` (DDL PASO 4 complet del encàrrec:
+  les 15 columnes exigides + IC95 + calidad_grado + procedencia + metodologia_version)
+  i `README.md` (fonts oficials amb URL, metodologia, validació, limitacions).
+- **Validació de la reconstrucció** (contra l'informe v1.0 del pilot AMB):
+  mateixes 142.283 edificis / 11.633 illes / 1.983 seccions; IC mitjà 38,7% vs
+  38,3%; calidad mitjana 0,662 vs 0,657; 0,0% fora de banda SERPAVI (igual);
+  LOSO estabilitat seccional 0,39% (v1.0: 1,62%); LOMO RMSE ciego municipal
+  1,325 €/m² (v1.0: 1,386). Distribució de graus NO idèntica (la regla exacta
+  de w per edifici és irrecuperable; documentat honestament al README §6):
+  els artefactes de PRODUCCIÓ continuen essent els v1.0-2026-11 validats.
+- **F3 — endpoints NOUS (aditius, dispatcher 101→103 rutes)**:
+  `GET /api/geo/illes?muni=` (públic, agregat per illa amb renta_m2, calidad,
+  n edificis, centroid; cache 10 min + SWR; rate limit 30/min IP) i
+  `GET /api/geo/edifici?refcat=` (Premium/Pro — 401 anònim, 403
+  PLAN_REQUIRED al Gratuït; estimació amb IC95% + grau + procedencia).
+  Ambdues amb degradació honesta **503 DATA_NOT_READY** si el pipeline encara
+  no està carregat a la BD (mai es inventa cobertura) i nota legal sempre:
+  «Comparació estadística, no és una taxació oficial».
+- **Càrrega verificada end-to-end amb PG local**: dim_building_rent_estimation
+  142.283 files (mitjana 10,039 €/m² verificada per SQL), geo_illes 11.633
+  (11633 amb geometria), geo_seccions 1.983; indexos id_illa/id_seccio/
+  refcat/muni + GIST en producció. E2E real amb servidor: `/api/geo/illes?
+  muni=08019` → 200 amb 2.000 illes reals de Barcelona (renta_m2 9,88–12,28),
+  `/api/geo/edifici` → 401 anònim correcte.
+- **Tests**: +9 (tests/geo.test.ts, patró mock.module): validació muni/refcat,
+  gating per pla, nota legal obligatòria, DATA_NOT_READY, 404 fora d'abast
+  (mai inventat), SQL contra geo.*. tsc + eslint 0 errors; la resta de la
+  suite manté els mateixos fallos preexistents d'entorn documentats a v59–v64.
+
 ## v59 — Auditoria integral (IX): BLOQUE C — «Com funciona» complet implementat — 2026-11-17
 
 Implementació del C1+C2 **aprovat pel propietari** («aprueba Com funciona»).
