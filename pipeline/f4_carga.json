@@ -1,0 +1,13 @@
+{
+  "taula": "geo.municipis + geo.seccions_censals + geo.dades_lloguer_agregades",
+  "municipis": 947,
+  "munis_coberts": 27,
+  "seccions": 1983,
+  "dades": 1945,
+  "any_referencia": 2025,
+  "postgis": true,
+  "geometries_carregades": 0,
+  "min_edificis_seccio": 5,
+  "compliment_metode": "QUOTA_EDIFICIS_ESTIMADA (fitxer seccional Incasòl pendent)",
+  "segons": 1.8
+}

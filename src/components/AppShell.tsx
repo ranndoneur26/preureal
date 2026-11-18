@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Locale, t as getT } from "@/lib/i18n";
 import LandingView from "@/components/views/LandingView";
+import ConsultaView from "@/components/views/ConsultaView";
 import AnalitzaView from "@/components/views/AnalitzaView";
 import EstimaView from "@/components/views/EstimaView";
 import MapView from "@/components/views/MapView";
@@ -127,6 +128,9 @@ export default function AppShell() {
         <main className="flex-1 flex flex-col">
           <div key={view} className="pr-view flex-1 flex flex-col">
           {view === "/" && <LandingView />}
+          {/* v67 — el mòdul «Consulta el preu real registrat» passa aquí des de
+              la portada (que acull el buscador invers); títol adient al menú */}
+          {view === "/consulta" && <ConsultaView />}
           {view === "/analitza" && <AnalitzaView />}
           {view === "/estima" && <EstimaView />}
           {view === "/mapa" && <MapView />}
@@ -196,6 +200,7 @@ function Header({ route }: { route: string }) {
               </button>
               <nav className="hidden md:flex items-center gap-1">
                 {link("/analitza", t.nav.analitza)}
+                {link("/consulta", t.nav.consultaRapida)}
                 {link("/estima", "Valora")}
                 {link("/mapa", t.nav.mapa)}
                 {link("/comparador", "Comparador")}
@@ -270,6 +275,7 @@ function Header({ route }: { route: string }) {
             </div>
             <div id="mobile-nav" className="hidden md:hidden border-t border-line bg-cream px-4 py-3 flex-col gap-1">
               {link("/analitza", t.nav.analitza)}
+              {link("/consulta", t.nav.consultaRapida)}
               {link("/estima", "Valora")}
               {link("/mapa", t.nav.mapa)}
               {link("/comparador", "Comparador")}
@@ -332,6 +338,7 @@ function Footer() {
                 <div className="flex flex-col gap-1.5">
                   {footLink("/com-funciona", t.howFull.nav)}
                   {footLink("/analitza", ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado")}
+                  {footLink("/consulta", ca ? "Consulta ràpida" : "Consulta rápida")}
                   {footLink("/estima", ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda")}
                   {footLink("/mapa", t.nav.mapa)}
                   {footLink("/comparador", "Comparador")}

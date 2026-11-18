@@ -87,6 +87,10 @@ export default function AnalitzaForm({
   onLoadingChange,
   onPointChange,
   externalPoint,
+  // v67 — OPCIONAL i additiu: municipi prefilat (deep link del buscador invers:
+  // «Verificar un edifici concret en aquesta zona» → /#/analitza?muni=…).
+  // Mai obligatori; cap caller existent canvia de comportament.
+  initialMunicipi,
 }: {
   variant: "compact" | "full";
   onResult: (data: unknown) => void;
@@ -95,11 +99,21 @@ export default function AnalitzaForm({
   onPointChange?: (point: { lat: number; lng: number } | null) => void;
   /** full: punt marcat al mapa per l'usuari (la vista el sincronitza al formulari) */
   externalPoint?: { lat: number; lng: number } | null;
+  /** v67: municipi inicial (code 6 dígits + nom) per a deep links */
+  initialMunicipi?: { code: string; name: string };
 }) {
   const { locale, navigate } = useApp();
   const ca = locale === "ca";
-  const [v, setV] = useState<AnalitzaFormValues>(emptyValues);
-  const [munQuery, setMunQuery] = useState("");
+  const [v, setV] = useState<AnalitzaFormValues>(
+    initialMunicipi
+      ? {
+          ...emptyValues,
+          municipalityCode: initialMunicipi.code,
+          municipalityName: initialMunicipi.name,
+        }
+      : emptyValues,
+  );
+  const [munQuery, setMunQuery] = useState(initialMunicipi?.name ?? "");
   const [munOptions, setMunOptions] = useState<MuniLite[]>([]);
   const [geoOptions, setGeoOptions] = useState<GeocodeLite[]>([]);
   const [error, setError] = useState<string | null>(null);

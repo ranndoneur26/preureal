@@ -101,6 +101,7 @@ import * as h_subscription_cancel from "../_impl/subscription/cancel/route";
 import * as h_subscription_change from "../_impl/subscription/change/route";
 import * as h_subscription_reactivate from "../_impl/subscription/reactivate/route";
 import * as h_valuation from "../_impl/valuation/route";
+import * as h_zones from "../_impl/zones/route";
 import * as h_analisi_muni_code from "../_impl/analisi/muni/[code]/route";
 import * as h_buildings_id from "../_impl/buildings/[id]/route";
 import * as h_demografia_muni_code from "../_impl/demografia/muni/[code]/route";
@@ -209,6 +210,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["subscription", "change"], h: h_subscription_change },
   { seg: ["subscription", "reactivate"], h: h_subscription_reactivate },
   { seg: ["valuation"], h: h_valuation },
+  { seg: ["zones"], h: h_zones },
   { seg: ["analisi", "muni", ":code"], h: h_analisi_muni_code },
   { seg: ["buildings", ":id"], h: h_buildings_id },
   { seg: ["demografia", "muni", ":code"], h: h_demografia_muni_code },

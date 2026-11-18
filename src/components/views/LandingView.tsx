@@ -3,20 +3,19 @@
 import { useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
 import { BadgeCheck, Building2, MapPin, Scale, TrendingUp, ArrowRight, WandSparkles, Search } from "lucide-react";
-import AnalitzaForm from "@/components/analitza/AnalitzaForm";
-import AnalitzaReport from "@/components/analitza/AnalitzaReport";
+// v67 — BUSCADOR INVERS a la portada: substitueix el mòdul del formulari
+// «Consulta el preu real registrat» (que passa a la pàgina pròpia #/consulta,
+// amb entrada de menú pròpia). La pestanya «Valora el lloguer» resta intacta.
+import BuscadorInvers from "@/components/buscador/BuscadorInvers";
 import EstimaIntro from "@/components/analitza/EstimaIntro";
 import LandingMap from "@/components/views/LandingMap";
-import { GateLockedPanel } from "@/components/emailfirst/EmailFirst";
-import type { AnalitzaReportData } from "@/lib/analitza-html";
 import { peekLatestDraftKind } from "@/lib/email-first";
 
 export default function LandingView() {
-  const { t, navigate, locale, auth } = useApp();
+  const { t, navigate, locale } = useApp();
   const ca = locale === "ca";
-  const [report, setReport] = useState<AnalitzaReportData | null>(null);
-  // F1 — dues funcionalitats separades: «consulta» (mapa + comparació) i «estima»
-  const [tab, setTab] = useState<"consulta" | "estima">("consulta");
+  // F1 — dues funcionalitats separades: «invers» (buscador invers) i «estima»
+  const [tab, setTab] = useState<"invers" | "estima">("invers");
 
   // v46 — quan l'usuari torna del registre/magic link amb un esborrany del
   // flux email-first, la portada obre DIRECTAMENT la pestanya del formulari
@@ -82,12 +81,12 @@ export default function LandingView() {
               <div role="tablist" aria-label={ca ? "Eines de la portada" : "Herramientas de la portada"} className="grid grid-cols-2 bg-pine text-white">
                 <button
                   role="tab"
-                  aria-selected={tab === "consulta"}
-                  onClick={() => setTab("consulta")}
-                  className={`px-2.5 sm:px-3 py-3 text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors min-h-[48px] ${tab === "consulta" ? "bg-pine" : "bg-pine/60 text-white/75 hover:bg-pine/80"}`}
+                  aria-selected={tab === "invers"}
+                  onClick={() => setTab("invers")}
+                  className={`px-2.5 sm:px-3 py-3 text-[11px] sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-colors min-h-[48px] ${tab === "invers" ? "bg-pine" : "bg-pine/60 text-white/75 hover:bg-pine/80"}`}
                 >
                   <Search className="w-4 h-4 shrink-0" />
-                  <span className="text-left">{ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado"}</span>
+                  <span className="text-left">{ca ? "Buscador invers: zones que compleixen l'índex" : "Buscador inverso: zonas que cumplen el índice"}</span>
                 </button>
                 <button
                   role="tab"
@@ -103,49 +102,7 @@ export default function LandingView() {
                 {tab === "estima" ? (
                   <EstimaIntro />
                 ) : (
-                  <>
-                    <p className="text-[11px] text-stone leading-relaxed mb-3">
-                      {ca
-                        ? "Comparació estadística del preu de l'anunci amb la referència oficial registrada (fiances Incasòl): no és una taxació oficial; és una referència orientativa basada en dades oficials."
-                        : "Comparación estadística del precio del anuncio con la referencia oficial registrada (fianzas Incasòl): no es una tasación oficial; es una referencia orientativa basada en datos oficiales."}
-                    </p>
-                    {/* v47 — enllaç creuat clar cap a «estima» dins la secció
-                        consulta: text RESUMIT i amb redacció pròpia (el text
-                        llarg viu a la pestanya estima i a /estima, mai duplicat) */}
-                    <div className="mb-3 rounded-xl border border-sand3 bg-cream p-3.5">
-                      <p className="text-xs text-moss leading-relaxed flex items-start gap-2">
-                        <WandSparkles className="w-4 h-4 text-pine shrink-0 mt-0.5" aria-hidden="true" />
-                        <span>
-                          {ca
-                            ? "I si el que vols és valorar el lloguer del TEU habitatge (no comparar un anunci)? «Valora el lloguer del teu habitatge» calcula per passos un rang orientatiu: part de la base oficial de fiances (Incasòl) escalada per superfície (N1) i hi afegeix ajustos opcionals amb coeficient documentat, com l'estat de conservació o les habitacions (N2). Cada xifra amb la seva font, el seu període i les seves limitacions — mai una taxació oficial."
-                            : "¿Y si lo que quieres es valorar el alquiler de TU vivienda (no comparar un anuncio)? «Valora el alquiler de tu vivienda» calcula por pasos un rango orientativo: parte de la base oficial de fianzas (Incasòl) escalada por superficie (N1) y añade ajustes opcionales con coeficiente documentado, como el estado de conservación o las habitaciones (N2). Cada cifra con su fuente, su período y sus limitaciones — nunca una tasación oficial."}
-                        </span>
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setTab("estima")}
-                        aria-label={ca ? "Obre la pestanya Valora el lloguer del teu habitatge" : "Abre la pestaña Valora el alquiler de tu vivienda"}
-                        className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-pine text-white text-xs font-bold px-3.5 py-2.5 hover:bg-pine/90 transition-colors min-h-[44px]"
-                      >
-                        {ca ? "Obre «Valora el lloguer del teu habitatge»" : "Abre «Valora el alquiler de tu vivienda»"}
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                    {report ? (
-                      <AnalitzaReport data={report} variant="compact" />
-                    ) : (
-                      <>
-                        <AnalitzaForm
-                          variant="compact"
-                          onResult={(d) => setReport(d as AnalitzaReportData)}
-                        />
-                        {!auth.user && (
-                          // v46 — el panell de resultats NEIX BLOQUEJAT sense compte
-                          <GateLockedPanel ca={ca} onSignup={() => navigate("/registre")} />
-                        )}
-                      </>
-                    )}
-                  </>
+                  <BuscadorInvers />
                 )}
               </div>
             </div>

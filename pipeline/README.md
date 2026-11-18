@@ -210,3 +210,28 @@ python3 pipeline/f3_carga_postgis.py --dim out_amb_seccional/dim_building_rent_e
 - **QA**: `pipeline/qa/smoke_seccional.py` (fixture SINTÈTIC determinista,
   etiquetat SINTETIC — MAI producció) + `pipeline/qa/verifica_ddl.py`
   (invariància del DDL) + `pipeline/qa/rehersal_postgis.py` (ruta PostGIS).
+
+## 9. Buscador invers (v67 — zones que compleixen l'índex)
+
+Càrrega de les 3 taules del buscador invers de la portada (DDL de referència:
+`sql/002_zones_buscador_invers.sql`; documentació completa:
+`docs/buscador-invers.md`): `geo.municipis` (estat ZMRT DOGC + cobertura),
+`geo.seccions_censals` (CUSEC + geometria MultiPolygon 4258, amb
+`--seccions-shp` per al bseccen) i `geo.dades_lloguer_agregades` (preu real vs
+índex de referència en €/m²·mes + % compliment per secció censal).
+
+```bash
+python3 pipeline/f4_zones_buscador.py --url "$DATABASE_URL" \
+    [--seccions-shp bseccen.gpkg] [--any 2025] [--out f4_carga.json]
+```
+
+- Fonts: NOMÉS dades ja presents a la mateixa BD (fiances Incasòl de
+  `public."Municipality"` + sortides F3). Idempotent (DROP+CREATE només d'aquestes 3).
+- Fórmules: m² mitjà ponderat per vivendes (Catastro); índex €/m²·mes = fiança
+  oficial ÷ m² mitjà (la mateixa conversió de l'àncora F2); % compliment per
+  secció = quota de vivendes amb renta_m2_mes ≤ índex (mètode
+  `QUOTA_EDIFICIS_ESTIMADA`, marcada ESTIMACIÓ fins que el fitxer seccional
+  d'Incasòl permeti `CONTRACTES_REALS` — §8).
+- RGPD: agregació mínima secció censal (mai edifici/vivenda); seccions amb
+  <5 edificis no es publiquen; la geometria mai surt al payload públic.
+- API que el serveix: `GET /api/zones?muni=` (vegeu §5 + `docs/buscador-invers.md` §4).

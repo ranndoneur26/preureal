@@ -23,6 +23,19 @@ export default function AnalitzaView() {
   const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
 
+  // v67 — deep link del buscador invers («Verificar un edifici concret en
+  // aquesta zona» → /#/analitza?muni=<6 dígits>&mn=<nom>): prefil additiu
+  // del municipi; sense els dos paràmetres vàlids, cap canvi de comportament.
+  const initialMunicipi = (() => {
+    if (typeof window === "undefined") return undefined;
+    const q = window.location.hash.split("?")[1] || "";
+    const p = new URLSearchParams(q);
+    const code = p.get("muni") || "";
+    const name = p.get("mn") || "";
+    if (!/^\d{6}$/.test(code) || !name) return undefined;
+    return { code, name: name.slice(0, 80) };
+  })();
+
   // ---- mapa Leaflet (mateix patró i mateixes capes ICGC que MapView) ----
   const LRef = useRef<typeof import("leaflet") | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -117,6 +130,7 @@ export default function AnalitzaView() {
             <p className="text-xs text-stone mb-4">{ca ? "Només el municipi i el preu són obligatoris — la resta millora la precisió." : "Solo el municipio y el precio son obligatorios — el resto mejora la precisión."}</p>
             <AnalitzaForm
               variant="full"
+              initialMunicipi={initialMunicipi}
               onResult={(d) => {
                 setReport(d as AnalitzaReportData);
                 setTimeout(() => reportRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);

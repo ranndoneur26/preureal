@@ -2,6 +2,68 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v67 — Buscador invers (portada) + pàgina pròpia «Consulta el preu real registrat» — 2026-11-19
+
+Encàrrec: buscador invers a la home que trobi zones (seccions censals) on el
+preu real compleix l'índex de referència, movent el mòdul «Consulta el preu
+real registrat» a una pàgina pròpia amb entrada de menú adient. Tot additiu:
+cap endpoint, flux, preu ni text legal existent canvia.
+
+- **UI (nou component `src/components/buscador/BuscadorInvers.tsx`)** —
+  autocompletat de municipis de Catalunya (`/api/municipalities`, debounce 250
+  ms, xips ZMRT/No tensionat per suggeriment), **targeta d'estat ZMRT** amb
+  colors semàfor (vermell `bg-embersoft` ZMRT + llista A/C DOGC 19-10-2026;
+  verd `bg-mintsoft` no tensionat) i índex de referència vigent €/mes +
+  €/m²·mes, **taula ordenable** (`aria-sort`) per secció censal: preu mitjà
+  real €/m², índex €/m² i **Índex de Compliment** (% contractes ≤ índex) amb
+  semàfor verd (preu ≤ índex) / vermell (preu > índex), paginació de 50, filtre
+  «Mostrar només municipis no tensionats» (switch `aria-checked`: filtra
+  suggeriments i oculta honestament les zones d'un municipi ZMRT), CTA per
+  fila «Verificar edifici» i CTA destacat «Verificar un edifici concret en
+  aquesta zona» → `/#/analitza?muni=<codi6>&mn=<nom>` amb **municipi prefilat**
+  (prop additiu `initialMunicipi` a `AnalitzaForm`, parseig `?muni=`/`?mn=`
+  validat a `AnalitzaView`) — tanca el cercle invers→directe. Notes RGPD
+  (agregació secció censal) i ESTIMACIÓ sempre visibles; estats
+  DATA_NOT_READY/FORA_ABAST honestos (mai dades inventades).
+- **Portada i navegació** — `LandingView`: la pestanya 1 de la targeta passa a
+  ser el buscador invers (pestanya «Valora el lloguer del teu habitatge»
+  intacta); el mòdul de consulta es mou 1:1 a la **pàgina nova `/#/consulta`**
+  (`ConsultaView`, amb teaser creuat cap a estima i enllaç a l'eina completa
+  /analitza); `AppShell` afegeix la ruta + entrada de menú «Consulta ràpida»
+  (desktop, mòbil i peu, `t.nav.consultaRapida` CA/ES). Guardes v47/v56
+  evolucionades JUSTIFICADAMENT amb el mòdul mogut (mateixos textos, nova
+  ubicació).
+- **Backend (DDL additiu `pipeline/sql/002_zones_buscador_invers.sql`)** — tres
+  taules noves a l'esquema `geo`: `geo.municipis` (ZMRT DOGC + cobertura),
+  `geo.seccions_censals` (CUSEC + geometria `MultiPolygon,4258` Idescat
+  bseccen + WKT fallback sense PostGIS + GIST) i `geo.dades_lloguer_agregades`
+  (preu_real_mitja_eur_m2, index_referencia_eur_m2, percentatge_compliment,
+  nivell_dada SECCIONAL|MUNICIPAL, compliment_metode CONTRACTES_REALS|
+  QUOTA_EDIFICIS_ESTIMADA, traçabilitat font) amb índex
+  `(muni5, percentatge_compliment DESC NULLS LAST)`. RGPD: agregació mínima =
+  secció censal (mai edifici/vivenda), higiene ≥5 edificis, geometria mai al
+  payload.
+- **Loader `pipeline/f4_zones_buscador.py`** — idempotent (DROP+CREATE de només
+  les 3 taules), llegeix fonts JA presents a la BD (fiances Incasòl de
+  `Municipality` + dim/illes/seccions del F3), fórmules documentades (m² mitjà
+  ponderat per vivendes; índex €/m² = fiança oficial ÷ m² mitjà; % compliment
+  per secció), `--seccions-shp` opcional per a la geometria bseccen, URL mai
+  impresa (només host/db), ANALYZE final. Executat end-to-end al PG local amb
+  PostGIS 3.6.4: 947 municipis (27 coberts AMB) · 1.983 seccions · 1.945
+  agregats (any 2025); verificació real BCN: índex 11,595 €/m² ≈ àncora F2.
+- **API `GET /api/zones?muni=` (NOVA, 104a ruta del dispatcher)** — públic
+  agregat, rate limit 30/min IP, cache 10 min + SWR 24 h, ORDER BY compliment
+  DESC NULLS LAST, zmrt DOGC + indexReferencia (mateixa lògica que normativa:
+  Incasòl o ref. comarca ESTIMACIÓ), cobertura PILOT_AMB / FORA_ABAST_PILOT
+  honesta, 503 DATA_NOT_READY, mai geometria al payload. Dispatcher
+  regenerat (`gen_api_dispatcher.py`) sense drift (check_repo verd).
+- **Tests** — +20 (`tests/zones_buscador.test.ts`: API Z1–Z8, DDL D1–D3, loader
+  L1–L2, UI U1–U7). Suite completa: 211→229 verds, ZERO regressions noves
+  (10 falles preexistents d'entorn documentades v59–v64, baseline verificat
+  amb git stash: 12→10). tsc + eslint 0 errors.
+- **Docs** — `docs/buscador-invers.md` (esquema, fórmules, contracte API,
+  RGPD, runbook, limitacions honestes).
+
 ## v66 — Pipeline ETL Geoespacial + ML en producció (F1–F3 del full de ruta) — 2026-11-18
 
 Encàrrec: «avanza con la FASE 2 y luego con los pasos naturales F1 (ATOM de

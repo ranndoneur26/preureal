@@ -3,6 +3,13 @@
 Prioridad: **P0** bloquea / verificar primero · **P1** importante · **P2** mejora.
 Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 
+## Buscador invers (encàrrec 2026-11-19, v67)
+- [x] **Buscador invers a la portada** (substitueix el mòdul «Consulta el preu real registrat», que passa a pàgina pròpia `/#/consulta` amb entrada de menú «Consulta ràpida»): autocompletat de municipis, targeta d'estat ZMRT amb semàfor, taula ordenable per secció censal (preu real €/m², índex €/m², % compliment amb semàfor), filtre «Mostrar només municipis no tensionats», CTA «Verificar un edifici concret en aquesta zona» → `/#/analitza?muni=` amb municipi prefilat (cercle invers→directe tancat).
+- [x] **Backend**: DDL additiu `pipeline/sql/002_zones_buscador_invers.sql` (3 taules PostGIS), loader idempotent `pipeline/f4_zones_buscador.py`, API pública `GET /api/zones` (104a ruta, ORDER BY compliment DESC NULLS LAST, honesta 503/FORA_ABAST). RGPD: agregació secció censal, mai edifici/vivenda.
+- [x] **Validació**: +20 tests, suite completa sense regressions noves (baseline git stash verificat), tsc+eslint nets, E2E navegador real (cerca → dades → CTA → prefil; toggle filtra; mòbil correcte; 0 errors de consola). Executat al PG local amb PostGIS: 947 municipis · 27 coberts · 1.983 seccions · 1.945 agregats.
+- [ ] **Propietari**: revisió visual de la portada amb el buscador (desktop/mòbil) i de `/#/consulta`; decidir si el mòdul ràpid també mostra el mapa.
+- [ ] **Quan INCASÒL publiqui el fitxer seccional**: `f1 --incasol-seccional-csv` + reexecutar `f4` (passa automàticament a `nivell_dada='SECCIONAL'` + `% compliment` real per contractes; zero canvis de DDL/API — vegeu `docs/buscador-invers.md` §3/§6).
+
 ## Redisseny del formulari de la Home (encàrrec 2026-11-15, fases F0–F4)
 - [x] **F1** (28b2d0f): separació UX de la Home en dues funcionalitats + etiquetes honestes + avís SERPAVI zones tensades.
 - [x] **F2** (5bce5f7): nivell N1 «Estima el lloguer del teu habitatge» (fiança Incasòl × escalat superfície, rang orientatiu traçat, degradació honesta, formulari progressiu, avís legal, metodologia N1, pàgina SEO /estima).

@@ -34,6 +34,10 @@ describe("v56 — BLOQUE E: renombrado «Valora» + ca net (vivenda/renta/estima
   const files = {
     i18n: codeOnly(readSrc("../src/lib/i18n.ts")),
     landing: codeOnly(readSrc("../src/components/views/LandingView.tsx")),
+    // v67 — el mòdul «Consulta el preu real registrat» (i el seu teaser creuat
+    // cap a estima) passa de la portada a la pàgina pròpia /#/consulta; les
+    // guardes evolucionen JUSTIFICADAMENT amb ell (mateixos texts, nova ubicació)
+    consulta: codeOnly(readSrc("../src/components/views/ConsultaView.tsx")),
     estimaView: codeOnly(readSrc("../src/components/views/EstimaView.tsx")),
     estimaIntro: codeOnly(readSrc("../src/components/analitza/EstimaIntro.tsx")),
     estimaReport: codeOnly(readSrc("../src/components/estima/EstimaReport.tsx")),
@@ -71,8 +75,8 @@ describe("v56 — BLOQUE E: renombrado «Valora» + ca net (vivenda/renta/estima
     expect(files.estimaView).toContain('ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda"');
     expect(files.appshell).toContain('link("/estima", "Valora")');
     expect(files.pageEstima).toContain("Valora el lloguer del teu habitatge");
-    // nav i CTA
-    expect(files.landing).toContain('Obre «Valora el lloguer del teu habitatge»');
+    // nav i CTA (v67: el CTA creuat viu a /consulta des que el mòdul va sortir de la portada)
+    expect(files.consulta).toContain('Obre «Valora el lloguer del teu habitatge»');
     expect(files.estimaIntro).toContain("Obre el valorador complet");
   });
 
@@ -85,7 +89,7 @@ describe("v56 — BLOQUE E: renombrado «Valora» + ca net (vivenda/renta/estima
     expect(files.analitza).toContain(
       "Rango orientativo calculado con datos oficiales: no es una tasación oficial ni una evaluación individualizada de la vivienda.",
     );
-    expect(files.landing).toContain("no és una taxació oficial; és una referència orientativa basada en dades oficials");
+    expect(files.consulta).toContain("no és una taxació oficial; és una referència orientativa basada en dades oficials");
     expect(files.i18n).toContain("No és una taxació oficial d'un habitatge concret ni assessorament jurídic");
     expect(files.i18n).toContain("No es una tasación oficial de una vivienda concreta ni asesoramiento jurídico");
   });

@@ -47,20 +47,28 @@ describe("v47 — descàrrega PDF de l'informe (fix del botó mut)", () => {
 });
 
 describe("v47 — enllaç consulta → estima (text resumit i propi)", () => {
+  // v67 — el mòdul «Consulta el preu real registrat» (amb el seu teaser creuat
+  // cap a estima) passa de la portada a la pàgina pròpia /#/consulta; les
+  // guardes evolucionen JUSTIFICADAMENT amb ell: la portada manté la pestanya
+  // «Valora el lloguer del teu habitatge» (sense teaser duplicat).
   const landing = readSrc("../src/components/views/LandingView.tsx");
+  const consulta = readSrc("../src/components/views/ConsultaView.tsx");
   const estima = readSrc("../src/components/views/EstimaView.tsx");
 
-  test("L1. la pestanya consulta té un CTA que obre la pestanya estima", () => {
+  test("L1. la consulta té un CTA que obre «Valora el lloguer del teu habitatge»", () => {
+    // la portada obre la pestanya estima (tablist de la targeta) i la pàgina
+    // /consulta manté el CTA creuat que el mòdul ja tenia a la portada
     expect(landing).toContain('setTab("estima")');
-    expect(landing).toContain("Obre «Valora el lloguer del teu habitatge»");
+    expect(consulta).toContain('navigate("/estima")');
+    expect(consulta).toContain("Obre «Valora el lloguer del teu habitatge»");
   });
 
   test("L2. el teaser és RESUMIT i amb redacció pròpia (mai còpia del text llarg)", () => {
-    expect(landing).toContain("escalada per superfície (N1)");
-    expect(landing).toContain("mai una taxació");
+    expect(consulta).toContain("escalada per superfície (N1)");
+    expect(consulta).toContain("mai una taxació");
     // les frases exactes del text llarg de la pestanya estima NO poden
-    // repetir-se a la portada (el requisit és un text resumit i DIFERENT);
-    // a «estima» el text llarg continua intacte
+    // repetir-se a la portada ni a /consulta (el requisit és un text resumit
+    // i DIFERENT); a «estima» el text llarg continua intacte
     const longPhrases = [
       "Una valoració progressiva per passos: el nivell N1 calcula un RANG orientatiu",
       "Cada xifra ve amb la seva font, el període, els contractes, els ajustos amb el seu factor i les limitacions",
@@ -68,6 +76,7 @@ describe("v47 — enllaç consulta → estima (text resumit i propi)", () => {
     ];
     for (const ph of longPhrases) {
       expect(landing.includes(ph)).toBe(false);
+      expect(consulta.includes(ph)).toBe(false);
       expect(estima.includes(ph)).toBe(true);
     }
   });
