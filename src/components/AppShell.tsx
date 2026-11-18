@@ -199,8 +199,12 @@ function Header({ route }: { route: string }) {
                 <span className="font-extrabold text-lg tracking-tight">Preureal</span>
               </button>
               <nav className="hidden md:flex items-center gap-1">
+                {/* v68 — el menú només ofereix «Consulta» (l'eina completa
+                    /analitza amb mapa ICGC); «Consulta ràpida» (/consulta)
+                    surt del menú per decisió del propietari — «sembla una
+                    ampliació de consulta» — però la ruta continua viva com a
+                    destí directe (view === "/consulta" més avall). */}
                 {link("/analitza", t.nav.analitza)}
-                {link("/consulta", t.nav.consultaRapida)}
                 {link("/estima", "Valora")}
                 {link("/mapa", t.nav.mapa)}
                 {link("/comparador", "Comparador")}
@@ -275,7 +279,6 @@ function Header({ route }: { route: string }) {
             </div>
             <div id="mobile-nav" className="hidden md:hidden border-t border-line bg-cream px-4 py-3 flex-col gap-1">
               {link("/analitza", t.nav.analitza)}
-              {link("/consulta", t.nav.consultaRapida)}
               {link("/estima", "Valora")}
               {link("/mapa", t.nav.mapa)}
               {link("/comparador", "Comparador")}
@@ -338,7 +341,6 @@ function Footer() {
                 <div className="flex flex-col gap-1.5">
                   {footLink("/com-funciona", t.howFull.nav)}
                   {footLink("/analitza", ca ? "Consulta el preu real registrat" : "Consulta el precio real registrado")}
-                  {footLink("/consulta", ca ? "Consulta ràpida" : "Consulta rápida")}
                   {footLink("/estima", ca ? "Valora el lloguer del teu habitatge" : "Valora el alquiler de tu vivienda")}
                   {footLink("/mapa", t.nav.mapa)}
                   {footLink("/comparador", "Comparador")}

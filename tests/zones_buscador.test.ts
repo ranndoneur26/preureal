@@ -294,11 +294,16 @@ describe("v67 — UI del buscador invers i navegació", () => {
     expect(consulta).toContain("GateLockedPanel");
   });
 
-  test("U7 — ruta /consulta al shell + entrada de menú adient CA/ES + prefil analitza", () => {
+  test("U7 — ruta /consulta al shell FORA del menú (v68) + «Consulta» → /analitza + prefil", () => {
     expect(shell).toContain('view === "/consulta" && <ConsultaView />');
-    expect(shell).toContain('link("/consulta", t.nav.consultaRapida)');
-    expect(i18n).toContain('consultaRapida: "Consulta ràpida"');
-    expect(i18n).toContain('consultaRapida: "Consulta rápida"');
+    // v68 — el propietari treu «Consulta ràpida» del menú (desktop, mòbil i
+    // peu): «consulta ràpida sembla una ampliació de consulta». La pàgina
+    // /consulta continua viva com a destí directe, però la navegació només
+    // ofereix «Consulta» (l'eina completa /analitza amb mapa ICGC).
+    expect(shell).not.toContain('link("/consulta"');
+    expect(shell).not.toContain('footLink("/consulta"');
+    expect(shell).toContain('link("/analitza", t.nav.analitza)');
+    expect(i18n).not.toContain("consultaRapida");
     expect(analitzaView).toContain("initialMunicipi");
     expect(analitzaView).toContain('/^\\d{6}$/');
     expect(analitzaForm).toContain("initialMunicipi?: { code: string; name: string }");

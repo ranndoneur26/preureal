@@ -2,6 +2,25 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v68 — El menú només ofereix «Consulta» — 2026-11-19
+
+Decisió del propietari: «consulta ràpida sembla una ampliació de consulta» —
+es treu «Consulta ràpida» del menú i es deixa només «Consulta» (l'eina completa
+/analitza amb mapa ICGC). Canvi de navegació mínim:
+
+- **`AppShell`** — s'eliminen les 3 entrades de navegació cap a `/consulta`
+  (desktop, mòbil i peu). La **ruta `/consulta` continua viva**
+  (`view === "/consulta" && <ConsultaView />`) com a destí directe: la pàgina
+  `ConsultaView` no canvia ni una línia. Els CTA del buscador invers no es
+  toquen: «Verificar un edifici concret en aquesta zona» segueix apuntant a
+  `/#/analitza?muni=` (mai a /consulta).
+- **`i18n` CA/ES** — clau `nav.consultaRapida` retirada (sense cap ús restant).
+- **Guardes** — `zones_buscador.test.ts` U7 evolucionada JUSTIFICADAMENT: ara
+  ancla l'estat v68 (ruta viva, menú SENSE l'entrada, «Consulta» → /analitza,
+  clau i18n retirada). Suite completa 215 pass / 10 fail IDÈNTICA al baseline
+  git stash de v67 (les 10 són fallades d'entorn preexistents documentades a
+  v59-v67) — zero regressions; tsc + eslint + check_repo nets.
+
 ## v67 — Buscador invers (portada) + pàgina pròpia «Consulta el preu real registrat» — 2026-11-19
 
 Encàrrec: buscador invers a la home que trobi zones (seccions censals) on el
