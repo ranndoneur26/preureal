@@ -58,7 +58,9 @@ CREATE TABLE geo.geo_illes (
   num_viviendas  int,
   renta_m2_media numeric(10,3),
   calidad_media  numeric(8,3),
-  geom           geometry(Polygon, 4258),      -- ETRS89; fallback sin PostGIS: WKT text
+  geom           geometry(MultiPolygon, 4258), -- ETRS89; el dissolve de la illa pot
+                                                -- produir MultiPolygon; fallback sin
+                                                -- PostGIS: WKT text
   lat            double precision,             -- centroide
   lon            double precision
 );

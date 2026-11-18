@@ -108,12 +108,67 @@ def ancla_municipal(cache: pd.DataFrame, fiances_csv: Path) -> pd.DataFrame:
     return cache
 
 
+def ancla_seccional(cache: pd.DataFrame, csv: Path) -> pd.DataFrame:
+    """Uneix a la cache les àncores SECCIONALS quan INCASÒL publiqui el fitxer
+    seccional (encara sense publicació municipal oberta — veure README §6).
+
+    Contracte del CSV esperat (una fila per secció censal i any; columnes
+    detectades per nom, tolerant variants es/ca):
+      · secció censal: columna amb «seccio»/«seccion» (CUSEC de 10-11 dígits o
+        codi INE 6 + secció) — es normalitza a CUSEC igual que id_seccio.
+      · renda: columna amb «mitja»+«mensual» (€/mes de la fianza).
+      · contractes: columna amb «contracte» (número de contractes).
+
+    Omple renta_media_contractual_ambito / num_contratos_ambito per id_seccio i
+    marca ambito_ground_truth = 'SECCIO'. El DDL de f3 NO canvia.
+    """
+    f = pd.read_csv(csv, dtype=str)
+    cols = {c.lower(): c for c in f.columns}
+    sec_col = next((c for c in cols if "seccio" in c or "seccion" in c or "cusec" in c), None)
+    imp_col = next((c for c in cols if "mitja" in c and "mensual" in c), None)
+    n_col = next((c for c in cols if "contracte" in c or "contrato" in c), None)
+    if sec_col is None or imp_col is None:
+        raise SystemExit(f"CSV seccional sense columnes reconeixibles: {list(f.columns)}")
+    # darrer any disponible si el fitxer porta columna d'any
+    any_col = next((c for c in cols if "any" in c and "seccio" not in c or "anyo" in c), None)
+    if any_col:
+        f = f[pd.to_numeric(f[cols[any_col]], errors="coerce")
+              >= pd.to_numeric(f[cols[any_col]], errors="coerce").max() - 1]
+    f["sec"] = f[cols[sec_col]].str.replace(r"\D", "", regex=True)
+    ids = cache["id_seccio"].astype(str)
+    imp = pd.to_numeric(f.set_index("sec")[cols[imp_col]], errors="coerce").groupby(level=0).last()
+    val = ids.map(imp)
+    if val.isna().any():
+        # variant «codi INE 6 + secció» (08019001007 → 08001_001007): retalla el
+        # 6è dígit NOMÉS per als codis que no han casat amb la variant exacta
+        f_alt = f.assign(sec=f["sec"].str.slice(0, 5) + f["sec"].str.slice(6))
+        imp_alt = pd.to_numeric(f_alt.set_index("sec")[cols[imp_col]], errors="coerce").groupby(level=0).last()
+        val = val.fillna(ids.map(imp_alt))
+    cache["renta_media_contractual_ambito"] = val
+    if n_col:
+        n = pd.to_numeric(f.set_index("sec")[cols[n_col]], errors="coerce").groupby(level=0).last()
+        val_n = ids.map(n)
+        if val_n.isna().any():
+            f_alt = f.assign(sec=f["sec"].str.slice(0, 5) + f["sec"].str.slice(6))
+            n_alt = pd.to_numeric(f_alt.set_index("sec")[cols[n_col]], errors="coerce").groupby(level=0).last()
+            val_n = val_n.fillna(ids.map(n_alt))
+        cache["num_contratos_ambito"] = val_n.fillna(0).astype(int)
+    cobert = cache["renta_media_contractual_ambito"].notna().mean()
+    print(f"  ✓ àncla seccional: cobertura {cobert:.1%} sobre {cache['id_seccio'].nunique()} seccions")
+    cache["ambito_ground_truth"] = "SECCIO"
+    return cache
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="F1 ingesta oficial (AMB)")
     ap.add_argument("--atom-dir", required=False, help="dir amb els municipis *_CAT/_ext (ATOM descarregat)")
     ap.add_argument("--seccions", help="shapefile/geopackage de seccions censals (Idescat/INE)")
     ap.add_argument("--serpavi-csv", help="CSV municipal SERPAVI (columnes: codi_ine5, t_m, p25, p75)")
     ap.add_argument("--incasol-csv", help="CSV de flux anual fiances (per defecte es descarrega)")
+    ap.add_argument("--incasol-seccional-csv", help="CSV del fitxer seccional INCASÒL quan estigui "
+                    "publicat (ancora per id_seccio; marca ambito_ground_truth='SECCIO')")
+    ap.add_argument("--cache", help="cache parquet on aplicar l'àncla (amb --incasol-seccional-csv); "
+                    "es desa com <out>/cache_ambito.parquet")
     ap.add_argument("--out", default="data", help="directori base de sortides")
     ap.add_argument("--osm", action="store_true", help="afegeix distàncies OSMnx (xarxa completa; lent)")
     ap.add_argument("--skip-existing", action="store_true", default=True)
@@ -121,6 +176,17 @@ def main() -> None:
     out = Path(args.out)
     (out / "raw").mkdir(parents=True, exist_ok=True)
     print("F1 ingesta — fonts oficials (Catastro ATOM, Idescat, SERPAVI, INCASÒL)")
+
+    # 0) àncla seccional sobre una cache existent (futur fitxer INCASÒL seccional)
+    if args.incasol_seccional_csv:
+        if not args.cache:
+            raise SystemExit("--incasol-seccional-csv requereix --cache <cache.parquet>")
+        cache = pd.read_parquet(args.cache)
+        cache = ancla_seccional(cache, Path(args.incasol_seccional_csv))
+        dest = out / "cache_ambito.parquet"
+        cache.to_parquet(dest, index=False)
+        print(f"  ✓ cache amb àncla {cache['ambito_ground_truth'].iloc[0]} → {dest}")
+        return
 
     # 1) INCASÒL (verificat: connector v41 del repo)
     fiances = Path(args.incasol_csv) if args.incasol_csv else descarrega_incasol_flux(out)

@@ -82,13 +82,15 @@ pip install -r requirements.txt
 # F1 — ingesta (idempotent; reutilitza ATOM descarregat amb --atom-dir)
 python3 f1_ingesta.py --atom-dir <dir_amb_els_*_CAT> --out data
 
-# F2 — model (des de cache o des de raw)
+# F2 — model (des de cache o des de raw) · àmbit per defecte: MUNICIPI
 python3 f2_modelo_amb.py --desde-cache data/cache_amb.parquet --out out_amb
 
 # F3 — càrrega PostGIS (idempotent, no toca cap taula del app)
 python3 f3_carga_postgis.py --dim out_amb/dim_building_rent_estimation.parquet \
     --cache data/cache_amb.parquet --url "$DATABASE_URL"
 ```
+
+Producció i ruta seccional: veure §7 (runbook) i §8 (municipal→seccional).
 
 ## 5. Endpoints servits (F3)
 
@@ -118,9 +120,83 @@ python3 f3_carga_postgis.py --dim out_amb/dim_building_rent_estimation.parquet \
   0,662 vs 0,657; LOMO 1,325 vs 1,386) però NO la distribució exacta de graus.
   Els artefactes de producció (dim carregada) continuen essent els validats
   v1.0-2026-11 amb el seu LOSO/informe.
-- **PostGIS**: el PG local del sandbox no porta l'extensió (les geometries es
-  guarden com a WKT + lat/lon, mateix DDL conceptual); en producció
-  (PostgreSQL gestionat amb PostGIS) el mateix script fa `ST_GeomFromText`
-  automàticament via detecció `pg_available_extensions`.
+- **PostGIS**: provat EN VIU contra PostGIS 3.6.4 real (rehearsal `pipeline/qa/rehersal_postgis.py`):
+  `CREATE EXTENSION postgis` per detecció `pg_available_extensions`, columna
+  `geometry(MultiPolygon,4258)` (el dissolve de la illa pot produir MultiPolygon),
+  `ST_GeomFromText` a la INSERT, índex **GIST**, `ANALYZE`, i normalització
+  `make_valid` doble (el dissolve pot produir autointerseccions i la reprojecció
+  25831→4258 pot reintroduir-ne — verificat `ST_IsValid` 11.633/11.633).
+  Inserció amb `execute_values` (400 files × 24 col = 9.600 paràmetres per
+  sentència < límit 65.535; sobre WAN evita 142k anades-i-tornades).
+  Si la BD no porta PostGIS: fallback WKT text + lat/lon (mateix DDL conceptual,
+  provat al sandbox). PK `id_edificio` + índexs `idx_dim_*` / `idx_illes_muni` /
+  `idx_seccions_muni` en ambdós casos.
 - **N3 SERPAVI per parcel·la**: mai simulat (regla d'or del producte); el rang
   per edifici és estadístic (IC95%), no la referència legal SERPAVI.
+
+## 7. Runbook de producció (accio ① — al desplegar v66)
+
+```bash
+export DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require"
+python3 pipeline/f3_carga_postgis.py \
+    --dim pilot_data/out_amb/dim_building_rent_estimation_amb.parquet \
+    --cache pilot_data/out_amb/_cache_amb.parquet \
+    --url "$DATABASE_URL" --out f3_carga_prod.json
+```
+
+El script fa, automàticament i en aquest ordre: detecció `pg_available_extensions`
++ `CREATE EXTENSION postgis` · `CREATE SCHEMA geo` (mai taules del app) ·
+DROP+CREATE de les 3 taules (idempotent) · PK `id_edificio` · índexs `idx_dim_*`,
+`idx_illes_muni`, `idx_seccions_muni` i **GIST** `idx_illes_geom` · inserció
+`execute_values` per tandes de 400 files · `ST_GeomFromText(·,4258)` amb
+`make_valid` (ST_IsValid verificat 11.633/11.633) · `ANALYZE` final.
+
+- **Temps**: 27–30 s amb PostGIS real local; sobre WAN/Neon comptar 2–5 min.
+- **Verificació post-carga** (SQL directe):
+
+```sql
+SELECT count(*), round(avg(renta_m2_mes),3) FROM geo.dim_building_rent_estimation;
+-- esperat: 142283 · 10.039
+SELECT count(*) FROM geo.geo_illes WHERE NOT ST_IsValid(geom);   -- esperat: 0
+SELECT indexdef FROM pg_indexes WHERE schemaname='geo' AND indexname='idx_illes_geom';
+```
+
+- **Endpoints**: abans de la càrrega `/api/geo/illes?muni=...` respon 503
+  `DATA_NOT_READY`; després, 200 amb dades reals (cache 10 min + SWR 24 h).
+- **Si el rol no pot `CREATE EXTENSION`** (en Neon cal rol amb permisos
+  d'extensió, p. ex. owner/neon_superuser): fallback WKT automàtic, mateix DDL
+  conceptual (columnes `geom text` + lat/lon), sense consultes espacials SQL.
+- **Rollback**: no cal migració — només existeix l'esquema `geo`; tornar a
+  executar sense `--dim` no fa res. El app no serveix dades fins que les
+  taules no estan carregades.
+
+## 8. Pujada municipal→seccional (accio ② — quan INCASÒL publiqui el fitxer)
+
+Sense tocar el DDL (verificat amb i sense PostGIS: 24 columnes/tipus, PK i
+índexs IDÈNTICS carregant `MUNICIPI` i `SECCIO` amb el mateix f3):
+
+```bash
+# 1) F1: àncora seccional sobre la cache (contracte de columnes documentat a
+#    ancla_seccional(): secció CUSEC, renda mitja mensual, nº contractes)
+python3 pipeline/f1_ingesta.py --incasol-seccional-csv <fitxer_incasol>.csv \
+    --cache <cache.parquet> --out data          # → data/cache_ambito.parquet
+
+# 2) F2: PASO 3 a nivell SECCIÓ (guard: falla si la cache no té l'ancora)
+python3 pipeline/f2_modelo_amb.py --desde-cache data/cache_ambito.parquet \
+    --ambito SECCIO --out out_amb_seccional
+
+# 3) F3: EL MATEIX script, EL MATEIX DDL (files amb ambito_ground_truth='SECCIO')
+python3 pipeline/f3_carga_postgis.py --dim out_amb_seccional/dim_building_rent_estimation.parquet \
+    --cache pilot_data/out_amb/_cache_amb.parquet --url "$DATABASE_URL"
+```
+
+- **Mecànica**: residuo per SECCIÓ `INCASÒL €/m² seccional − SERPAVI €/m²
+  municipal` (SERPAVI no existeix a nivell seccional), blend `w` amb nº
+  contractes seccionals, banda SERPAVI i hedòniques intactes; LOMO ciego
+  municipal continua validant contra les fiances municipals.
+- **Calibratge**: amb àmbits més petits l'IC s'eixampla de forma honesta (al
+  smoke amb fixture sintètic ±6%: calidad mitjana 0,41); les constants
+  (`IC_INCASOL`, `IC_MODEL_BASE`…) es recalibraran amb el fitxer real publicat.
+- **QA**: `pipeline/qa/smoke_seccional.py` (fixture SINTÈTIC determinista,
+  etiquetat SINTETIC — MAI producció) + `pipeline/qa/verifica_ddl.py`
+  (invariància del DDL) + `pipeline/qa/rehersal_postgis.py` (ruta PostGIS).

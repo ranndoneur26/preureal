@@ -83,22 +83,27 @@ def main() -> None:
 
     cur.execute("CREATE SCHEMA IF NOT EXISTS geo")
     cur.execute("DROP TABLE IF EXISTS geo.dim_building_rent_estimation CASCADE")
-    cols_sql = ",\n  ".join(f"{c} {t}" for c, t in DIM_COLS_TIPOS.items())
+    cols_sql = ",\n  ".join(
+        (f"{c} {t} PRIMARY KEY" if c == "id_edificio" else f"{c} {t}")
+        for c, t in DIM_COLS_TIPOS.items())
     cur.execute(f"CREATE TABLE geo.dim_building_rent_estimation (\n  {cols_sql})")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_dim_illa ON geo.dim_building_rent_estimation (id_illa)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_dim_seccio ON geo.dim_building_rent_estimation (id_seccio)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_dim_refcat ON geo.dim_building_rent_estimation (ref_catastral)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_dim_muni ON geo.dim_building_rent_estimation (substring(ref_catastral,1,5))")
 
-    # inserció per tandes (límit de 65.535 paràmetres de Postgres — lliçó v41)
+    # inserció per tandes amb execute_values (400 files × 24 col = 9.600 paràmetres
+    # per sentència, molt per sota del límit de 65.535 de Postgres — lliçó v41;
+    # sobre WAN/Neon evita 142k anades-i-tornades d'executemany fila a fila)
+    from psycopg2.extras import execute_values
+
     cols = list(DIM_COLS_TIPOS)
-    marcador = ",".join(["%s"] * len(cols))
     rows = []
     for r in dim[cols].itertuples(index=False, name=None):
         rows.append(tuple(None if (isinstance(v, float) and np.isnan(v)) else v for v in r))
     for i in range(0, len(rows), 400):
-        cur.executemany(f"INSERT INTO geo.dim_building_rent_estimation VALUES ({marcador})",
-                        rows[i:i + 400])
+        execute_values(cur, f"INSERT INTO geo.dim_building_rent_estimation ({','.join(cols)}) VALUES %s",
+                       rows[i:i + 400], page_size=400)
     print(f"  ✓ dim_building_rent_estimation: {len(rows)} files")
 
     # illes + seccions (amb geometria si hi ha cache)
@@ -107,11 +112,16 @@ def main() -> None:
         id_illa text PRIMARY KEY, muni5 text NOT NULL, n_edificios int NOT NULL,
         num_viviendas int, renta_m2_media numeric(10,3), calidad_media numeric(8,3),
         geom %s, lat double precision, lon double precision)"""
-                % ("geometry(Polygon,4258)" if te_postgis else "text"))
+                % ("geometry(MultiPolygon,4258)" if te_postgis else "text"))
     cur.execute("""DROP TABLE IF EXISTS geo.geo_seccions CASCADE;
         CREATE TABLE geo.geo_seccions (
         id_seccio text PRIMARY KEY, muni5 text NOT NULL, n_edificios int NOT NULL,
         renta_m2_media numeric(10,3), calidad_media numeric(8,3))""")
+    if te_postgis:
+        # GIST només amb PostGIS (amb WKT text no té sentit)
+        cur.execute("CREATE INDEX IF NOT EXISTS idx_illes_geom ON geo.geo_illes USING GIST (geom)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_illes_muni ON geo.geo_illes (muni5)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_seccions_muni ON geo.geo_seccions (muni5)")
 
     stats_i = dim.groupby(["id_illa"]).agg(
         renta_m2_media=("renta_m2_mes", "mean"), calidad_media=("calidad_estimacion", "mean"),
@@ -122,10 +132,18 @@ def main() -> None:
     n_geom = 0
     rows_i = []
     if args.cache:
+        import shapely
+
         full = gpd.read_parquet(args.cache)
         g_illes = full[["id_illa", "geometry"]].dissolve(by="id_illa").reset_index()
-        g_illes["geometry"] = g_illes.geometry.simplify(2).buffer(0)
+        # simplify → buffer(0) → make_valid: el dissolve d'illes pot produir
+        # autointerseccions que PostGIS rebutjaria (ST_IsValid) a la producció
+        g_illes["geometry"] = shapely.make_valid(g_illes.geometry.simplify(2).buffer(0))
         g4258 = g_illes.to_crs(4258)
+        # la reproyecció a 4258 pot reintroduir autointerseccions (pèrdua de
+        # precisió sobre arestes simplificades): make_valid FINAL en el SRID que
+        # es persisteix; buffer(0) col·lapsa col·leccions a MultiPolygon net
+        g4258["geometry"] = shapely.make_valid(shapely.make_valid(g4258.geometry).buffer(0))
         gmap = g4258.set_index("id_illa")
         for _, r in stats_i.iterrows():
             g = gmap.geometry.get(r.id_illa) if hasattr(gmap, "geometry") else None
@@ -173,6 +191,9 @@ def main() -> None:
     cur.execute("SELECT count(*), round(avg(renta_m2_mes),3), count(DISTINCT id_illa) FROM geo.dim_building_rent_estimation")
     verif = cur.fetchone()
     print("verificació dim:", verif)
+    if te_postgis:
+        cur.execute("ANALYZE geo.dim_building_rent_estimation; ANALYZE geo.geo_illes; ANALYZE geo.geo_seccions")
+        print("ANALYZE ok (estadístiques del planificador actualitzades)")
     conn.close()
 
     informe = {"postgis": te_postgis, "dim_edificios": len(rows), "illes": len(rows_i),

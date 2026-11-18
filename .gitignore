@@ -57,3 +57,4 @@ next-env.d.ts
 /upload/
 /agent-ctx/
 data/fixtures/
+__pycache__

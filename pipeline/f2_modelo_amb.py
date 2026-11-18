@@ -26,8 +26,15 @@ Sortides (directori --out): dim_building_rent_estimation.{csv,parquet},
 illes_resumen.csv, seccions_resumen.csv, loso_seccional_detalle.csv,
 informe_f2.json.
 
+Àmbit del ground truth INCASÒL (columna ambito_ground_truth, sense canviar el
+DDL de f3):
+  · --ambito MUNICIPI (per defecte): residuo + blend per MUNICIPI (v1.0).
+  · --ambito SECCIO: quan INCASÒL publiqui el fichero seccional, f1 l'ancora
+    per secció censal (id_seccio) i el mateix PASO 3 corre a nivell seccional.
+
 Ús:
   python3 f2_modelo_amb.py --desde-cache <cache.parquet> [--out OUT_DIR]
+  python3 f2_modelo_amb.py --desde-cache <cache.parquet> --ambito SECCIO
   python3 f2_modelo_amb.py --desde-zero  --raw pipeline/data/raw   (via f1)
 """
 from __future__ import annotations
@@ -110,14 +117,17 @@ def hedonicas(df: pd.DataFrame) -> pd.DataFrame:
 # ----------------------------------------------------------------------------
 # Model per àmbit municipal + residuo de manzana
 # ----------------------------------------------------------------------------
-def modela(cache: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
+def modela(cache: pd.DataFrame, clau_ambito: str = "muni5") -> tuple[pd.DataFrame, dict]:
+    """PASO 3 al àmbit indicat: MUNICIPI (muni5) o SECCIO (id_seccio).
+    Les àncores SERPAVI són municipals sempre (no hi ha SERPAVI seccional);
+    el residuo i el blend usen el ground truth INCASÒL del àmbit triat."""
     d = cache.copy()
     for col in ["w_pct", "model_m2", "ic_rel_half", "incasol_m2_muni", "residuo_muni", "residuo_illa", "hed"]:
         d[col] = np.nan
     d["hed"] = hedonicas(d)["hed"]
 
-    munis = []
-    for muni, g in d.groupby("muni5"):
+    ambits = []
+    for muni, g in d.groupby(clau_ambito):
         serpavi_mid = float(g["serpavi_t_m_municipal"].iloc[0])
         contractual = float(g["renta_media_contractual_ambito"].iloc[0])
         n_contr = int(g["num_contratos_ambito"].iloc[0])
@@ -154,10 +164,10 @@ def modela(cache: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
         d.loc[idx, "incasol_m2_muni"] = incasol_m2
         d.loc[idx, "residuo_muni"] = residuo
         d.loc[idx, "residuo_illa"] = residuo_illa
-        munis.append({"muni5": muni, "serpavi_mid": round(serpavi_mid, 3),
-                      "incasol_m2": round(float(incasol_m2), 3), "residuo": round(float(residuo), 3),
-                      "sup_ref": round(sup_ref_muni, 1), "n_contratos": n_contr})
-    return d, {"munis": munis}
+        ambits.append({"ambito": muni, "serpavi_mid": round(serpavi_mid, 3),
+                       "incasol_m2": round(float(incasol_m2), 3), "residuo": round(float(residuo), 3),
+                       "sup_ref": round(sup_ref_muni, 1), "n_contratos": n_contr})
+    return d, {"ambits": ambits}
 
 
 def blend(d: pd.DataFrame) -> pd.DataFrame:
@@ -189,9 +199,10 @@ def blend(d: pd.DataFrame) -> pd.DataFrame:
 # ----------------------------------------------------------------------------
 # Validació: LOSO per seccions censals + LOMO ciego municipal
 # ----------------------------------------------------------------------------
-def loso_seccional(d: pd.DataFrame, k: int = FOLDS_LOSO) -> pd.DataFrame:
+def loso_seccional(d: pd.DataFrame, k: int = FOLDS_LOSO, clau: str = "muni5") -> pd.DataFrame:
     """Holdout per seccions censals completes: estabilitat de la predicció
-    seccional (mitjana del fold-out vs model complet)."""
+    seccional (mitjana del fold-out vs model complet). El ground truth del
+    residuo (incasol_m2 / residuo) es mapeja per l'àmbit del model (clau)."""
     rng = np.random.RandomState(11)
     seccions = d["id_seccio"].dropna().unique()
     rng.shuffle(seccions)
@@ -210,8 +221,8 @@ def loso_seccional(d: pd.DataFrame, k: int = FOLDS_LOSO) -> pd.DataFrame:
         # paràmetres de muni no canvien materialment — més de 30 seccions per muni)
         # i MATEIXA fórmula del residuo de manzana que el model complet
         par = hol.muni5.map(d.groupby("muni5").serpavi_t_m_municipal.first()).astype(float)
-        inc = hol.muni5.map(d.groupby("muni5").incasol_m2_muni.first()).astype(float)
-        res_muni = hol.muni5.map(d.groupby("muni5").residuo_muni.first()).astype(float)
+        inc = hol[clau].map(d.groupby(clau).incasol_m2_muni.first()).astype(float)
+        res_muni = hol[clau].map(d.groupby(clau).residuo_muni.first()).astype(float)
         pred_m2 = (par * hol.hed + res_muni * (hol.hed / hol.residuo_illa.replace(0, np.nan))).clip(2, 40)
         w = hol.w_pct.values / 100.0
         pred = w * inc + (1 - w) * pred_m2
@@ -229,9 +240,10 @@ def loso_seccional(d: pd.DataFrame, k: int = FOLDS_LOSO) -> pd.DataFrame:
     return det
 
 
-def lomo_ciego_municipal(d: pd.DataFrame) -> dict:
+def lomo_ciego_municipal(d: pd.DataFrame, clau: str = "muni5") -> dict:
     """Leave-one-municipality-out: el municipi holdout es prediu amb l'entorn
-    (sense veure les seves fiances) i es contrasta amb INCASÒL (ground truth)."""
+    (sense veure les seves fiances) i es contrasta amb INCASÒL (ground truth).
+    En àmbit SECCIO l'observat municipal és la mitjana dels €/m² seccionals."""
     order = d.groupby("muni5").size().sort_values(ascending=False)
     big = order.head(8).index.tolist()
     out = {}
@@ -241,7 +253,12 @@ def lomo_ciego_municipal(d: pd.DataFrame) -> dict:
         hed_env = fit.groupby("id_illa")["hed"].mean()
         hol_hed = hol.id_illa.map(hed_env).fillna(hol.hed)
         serpavi_mid = float(hol.serpavi_t_m_municipal.iloc[0])
-        inc = float(hol.renta_media_contractual_ambito.iloc[0] / hol.superficie_m2.mean())
+        if clau == "muni5":
+            inc = float(hol.renta_media_contractual_ambito.iloc[0] / hol.superficie_m2.mean())
+        else:
+            # SECCIO: €/m² municipal observat = mitjana dels €/m² de les seccions
+            inc = float((hol.renta_media_contractual_ambito / hol.groupby("id_seccio")["superficie_m2"]
+                         .transform("mean")).drop_duplicates().mean())
         # CIEGO: ni les fiances del holdout ni el seu residuo entren a la predicció;
         # s'usa el residuo mitjà de l'ENTORN (municipis de entrenament)
         residuo_env = float((fit.incasol_m2_muni - fit.serpavi_t_m_municipal).mean())
@@ -296,6 +313,9 @@ def main() -> None:
     ap.add_argument("--desde-zero", action="store_true", help="reconstrueix des dels cruus de f1")
     ap.add_argument("--raw", default="data/raw", help="directori de cruus (f1)")
     ap.add_argument("--out", default="out_amb", help="directori de sortides")
+    ap.add_argument("--ambito", default="MUNICIPI", choices=["MUNICIPI", "SECCIO"],
+                    help="nivell del ground truth INCASÒL (SECCIO requereix cache amb "
+                         "àncla seccional de f1 --incasol-seccional-csv)")
     args = ap.parse_args()
     t0 = time.time()
     here = Path(__file__).resolve().parent
@@ -316,9 +336,18 @@ def main() -> None:
     falta = need - set(cache.columns)
     if falta:
         raise SystemExit(f"cache incompleta; falten columnes: {sorted(falta)}")
+    clau = "muni5" if args.ambito == "MUNICIPI" else "id_seccio"
+    if args.ambito == "SECCIO":
+        # guard: la cache ha de portar l'àncla seccional (f1) — si només hi ha
+        # àncores municipals, totes les seccions d'un mateix muni comparteixen valor
+        varia = int(cache.groupby("muni5")["renta_media_contractual_ambito"].nunique().max())
+        if varia < 2:
+            raise SystemExit("--ambito SECCIO: la cache NO té àncla seccional "
+                             "(executa f1 --incasol-seccional-csv quan INCASÒL publiqui el fitxer)")
 
-    d, _mq = modela(cache)
+    d, _mq = modela(cache, clau_ambito=clau)
     d = blend(d)
+    d["ambito_ground_truth"] = args.ambito
     qa = {
         "n_edificios": int(len(d)), "n_illes": int(d.id_illa.nunique()),
         "n_secciones": int(d.id_seccio.nunique()),
@@ -328,15 +357,17 @@ def main() -> None:
         "fuera_rango_serpavi_pct": round(float(d.fuera_rango_serpavi.mean() * 100), 1),
         "grados": {"A": int((d.calidad_grado == "A").sum()), "B": int((d.calidad_grado == "B").sum()),
                    "C": int((d.calidad_grado == "C").sum()), "D": int((d.calidad_grado == "D").sum())},
-        "modo": "MUNICIPI", "n_ambitos_observados": int(d.muni5.nunique()),
+        "modo": args.ambito,
+        "n_ambitos_observados": int(d.groupby(clau).ngroups),
     }
-    det = loso_seccional(d)
+    det = loso_seccional(d, clau=clau)
     loso = {"k_folds": FOLDS_LOSO, "n_secciones_heldout": int(d.id_seccio.nunique()),
             "estabilidad_pct_media": round(float(det.estab_pct.mean()), 2),
             "nota": "holdout per seccions censals completes (LOSO)"}
-    lomo = lomo_ciego_municipal(d)
+    lomo = lomo_ciego_municipal(d, clau=clau)
     exporta(d, Path(args.out))
     informe = {"fase": "F2 — AMB (reconstrucció reproducible v1.0-repro)",
+               "ambito_ground_truth": args.ambito,
                "paso1_qa": {"n_edificios": int(len(d)), "n_illes": int(d.id_illa.nunique()),
                             "n_secciones": int(d.id_seccio.nunique())},
                "modelo_qa": qa, "loso_seccional": loso, "lomo_ciego_municipal": lomo,
