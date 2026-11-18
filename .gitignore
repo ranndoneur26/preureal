@@ -58,3 +58,4 @@ next-env.d.ts
 /agent-ctx/
 data/fixtures/
 __pycache__
+f3_carga_prod.json

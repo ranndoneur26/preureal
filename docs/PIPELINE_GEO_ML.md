@@ -149,6 +149,16 @@ Los artefactos de producción cargados siguen siendo los v1.0-2026-11 validados.
 
 ## 5. Accio ① — runbook de producción (desplegar v66)
 
+**Forma recomendada — un solo comando** (carga + verificación §5 automática,
+guard si falta DATABASE_URL, artefacto `f3_carga_prod.json`):
+
+```bash
+export DATABASE_URL="postgresql://...ep-xxx.neon.tech/preureal?sslmode=require"
+bash pipeline/f3_produccio.sh            # [dim.parquet] [cache.parquet] opcionales
+```
+
+Forma manual equivalente:
+
 ```bash
 export DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require"
 python3 pipeline/f3_carga_postgis.py \

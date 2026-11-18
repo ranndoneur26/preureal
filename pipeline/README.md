@@ -136,6 +136,16 @@ Producció i ruta seccional: veure §7 (runbook) i §8 (municipal→seccional).
 
 ## 7. Runbook de producció (accio ① — al desplegar v66)
 
+**Forma recomanada — un sol comandament** (càrrega + verificació §5 automàtica,
+capsa de seguretat si falta DATABASE_URL, artefacte `f3_carga_prod.json`):
+
+```bash
+export DATABASE_URL="postgresql://...ep-xxx.neon.tech/preureal?sslmode=require"
+bash pipeline/f3_produccio.sh            # [dim.parquet] [cache.parquet] opcionals
+```
+
+Forma manual equivalent:
+
 ```bash
 export DATABASE_URL="postgresql://...neon.tech/preureal?sslmode=require"
 python3 pipeline/f3_carga_postgis.py \
