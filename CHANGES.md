@@ -2,6 +2,33 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v68.1 — Fix de producció F3/F4 (primera càrrega real a la BD de l'app) — 2026-11-19
+
+Primera càrrega de producció REAL (BD de l'app amb PostGIS 3.3.7) — dos bugs de
+robustesa caçats en viu i corregits; càrrega final 100 % verda i API servint
+dades reals:
+
+- **f3 (illes)** — la columna és `geometry(MultiPolygon,4258)` però el
+  make_valid/buffer(0) de shapely pot produir WKT POLYGON singular segons la
+  versió: PostGIS rebutjava la INSERT («Geometry type (Polygon) does not match
+  column type»). Fix: `ST_Multi(ST_CollectionExtract(ST_GeomFromText(·,4258),3))`
+  — robust amb qualsevol shapely/PostGIS.
+- **f3 (illes + seccions, rendiment)** — les 11.633 INSERT fila a fila
+  (~65 ms/round-trip sobre pooler WAN) superen el timeout de producció
+  (~13 min): passa a `execute_values` per tandes de 400 (~30 sentències),
+  mateix patró que la dim (lliçó v41 estesa a illes/seccions).
+- **f4 (seccions shp)** — mateix tractament ST_Multi preventiu (el dissolve de
+  bseccen pot produir POLYGON singular); geometria additiva, mai bloqueja.
+- **Resultat producció** — dim 142.283 files · 10,039 €/m² · illes 11.633
+  ST_IsValid 11.633/11.633 · seccions 1.983 · municipis 947 (171 ZMRT, llista
+  A/C DOGC 19-10-2026) · seccions_censals 1.983 (totes amb centroide) ·
+  agregats 1.945 (any 2025, QUOTA_EDIFICIS_ESTIMADA) — en viu:
+  `GET /api/zones?muni=08019` → 200 (Barcelona ZMRT llista A, índex 1.134,6
+  €/mes = 11,595 €/m², 1.053 zones ordenades per compliment DESC 87,02→…) i
+  `GET /api/geo/illes?muni=08019` → 200. Cobertura honesta: dades de zones per
+  als 27 municipis del pilot AMB; resta FORA_ABAST_PILOT fins a l'execució
+  plena F1/F2 o el fitxer seccional d'INCASÒL.
+
 ## v68 — El menú només ofereix «Consulta» — 2026-11-19
 
 Decisió del propietari: «consulta ràpida sembla una ampliació de consulta» —

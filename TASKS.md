@@ -9,6 +9,7 @@ Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 - [x] **Validació**: +20 tests, suite completa sense regressions noves (baseline git stash verificat), tsc+eslint nets, E2E navegador real (cerca → dades → CTA → prefil; toggle filtra; mòbil correcte; 0 errors de consola). Executat al PG local amb PostGIS: 947 municipis · 27 coberts · 1.983 seccions · 1.945 agregats.
 - [x] **Decisió propietari (v68, 2026-11-19)**: «Consulta ràpida» surt del menú (desktop, mòbil i peu) — «sembla una ampliació de consulta»; el menú només ofereix «Consulta» (eina completa /analitza amb mapa ICGC). La ruta /consulta continua viva com a destí directe (guarda U7 evolucionada, zero regressions).
 - [ ] **Propietari**: revisió visual de la portada amb el buscador (desktop/mòbil); decidir si el mòdul ràpid (/consulta, ara fora del menú) també mostra el mapa.
+- [x] **Càrrega de producció feta (v68.1, 2026-11-19)**: F3+F4 executats contra la BD de l'app (Supabase, PostGIS 3.3.7) — dim 142.283 · 10,039 €/m² · 11.633 illes ST_IsValid · 1.983 seccions · 947 municipis (171 ZMRT) · 1.945 agregats 2025; `/api/zones` i `/api/geo/illes` serveixen dades reals (fix ST_Multi + batching execute_values, CHANGES v68.1).
 - [ ] **Quan INCASÒL publiqui el fitxer seccional**: `f1 --incasol-seccional-csv` + reexecutar `f4` (passa automàticament a `nivell_dada='SECCIONAL'` + `% compliment` real per contractes; zero canvis de DDL/API — vegeu `docs/buscador-invers.md` §3/§6).
 
 ## Redisseny del formulari de la Home (encàrrec 2026-11-15, fases F0–F4)

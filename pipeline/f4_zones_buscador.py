@@ -224,7 +224,9 @@ def main() -> None:
                     if not w:
                         continue
                     if te_postgis:
-                        cur.execute("UPDATE geo.seccions_censals SET geom = ST_GeomFromText(%s, 4258) WHERE id_seccio = %s",
+                        # v68.1 — mateix tractament que f3: força MultiPolygon
+                        # (bseccen dissolve pot produir POLYGON singular)
+                        cur.execute("UPDATE geo.seccions_censals SET geom = ST_Multi(ST_CollectionExtract(ST_GeomFromText(%s, 4258),3)) WHERE id_seccio = %s",
                                     (w, row.id_seccio))
                     else:
                         cur.execute("UPDATE geo.seccions_censals SET wkt_fallback = %s WHERE id_seccio = %s",

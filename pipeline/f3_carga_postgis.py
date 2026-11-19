@@ -168,16 +168,29 @@ def main() -> None:
             rows_i.append(("null", r.id_illa, r.muni5, int(r.n_edificios), int(r.num_viviendas),
                            round(float(r.renta_m2_media), 3), round(float(r.calidad_media), 3),
                            None, None, None))
+    # v68.1 — inserció per TANDES amb execute_values (pàg. 400): abans era 1
+    # INSERT per fila — 11.633 anades-i-tornades sobre WAN/pooler superen els
+    # ~13 min i fan timeout de producció; amb tandes de 400 són ~30 sentències.
+    # Geometria via ST_Multi(ST_CollectionExtract(ST_GeomFromText(·,4258),3)):
+    # el make_valid/buffer(0) de shapely pot produir WKT POLYGON singular (o
+    # GeometryCollection segons la versió) i la columna és
+    # geometry(MultiPolygon,4258) — PostGIS el rebutjava ("Geometry type
+    # (Polygon) does not match column type"). CollectionExtract(3) = només
+    # polígons, ST_Multi força MultiPolygon: robust amb qualsevol shapely.
+    vals_i = []
     for r in rows_i:
-        tipus, id_illa, muni5, n_ed, n_viv, renta, cal, wkt, lat, lon = r
-        if tipus == "st":
-            cur.execute(
-                "INSERT INTO geo.geo_illes VALUES (%s,%s,%s,%s,%s,%s,ST_GeomFromText(%s,4258),%s,%s)",
-                (id_illa, muni5, n_ed, n_viv, renta, cal, wkt, lat, lon))
+        if len(r) == 9:      # fila sense geometria (format antic sense tipus)
+            id_illa, muni5, n_ed, n_viv, renta, cal, wkt, lat, lon = r
         else:
-            cur.execute("INSERT INTO geo.geo_illes VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                        (id_illa, muni5, n_ed, n_viv, renta, cal, wkt, lat, lon))
-    print(f"  ✓ geo_illes: {len(rows_i)} files ({n_geom} amb geometria)")
+            tipus, id_illa, muni5, n_ed, n_viv, renta, cal, wkt, lat, lon = r
+        vals_i.append((id_illa, muni5, n_ed, n_viv, renta, cal, wkt, lat, lon))
+    if te_postgis:
+        execute_values(cur, "INSERT INTO geo.geo_illes VALUES %s", vals_i,
+                       template="(%s,%s,%s,%s,%s,%s,ST_Multi(ST_CollectionExtract(ST_GeomFromText(%s,4258),3)),%s,%s)",
+                       page_size=400)
+    else:
+        execute_values(cur, "INSERT INTO geo.geo_illes VALUES %s", vals_i, page_size=400)
+    print(f"  ✓ geo_illes: {len(vals_i)} files ({n_geom} amb geometria)")
 
     stats_s = dim.groupby("id_seccio").agg(
         renta_m2_media=("renta_m2_mes", "mean"), calidad_media=("calidad_estimacion", "mean"),
@@ -185,7 +198,7 @@ def main() -> None:
     stats_s["muni5"] = stats_s.id_seccio.str[:5]
     rows_s = [(r.id_seccio, r.muni5, int(r.n_edificios), round(float(r.renta_m2_media), 3),
                round(float(r.calidad_media), 3)) for _, r in stats_s.iterrows()]
-    cur.executemany("INSERT INTO geo.geo_seccions VALUES (%s,%s,%s,%s,%s)", rows_s)
+    execute_values(cur, "INSERT INTO geo.geo_seccions VALUES %s", rows_s, page_size=400)
     print(f"  ✓ geo_seccions: {len(rows_s)} files")
 
     cur.execute("SELECT count(*), round(avg(renta_m2_mes),3), count(DISTINCT id_illa) FROM geo.dim_building_rent_estimation")
