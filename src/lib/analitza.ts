@@ -8,8 +8,9 @@
  *  - A. anàlisi de preu: €/m² de l'anunci, referència Incasòl municipal
  *    (o referència de comarca marcada com a ESTIMACIÓ), desviació, veredicte
  *    per llindars explícits, evolució i municipis propers.
- *  - B. comprovació normativa: zona tensada (Resolucions TER/3739/2026 i
- *    TER/3740/2026, DOGC 19-10-2026), tipus de contracte, renta anterior,
+ *  - B. comprovació normativa: zona tensada (Resolucions TER/2408/2024,
+ *    TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026 i núm. 9196 de 3-7-2024),
+ *    tipus de contracte, renta anterior,
  *    gran tenedor i sistema estatal (SERPAVI), actualització anual IRAV.
  *    MAI declara legalitat: estats «compatible», «requereix comprovacions»
  *    o «possible incompliment», sempre amb font i data de consulta.
@@ -135,8 +136,11 @@ export type NormState = "OK" | "PENDING" | "ALERT" | "INFO" | "NA";
 
 /** Fets normatius vigents, amb font i data — revisar quan canviïn les normes. */
 export const NORM_FACTS = {
-  /** Resolucions vigents de zones tensades (DOGC 19-10-2026): 118 prorrogades + 53 noves. */
+  /** Resolucions vigents de zones tensades: 1a tanda prorrogada (118) + 2a
+   *  tanda TER/2408/2024 (131, vigent sense canvis, DOGC núm. 9196 de
+   *  3-7-2024) + 53 noves = 302 municipis (auditoria v69 del 19-11-2026). */
   tenseResolutions: [
+    "Resolució TER/2408/2024 (2a tanda, 131 municipis, DOGC 3-7-2024)",
     "Resolució TER/3739/2026 (pròrroga, 118 municipis)",
     "Resolució TER/3740/2026 (nous, 53 municipis)",
   ],
@@ -164,6 +168,16 @@ export const NORM_FACTS = {
   /** Certificat d'amiant obligatori per vendre o llogar a Catalunya des del 3-10-2026. */
   amiantNote: "Certificat de presència o absència d'amiant, obligatori a Catalunya des del 3-10-2026 (Generalitat)",
 };
+
+/** Publicació DOGC que fa vigent cada llista de municipi tensat (v69):
+ *  A = pròrroga 1a tanda (TER/3739/2026, DOGC 19-10-2026) · B = 2a tanda
+ *  (TER/2408/2024, DOGC núm. 9196 de 3-7-2024, vigència efectiva 10-10-2024)
+ *  · C = nous 2026 (TER/3740/2026, DOGC 19-10-2026). Per a qualsevol valor
+ *  desconegut o null es manté la data del paquet vigent 2026 (comportament
+ *  previ, mai una data falsa). */
+export function tensePublicacio(llista: string | null | undefined): string {
+  return llista === "B" ? "DOGC 3-7-2024" : "DOGC 19-10-2026";
+}
 
 // ── F1 (redisseny de la Home): constants de transparència compartides ───────
 

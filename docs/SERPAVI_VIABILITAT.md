@@ -25,7 +25,7 @@ legitima quines variables entren al producte.
 | Fiances de lloguer Incasòl (explotació habitatge.gencat.cat) | Base estadística N1 (€/mes vivenda típica ≈85 m², nº contractes) | https://incasol.gencat.cat/ |
 | Metodologia del motor de valoració validat | Elasticitat superfície, multiplicadors estat, densitat habitacions | `src/lib/territorial.ts` (constants documentades al codi) |
 | SERPAVI (MIVAU) | Única font del rang amb validesa legal per parcel·la; N3 mai simulat | https://serpavi.mivau.gob.es/ |
-| Resolucions de zones tensades TER/3739/2026 i TER/3740/2026 (DOGC 19-10-2026) | Avís legal Llei 12/2023, LAU art. 17.2 en 171 municipis | https://dogc.gencat.cat/ |
+| Resolucions de zones tensades TER/2408/2024 (DOGC núm. 9196, 3-7-2024), TER/3739/2026 i TER/3740/2026 (DOGC 19-10-2026) | Avís legal Llei 12/2023, LAU art. 17.2 en 302 municipis | https://dogc.gencat.cat/ |
 | ICGC — edificis amb any de construcció (CC-BY 4.0) | Dada pública (clau B); sense coeficient publicat → no multiplica renta | https://www.icgc.cat/ (llicència CC-BY 4.0) |
 
 Regles del projecte que regeixen aquest informe: **mai s'inventa un coeficient**; si

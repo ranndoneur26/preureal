@@ -84,8 +84,8 @@ export type Locale2 = "ca" | "es";
 
 export const NORM_CHECK_LABELS: Record<string, { ca: string; es: string }> = {
   "ZONA_TENSADA|MUNI_TENSAT": {
-    ca: "Municipi en zona de mercat residencial tensat (Resolucions TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026): els límits de renda del nou contracte d'habitatge habitual apliquen.",
-    es: "Municipio en zona de mercado residencial tensionado (Resoluciones TER/3739/2026 y TER/3740/2026, DOGC 19-10-2026): aplican los límites de renta del nuevo contrato de vivienda habitual.",
+    ca: "Municipi en zona de mercat residencial tensat (Resolucions TER/2408/2024, TER/3739/2026 i TER/3740/2026; DOGC 19-10-2026 i núm. 9196 de 3-7-2024): els límits de renda del nou contracte d'habitatge habitual apliquen.",
+    es: "Municipio en zona de mercado residencial tensionado (Resoluciones TER/2408/2024, TER/3739/2026 y TER/3740/2026; DOGC 19-10-2026 y núm. 9196 de 3-7-2024): aplican los límites de renta del nuevo contrato de vivienda habitual.",
   },
   "ZONA_TENSADA|MUNI_NO_TENSAT": {
     ca: "Municipi fora de les zones tensades vigents: sense límits de renda de nous contractes de la Llei 12/2023.",

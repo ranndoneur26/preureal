@@ -75,7 +75,7 @@ export interface EstimaData {
   /** Referència de comarca ponderada (ESTIMACIÓ) quan no hi ha fiança municipal. */
   comarcaRefLatest: number | null;
   comarcaRefPeriod: string | null;
-  /** Zona tensada (Resolucions TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026). */
+  /** Zona tensada (Resolucions TER/2408/2024, TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026 i 3-7-2024). */
   tense: boolean;
 }
 
@@ -251,7 +251,7 @@ export const ESTIMA_SOURCES = [
   {
     t: "Zones tensades",
     u: "https://dogc.gencat.cat/",
-    d: "Resolució TER/3739/2026 (pròrroga, 118 municipis) i TER/3740/2026 (nous, 53 municipis), DOGC 19-10-2026",
+    d: "Resolució TER/2408/2024 (2a tanda, 131 municipis, DOGC 3-7-2024), Resolució TER/3739/2026 (pròrroga, 118 municipis) i TER/3740/2026 (nous, 53 municipis), DOGC 19-10-2026",
   },
 ] as const;
 

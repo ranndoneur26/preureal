@@ -52,7 +52,8 @@ CREATE TABLE geo.municipis (
                                                -- Zona de Mercat Residencial
                                                -- Tensionat (DOGC 19-10-2026)
   tense_llista    text,                        -- 'A' (TER/3739/2026 pròrroga) |
-                                               -- 'C' (TER/3740/2026 nous) | 'A/C'
+                                               -- 'B' (TER/2408/2024 2a tanda, vigent) |
+                                               -- 'C' (TER/3740/2026 nous) | combinacions
   zmrt_font       text,                        -- traçabilitat de la declaració
   zmrt_publicacio text,                        -- "DOGC 19-10-2026"
   cobert          boolean NOT NULL DEFAULT false,

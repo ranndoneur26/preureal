@@ -3,7 +3,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/security";
 import { db } from "@/lib/db";
 import { getZonesByMuni, isZonesNotReady } from "@/lib/zones";
-import { NORM_FACTS, ORIENTATION_DISCLAIMER } from "@/lib/analitza";
+import { NORM_FACTS, ORIENTATION_DISCLAIMER, tensePublicacio } from "@/lib/analitza";
 
 /**
  * GET /api/zones?muni=08019 — BUSCADOR INVERS (v67): zones (seccions censals)
@@ -12,8 +12,9 @@ import { NORM_FACTS, ORIENTATION_DISCLAIMER } from "@/lib/analitza";
  * Ruta NOVA i aditiva: no altera cap endpoint, disseny ni flux existent.
  *
  * · Targeta d'estat: ZMRT ("Zona de Mercat Residencial Tensionat") segons les
- *   resolucions vigents (TER/3739/2026 pròrroga + TER/3740/2026, DOGC
- *   19-10-2026) — la mateixa font que Municipality.isTense i el mòdul normativa.
+ *   resolucions vigents (TER/2408/2024 2a tanda · TER/3739/2026 pròrroga +
+ *   TER/3740/2026, DOGC 19-10-2026 i núm. 9196 de 3-7-2024 — 302 municipis,
+ *   auditoria v69) — la mateixa font que Municipality.isTense i el mòdul normativa.
  * · Índex de referència: fiances Incasòl (via habitatge.gencat.cat) o
  *   referència de comarca marcada ESTIMACIÓ — la mateixa definició que
  *   /api/normativa/[code]; en €/m²·mes via la superfície mitjana del parc
@@ -71,9 +72,11 @@ export async function GET(req: Request) {
         },
         zmrt: {
           tense: mun.isTense,
-          llista: mun.tenseList ?? null, // A = TER/3739/2026 (pròrroga) · C = TER/3740/2026 (nous)
+          // A = TER/3739/2026 (pròrroga 1a tanda) · B = TER/2408/2024 (2a tanda,
+          // vigent sense canvis) · C = TER/3740/2026 (nous 2026)
+          llista: mun.tenseList ?? null,
           font: NORM_FACTS.tenseSource,
-          publicacio: "DOGC 19-10-2026",
+          publicacio: tensePublicacio(mun.tenseList), // data DOGC de la llista del municipi
           resolucionsVigents: NORM_FACTS.tenseResolutions,
         },
         indexReferencia: {

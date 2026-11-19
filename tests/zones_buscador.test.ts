@@ -36,6 +36,13 @@ const muniGirona = {
   comarcaRefLatest: null, comarcaRefPeriod: null, contractsLatest: 60,
   isTense: true, tenseList: "A",
 };
+// v69 — municipi de la 2a tanda TER/2408/2024 (llista B, DOGC 3-7-2024)
+const muniVila = {
+  code: "082278", ineCode: "08227", name: "Vilanova del Vallès", comarca: "Vallès Oriental", province: "Barcelona",
+  lat: 41.42, lng: 2.27, rentLatest: null, rentPeriod: null, rentSource: "INCASOL",
+  comarcaRefLatest: null, comarcaRefPeriod: null, contractsLatest: null,
+  isTense: true, tenseList: "B",
+};
 
 let findUniqueCalls: unknown[] = [];
 let findFirstCalls: unknown[] = [];
@@ -55,7 +62,7 @@ mock.module("@/lib/db", () => ({
       findFirst: async (args: unknown) => {
         findFirstCalls.push(args);
         const ine = (args as { where: { ineCode: string } }).where.ineCode;
-        return ine === muniBCN.ineCode ? muniBCN : ine === muniGirona.ineCode ? muniGirona : null;
+        return ine === muniBCN.ineCode ? muniBCN : ine === muniGirona.ineCode ? muniGirona : ine === muniVila.ineCode ? muniVila : null;
       },
     },
   },
@@ -68,9 +75,15 @@ mock.module("@/lib/security", () => ({
 }));
 mock.module("@/lib/analitza", () => ({
   NORM_FACTS: {
-    tenseSource: "DOGC — Resolucions TER/3739/2026 i TER/3740/2026",
-    tenseResolutions: ["Resolució TER/3739/2026 (pròrroga)", "Resolució TER/3740/2026 (nous)"],
+    tenseSource: "DOGC — Resolucions TER/2408/2024, TER/3739/2026 i TER/3740/2026",
+    tenseResolutions: [
+      "Resolució TER/2408/2024 (2a tanda)",
+      "Resolució TER/3739/2026 (pròrroga)",
+      "Resolució TER/3740/2026 (nous)",
+    ],
   },
+  // v69: data DOGC per llista de municipi (A/C = paquet 2026 · B = TER/2408/2024)
+  tensePublicacio: (l: string | null | undefined) => (l === "B" ? "DOGC 3-7-2024" : "DOGC 19-10-2026"),
   ORIENTATION_DISCLAIMER: { ca: "Comparació estadística, no és una taxació oficial.", es: "Comparación estadística, no es una tasación oficial." },
 }));
 
@@ -127,6 +140,19 @@ describe("v67 — /api/zones (buscador invers)", () => {
     expect(j.cobertura).toBe("PILOT_AMB");
     expect(j.n_zones).toBe(3);
     expect(j.anyReferencia).toBe(2025);
+  });
+
+  test("Z9 — municipi de la 2a tanda TER/2408/2024 (llista B): publicació DOGC 3-7-2024", async () => {
+    cacheClear();
+    queryRawImpl = async () => [];
+    const res = await getZones(req("/api/zones?muni=08227"));
+    expect(res.status).toBe(200);
+    const j = await res.json();
+    expect(j.zmrt.tense).toBe(true);
+    expect(j.zmrt.llista).toBe("B");
+    expect(j.zmrt.publicacio).toBe("DOGC 3-7-2024"); // mai la data del paquet 2026 per a un municipi B
+    expect(j.cobertura).toBe("FORA_ABAST_PILOT");
+    expect(j.n_zones).toBe(0);
   });
 
   test("Z4 — l'SQL ordena per compliment DESC NULLS LAST i filtra per muni", async () => {

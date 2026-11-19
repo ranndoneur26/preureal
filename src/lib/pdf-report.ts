@@ -369,7 +369,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     ["Lloguer mitjà (fiances)", mun.rentLatest != null ? `${fmt0(mun.rentLatest)} €/mes` : "—", `període ${mun.rentPeriod || "—"}`],
     ["Variació vs any anterior", deltaPct != null ? `${deltaPct > 0 ? "+" : ""}${fmt1(deltaPct)}%` : "—", `període anterior ${mun.rentPrevPeriod || "—"}`],
     ["Contractes amb fiança", mun.contractsLatest != null ? fmt0(mun.contractsLatest) : "—", "mostre municipal de referència"],
-    ["Àrea tensada", mun.isTense ? `SÍ (llista ${mun.tenseList || "—"})` : "NO", mun.isTense ? "TER/3739 i TER/3740/2026" : "sense índex de referència"],
+    ["Àrea tensada", mun.isTense ? `SÍ (llista ${mun.tenseList || "—"})` : "NO", mun.isTense ? "TER/2408/2024 · TER/3739/2026 · TER/3740/2026" : "sense índex de referència"],
   ];
   const bw = 250, bh = 64;
   boxes.forEach(([label, value, sub], i) => {
@@ -387,7 +387,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
       ? `Respecte del període anterior (${mun.rentPrevPeriod || "—"}) la variació és d'un ${deltaPct > 0 ? "+" : ""}${fmt1(deltaPct)}%. `
       : "No hi ha període previ comparable publicat. ") +
     (mun.isTense
-      ? `El municipi ESTÀ declarat àrea de mercat residencial tensat (llista ${mun.tenseList === "A" ? "A — TER/3739/2026" : "C — TER/3740/2026"}), de manera que els contractes nous hi poden aplicar l'índex de referència de lloguers.`
+      ? `El municipi ESTÀ declarat àrea de mercat residencial tensat (llista ${mun.tenseList === "A" ? "A — TER/3739/2026" : mun.tenseList === "B" ? "B — TER/2408/2024" : "C — TER/3740/2026"}), de manera que els contractes nous hi poden aplicar l'índex de referència de lloguers.`
       : "El municipi NO consta a les resolucions d'àrees tensades vigents (DOGC 19-10-2026)."),
     10
   );
@@ -772,11 +772,11 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
   newPage();
   section("Regulació: zona tensada i contractes");
   if (mun.isTense) {
-    line(`Aquest municipi està declarat ÀREA DE MERCAT RESIDENCIAL TENSAT per la Generalitat (llista ${mun.tenseList === "A" ? "A — Resolució TER/3739/2026" : "C — Resolució TER/3740/2026"}, DOGC 19-10-2026).`, 10, DARK, true);
+    line(`Aquest municipi està declarat ÀREA DE MERCAT RESIDENCIAL TENSAT per la Generalitat (llista ${mun.tenseList === "B" ? "B — Resolució TER/2408/2024, DOGC núm. 9196 de 3-7-2024" : mun.tenseList === "A" ? "A — Resolució TER/3739/2026, DOGC 19-10-2026" : "C — Resolució TER/3740/2026, DOGC 19-10-2026"}).`, 10, DARK, true);
     y -= 8;
     line("En els municipis tensats, els CONTRACTES NOUS d'habitatge poden aplicar l'índex de referència de lloguers publicat pel Ministeri per a la zona, que serveix de sostre orientatiu per a la renda inicial (Reglament estatal de lloguer urbà, aplicat per la normativa catalana).", 9.5);
   } else {
-    line("Aquest municipi NO consta a les resolucions d'àrees de mercat residencial tensat vigents (TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026). No s'hi aplica l'índex de referència de lloguers com a sostre de nous contractes; segueixen aplicant les regles generals de la LAU.", 9.5);
+    line("Aquest municipi NO consta a les resolucions d'àrees de mercat residencial tensat vigents (TER/2408/2024, TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026 i 3-7-2024). No s'hi aplica l'índex de referència de lloguers com a sostre de nous contractes; segueixen aplicant les regles generals de la LAU.", 9.5);
   }
   y -= 10;
   [
@@ -818,7 +818,7 @@ export async function buildReportPdf(rawInput: ReportInput): Promise<Uint8Array>
     "Banda P25-mediana-P75: construcció pròpia sobre illes del municipi amb dada de fiances importada, ponderada pel nombre de contractes (quartils tipus 7).",
     "Renda neta mitjana i esforç: Atlas de Distribució de Renda dels Llars (INE). IPVA: Índex de Preus de Vivienda en Alquiler (INE), base 2015=100.",
     "Contexte demogràfic i territorial (pàgina 5): IDESCAT — Padró continu d'habitants (INE), Censos de població i habitatges i «El municipi en xifres». Llicència Oberta d'Ús d'Informació — Catalunya; percentatges calculats sobre categories oficials; població estrangera = total - nacionalitat espanyola; mai s'interpolen sèries.",
-    "Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026 del DOGC (19-10-2026).",
+    "Àrees tensades: Resolucions TER/2408/2024, TER/3739/2026 i TER/3740/2026 del DOGC (19-10-2026 i 3-7-2024).",
     "Anàlisi del mercat (pàgina 6): flux anual de contractes amb fiança (Registre de fiances d'Incasòl, ingesta mensual), població del Padró continu (IDESCAT/INE), % de vivendes principals en lloguer (Cens 2021, INE) i volum aproximat = mediana mensual × 12 × contractes de l'any (aproximació elaborada per PreuReal; lectures descriptives, sense causalitat).",
     "Ajudes al lloguer: catàleg editorial propi amb verificació de la font oficial i data de darrera revisió (pàgina 9).",
   ].forEach((s) => {

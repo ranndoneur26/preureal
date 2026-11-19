@@ -116,8 +116,8 @@ describe("P3 — /api/normativa/[code]: mòdul normatiu complet (Nou Premium)", 
   test("fonts oficials citades amb període (principi de traceabilitat)", () => {
     expect(route).toContain("Incasòl");
     expect(route).toContain("habitatge.gencat.cat");
-    expect(route).toContain("NORM_FACTS.tenseResolutions"); // DOGC 19-10-2026
-    expect(route).toContain("DOGC 19-10-2026");
+    expect(route).toContain("NORM_FACTS.tenseResolutions"); // DOGC 19-10-2026 i 3-7-2024
+    expect(route).toContain("tensePublicacio"); // v69: data DOGC per llista (A/B/C)
     expect(route).toContain("NORM_FACTS.iravLatestPct"); // INE
     expect(route).toContain("SERPAVI_URL"); // MIVAU
     expect(route).toContain("granTenedorSource");

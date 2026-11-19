@@ -99,10 +99,38 @@ lloguer = load_lloguer(os.path.join(BASE, "municipis_anual_lloguer.xlsx"))
 contractes = load_contractes(os.path.join(BASE, "municipis_anual_contractes.xlsx"))
 print("lloguer municipis:", len(lloguer), "| contractes municipis:", len(contractes))
 
-# --- 3. Municipis tensats (estat legal VIGENT, DOGC 19-10-2026) -----------
-# Resolució TER/3739/2026: prorroga la declaració en 118 municipis (de 140 inicials)
-# Resolució TER/3740/2026: declara 53 municipis nous
-# (les 131 de TER/2408/2024 van caducar; alguns re-inclosos als 53 nous)
+# --- 3. Municipis tensats (estat legal VIGENT, verificat 19-11-2026) ------
+# Cadena legal completa (habitatge.gencat.cat + revisió 2026):
+#  · Resolució TER/800/2024 (1a tanda): 140 municipis — prorrogada per
+#    TER/3739/2026 en 118 (22 fora per criteris de la revisió).
+#  · Resolució TER/2408/2024, d'1 de juliol (DOGC núm. 9196, 3-7-2024;
+#    vigència efectiva 10-10-2024): 2a tanda de 131 municipis — CONTINUA
+#    VIGENT sense canvis a la revisió 2026 (l'apunt anterior que deia que
+#    «van caducar» era un error d'anàlisi; corregit a v69).
+#  · Resolució TER/3740/2026 (DOGC 19-10-2026): 53 municipis nous.
+# Total vigent: 118 + 131 + 53 = 302 municipis.
+TENSE_B = """Aiguafreda|Albinyana|Alcanar|Alcarràs|Alcover|Aldea, l'|Almacelles|Alpicat|Altafulla
+Ametlla de Mar, l'|Ametlla del Vallès, l'|Ampolla, l'|Anglès|Arboç, l'|Arbúcies|Artés
+Artesa de Segre|Bagà|Begues|Begur|Bellpuig|Bellver de Cerdanya|Besalú|Bigues i Riells del Fai
+Bisbal del Penedès, la|Borges Blanques, les|Breda|Cadaqués|Calaf|Calafell|Caldes de Malavella
+Calonge i Sant Antoni|Canyelles|Cassà de la Selva|Castellet i la Gornal|Castellgalí
+Castelló d'Empúries|Castell d'Aro, Platja d'Aro i s'Agaró|Castellterçol|Celrà|Centelles
+Creixell|Cunit|Deltebre|Dosrius|Escala, l'|Esquirol, l'|Folgueroles|Fornells de la Selva
+Gelida|Gironella|Hostalric|Linyola|Llançà|Lliçà d'Amunt|Lliçà de Vall|Maçanet de la Selva
+Masquefa|Moià|Monistrol de Montserrat|Montblanc|Montbrió del Camp|Mont-roig del Camp
+Móra d'Ebre|Morell, el|Navàs|Òdena|Olèrdola|Olesa de Bonesvalls|Olivella|Pallejà
+Palma de Cervelló, la|Pals|Peralada|Piera|Pobla de Montornès, la|Pont de Suert, el|Ponts
+Prats de Lluçanès|Puig-reig|Ràpita, la|Riells i Viabrea|Riudarenes|Riudoms|Roda de Berà
+Roda de Ter|Roses|Sant Antoni de Vilamajor|Sant Cebrià de Vallalta|Sant Esteve de Palautordera
+Sant Feliu de Codines|Sant Hipòlit de Voltregà|Sant Jaume dels Domenys|Sant Jaume d'Enveja
+Sant Joan de Vilatorrada|Sant Julià de Ramis|Sant Llorenç d'Hortons|Sant Llorenç Savall
+Sant Martí Sarroca|Sant Pere de Riudebitlles|Sant Pere de Torelló|Sant Pere de Vilamajor
+Sant Pere Pescador|Sant Quirze de Besora|Santa Bàrbara|Santa Coloma de Queralt
+Santa Cristina d'Aro|Santa Eulàlia de Ronçana|Santa Maria de Palautordera|Santa Oliva
+Santpedor|Selva del Camp, la|Sénia, la|Sentmenat|Seva|Sils|Súria|Taradell|Torrelles de Foix
+Torroella de Montgrí|Tossa de Mar|Ulldecona|Vacarisses|Vallgorguina|Vidreres|Vielha e Mijaran
+Viladecavalls|Vilafant|Vilanova del Vallès|Vilobí d'Onyar|Vinyols i els Arcs"""
+TENSE_B = [n.strip() for n in TENSE_B.replace("\n", "|").split("|") if n.strip()]
 TENSE_A = """Abrera|Alella|Amposta|Arenys de Mar|Arenys de Munt|Argentona|Badalona|Badia del Vallès|Balaguer
 Barberà del Vallès|Barcelona|Bisbal d'Empordà, la|Blanes|Cabrils|Caldes de Montbui|Calella|Cambrils
 Canet de Mar|Canonja, la|Cardedeu|Castellar del Vallès|Castellbisbal|Castelldefels|Cerdanyola del Vallès
@@ -133,7 +161,9 @@ Vandellòs i l'Hospitalet de l'Infant|Vilalba Sasserra|Vila-seca"""
 
 TENSE_A = [n.strip() for n in TENSE_A.replace("\n", "|").split("|") if n.strip()]
 TENSE_C = [n.strip() for n in TENSE_C.replace("\n", "|").split("|") if n.strip()]
-print("tensades prorrogades (TER/3739/2026):", len(TENSE_A), "| noves (TER/3740/2026):", len(TENSE_C))
+print("tensades prorrogades (TER/3739/2026):", len(TENSE_A),
+      "| 2a tanda vigent (TER/2408/2024):", len(TENSE_B),
+      "| noves (TER/3740/2026):", len(TENSE_C))
 
 def norm(s):
     s = s.lower().replace("'", "'").replace("'", "'").replace("·", "-")
@@ -181,6 +211,7 @@ def load_lloguer_with_names(path):
     return rents
 
 TENSE_A_N = {join_key(n): n for n in TENSE_A}
+TENSE_B_N = {join_key(n): n for n in TENSE_B}
 TENSE_C_N = {join_key(n): n for n in TENSE_C}
 
 rents_by_name = load_lloguer_with_names(os.path.join(BASE, "municipis_anual_lloguer.xlsx"))
@@ -212,13 +243,16 @@ print("lloguer per nom:", len(rents_by_name), "| contractes per nom:", len(conts
 # Sense això el municipi no es marca com a tensat ni rep lloguer.
 NAME_ALIASES = {
     "Palamós i Sant Joan": "Palamós",  # TER/3739/2026 (llista A)
+    # v69 — variants històriques defensives per a la 2a tanda (TER/2408/2024)
+    "Castell-Platja d'Aro": "Castell d'Aro, Platja d'Aro i s'Agaró",
+    "Calonge": "Calonge i Sant Antoni",
 }
 
 # Toponimia oficial de sortida (el font concatena entitats; l'INE oficial és "Palamós")
 OUTPUT_NAME_FIXES = {"Palamós i Sant Joan": "Palamós"}
 
 result = []
-matched_a = matched_b = matched_rent = unmatched_rent = 0
+matched_a = matched_b = matched_c = matched_rent = unmatched_rent = 0
 for m in municipis:
     code5 = m["codi"].strip()
     nom = m["nom"].strip()
@@ -256,8 +290,11 @@ for m in municipis:
     if jk in TENSE_A_N:
         is_tense, tense_list = True, "A"
         matched_a += 1
+    if jk in TENSE_B_N:  # v69: 2a tanda TER/2408/2024 — vigent, llista B
+        is_tense, tense_list = True, "B" if tense_list is None else tense_list + "+B"
+        matched_c += 1
     if jk in TENSE_C_N:
-        is_tense, tense_list = True, "C" if tense_list is None else "A+C"
+        is_tense, tense_list = True, "C" if tense_list is None else tense_list + "+C"
         matched_b += 1
     if rent_latest:
         matched_rent += 1
@@ -281,12 +318,12 @@ for m in municipis:
         "tenseList": tense_list,
     })
 
-print(f"cruïlla: {len(result)} municipis | amb lloguer: {matched_rent} | tensats: A={matched_a} C={matched_b}")
+print(f"cruïlla: {len(result)} municipis | amb lloguer: {matched_rent} | tensats: A={matched_a} B={matched_c} C={matched_b}")
 # Control de qualitat: cada municipi de les resolucions ha de cruzar amb el dataset.
-if matched_a != len(TENSE_A) or matched_b != len(TENSE_C):
+if matched_a != len(TENSE_A) or matched_b != len(TENSE_C) or matched_c != len(TENSE_B):
     _found = {join_key(NAME_ALIASES.get(m["nom"].strip(), m["nom"].strip())) for m in municipis}
-    _miss = [n for n in TENSE_A + TENSE_C if join_key(n) not in _found]
-    print(f"⚠ Tensats sense cruïlla: A={matched_a}/{len(TENSE_A)} C={matched_b}/{len(TENSE_C)} → {_miss}")
+    _miss = [n for n in TENSE_A + TENSE_B + TENSE_C if join_key(n) not in _found]
+    print(f"⚠ Tensats sense cruïlla: A={matched_a}/{len(TENSE_A)} B={matched_c}/{len(TENSE_B)} C={matched_b}/{len(TENSE_C)} → {_miss}")
 with open(os.path.join(OUT, "municipalities.json"), "w", encoding="utf-8") as f:
     json.dump(result, f, ensure_ascii=False)
 print("desat a data/municipalities.json")

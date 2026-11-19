@@ -248,8 +248,12 @@ def main() -> None:
         mrows.append((m.muni5, str(m.nom), m.comarca, m.provincia,
                       bool(m.is_tense) if pd.notna(m.is_tense) else False,
                       m.tense_llista,
-                      "Resolucions TER/3739/2026 + TER/3740/2026 (Generalitat)" if m.is_tense else None,
-                      "DOGC 19-10-2026" if m.is_tense else None,
+                      # v69: font i publicacio PER LLISTA (mai una font falsa):
+                      # B = 2a tanda TER/2408/2024 (vigent, DOGC n. 9196 de 3-7-2024)
+                      ("Resolució TER/2408/2024 (Generalitat)"
+                       if m.tense_llista == "B"
+                       else "Resolucions TER/3739/2026 + TER/3740/2026 (Generalitat)") if m.is_tense else None,
+                      ("DOGC 3-7-2024" if m.tense_llista == "B" else "DOGC 19-10-2026") if m.is_tense else None,
                       m.muni5 in munis_coberts,
                       float(m.lat) if pd.notna(m.lat) else None,
                       float(m.lng) if pd.notna(m.lng) else None))

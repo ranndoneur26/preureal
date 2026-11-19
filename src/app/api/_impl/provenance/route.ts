@@ -21,10 +21,10 @@ const PROVENANCE = [
   {
     id: "dogc_areas_tensades",
     nom: "Àrees de mercat residencial tensat",
-    font: "DOGC — Resolucions TER/3739/2026 i TER/3740/2026 (19-10-2026)",
+    font: "DOGC — Resolucions TER/2408/2024 (núm. 9196, 3-7-2024), TER/3739/2026 i TER/3740/2026 (19-10-2026)",
     llicencia: "Document oficial publicat al DOGC",
-    unitat: "llistes A (3739) i B (3740) de municipis",
-    ambit: "171 municipis",
+    unitat: "llistes A (3739 pròrroga), B (2408 2a tanda) i C (3740 nous) de municipis",
+    ambit: "302 municipis",
     periodicitat: "Cada actualització del DOGC (normalment semestral)",
     metodologia: "Classificació legal dels municipis segons les resolucions del Departament de Territori, Habitatge i Transició Ecològica.",
     qualitat: "ALTA — text legal, revisió manual",

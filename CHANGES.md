@@ -2,6 +2,49 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v69 — Auditoria ZMRT: els 131 municipis de TER/2408/2024 (2a tanda) entren a la BD — total vigent 302 — 2026-11-19
+
+Auditoria legal íntegra demanada pel propietari («tinc la certesa que falten municipis").
+Resultat: la BD tenia 171 municipis ZMRT i en faltaven **131** — els de la Resolució
+TER/2408/2024, d'1 de juliol (DOGC núm. 9196, de 3-7-2024; vigència efectiva
+10-10-2024), que el repo tenia per «caducats» per un error d'anàlisi: la 2a tanda
+CONTINUA VIGENT sense canvis a la revisió 2026 (verificat contra
+habitatge.gencat.cat i el paquet 2026: 302 municipis = 118 prorrogats 1a tanda +
+131 de TER/2408/2024 + 53 nous). Zero col·lisions per codi INE amb els 171
+existents (protocol: NO MODIFICAR els 171, NO DUPLICAR).
+
+- **Dades**: `data/municipalities.json` i `src/data/municipalities.json` (+131
+  municipis isTense=true, tenseList='B'; 302 = 118 A + 131 B + 53 C; aplicació
+  idempotent amb asserció de protecció, els 171 intactes).
+- **Migració additiva** `20261119100000_zmrt_ter2408_2024_131`: UPDATE idempotent
+  (IS DISTINCT FROM) només sobre els 131 codis del delta; cap codi A/C dins
+  (guardat per test M1).
+- **Llista B als textos**: NORM_FACTS.tenseResolutions amb les 3 resolucions;
+  nova `tensePublicacio(llista)` (A/C → DOGC 19-10-2026 · B → DOGC 3-7-2024)
+  usada per /api/zones i /api/normativa — abans «DOGC 19-10-2026» era hardcoded
+  i hauria estat FALS per als municipis B; PDF informe/valoració, HTML d'anàlisi,
+  i18n CA/ES (171→302 amb desglossament per tandes), provenance (font/unitat/
+  àmbit), docs i DDL comments.
+- **Bug corregit dins l'auditoria**: pdf-report mapava un municipi B a «C —
+  TER/3740/2026» (fals): ara A/B/C amb la data DOGC de la seva llista.
+- **Pipeline**: `prepare_data.py` amb TENSE_B (131 noms oficials DOGC) + cadena
+  legal completa al comentari (TER/800/2024 → TER/2408/2024 → paquet 2026) +
+  alias defensius (Castell-Platja d'Aro, Calonge); `f4_zones_buscador.py` escriu
+  zmrt_font/zmrt_publicacio PER LLISTA (mai una font falsa a geo.municipis).
+- **Tests**: nova guarda bloquejant `zmrt_v69_ter2408` (9 tests: recomptes
+  302/118/131/53, identitat de les 2 còpies, cap creuament A/B/C, mostres B per
+  INE — Ràpita 43136, Esquirol 08254, Vielha 25243, Castell d'Aro 17048,
+  Vilanova del Vallès 08227 —, migració sense cap codi A/C, NORM_FACTS,
+  tensePublicacio, texts 302 sense restes de «171») + Z9 (/api/zones per a un
+  municipi B: publicacio DOGC 3-7-2024, FORA_ABAST_PILOT honest) + mock/fixture
+  evolucionats + plans_fase2 evolucionat JUSTIFICADAMENT (la ruta ja no conté la
+  data literal: ara va per llista amb tensePublicacio). Suite bloquejant CI amb
+  19 fitxers: 0 fail; tsc + eslint + check_repo + next build nets.
+- **Pendent (capa geo, propietari)**: reexecutar `pipeline/f4_zones_buscador.py`
+  amb la DATABASE_URL perquè geo.municipis reflecteixi les llistes A/B/C (la
+  targeta ZMRT de /api/zones llegeix Municipality, que el desplegament
+  corregeix via migració).
+
 ## v68.1 — Fix de producció F3/F4 (primera càrrega real a la BD de l'app) — 2026-11-19
 
 Primera càrrega de producció REAL (BD de l'app amb PostGIS 3.3.7) — dos bugs de

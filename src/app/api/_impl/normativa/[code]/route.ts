@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireVerifiedUser, isEmailNotVerifiedError } from "@/lib/auth";
 import { planAllows } from "@/lib/plans";
 import { rateLimit } from "@/lib/rate-limit";
-import { NORM_FACTS, SERPAVI_URL, ORIENTATION_DISCLAIMER } from "@/lib/analitza";
+import { NORM_FACTS, SERPAVI_URL, ORIENTATION_DISCLAIMER, tensePublicacio } from "@/lib/analitza";
 
 /**
  * GET /api/normativa/[code] — FASE 2 (plans migració progressiva), punt «Nou»
@@ -14,7 +14,8 @@ import { NORM_FACTS, SERPAVI_URL, ORIENTATION_DISCLAIMER } from "@/lib/analitza"
  *    fiances Incasòl via habitatge.gencat.cat) o referència de comarca marcada
  *    com a ESTIMACIÓ (mateix contracte que la fitxa, mai dada municipal inventada).
  *  - Àrees tensades: Municipality.isTense/tenseList + NORM_FACTS.tenseResolutions
- *    (Resolucions TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026).
+ *    (TER/2408/2024 2a tanda · TER/3739/2026 i TER/3740/2026, DOGC 19-10-2026
+ *    i núm. 9196 de 3-7-2024 — 302 municipis, auditoria v69).
  *  - IRAV (INE, Llei 12/2023 DA 11ª): NORM_FACTS.iravLatestPct/iravLatestPeriod.
  *  - Gran tenedor/SERPAVI (RDL 29/2026): NORM_FACTS + SERPAVI_URL (MIVAU).
  *  - Límits de contracte (LAU art. 17.2, temporada art. 3) i amiant (3-10-2026).
@@ -98,10 +99,12 @@ export async function GET(
     },
     areaTensa: {
       tense: mun.isTense,
-      llista: mun.tenseList ?? null, // A = TER/3739/2026 (pròrroga) · C = TER/3740/2026 (nous)
+      // A = TER/3739/2026 (pròrroga 1a tanda) · B = TER/2408/2024 (2a tanda,
+      // vigent sense canvis) · C = TER/3740/2026 (nous 2026)
+      llista: mun.tenseList ?? null,
       resolucionsVigents: NORM_FACTS.tenseResolutions,
       font: NORM_FACTS.tenseSource,
-      publicacio: "DOGC 19-10-2026",
+      publicacio: tensePublicacio(mun.tenseList),
     },
     irav: {
       pct: NORM_FACTS.iravLatestPct,

@@ -332,14 +332,14 @@ export async function buildValuationPdf(rawInput: ValuationReportInput): Promise
         "Base: fianza municipal vigente publicada por Incasòl (Agència de l'Habitatge de Catalunya) vía habitatge.gencat.cat; si el municipio no la publica (muestra pequeña), referencia de comarca ponderada por contratos.",
         "Motor v2: renta(m²) = base × (m²/85)^0,8 (elasticidad renta-superficie documentada en estudios hedónicos, β=0,8); estado: a reformar ×0,8 · reformada ×1,06 · obra nueva ×1,12; habitaciones: densidad m²/hab limitada a ±5%.",
         "Horquilla: dispersión MEDIDA (cuartiles) del pool territorial el mismo año del período vigente (comarca ≥5 municipios; si no, provincia ≥10; si no, rango histórico).",
-        "Áreas tensionadas: Resoluciones TER/3739/2026 y TER/3740/2026 (DOGC 19-10-2026).",
+        "Áreas tensionadas: Resoluciones TER/2408/2024, TER/3739/2026 y TER/3740/2026 (DOGC 19-10-2026 y 3-7-2024).",
         "Habitabilidad: Decreto 141/2012, de 30 de octubre (DOGC 6254).",
       ]
     : [
         "Base: fiança municipal vigent publicada per Incasòl (Agència de l'Habitatge de Catalunya) via habitatge.gencat.cat; si el municipi no la publica (mostra petita), referència de comarca ponderada per contractes.",
         "Motor v2: renta(m²) = base × (m²/85)^0,8 (elasticidad renta-superficie documentada en estudios hedónicos, β=0,8); estado: a reformar ×0,8 · reformada ×1,06 · obra nueva ×1,12; habitaciones: densidad m²/hab limitada a ±5%.",
         "Horquilla: dispersió MESURADA (quartils) del pool territorial el mateix any del període vigent (comarca ≥5 municipis; si no, província ≥10; si no, rang històric).",
-        "Àrees tensades: Resolucions TER/3739/2026 i TER/3740/2026 (DOGC 19-10-2026).",
+        "Àrees tensades: Resolucions TER/2408/2024, TER/3739/2026 i TER/3740/2026 (DOGC 19-10-2026 i 3-7-2024).",
         "Habitabilitat: Decret 141/2012, de 30 d'octubre (DOGC 6254).",
       ]
   ).forEach((s) => {
