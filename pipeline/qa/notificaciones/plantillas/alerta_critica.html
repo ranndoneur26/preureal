@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ASUNTO}}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f5f7;font-family:Arial,Helvetica,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;">{{ASUNTO}}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;padding:24px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:92%;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e5e7eb;">
+        <!-- cabecera -->
+        <tr>
+          <td style="background:#B23B3B;padding:18px 28px;">
+            <span style="color:#ffffff;font-size:13px;letter-spacing:1px;font-weight:bold;">PREUREAL · DATOS</span><br>
+            <span style="color:#ffffff;font-size:22px;font-weight:bold;">&#9888; ALERTA {{NIVEL}}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:20px 28px 6px 28px;">
+            <p style="margin:0;font-size:13px;color:#6b7280;">{{FECHA}} &middot; job {{JOB}}</p>
+            <h1 style="margin:8px 0 14px;font-size:19px;color:#111827;">{{ASUNTO}}</h1>
+          </td>
+        </tr>
+        <!-- cuerpo variable -->
+        <tr>
+          <td style="padding:0 28px 8px 28px;font-size:14px;color:#374151;line-height:1.6;">
+            {{CUERPO}}
+          </td>
+        </tr>
+        <!-- acciones -->
+        <tr>
+          <td style="padding:10px 28px 4px 28px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;">
+              <tr>
+                <td style="padding:12px 16px;font-size:13px;color:#7f1d1d;line-height:1.5;">
+                  <b style="color:#B23B3B;">Acci&oacute;n requerida:</b> {{ACCIONES}}
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <!-- botón -->
+        <tr>
+          <td align="center" style="padding:18px 28px 8px 28px;">
+            <a href="{{ENLACE}}" style="background:#B23B3B;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:12px 26px;border-radius:8px;display:inline-block;">Abrir panel de datos</a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:14px 28px 20px 28px;border-top:1px solid #f1f3f5;">
+            <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.5;">
+              Alerta CR&Iacute;TICA (nivel rojo #B23B3B) generada autom&aacute;ticamente por el sistema de mantenimiento de datos &middot; Plan de Mantenimiento PreuReal, Fase P0.<br>
+              Regla de la puerta: ninguna importaci&oacute;n llega a producci&oacute;n sin auditor&iacute;a previa 12/12 (cap&iacute;tulo 6). Producci&oacute;n queda intacta hasta tu decisi&oacute;n.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

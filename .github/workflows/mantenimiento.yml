@@ -1,0 +1,280 @@
+# =============================================================================
+# PreuReal — Mantenimiento de datos (Fase P0 del Plan de Mantenimiento)
+#
+# Implementa la figura 2 del Plan («Cron de producción») sobre GitHub Actions.
+# Los cron de GitHub Actions corren en UTC con una precisión de ~5-15 min; las
+# horas locales (Europe/Madrid) tienen desplazamiento de verano:
+#
+#   job                  | cron (UTC)          | local invierno (CET) | local verano (CEST)
+#   ---------------------+---------------------+----------------------+--------------------
+#   canario              | 0 5 * * *           | 06:00 diario         | 07:00 diario
+#   dogc quincenal       | 0 8 1,15 * *        | 09:00 días 1 y 15    | 09:00 días 1 y 15
+#   dogc ventanas ZMRT   | 0 8 * 4,10 *        | 09:00 diario abr/oct | 09:00 diario abr/oct
+#   backup+digest (dom.) | 0 3 * * 0           | 04:00 domingo        | 05:00 domingo
+#   ciclo trimestral     | 0 3 1 1,4,7,10 *    | 04:00 día 1          | 04:00 día 1
+#
+# Secretos requeridos (Settings → Secrets and variables → Actions):
+#   DATABASE_URL     BD de producción (solo lectura para canario/backup; el
+#                    trimestral necesita permisos de seed). NUNCA en el repo.
+#   RESEND_API_KEY   envío de alertas (opcional: sin ella, modo seco con informe).
+#   ALERT_EMAIL_TO   destinatario de alertas (opcional).
+#   SITE_URL         opcional; por defecto https://preureal.com
+#
+# Los 7 crons de Vercel (vercel.json: emails/alertes/history-ttl/ine/demografia/
+# entorn/rental-share) NO se tocan: corren en la plataforma, en UTC, y no se
+# solapan con estos jobs.
+# =============================================================================
+
+name: mantenimiento
+
+on:
+  schedule:
+    - cron: "0 5 * * *"          # canario diario (sondas API + KPIs + digest)
+    - cron: "0 8 1,15 * *"       # vigilancia DOGC quincenal
+    - cron: "0 8 * 4,10 *"       # vigilancia DOGC DIARIA en ventanas abril/octubre (A9)
+    - cron: "0 3 * * 0"          # backup pg_dump + digest semanal (domingo)
+    - cron: "0 3 1 1,4,7,10 *"   # ciclo trimestral Incasòl: auditoría F0 → backup → update_all → canario
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Job a ejecutar manualmente"
+        required: true
+        default: "canario"
+        type: choice
+        options: [canario, dogc, backup, trimestral, smoke]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mantenimiento
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ─────────────────────────── canario diario ────────────────────────────────
+  canario:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '0 5 * * *') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'canario')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependencias (psycopg2)
+        run: pip install --quiet psycopg2-binary
+      - name: Estado del canario (fallos consecutivos A1)
+        uses: actions/cache@v4
+        with:
+          path: /tmp/preureal_canario_estado.json
+          key: canario-estado-${{ github.run_id }}
+          restore-keys: canario-estado-
+      - name: Canario (sondas API + KPIs + digest)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          CANARY_STATE_FILE: /tmp/preureal_canario_estado.json
+        run: |
+          ARGS=""
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::warning::DATABASE_URL no configurada — canario en modo solo-sondas"
+            ARGS="--sin-db"
+          fi
+          [ -n "$SITE_URL" ] || SITE_URL="https://preureal.com"
+          python3 scripts/canary_diario.py $ARGS --digest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canario-informe
+          path: scripts/.informes_canario/
+          retention-days: 30
+
+  # ───────────────────── vigilancia DOGC (ZMRT, A3/A7) ──────────────────────
+  dogc:
+    if: >-
+      (github.event_name == 'schedule' && (github.event.schedule == '0 8 1,15 * *' || github.event.schedule == '0 8 * 4,10 *')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'dogc')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Vigilancia DOGC (resoluciones TER nuevas / retiradas)
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: python3 scripts/dogc_watch.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dogc-informe
+          path: scripts/.informes_canario/
+          retention-days: 30
+
+  # ───────────────── backup semanal + digest semanal (domingo) ──────────────
+  backup:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 0') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'backup')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Guardia de secreto
+        run: |
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "::warning::DATABASE_URL no configurada — backup omitido (configura el secreto)"
+            exit 0
+          fi
+          echo "OK"
+      - name: pg_dump de seguridad (independiente de la plataforma, regla 3-2-1)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          command -v pg_dump >/dev/null || sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          bash scripts/backup_pg.sh /tmp/backups
+          ls -la /tmp/backups
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backup-pg
+          path: /tmp/backups/*.sql.gz
+          retention-days: 30
+      - name: Dependencias (psycopg2)
+        run: pip install --quiet psycopg2-binary
+      - name: Digest semanal (tendencia de KPIs + error rate 90 d)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          SITE_URL: ${{ vars.SITE_URL }}
+        run: python3 scripts/canary_diario.py --semanal --digest
+
+  # ─────────── ciclo trimestral Incasòl (día 1 ene/abr/jul/oct) ─────────────
+  trimestral:
+    if: >-
+      (github.event_name == 'schedule' && github.event.schedule == '0 3 1 1,4,7,10 *') ||
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'trimestral')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependencias (psycopg2 + openpyxl + node)
+        run: |
+          pip install --quiet psycopg2-binary openpyxl
+          npm install --legacy-peer-deps --no-audit --no-fund
+      - name: Guardia de secreto
+        run: |
+          if [ -z "${{ secrets.DATABASE_URL }}" ]; then
+            echo "::warning::DATABASE_URL no configurada — ciclo trimestral omitido"
+            exit 0
+          fi
+          echo "OK"
+      - name: "Paso 1 · Auditoría previa F0 con descarga oficial (12 controles)"
+        id: f0
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python3 pipeline/qa/auditoria_f0.py --fuente incasol-excel --descargar --db
+      - name: "Alerta CRÍTICA si la auditoría es NO-GO (producción intacta)"
+        if: failure()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: |
+          INFORME=$(ls -t pipeline/qa/informes/f0_incasol-excel_*_NOGO.json 2>/dev/null | head -1 || true)
+          CUERPO="<p>La auditoría previa F0 (12 controles) devolvió <b>NO-GO</b> para los Excel de Incasòl.</p><p>Producción queda <b>intacta</b>: nada se ha importado.</p>"
+          if [ -n "$INFORME" ]; then
+            CUERPO="$CUERPO<p>Informe: <code>$INFORME</code> (ver artifact del job).</p>"
+          fi
+          python3 pipeline/qa/notificaciones/envia_alerta.py --nivel CRITICA \
+            --asunto "[PreuReal][CRÍTICA] F0 NO-GO — ciclo trimestral detenido" \
+            --var "CUERPO=$CUERPO" \
+            --var "ACCIONES=Revisar el informe JSON (control ROJO) y el runbook P-04" \
+            --var "ENLACE=https://habitatge.gencat.cat/ca/dades/" || true
+          exit 1
+      - name: "Paso 2 · Backup previo a la importación"
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          command -v pg_dump >/dev/null || sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          bash scripts/backup_pg.sh /tmp/backups
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: backup-pre-trimestral
+          path: /tmp/backups/*.sql.gz
+          retention-days: 30
+      - name: "Paso 3 · update_all.sh (descarga reutilizada → prepare_data → seed idempotente → verificación)"
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          cp /tmp/f0_descarga/municipis_anual_lloguer.xlsx /tmp/municipis_anual_lloguer.xlsx
+          cp /tmp/f0_descarga/municipis_anual_contractes.xlsx /tmp/municipis_anual_contractes.xlsx
+          bash scripts/update_all.sh --no-download
+      - name: "Paso 4 · Canario post-carga (sondas + conteos)"
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          CANARY_STATE_FILE: /tmp/preureal_canario_estado.json
+        run: |
+          [ -n "$SITE_URL" ] || SITE_URL="https://preureal.com"
+          python3 scripts/canary_diario.py --digest
+      - name: "Paso 5 · Email de éxito"
+        if: success()
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: |
+          python3 pipeline/qa/notificaciones/envia_alerta.py --nivel EXITO \
+            --asunto "[PreuReal][ÉXITO] Ciclo trimestral Incasòl completado" \
+            --var "CUERPO=<p>Ciclo trimestral completado: auditoría F0 <b>GO</b> → backup → update_all.sh → canario verde.</p>" \
+            --var "ACCIONES=Revisar el digest adjunto y los conteos en #/admin" \
+            --var "ENLACE=https://preureal.com/#/admin" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trimestral-informes
+          path: |
+            pipeline/qa/informes/
+            scripts/.informes_canario/
+          retention-days: 90
+
+  # ───────────── smoke de los selftests (solo manual) ───────────────────────
+  smoke:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.job == 'smoke')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install --quiet openpyxl psycopg2-binary
+      - name: Selftests P0 (auditoría F0 · canario · DOGC · notificaciones)
+        run: |
+          set -e
+          python3 pipeline/qa/auditoria_f0.py --selftest
+          python3 scripts/canary_diario.py --selftest
+          python3 scripts/dogc_watch.py --selftest
+          python3 pipeline/qa/notificaciones/envia_alerta.py --selftest
+          echo "4/4 selftests verdes"

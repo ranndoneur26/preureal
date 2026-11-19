@@ -2,6 +2,55 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v70.0 — Fase P0 del pla de manteniment de dades: auditoria prèvia F0 (12 controls) + canari diari + vigilància DOGC + alertes email + cron — 2026-11-19
+
+Implementació de la fase «P0 · Garantia» del pla de manteniment
+(`docs/mantenimiento/FASE_P0_IMPLEMENTACION.md`, materialització executable del pla):
+capa que fa l'operació de dades fiable, diària i automatitzada amb **auditoria
+prèvia obligatòria** (cap dada toca producció sense la porta go/no-go 12/12).
+Tot additiu — zero canvis d'endpoints, disseny, plans, preus (0/8,99/24,99),
+textos legals ni red lines; vercel.json i el workflow ci.yml intactes.
+
+- **Auditoria prèvia F0** (`pipeline/qa/auditoria_f0.py`): els 12 controls C1-C12
+  del pla (salut de la font amb 3 intents+backoff, SHA-256 vs anterior, esquema,
+  cobertura ≥ 940, rangs/outliers >1 %, duplicitat + sintètiques 9999xx,
+  temporal sense regressió, geogràfic contra el catàleg 947 del repo,
+  estabilitat >15 % = firma humana, coherència ZMRT 302 = A 118+B 131+C 53,
+  dry-run staging i canari post-staging quan hi ha `--staging-url`).
+  Veredicte GO / NO-GO / GO-CONDICIONAL + informe JSON
+  (`pipeline/qa/informes/`, gitignore) — selftest 13/13 verd (fixture bo → GO,
+  fixture amb errors plantats → NO-GO amb C5/C6/C8/C9 vermells).
+- **Canari diari** (`scripts/canary_diario.py`): 4 sondes API (health · zones
+  08019 llista A · zones 08227 llista B · geo/illes) + KPI-1 frescura per font
+  (ImportRun) · KPI-2 completitud ≥ 690 · KPI-3 error rate 90 d · KPI-4
+  ST_IsValid = 0 · KPI-6 cobertura — amb baseline v69.2 (947 · 302 ·
+  A 118 · B 131 · C 53 · dim ≥ 142.283). Escalat A1: 1-2 fallos → MEDIA,
+  3 consecutius → CRÍTICA (estat persistit). Selftest 9/9 verd.
+- **Vigilància DOGC** (`scripts/dogc_watch.py` + `scripts/dogc_baseline.json`):
+  diff de resolucions TER contra les 3 vigents (TER/3739/2026 + TER/2408/2024 +
+  TER/3740/2026) → CRÍTICA A3 (import < 72 h, protocol v69) si n'apareix una de
+  nova, MEDIA si una vigent desapareix, MEDIA A7 si les fonts cauen. Selftest 6/6 verd.
+- **Notificacions email** (`pipeline/qa/notificaciones/`): `envia_alerta.py`
+  (render {{VARS}} + Resend, mode sec sense credencials — mai no fa caure el job)
+  i 5 plantilles email-safe 600px amb la paleta del pla: CRÍTICA rojo #B23B3B ·
+  MEDIA naranja #B8860B · BAJA blau #2563EB · ÈXIT verd #2E7D5B · DIGEST neutre
+  #0F172A. Selftest 16/16 verd (colors del pla, email-safe, placeholders).
+- **Cron** (`.github/workflows/mantenimiento.yml`, 5 entrades UTC amb conversió
+  CET/CEST documentada): canari diari `0 5 * * *` · DOGC quincenal
+  `0 8 1,15 * *` · DOGC diari a les ventanes `0 8 * 4,10 *` · backup+digest
+  semanal `0 3 * * 0` (backup_pg.sh artifact 30 d) · cicle trimestral
+  `0 3 1 1,4,7,10 *` = **F0 GO → backup → update_all.sh → canari → email ÈXIT**
+  (NO-GO atura tot amb producció intacta). Cada job filtra el seu
+  `github.event.schedule`; guards de secrets (mai al repo); job smoke manual amb
+  els 4 selftests. Els 7 crons de Vercel no es toquen.
+- **Manual i checklists** (`docs/mantenimiento/FASE_P0_IMPLEMENTACION.md`):
+  pseudo-codificació completa del verificador post-actualització (mapa
+  pseudo-codi ↔ implementació real), manual de procediments P-01..P-08
+  (rutina diaria ≤ 10 min, cicle trimestral, finestra ZMRT 72 h, auditoria
+  manual, runbook CRÍTICA amb rollback < 5 min, drills, rotació de
+  credencials, fonts noves) i checklists pre/post universals + per font amb
+  full de firma.
+
 ## v69.2 — Capa geo en producció alineada amb l'auditoria v69: geo.municipis amb 302 ZMRT per llista — 2026-11-19
 
 Pendent del propietari marcat a v69 tancat: `pipeline/f4_zones_buscador.py` reexecutat

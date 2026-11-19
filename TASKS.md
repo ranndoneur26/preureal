@@ -3,6 +3,16 @@
 Prioridad: **P0** bloquea / verificar primero · **P1** importante · **P2** mejora.
 Ninguna tarea cambia el diseño visual sin tu autorización explícita.
 
+## Mantenimiento de datos — Fase P0 (encàrrec 2026-11-19, v70)
+- [x] **Auditoría previa F0** (`pipeline/qa/auditoria_f0.py`): 12 controles C1-C12 con puerta go/no-go — veredicto GO/NO-GO/GO-CONDICIONAL + informe JSON; selftest 13/13 verde (fixture limpio → GO · fixture con errores plantados → NO-GO con C5/C6/C8/C9 ROJO).
+- [x] **Canario diario** (`scripts/canary_diario.py`): sondas API (health · zones 08019 A · 08227 B · geo/illes) + KPI-1/2/3/4/6 + baseline v69.2 (947 · 302 = A 118 · B 131 · C 53); escalado A1 (3 fallos consecutivos → CRÍTICA con estado persistido); selftest 9/9.
+- [x] **Vigilancia DOGC** (`scripts/dogc_watch.py` + `dogc_baseline.json`): diff de resoluciones TER contra las 3 vigentes → CRÍTICA A3 (import < 72 h) / MEDIA revocación / MEDIA A7; selftest 6/6.
+- [x] **Notificaciones email** (`pipeline/qa/notificaciones/`): envia_alerta.py (Resend + modo seco) + 5 plantillas email-safe (CRÍTICA #B23B3B · MEDIA #B8860B · BAJA #2563EB · ÉXITO #2E7D5B · DIGEST); selftest 16/16.
+- [x] **Cron de mantenimiento** (`.github/workflows/mantenimiento.yml`): canario diario `0 5 * * *` · DOGC quincenal `0 8 1,15 * *` · DOGC diario ventanas `0 8 * 4,10 *` · backup+digest semanal `0 3 * * 0` · ciclo trimestral `0 3 1 1,4,7,10 *` (F0 → backup → update_all.sh → canario → email; NO-GO detiene con producción intacta) + smoke manual; vercel.json y ci.yml intactos.
+- [x] **Manual + checklists** (`docs/mantenimiento/FASE_P0_IMPLEMENTACION.md`): cron tabla maestra UTC/CET-CEST + crontab VPS, pseudo-código del verificador post-actualización (mapa a implementaciones reales), matriz de alertas A1-A12 ↔ plantillas, procedimientos P-01..P-08, checklists pre/post + por fuente + firma.
+- [ ] **Propietario (una vez)**: configurar secretos GitHub (`DATABASE_URL`, `RESEND_API_KEY`, `ALERT_EMAIL_TO`) — ver Anexo B del doc; ejecutar job `smoke` (4 selftests) y job `canario` manual para verificar el digest.
+- [ ] **Propietario (marzo, calendario)**: ensayo completo en staging (C11/C12) con una importación real → criterio de cierre formal de la fase P0.
+
 ## Buscador invers (encàrrec 2026-11-19, v67)
 - [x] **Buscador invers a la portada** (substitueix el mòdul «Consulta el preu real registrat», que passa a pàgina pròpia `/#/consulta` amb entrada de menú «Consulta ràpida»): autocompletat de municipis, targeta d'estat ZMRT amb semàfor, taula ordenable per secció censal (preu real €/m², índex €/m², % compliment amb semàfor), filtre «Mostrar només municipis no tensionats», CTA «Verificar un edifici concret en aquesta zona» → `/#/analitza?muni=` amb municipi prefilat (cercle invers→directe tancat).
 - [x] **Backend**: DDL additiu `pipeline/sql/002_zones_buscador_invers.sql` (3 taules PostGIS), loader idempotent `pipeline/f4_zones_buscador.py`, API pública `GET /api/zones` (104a ruta, ORDER BY compliment DESC NULLS LAST, honesta 503/FORA_ABAST). RGPD: agregació secció censal, mai edifici/vivenda.

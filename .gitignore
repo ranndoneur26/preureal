@@ -59,3 +59,9 @@ next-env.d.ts
 data/fixtures/
 __pycache__
 f3_carga_prod.json
+
+# Mantenimiento P0 (informes F0/canario y estado local — nunca en el repo)
+pipeline/qa/informes/
+pipeline/qa/.estado_f0/
+pipeline/qa/notificaciones/.envios/
+scripts/.informes_canario/

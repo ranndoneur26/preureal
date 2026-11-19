@@ -1,0 +1,23 @@
+{
+  "_comentario": "Linea base ZMRT vigente (v69.2) — ACTUALIZAR solo tras importar una resolucion nueva con protocolo v69 (NO MODIFICAR los 302 vigentes / NO DUPLICAR). Ventanas editoriales oficiales: abril y octubre (vigilancia DIARIA); el resto del ano: quincenal.",
+  "resoluciones_vigentes": [
+    "TER/3739/2026",
+    "TER/2408/2024",
+    "TER/3740/2026"
+  ],
+  "zmrt": {
+    "total": 302,
+    "llista": {"A": 118, "B": 131, "C": 53}
+  },
+  "publicacion": {
+    "A": "DOGC 19-10-2026",
+    "B": "DOGC 3-7-2024",
+    "C": "DOGC 19-10-2026"
+  },
+  "ventanas": {"meses_diarias": [4, 10], "aviso_previo_dias": 7, "sla_import_horas": 72},
+  "fuentes": [
+    "https://habitatge.gencat.cat/ca/ambits/lloguer/zones-tensades/",
+    "https://dogc.gencat.cat"
+  ],
+  "actualizado": "2026-11-19"
+}
