@@ -34,7 +34,7 @@ existents (protocol: NO MODIFICAR els 171, NO DUPLICAR).
 - **Tests**: nova guarda bloquejant `zmrt_v69_ter2408` (9 tests: recomptes
   302/118/131/53, identitat de les 2 còpies, cap creuament A/B/C, mostres B per
   INE — Ràpita 43136, Esquirol 08254, Vielha 25243, Castell d'Aro 17048,
-  Vilanova del Vallès 08227 —, migració sense cap codi A/C, NORM_FACTS,
+  Sant Martí Sarroca 08227, Vilanova del Vallès 08902 —, migració sense cap codi A/C, NORM_FACTS,
   tensePublicacio, texts 302 sense restes de «171») + Z9 (/api/zones per a un
   municipi B: publicacio DOGC 3-7-2024, FORA_ABAST_PILOT honest) + mock/fixture
   evolucionats + plans_fase2 evolucionat JUSTIFICADAMENT (la ruta ja no conté la

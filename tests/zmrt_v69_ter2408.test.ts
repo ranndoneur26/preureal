@@ -62,7 +62,8 @@ describe("v69 — ZMRT TER/2408/2024 (2a tanda vigent)", () => {
       "08254": "Esquirol, l'",
       "25243": "Vielha e Mijaran",
       "17048": "Castell d'Aro, Platja d'Aro i s'Agaró",
-      "08227": "Vilanova del Vallès",
+      "08227": "Sant Martí Sarroca",
+      "08902": "Vilanova del Vallès",
     };
     for (const [ine, nom] of Object.entries(sample)) {
       const m = data1.find((x) => (x.ineCode ?? x.code.slice(0, 5)) === ine);
@@ -77,7 +78,7 @@ describe("v69 — ZMRT TER/2408/2024 (2a tanda vigent)", () => {
     const bcn = data1.find((m) => m.code === "080193");
     expect(bcn!.tenseList).toBe("A");
     expect(bcn!.isTense).toBe(true);
-    const vilaseca = data1.find((m) => m.code === "431716");
+    const vilaseca = data1.find((m) => m.code === "431711");
     expect(vilaseca!.tenseList).toBe("C");
     expect(vilaseca!.isTense).toBe(true);
     // cap municipi A/C no ha canviat de llista respecte dels recomptes v68

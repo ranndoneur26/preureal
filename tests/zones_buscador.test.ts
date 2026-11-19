@@ -37,9 +37,10 @@ const muniGirona = {
   isTense: true, tenseList: "A",
 };
 // v69 — municipi de la 2a tanda TER/2408/2024 (llista B, DOGC 3-7-2024)
+// (dades reals del delta: Sant Martí Sarroca, INE 08227)
 const muniVila = {
-  code: "082278", ineCode: "08227", name: "Vilanova del Vallès", comarca: "Vallès Oriental", province: "Barcelona",
-  lat: 41.42, lng: 2.27, rentLatest: null, rentPeriod: null, rentSource: "INCASOL",
+  code: "082270", ineCode: "08227", name: "Sant Martí Sarroca", comarca: "Alt Penedès", province: "Barcelona",
+  lat: 41.42, lng: 1.63, rentLatest: null, rentPeriod: null, rentSource: "INCASOL",
   comarcaRefLatest: null, comarcaRefPeriod: null, contractsLatest: null,
   isTense: true, tenseList: "B",
 };
