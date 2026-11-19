@@ -2,6 +2,27 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v69.2 — Capa geo en producció alineada amb l'auditoria v69: geo.municipis amb 302 ZMRT per llista — 2026-11-19
+
+Pendent del propietari marcat a v69 tancat: `pipeline/f4_zones_buscador.py` reexecutat
+amb la DATABASE_URL contra Supabase (PostGIS 3.3.7). Zero canvis de codi, textos ni
+endpoints — només l'estat de la capa geo de la BD.
+
+- **`geo.municipis`**: 947 files · **302 ZMRT = A 118 + B 131 + C 53**, amb font i
+  publicació PER LLISTA: B → «Resolució TER/2408/2024 (Generalitat)» · «DOGC 3-7-2024»;
+  A/C → mateixa cadena combinada i «DOGC 19-10-2026» de sempre. La migració
+  `20261119100000_zmrt_ter2408_2024_131` ja estava aplicada pel build de Vercel
+  (Municipality: 302 tensats des de la sessió v69).
+- **Guardes d'integritat pre/post** (snapshot complet de les 3 taules geo abans i
+  després): els 171 A/C intactes byte-a-byte (conjunt de muni5 + tots els valors),
+  B 131/131 exactament igual a `data/municipalities.json` (codis únics, cap creuament),
+  `dades_lloguer_agregades` 1.945 i `seccions_censals` 1.983 idèntiques fila a fila,
+  illes 11.633 i dim 142.283 intocables. Protocol v69 (NO MODIFICAR / NO DUPLICAR) verificat.
+- **Verificació en viu**: `/api/zones?muni=08019` → 200 (Barcelona, llista A, índex
+  11,595 €/m², 1.053 zones) i `/api/zones?muni=08227` → 200 (Sant Martí Sarroca,
+  **llista B, publicació DOGC 3-7-2024**, cobertura FORA_ABAST_PILOT honesta);
+  `/api/normativa` segueix gated Premium (401 anònim, correcte).
+
 ## v69 — Auditoria ZMRT: els 131 municipis de TER/2408/2024 (2a tanda) entren a la BD — total vigent 302 — 2026-11-19
 
 Auditoria legal íntegra demanada pel propietari («tinc la certesa que falten municipis").
