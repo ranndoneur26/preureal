@@ -2,6 +2,48 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v72.0 — Fase P2.1 del pla de manteniment: staging permanent i porta C11/C12 automatitzada — 2026-11-20
+
+Primer bloc de la fase «P2 · Automatització total» del pla de manteniment
+(Anexo C de `FASE_P0_IMPLEMENTACION.md`): el cicle trimestral d'Incasòl ara
+**assaiga la càrrega en una BD de staging** (segon projecte Supabase,
+`eu-west-2`) i la porta **C11/C12 passa d'estar PENDENT a executar-se de
+veritat**, sense firma manual, ABANS de tocar producció. Tot additiu i
+inversiu: si `STAGING_DATABASE_URL` no existeix, el fluxe de v70 es manté
+intacte (C11/C12 PENDENTS, verificació post-càrrega com fins ara). Cap canvi
+d'endpoints, disseny, plans, preus ni textos legals; vercel.json i ci.yml
+intactes.
+
+- **Porta C11/C12** (`scripts/staging_diff.py`, només SELECT a les dues BD):
+  C11 diff staging↔prod (estructura municipal ±5, pèrdua de completitud > 50 →
+  ROJO, regressió de període → ROJO, deltas de renda informatius amb mediana %
+  — un any nou mou tota la sèrie legítimament, AVISO no bloqueja) + C12
+  canari post-staging a nivell BD amb les mateixes baselines del canari (947
+  municipis · ≥690 amb sèrie · ZMRT 302 = A 118 · B 131 · C 53 · període no
+  nul · **rang plausible €/mes [100, 3000]** contra l'error d'unitats típic
+  — índex €/m² ≈ 11 o cèntims ≈ 83.000 — · geo.municipis guarded «n-d» quan
+  staging el té buit, que és l'estat normal del cicle Incasòl). Informe JSON
+  `pipeline/qa/informes/staging_c11c12_*_OK|FALLA.json` (artifact del job).
+  Selftest 16/16 offline (classificadors purs, sense xarxa ni BD).
+- **Càrrega d'assaig** (`scripts/staging_load.sh`): `prisma migrate deploy`
+  contra staging (paritat d'esquema) + el MATEIX pipeline de producció
+  (`update_all.sh --no-download` → prepare_data → seed idempotent →
+  verificació) amb `DATABASE_URL=STAGING_DATABASE_URL`; rebutja `pgbouncer=`
+  (mateixa regla de l'Anexo B: pooler de sessió :5432).
+- **Workflow trimestral** (`mantenimiento.yml`): nous Passos 2b (assaig
+  staging) i 2c (porta C11/C12) entre el backup i la càrrega de producció.
+  Porta FALLA → email `[PreuReal][CRÍTICA] Staging FALLA` i el cicle s'atura
+  amb producció intacta (runbook P-09 al doc). Secret absent → `::warning::` i
+  fluxe anterior intacte. L'email d'èxit ara indica si l'assaig es va fer
+  («ensayo staging C11/C12 verdes») o es va ometre. Job smoke ampliat a 5/5
+  selftests.
+- **Doc** `docs/mantenimiento/FASE_P2_STAGING.md`: arquitectura, criteris de
+  la porta (taula), setup del propietari pas a pas (crear `preureal-staging`
+  a Supabase eu-west-2 → DSN pooler → secret GitHub `STAGING_DATABASE_URL`),
+  canvis abans/després, runbook P-09, cost (tier Free, pausable), la segona
+  meitat de la P2 (90 dies amb error rate ≤ 5 % i KPI-7 ≥ 99 % — ja mesurats
+  pel canari) i el pendents P2.2.
+
 ## v71.0 — Fase P1 del pla de manteniment de dades: panell «Dades i fonts» a #/admin — 2026-11-20
 
 Implementació de la fase «P1 · Panell» del pla de manteniment (Anexo C de

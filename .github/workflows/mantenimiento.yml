@@ -19,6 +19,10 @@
 #   RESEND_API_KEY   envío de alertas (opcional: sin ella, modo seco con informe).
 #   ALERT_EMAIL_TO   destinatario de alertas (opcional).
 #   SITE_URL         opcional; por defecto https://preureal.com
+#   STAGING_DATABASE_URL  BD de ensayo (Fase P2.1, opcional): si está definida,
+#                    el ciclo trimestral ensaya la carga en staging y la puerta
+#                    C11/C12 (staging_diff.py) decide antes de tocar producción;
+#                    si falta, el flujo anterior se mantiene intacto.
 #
 # Los 7 crons de Vercel (vercel.json: emails/alertes/history-ttl/ine/demografia/
 # entorn/rental-share) NO se tocan: corren en la plataforma, en UTC, y no se
@@ -220,6 +224,39 @@ jobs:
           name: backup-pre-trimestral
           path: /tmp/backups/*.sql.gz
           retention-days: 30
+      - name: "Paso 2b · Ensayo en STAGING — migrate deploy + carga Incasòl (C11)"
+        id: staging
+        if: success()
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          rm -f /tmp/staging_ok /tmp/staging_omitido
+          if [ -z "${STAGING_DATABASE_URL:-}" ]; then
+            echo "::warning::STAGING_DATABASE_URL no configurada — ensayo staging omitido (C11/C12 quedan PENDIENTES; el flujo anterior, con verificación post-carga, se mantiene intacto)"
+            touch /tmp/staging_omitido
+            echo "staging=omitido" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          bash scripts/staging_load.sh
+          touch /tmp/staging_ok
+          echo "staging=ok" >> "$GITHUB_OUTPUT"
+      - name: "Paso 2c · Puerta C11/C12 — diff + canario contra STAGING antes de producción"
+        if: success() && steps.staging.outputs.staging == 'ok'
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
+        run: |
+          python3 scripts/staging_diff.py || {
+            CUERPO="<p>El ensayo en <b>staging</b> devolvió <b>FALLA</b> (puerta C11/C12 en rojo).</p><p>Producción queda <b>intacta</b>: el ciclo se detuvo ANTES de la carga (solo hubo ensayo + backup previo).</p><p>Revisa el informe <code>staging_c11c12_*_FALLA.json</code> (artifact del job).</p>"
+            python3 pipeline/qa/notificaciones/envia_alerta.py --nivel CRITICA \
+              --asunto "[PreuReal][CRÍTICA] Staging FALLA — ciclo trimestral detenido antes de producción" \
+              --var "CUERPO=$CUERPO" \
+              --var "ACCIONES=Runbook P-09 (docs/mantenimiento/FASE_P2_STAGING.md §6): revisar control ROJO del informe y corregir antes de re-lanzar" \
+              --var "ENLACE=https://preureal.com/#/admin" || true
+            exit 1
+          }
       - name: "Paso 3 · update_all.sh (descarga reutilizada → prepare_data → seed idempotente → verificación)"
         if: success()
         env:
@@ -245,9 +282,13 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}
         run: |
+          STAGING_TXT="ensayo staging omitido (C11/C12 pendientes)"
+          if [ -f /tmp/staging_ok ]; then
+            STAGING_TXT="ensayo staging C11/C12 <b>verdes</b>"
+          fi
           python3 pipeline/qa/notificaciones/envia_alerta.py --nivel EXITO \
             --asunto "[PreuReal][ÉXITO] Ciclo trimestral Incasòl completado" \
-            --var "CUERPO=<p>Ciclo trimestral completado: auditoría F0 <b>GO</b> → backup → update_all.sh → canario verde.</p>" \
+            --var "CUERPO=<p>Ciclo trimestral completado: auditoría F0 <b>GO</b> → backup → $STAGING_TXT → update_all.sh → canario verde.</p>" \
             --var "ACCIONES=Revisar el digest adjunto y los conteos en #/admin" \
             --var "ENLACE=https://preureal.com/#/admin" || true
       - uses: actions/upload-artifact@v4
@@ -270,11 +311,12 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install --quiet openpyxl psycopg2-binary
-      - name: Selftests P0 (auditoría F0 · canario · DOGC · notificaciones)
+      - name: Selftests P0/P2 (auditoría F0 · canario · DOGC · notificaciones · staging)
         run: |
           set -e
           python3 pipeline/qa/auditoria_f0.py --selftest
           python3 scripts/canary_diario.py --selftest
           python3 scripts/dogc_watch.py --selftest
           python3 pipeline/qa/notificaciones/envia_alerta.py --selftest
-          echo "4/4 selftests verdes"
+          python3 scripts/staging_diff.py --selftest
+          echo "5/5 selftests verdes"
