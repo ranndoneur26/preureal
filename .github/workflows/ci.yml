@@ -46,7 +46,7 @@ jobs:
       - name: Tests unitaris i d'integració (bloquejants — un procés per fitxer)
         run: |
           set -e
-          for f in unit totp pdf_report audit_v23 reports_shop rental_share analisi analitza funcionalitats f4_qa email_first consulta_v47 form_contract_v48 home_premium_v49 map_kpi_v50 linguistica_v56 zmrt_v69_ter2408; do
+          for f in datos_fuentes unit totp pdf_report audit_v23 reports_shop rental_share analisi analitza funcionalitats f4_qa email_first consulta_v47 form_contract_v48 home_premium_v49 map_kpi_v50 linguistica_v56 zmrt_v69_ter2408; do
             echo "##[group]tests/$f.test.ts"
             bun test "tests/$f.test.ts"
             echo "##[endgroup]"

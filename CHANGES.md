@@ -2,6 +2,61 @@
 
 Data: 2026-11-03 · Base: v0.5.0 (v9) + alineació d'arquitectura + Fase 1 completa
 
+## v71.0 — Fase P1 del pla de manteniment de dades: panell «Dades i fonts» a #/admin — 2026-11-20
+
+Implementació de la fase «P1 · Panell» del pla de manteniment (Anexo C de
+`docs/mantenimiento/FASE_P0_IMPLEMENTACION.md` + capítol 8 i mockups figuras
+3-4 del pla): el tauler que fa visible l'operació de dades — en cinc segons
+s'hi veu quina font necessita acció — amb el semàforo de la taula 11, els
+botons protegits de la taula 12 i la firma humana de C9/C10 en pantalla.
+Tot additiu: cap migració de BD (l'estat viu a ImportRun + AuditLog +
+DataSource.active), cap canvi d'endpoints existents, disseny, plans, preus
+ni textos legals; vercel.json, ci.yml i el workflow de manteniment intactes.
+
+- **Catàleg de fonts** (`src/lib/datos-fuentes.ts`): les 8 fonts de la taula 5
+  del pla (Incasòl Excel · Incasòl Socrata qww9-bvhh · Catastro INSPIRE ATOM ·
+  ICGC tiles/geocodificador · Generalitat ZMRT DOGC · SERPAVI MIVAU · Idescat
+  bseccen · INE Tempus3) amb institució, llicència, periodicitat, SLA (taula
+  13: Incasòl 100 · Catastro 180 · SERPAVI 730 · ZMRT 180 d; els que el pla no
+  fixa, marcats «proposats»), traçabilitat ImportRun ↔ font per prefixes
+  (INCASOL_*, RENTAL_SHARE_*, CADASTRE_DNP, ICGC_*, ZMRT*, IDESCAT_*, INE_*)
+  i cadència vigent (mantenimiento.yml + vercel.json). Mòdul pur + semàforo
+  `calcEstatFont` amb els criteris exactes de la taula 11 (Vigent/Aviso/
+  Crític/Pausada, llindars SLA i SLA+25 %, ERROR, C9/C10 sense firma, NO-GO)
+  i `importacioDesbloquejada` (GO 12/12, o firma humana posterior si
+  GO-CONDICIONAL; NO-GO mai).
+- **API `/api/admin/datos-fuentes`** (`src/app/api/_impl/admin/datos-fuentes/`
+  + dispatcher regenerat 105 rutes, check_repo verd): GET estat (semàforo per
+  font + KPIs globals: frescura mitjana KPI-1 · completitud KPI-2 · error rate
+  90 d KPI-3 · canari API · ZMRT 302 des de geo.municipis guarded · banner
+  d'alertes ordenat per gravetat), GET `?informe=X` (JSON descarregable de
+  traçabilitat: 30 ImportRuns + 30 registres d'auditoria) i POST amb les 9
+  accions de la taula 12: auditar_iniciar (ImportRun AUDIT) · auditar_registrar
+  (GO exigeix 12/12) · firma_f0 · importar (confirma escrita + porta F0, 409
+  si bloquejat) · importar_registrar (ImportRun OK/PARTIAL/ERROR) · verificar
+  (SELECT 1 + conteos 947/690/302 en viu) · rollback (confirma escrita) ·
+  pausar (motiu obligatori → DataSource.active=false) · activar. Tota acció
+  escriu AuditLog (DATOS_*) amb l'actor. Alta create-only de les fonts a
+  DataSource (mai sobreescriu files existents).
+- **UI «Dades i fonts»** a `#/admin` (nova pestanya, mockups figuras 3-4):
+  banner d'alertes amb text sempre acompanyant el color, fila de KPIs
+  globals, targeta per font amb semàforo (colors exactes del pla), barra de
+  frescura vs SLA, fitxa tècnica, última import/auditoria/verificació,
+  assistent de 4 passos (Descàrrega → Auditoria F0 → Importar → Verificar),
+  botons Auditar/Importar/Verificar/Rollback/Informe/+Resultat/Pausar·Activar/
+  Firmar, «Auditar tot» i modal «Programar» amb el cron vigent i enllaç al
+  workflow. CA/ES bilingüe com la resta del panell.
+- **Tests** (`tests/datos_fuentes.test.ts`, bun, afegit al bucle bloquejant del
+  CI): 16 casos — llindars del
+  semàforo (38/104/125/126 d sobre SLA 100), ERROR, GO-COND amb i sense firma,
+  NO-GO, Pausada dominant, sense imports, bloqueig d'importació (GO 11/12 vs
+  12/12, firma posterior, NO-GO) i traçabilitat sense creuaments entre fonts.
+- **Doc** (`docs/mantenimiento/FASE_P1_PANEL.md`): abast v1, mapeig de
+  traçabilitat, criteris del semàforo, proteccions i què queda per a P1.2
+  (dispatch a Actions, informe F0 complet en BD, edició de cron al panell).
+- TASKS.md: secció Fase P1 + tancament de l'ítem Anexo B (secretos GitHub +
+  smoke + canario fets pel propietari el 2026-11-20).
+
 ## v70.0 — Fase P0 del pla de manteniment de dades: auditoria prèvia F0 (12 controls) + canari diari + vigilància DOGC + alertes email + cron — 2026-11-19
 
 Implementació de la fase «P0 · Garantia» del pla de manteniment

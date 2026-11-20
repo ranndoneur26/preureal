@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useApp } from "@/components/app-context";
-import { RefreshCw, Shield, Mail, Database, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown, HeartHandshake, MapPin, Globe } from "lucide-react";
+import { RefreshCw, Shield, Mail, Database, Gauge, Plug, Users, Euro, Filter, FileWarning, ClipboardCheck, Settings, Download, ScrollText, FileDown, HeartHandshake, MapPin, Globe } from "lucide-react";
+import { COLOR_ESTAT, FONTS_PANEL } from "@/lib/datos-fuentes";
 
 interface Stats {
   users: number;
@@ -29,7 +30,8 @@ interface Health {
   };
 }
 
-type TabId = "stats" | "users" | "emails" | "data" | "reports" | "plans" | "audit";
+// v71 — «fonts» és el panell «Dades i fonts» (Fase P1 del pla de manteniment)
+type TabId = "stats" | "users" | "emails" | "data" | "fonts" | "reports" | "plans" | "audit";
 
 export default function AdminView() {
   const { t, auth, navigate, locale } = useApp();
@@ -243,6 +245,7 @@ export default function AdminView() {
             ["users", t.admin.users, Users],
             ["emails", t.admin.emails, Mail],
             ["data", t.admin.importTitle.split(" (")[0], Database],
+            ["fonts", ca ? "Dades i fonts" : "Datos y fuentes", Gauge],
             ["reports", ca ? "Informes ciutadans" : "Informes ciudadanos", ClipboardCheck],
             ["plans", ca ? "Plans i límits" : "Planes y límites", Settings],
             ["audit", ca ? "Auditoria" : "Auditoría", ScrollText],
@@ -555,6 +558,9 @@ export default function AdminView() {
         </div>
       )}
 
+      {/* DADES I FONTS (v71 — Fase P1 del pla de manteniment) */}
+      {tab === "fonts" && <FontsTab />}
+
       {/* INFORMES CIUTADANS — MODERACIÓ */}
       {tab === "reports" && (
         <div className="mt-6 space-y-4">
@@ -790,6 +796,740 @@ function NoAccess() {
   return (
     <div className="flex-1 flex items-center justify-center px-4 text-stone">
       {locale === "ca" ? "Accés restringit a administradors" : "Acceso restringido a administradores"}
+    </div>
+  );
+}
+
+// ─── v71 — Panell «Dades i fonts» (Fase P1 del pla de manteniment) ──────────
+// Semàforo per font (pla, taula 11), KPIs globals (taula 13) i accions
+// protegides (taula 12): Auditar / Importar / Verificar / Rollback / Informe /
+// Pausar / Programar + firma humana de C9/C10 en pantalla. L'execució real
+// (descàrrega, F0, staging→prod, restauració) resta al pipeline i al workflow
+// de manteniment; el panell registra estat, proteccions i traçabilitat
+// (ImportRun + AuditLog). Colors del semàforo: els exactes del pla.
+
+type FontData = any; // forma defensada des del servidor (GET /api/admin/datos-fuentes)
+
+const ESTAT_LABEL: Record<string, { ca: string; es: string }> = {
+  VIGENTE: { ca: "Vigent", es: "Vigente" },
+  AVISO: { ca: "Aviso", es: "Aviso" },
+  CRITICO: { ca: "Crític", es: "Crítico" },
+  PAUSADA: { ca: "Pausada", es: "Pausada" },
+};
+
+const VEREDICTE_LABEL: Record<string, string> = {
+  GO: "GO",
+  GO_CONDICIONAL: "GO-COND",
+  NO_GO: "NO-GO",
+};
+
+function estatMotiuText(m: string, ctx: FontData, ca: boolean): string {
+  const sla = ctx.slaDies ?? ctx.sla ?? 0;
+  const dies = ctx.dies;
+  switch (m) {
+    case "FRESQUERA_SLA":
+      return ca
+        ? `Actualització recomanada: frescura ${dies} d > SLA ${sla} d`
+        : `Actualización recomendada: frescura ${dies} d > SLA ${sla} d`;
+    case "FRESQUERA_SLA_MES_25":
+      return ca
+        ? `Acció requerida: frescura ${dies} d > SLA+25 % (${Math.round(sla * 1.25)} d)`
+        : `Acción requerida: frescura ${dies} d > SLA+25 % (${Math.round(sla * 1.25)} d)`;
+    case "IMPORT_ERROR":
+      return ca ? "Acció requerida: última execució ERROR" : "Acción requerida: última ejecución ERROR";
+    case "F0_FIRMA_PENDENT":
+      return ca
+        ? "Control C9/C10 pendent de firma humana (GO-CONDICIONAL)"
+        : "Control C9/C10 pendiente de firma humana (GO-CONDICIONAL)";
+    case "F0_NO_GO":
+      return ca
+        ? "Última auditoria F0 = NO-GO: no es pot importar"
+        : "Última auditoría F0 = NO-GO: no se puede importar";
+    case "PAUSADA":
+      return ca ? "Font pausada per l'administrador" : "Fuente pausada por el administrador";
+    default:
+      return m;
+  }
+}
+
+function FontsTab() {
+  const { locale } = useApp();
+  const ca = locale === "ca";
+  const [data, setData] = useState<any>(null);
+  const [health, setHealth] = useState<any>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [modal, setModal] = useState<{ kind: string; code?: string } | null>(null);
+  const [form, setForm] = useState<Record<string, string>>({});
+
+  const load = useCallback(async () => {
+    const [d, h] = await Promise.all([
+      fetch("/api/admin/datos-fuentes")
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
+      fetch("/api/health")
+        .then((r) => r.json())
+        .catch(() => null),
+    ]);
+    setData(d);
+    setHealth(h);
+  }, []);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
+
+  const accio = async (action: string, code: string, extra: Record<string, unknown> = {}) => {
+    setBusy(code + action);
+    setMsg(null);
+    try {
+      const res = await fetch("/api/admin/datos-fuentes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, code, ...extra }),
+      });
+      const d = await res.json();
+      if (res.ok && d.ok) {
+        setMsg(d.comandos ? `${d.message}: ${d.comandos}` : d.message || "OK");
+        setModal(null);
+        setForm({});
+        await load();
+      } else {
+        setMsg(d.message || d.error || "Error");
+      }
+    } catch (e: any) {
+      setMsg("Error: " + (e?.message || e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (!data) {
+    return (
+      <div className="mt-6 bg-card rounded-2xl border border-line p-8 text-center text-stone text-sm">…</div>
+    );
+  }
+  const k = data.kpis;
+  const font = modal?.code ? data.fonts.find((x: FontData) => x.code === modal.code) : null;
+
+  return (
+    <div className="mt-6 space-y-4">
+      {msg && (
+        <div className="bg-card rounded-xl border border-line px-4 py-3 text-sm text-moss break-all">{msg}</div>
+      )}
+
+      {/* Banner d'alertes (taula 11) — sempre amb text, mai només color */}
+      {k.alertes?.length > 0 && (
+        <div
+          className={`rounded-2xl border p-4 ${
+            k.alertes.some((a: FontData) => a.estat === "CRITICO")
+              ? "border-[#B23B3B] bg-[#B23B3B]/10"
+              : "border-[#B8860B] bg-[#B8860B]/10"
+          }`}
+        >
+          <div className="font-bold text-sm">
+            {ca
+              ? `Alertes de dades: ${k.alertes.length} ${k.alertes.length === 1 ? "font" : "fonts"}`
+              : `Alertas de datos: ${k.alertes.length} ${k.alertes.length === 1 ? "fuente" : "fuentes"}`}
+          </div>
+          <div className="mt-2 space-y-1">
+            {k.alertes.map((a: FontData) => (
+              <div key={a.code} className="text-sm flex items-start gap-2 flex-wrap">
+                <span className="font-bold shrink-0" style={{ color: COLOR_ESTAT[a.estat as string] }}>
+                  [{ESTAT_LABEL[a.estat as string]?.[ca ? "ca" : "es"] || a.estat}]
+                </span>
+                <span>{a.nom}: {a.motius.map((m: string) => estatMotiuText(m, a, ca)).join(" · ")}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* KPIs globals (pla, taula 13) */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        <Card label={ca ? "Frescura mitjana" : "Frescura media"} value={k.frescuraMitjana != null ? `${k.frescuraMitjana} d` : "—"} small />
+        <Card label={ca ? "Completitud (renda)" : "Completitud (renta)"} value={`${k.munisRent}/${k.munisTotal}`} small />
+        <Card label="Error rate 90d" value={k.errorRate90 != null ? `${k.errorRate90}%` : "—"} small />
+        <Card label={ca ? "Canari API" : "Canario API"} value={health?.status === "ok" ? "OK" : health ? "KO" : "—"} small />
+        <Card label="ZMRT vigents" value={k.zmrt ?? "—"} small />
+        <Card label={ca ? "Fonts en alerta" : "Fuentes en alerta"} value={k.alertes?.length ?? 0} small />
+      </div>
+
+      {/* Capçalera de fonts */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h3 className="font-bold">
+          {ca ? "Fonts" : "Fuentes"} ({data.fonts.length})
+        </h3>
+        <div className="flex gap-2">
+          <button
+            onClick={async () => {
+              for (const f of data.fonts.filter((x: FontData) => x.active)) {
+                await accio("auditar_iniciar", f.code);
+              }
+            }}
+            className="px-3 py-2 rounded-lg border border-line text-xs font-semibold hover:bg-sand flex items-center gap-1.5"
+          >
+            <ClipboardCheck className="w-3.5 h-3.5" /> {ca ? "Auditar tot" : "Auditar todo"}
+          </button>
+          <button
+            onClick={() => {
+              setForm({});
+              setModal({ kind: "programar" });
+            }}
+            className="px-3 py-2 rounded-lg border border-line text-xs font-semibold hover:bg-sand flex items-center gap-1.5"
+          >
+            <Settings className="w-3.5 h-3.5" /> Programar
+          </button>
+        </div>
+      </div>
+
+      {/* Targeta per font (pla, figura 3) */}
+      {data.fonts.map((f: FontData) => (
+        <FontCard
+          key={f.code}
+          f={f}
+          ca={ca}
+          busy={busy}
+          onModal={(kind: string) => {
+            setForm({});
+            setModal({ kind, code: f.code });
+          }}
+          onAccio={accio}
+        />
+      ))}
+
+      {/* Modals: confirmació escrita, firma C9/C10 i programació */}
+      {modal && (
+        <div className="fixed inset-0 z-[1100] bg-black/40 flex items-center justify-center px-4" onClick={() => setModal(null)}>
+          <div
+            className="bg-card rounded-2xl border border-line p-5 w-full max-w-xl max-h-[85vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {modal.kind === "programar" ? (
+              <ProgramarModal ca={ca} />
+            ) : font ? (
+              <AccioModal kind={modal.kind} f={font} ca={ca} form={form} setForm={setForm} busy={busy} onAccio={accio} />
+            ) : null}
+            <div className="mt-4 flex justify-end">
+              <button onClick={() => setModal(null)} className="px-3 py-1.5 rounded-lg border border-line text-xs hover:bg-sand">
+                {ca ? "Tanca" : "Cerrar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FontCard({
+  f,
+  ca,
+  busy,
+  onModal,
+  onAccio,
+}: {
+  f: FontData;
+  ca: boolean;
+  busy: string | null;
+  onModal: (kind: string) => void;
+  onAccio: (action: string, code: string, extra?: Record<string, unknown>) => void;
+}) {
+  const estat = f.estat as string;
+  const btn = "px-2.5 py-1.5 rounded-md border border-line text-xs font-semibold hover:bg-sand disabled:opacity-50";
+  const pct = f.pct != null ? Math.min(110, f.pct) : 0;
+  const nom = ca ? f.nom : f.nomEs || f.nom;
+  return (
+    <div
+      className={`bg-card rounded-2xl border p-5 ${
+        estat === "CRITICO" ? "border-[#B23B3B]/60" : estat === "AVISO" ? "border-[#B8860B]/60" : "border-line"
+      }`}
+    >
+      {/* capçalera: semàforo + nom + chips */}
+      <div className="flex items-start justify-between gap-2 flex-wrap">
+        <div className="flex items-start gap-2.5">
+          <span className="mt-1.5 w-3 h-3 rounded-full shrink-0" style={{ background: COLOR_ESTAT[estat] }} />
+          <div>
+            <div className="font-bold leading-tight">{nom}</div>
+            <div className="text-xs text-stone mt-0.5">
+              {ca ? f.periodicitatCa : f.periodicitatEs} · {f.institucio}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: COLOR_ESTAT[estat] }}>
+            {ESTAT_LABEL[estat]?.[ca ? "ca" : "es"] || estat}
+          </span>
+          <span
+            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              f.prioritat === "CRITICA" ? "bg-embersoft text-ember3" : "bg-sand text-moss"
+            }`}
+          >
+            {f.prioritat === "CRITICA" ? (ca ? "PRIORITÀRIA" : "PRIORITARIA") : "MEDIA"}
+          </span>
+          {f.dbUrl && (
+            <a href={f.dbUrl} target="_blank" rel="noopener noreferrer" className="text-xs underline text-moss">
+              {ca ? "obrir URL" : "abrir URL"} ↗
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* motius del semàforo — el color mai va sol (accessibilitat del pla) */}
+      {f.motius?.length > 0 && (
+        <div className="mt-2 text-xs font-semibold" style={{ color: COLOR_ESTAT[estat] }}>
+          {f.motius.map((m: string) => estatMotiuText(m, f, ca)).join(" · ")}
+        </div>
+      )}
+
+      {/* frescura (KPI-1) */}
+      <div className="mt-3">
+        <div className="flex items-center justify-between text-xs text-stone">
+          <span>
+            {ca ? "Frescura" : "Frescura"}: <b className="text-ink">{f.dies != null ? `${f.dies} d` : "—"}</b> / SLA {f.slaDies} d
+            {(f.slaNotaCa || f.slaNotaEs) ? (ca ? " (proposat)" : " (propuesto)") : ""}
+          </span>
+          <span>{f.pct != null ? `${f.pct}%` : "—"}</span>
+        </div>
+        <div className="mt-1 h-2 rounded-full bg-sand2 overflow-hidden">
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: COLOR_ESTAT[estat] }} />
+        </div>
+      </div>
+
+      {/* fitxa tècnica (columnes del model DataSource) */}
+      <div className="mt-3 grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-stone">
+        <div>{ca ? "Llicència" : "Licencia"}: <span className="text-ink">{f.llicencia || "—"}</span></div>
+        <div>
+          Auditoria F0: <span className="font-mono text-ink">{f.auditSlug}</span>
+        </div>
+        <div className="sm:col-span-2">
+          {ca ? "Cadència vigent" : "Cadencia vigente"}: {ca ? f.cadenciaCa : f.cadenciaEs}
+        </div>
+      </div>
+
+      {/* última import / última execució / última auditoria / verificació */}
+      <div className="mt-3 text-xs space-y-1">
+        {f.ultimaOk ? (
+          <div>
+            {ca ? "Última import OK" : "Última import OK"}: <b>{new Date(f.ultimaOk.at).toLocaleDateString()}</b> ·{" "}
+            {f.ultimaOk.rowsTotal} {ca ? "files" : "filas"} ({f.ultimaOk.created} {ca ? "noves" : "nuevas"} /{" "}
+            {f.ultimaOk.updated} act. / {f.ultimaOk.skipped} ign.)
+          </div>
+        ) : (
+          <div className="text-stone">
+            {ca ? "Cap importació OK registrada encara." : "Ninguna importación OK registrada todavía."}
+          </div>
+        )}
+        {f.ultimaRun && f.ultimaRun.status !== "OK" && (
+          <div className="text-ember3">
+            {ca ? "Última execució" : "Última ejecución"}: {f.ultimaRun.status} ({new Date(f.ultimaRun.at).toLocaleString()})
+            {f.ultimaRun.source ? ` · ${f.ultimaRun.source}` : ""}
+            {f.ultimaRun.error ? ` — ${f.ultimaRun.error}` : ""}
+          </div>
+        )}
+        {f.lastF0 && (
+          <div>
+            {ca ? "Última auditoria F0" : "Última auditoría F0"}:{" "}
+            <span
+              className={`font-bold px-1.5 py-0.5 rounded ${
+                f.lastF0.veredicte === "GO"
+                  ? "bg-mintsoft text-green2"
+                  : f.lastF0.veredicte === "NO_GO"
+                    ? "bg-embersoft text-ember3"
+                    : "bg-sand text-moss"
+              }`}
+            >
+              {VEREDICTE_LABEL[f.lastF0.veredicte] || f.lastF0.veredicte} ({f.lastF0.controles}/12)
+            </span>{" "}
+            · {new Date(f.lastF0.at).toLocaleDateString()}
+            {f.lastF0.sha256 ? ` · sha256 ${String(f.lastF0.sha256).slice(0, 10)}…` : ""}
+            {f.lastF0.veredicte === "GO_CONDICIONAL" && (
+              <span>
+                {" · "}
+                {ca ? "firma" : "firma"}:{" "}
+                {f.firmaValida ? (
+                  <b className="text-green2">{ca ? "registrada ✓" : "registrada ✓"}</b>
+                ) : (
+                  <b className="text-ember3">{ca ? "pendent" : "pendiente"}</b>
+                )}
+              </span>
+            )}
+            {f.lastF0.notas ? <div className="text-stone mt-0.5">{f.lastF0.notas}</div> : null}
+          </div>
+        )}
+        {f.lastVerificar && (
+          <div>
+            {ca ? "Última verificació" : "Última verificación"}: <b>{f.lastVerificar.meta?.ok ? "OK" : "KO"}</b> ·{" "}
+            {new Date(f.lastVerificar.at).toLocaleString()}
+            {f.lastVerificar.meta?.munisTotal
+              ? ` · ${f.lastVerificar.meta.munisTotal} munis · ${f.lastVerificar.meta.munisRent} ${ca ? "amb sèrie" : "con serie"} · ZMRT ${f.lastVerificar.meta.zmrt ?? "n/d"}`
+              : ""}
+          </div>
+        )}
+      </div>
+
+      {/* assistent de 4 passos (pla, figura 4) */}
+      <div className="mt-3 flex items-center gap-1.5 flex-wrap text-[11px]">
+        <Pas n={1} label={ca ? "Descàrrega" : "Descarga"} state={f.ultimaRun ? "ok" : "pendent"} hint={f.ultimaRun ? new Date(f.ultimaRun.at).toLocaleDateString() : undefined} />
+        <span className="text-stone">→</span>
+        <Pas
+          n={2}
+          label="Auditoria F0"
+          state={
+            f.lastF0
+              ? f.lastF0.veredicte === "GO" || (f.lastF0.veredicte === "GO_CONDICIONAL" && f.firmaValida)
+                ? "ok"
+                : f.lastF0.veredicte === "NO_GO"
+                  ? "ko"
+                  : "aviso"
+              : "pendent"
+          }
+          hint={f.lastF0 ? VEREDICTE_LABEL[f.lastF0.veredicte] || f.lastF0.veredicte : undefined}
+        />
+        <span className="text-stone">→</span>
+        <Pas n={3} label="Importar" state={f.importacioOk ? "ok" : "bloquejat"} hint={f.importacioOk ? (ca ? "desbloquejat" : "desbloqueado") : ca ? "F0 necessari" : "F0 necesario"} />
+        <span className="text-stone">→</span>
+        <Pas n={4} label={ca ? "Verificar" : "Verificar"} state={f.lastVerificar ? (f.lastVerificar.meta?.ok ? "ok" : "ko") : "pendent"} hint={f.lastVerificar ? new Date(f.lastVerificar.at).toLocaleDateString() : undefined} />
+      </div>
+
+      {/* accions (pla, taula 12) */}
+      <div className="mt-4 flex items-center gap-1.5 flex-wrap">
+        <button onClick={() => onModal("auditar")} className={btn}>
+          {ca ? "Auditar" : "Auditar"}
+        </button>
+        <button
+          onClick={() => onModal("importar")}
+          disabled={!f.importacioOk}
+          title={
+            f.importacioOk
+              ? undefined
+              : ca
+                ? "Bloquejat: exigeix auditoria F0 GO o firma humana C9/C10"
+                : "Bloqueado: exige auditoría F0 GO o firma humana C9/C10"
+          }
+          className={btn}
+        >
+          {ca ? "Importar" : "Importar"}
+        </button>
+        <button onClick={() => onAccio("verificar", f.code)} disabled={busy === f.code + "verificar"} className={btn}>
+          {busy === f.code + "verificar" ? "…" : ca ? "Verificar" : "Verificar"}
+        </button>
+        <button onClick={() => onModal("rollback")} className={btn}>
+          Rollback
+        </button>
+        <button onClick={() => onModal("importar_registrar")} className={btn}>
+          {ca ? "+ Resultat" : "+ Resultado"}
+        </button>
+        <a href={`/api/admin/datos-fuentes?informe=${f.code}`} className={btn + " inline-flex items-center gap-1"}>
+          <FileDown className="w-3 h-3" /> Informe
+        </a>
+        {f.lastF0?.veredicte === "GO_CONDICIONAL" && !f.firmaValida && (
+          <button
+            onClick={() => onModal("firma")}
+            className="px-2.5 py-1.5 rounded-md bg-[#FBF3DC] border border-[#B8860B]/40 text-xs font-semibold text-[#8A6D1C] hover:opacity-80"
+          >
+            {ca ? "Firmar revisió humana" : "Firmar revisión humana"}
+          </button>
+        )}
+        {f.active ? (
+          <button onClick={() => onModal("pausar")} className={btn + " text-ember3"}>
+            {ca ? "Pausar" : "Pausar"}
+          </button>
+        ) : (
+          <button onClick={() => onAccio("activar", f.code)} disabled={busy === f.code + "activar"} className={btn}>
+            {busy === f.code + "activar" ? "…" : ca ? "Activar" : "Activar"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Pas({ n, label, state, hint }: { n: number; label: string; state: string; hint?: string }) {
+  const cls =
+    state === "ok"
+      ? "bg-mintsoft text-green2"
+      : state === "ko" || state === "bloquejat"
+        ? "bg-embersoft text-ember3"
+        : state === "aviso"
+          ? "bg-[#FBF3DC] text-[#8A6D1C]"
+          : "bg-sand text-stone";
+  return (
+    <span className={`px-2 py-1 rounded-md font-semibold ${cls}`} title={hint}>
+      {n} {label}
+      {hint ? ` · ${hint}` : ""}
+    </span>
+  );
+}
+
+function AccioModal({
+  kind,
+  f,
+  ca,
+  form,
+  setForm,
+  busy,
+  onAccio,
+}: {
+  kind: string;
+  f: FontData;
+  ca: boolean;
+  form: Record<string, string>;
+  setForm: (v: Record<string, string>) => void;
+  busy: string | null;
+  onAccio: (action: string, code: string, extra?: Record<string, unknown>) => void;
+}) {
+  const inp = "w-full mt-1 px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-ember";
+  const lbl = "block text-xs text-stone mt-3";
+  const set = (key: string) => (e: any) => setForm({ ...form, [key]: e.target.value });
+  const btn = "mt-4 px-4 py-2 rounded-lg bg-pine text-white text-sm font-bold hover:bg-pine2 disabled:opacity-50";
+  const nom = ca ? f.nom : f.nomEs || f.nom;
+
+  if (kind === "auditar") {
+    return (
+      <div>
+        <h3 className="font-bold">
+          {ca ? "Auditar" : "Auditar"}: {nom}
+        </h3>
+        <p className="text-sm text-moss mt-2 leading-relaxed">
+          {ca
+            ? "1) Registra la sol·licitud (ImportRun AUDIT). 2) Executa l'auditoria F0 (12 controls, sense escriure a BD) al teu entorn d'operació o al workflow de manteniment. 3) Registra el veredicte: GO 12/12 desbloqueja Importar; GO-CONDICIONAL exigeix firma humana de C9/C10; NO-GO atura el procés."
+            : "1) Registra la solicitud (ImportRun AUDIT). 2) Ejecuta la auditoría F0 (12 controles, sin escribir en BD) en tu entorno de operación o en el workflow de mantenimiento. 3) Registra el veredicto: GO 12/12 desbloquea Importar; GO-CONDICIONAL exige firma humana de C9/C10; NO-GO detiene el proceso."}
+        </p>
+        <pre className="mt-3 bg-cream border border-sand3 rounded-lg p-3 text-xs overflow-x-auto">{f.procediments.auditar}</pre>
+        <button
+          onClick={() => onAccio("auditar_iniciar", f.code)}
+          disabled={busy === f.code + "auditar_iniciar"}
+          className={btn}
+        >
+          {busy === f.code + "auditar_iniciar" ? "…" : ca ? "Registra la sol·licitud" : "Registra la solicitud"}
+        </button>
+        <div className="mt-5 border-t border-sand3 pt-4">
+          <h4 className="font-bold text-sm">{ca ? "Registra el resultat F0" : "Registra el resultado F0"}</h4>
+          <label className={lbl}>{ca ? "Veredicte" : "Veredicto"}</label>
+          <select value={form.veredicte || ""} onChange={set("veredicte")} className={inp}>
+            <option value="">{ca ? "Tria…" : "Elige…"}</option>
+            <option value="GO">GO (12/12)</option>
+            <option value="GO_CONDICIONAL">{ca ? "GO-CONDICIONAL (C9/C10 pendents de firma)" : "GO-CONDICIONAL (C9/C10 pendientes de firma)"}</option>
+            <option value="NO_GO">NO-GO</option>
+          </select>
+          <label className={lbl}>{ca ? "Controls superats (0-12)" : "Controles superados (0-12)"}</label>
+          <input type="number" min={0} max={12} value={form.controles || ""} onChange={set("controles")} className={inp} />
+          <label className={lbl}>SHA-256 ({ca ? "opcional" : "opcional"})</label>
+          <input value={form.sha256 || ""} onChange={set("sha256")} className={inp} placeholder="a3f8…" />
+          <label className={lbl}>{ca ? "Notes (desviacions C9/C10, incidències…)" : "Notas (desviaciones C9/C10, incidencias…)"}</label>
+          <textarea rows={2} value={form.notas || ""} onChange={set("notas")} className={inp} />
+          <button
+            onClick={() =>
+              onAccio("auditar_registrar", f.code, {
+                veredicte: form.veredicte,
+                controles: form.controles,
+                sha256: form.sha256,
+                notas: form.notas,
+              })
+            }
+            disabled={busy === f.code + "auditar_registrar" || !form.veredicte}
+            className={btn}
+          >
+            {busy === f.code + "auditar_registrar" ? "…" : ca ? "Registra el veredicte" : "Registra el veredicto"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "importar") {
+    return (
+      <div>
+        <h3 className="font-bold">
+          {ca ? "Importar" : "Importar"}: {nom}
+        </h3>
+        <p className="text-sm text-moss mt-2 leading-relaxed">
+          {ca
+            ? "Acció protegida: exigeix auditoria F0 12/12 (o firma humana C9/C10 posterior), confirmació escrita i backup previ obligatori. La promoció staging→producció corre a càrrec del pipeline (update_all.sh) al teu entorn d'operació o al workflow de manteniment; el panell registra la sol·licitud a l'auditoria."
+            : "Acción protegida: exige auditoría F0 12/12 (o firma humana C9/C10 posterior), confirmación escrita y backup previo obligatorio. La promoción staging→producción corre a cargo del pipeline (update_all.sh) en tu entorno de operación o en el workflow de mantenimiento; el panel registra la solicitud en la auditoría."}
+        </p>
+        <div className="mt-2 text-xs text-stone">
+          F0:{" "}
+          {f.lastF0
+            ? `${VEREDICTE_LABEL[f.lastF0.veredicte] || f.lastF0.veredicte} (${f.lastF0.controles}/12) · ${new Date(f.lastF0.at).toLocaleDateString()}`
+            : ca
+              ? "sense auditoria registrada"
+              : "sin auditoría registrada"}
+          {f.lastF0?.veredicte === "GO_CONDICIONAL" ? ` · ${ca ? "firma" : "firma"}: ${f.firmaValida ? "OK" : ca ? "pendent" : "pendiente"}` : ""}
+        </div>
+        <label className={lbl}>
+          {ca ? `Escriu «IMPORTAR ${f.code}» per confirmar` : `Escribe «IMPORTAR ${f.code}» para confirmar`}
+        </label>
+        <input value={form.confirm || ""} onChange={set("confirm")} className={inp} placeholder={`IMPORTAR ${f.code}`} />
+        <button
+          onClick={() => onAccio("importar", f.code, { confirm: form.confirm })}
+          disabled={busy === f.code + "importar"}
+          className={btn}
+        >
+          {busy === f.code + "importar" ? "…" : ca ? "Registra la sol·licitud d'importació" : "Registra la solicitud de importación"}
+        </button>
+        <div className="mt-5 border-t border-sand3 pt-4">
+          <h4 className="font-bold text-sm">
+            {ca ? "Registra el resultat de l'execució" : "Registra el resultado de la ejecución"}
+          </h4>
+          <label className={lbl}>{ca ? "Estat" : "Estado"}</label>
+          <select value={form.status || ""} onChange={set("status")} className={inp}>
+            <option value="">{ca ? "Tria…" : "Elige…"}</option>
+            <option value="OK">OK</option>
+            <option value="PARTIAL">PARTIAL</option>
+            <option value="ERROR">ERROR</option>
+          </select>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div>
+              <label className={lbl}>{ca ? "Files total" : "Filas total"}</label>
+              <input type="number" min={0} value={form.rowsTotal || ""} onChange={set("rowsTotal")} className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>{ca ? "Noves" : "Nuevas"}</label>
+              <input type="number" min={0} value={form.created || ""} onChange={set("created")} className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>{ca ? "Actualitzades" : "Actualizadas"}</label>
+              <input type="number" min={0} value={form.updated || ""} onChange={set("updated")} className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>{ca ? "Ignorades" : "Ignoradas"}</label>
+              <input type="number" min={0} value={form.skipped || ""} onChange={set("skipped")} className={inp} />
+            </div>
+          </div>
+          <label className={lbl}>Error ({ca ? "si n'hi ha" : "si lo hay"})</label>
+          <input value={form.error || ""} onChange={set("error")} className={inp} />
+          <button
+            onClick={() =>
+              onAccio("importar_registrar", f.code, {
+                status: form.status,
+                rowsTotal: form.rowsTotal,
+                created: form.created,
+                updated: form.updated,
+                skipped: form.skipped,
+                error: form.error,
+              })
+            }
+            disabled={busy === f.code + "importar_registrar" || !form.status}
+            className={btn}
+          >
+            {busy === f.code + "importar_registrar" ? "…" : ca ? "Registra el resultat" : "Registra el resultado"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (kind === "rollback") {
+    return (
+      <div>
+        <h3 className="font-bold text-ember3">
+          Rollback: {nom}
+        </h3>
+        <p className="text-sm text-moss mt-2 leading-relaxed">
+          {ca
+            ? "Acció destructiva: restaura el backup anterior (<taula>_bak_<data> o artifact backup-pg) i reverifica amb el canari. La restauració corre al teu entorn d'operació; el panell registra la sol·licitud amb la teva firma a l'auditoria. Només si el backup existeix."
+            : "Acción destructiva: restaura el backup anterior (<tabla>_bak_<fecha> o artifact backup-pg) y reverifica con el canario. La restauración corre en tu entorno de operación; el panel registra la solicitud con tu firma en la auditoría. Solo si el backup existe."}
+        </p>
+        <pre className="mt-3 bg-cream border border-sand3 rounded-lg p-3 text-xs overflow-x-auto">{f.procediments.rollback}</pre>
+        <label className={lbl}>
+          {ca ? `Escriu «ROLLBACK ${f.code}» per confirmar` : `Escribe «ROLLBACK ${f.code}» para confirmar`}
+        </label>
+        <input value={form.confirm || ""} onChange={set("confirm")} className={inp} placeholder={`ROLLBACK ${f.code}`} />
+        <button
+          onClick={() => onAccio("rollback", f.code, { confirm: form.confirm })}
+          disabled={busy === f.code + "rollback"}
+          className={btn + " bg-ember text-white hover:bg-ember2 border-ember"}
+        >
+          {busy === f.code + "rollback" ? "…" : ca ? "Registra la sol·licitud de rollback" : "Registra la solicitud de rollback"}
+        </button>
+      </div>
+    );
+  }
+
+  if (kind === "pausar") {
+    return (
+      <div>
+        <h3 className="font-bold">
+          {ca ? "Pausar" : "Pausar"}: {nom}
+        </h3>
+        <p className="text-sm text-moss mt-2 leading-relaxed">
+          {ca
+            ? "Desactiva la font (DataSource.active=false): els cicles i la vigilància l'ignoren sense esborrar cap dada. Pots reactivar-la quan vulguis amb «Activar»."
+            : "Desactiva la fuente (DataSource.active=false): los ciclos y la vigilancia la ignoran sin borrar ningún dato. Puedes reactivarla cuando quieras con «Activar»."}
+        </p>
+        <label className={lbl}>{ca ? "Motiu (obligatori)" : "Motivo (obligatorio)"}</label>
+        <textarea rows={2} value={form.motivo || ""} onChange={set("motivo")} className={inp} />
+        <button
+          onClick={() => onAccio("pausar", f.code, { motivo: form.motivo })}
+          disabled={busy === f.code + "pausar"}
+          className={btn}
+        >
+          {busy === f.code + "pausar" ? "…" : ca ? "Pausa la font" : "Pausa la fuente"}
+        </button>
+      </div>
+    );
+  }
+
+  if (kind === "firma") {
+    return (
+      <div>
+        <h3 className="font-bold">
+          {ca ? "Firma humana C9/C10" : "Firma humana C9/C10"}: {nom}
+        </h3>
+        <p className="text-sm text-moss mt-2 leading-relaxed">
+          {ca
+            ? "L'última auditoria F0 va acabar en GO-CONDICIONAL (desviació C9/C10). Si has revisat la desviació i dones el vist-i-plau, signa aquí: la firma desbloqueja «Importar» per a aquesta font i queda registrada a l'auditoria amb el teu correu i el motiu."
+            : "La última auditoría F0 terminó en GO-CONDICIONAL (desviación C9/C10). Si has revisado la desviación y das el visto bueno, firma aquí: la firma desbloquea «Importar» para esta fuente y queda registrada en la auditoría con tu correo y el motivo."}
+        </p>
+        {f.lastF0?.notas ? (
+          <div className="mt-2 text-xs bg-cream border border-sand3 rounded-lg p-3">
+            {ca ? "Notes de l'auditoria" : "Notas de la auditoría"}: {f.lastF0.notas}
+          </div>
+        ) : null}
+        <label className={lbl}>{ca ? "Motiu de la firma (obligatori)" : "Motivo de la firma (obligatorio)"}</label>
+        <textarea rows={2} value={form.motivo || ""} onChange={set("motivo")} className={inp} placeholder={ca ? "Revisades les X zones desviades: dada oficial confirmada" : "Revisadas las X zonas desviadas: dato oficial confirmado"} />
+        <button
+          onClick={() => onAccio("firma_f0", f.code, { motivo: form.motivo })}
+          disabled={busy === f.code + "firma_f0"}
+          className={btn}
+        >
+          {busy === f.code + "firma_f0" ? "…" : ca ? "Signa el vist-i-plau" : "Firma el visto bueno"}
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function ProgramarModal({ ca }: { ca: boolean }) {
+  return (
+    <div>
+      <h3 className="font-bold">{ca ? "Programació vigent (cron)" : "Programación vigente (cron)"}</h3>
+      <p className="text-sm text-moss mt-2 leading-relaxed">
+        {ca
+          ? "Els cicles de manteniment corren al workflow de GitHub Actions (.github/workflows/mantenimiento.yml) i als crons de l'app (vercel.json). El cron s'edita al repositori; el panell sempre mostra la programació vigent."
+          : "Los ciclos de mantenimiento corren en el workflow de GitHub Actions (.github/workflows/mantenimiento.yml) y en los crons de la app (vercel.json). El cron se edita en el repositorio; el panel siempre muestra la programación vigente."}
+      </p>
+      <div className="mt-3 space-y-1.5">
+        {FONTS_PANEL.map((f) => (
+          <div key={f.code} className="border border-sand2 rounded-lg px-3 py-2 text-xs">
+            <b>{ca ? f.nom : f.nomEs || f.nom}</b>
+            <div className="text-stone mt-0.5">{ca ? f.cadenciaCa : f.cadenciaEs}</div>
+          </div>
+        ))}
+      </div>
+      <a
+        href="https://github.com/ranndoneur26/preureal/blob/main/.github/workflows/mantenimiento.yml"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-xs underline text-moss inline-block mt-3"
+      >
+        .github/workflows/mantenimiento.yml ↗
+      </a>
     </div>
   );
 }

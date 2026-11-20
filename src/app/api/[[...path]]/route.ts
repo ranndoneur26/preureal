@@ -12,6 +12,7 @@ import * as h_account_export from "../_impl/account/export/route";
 import * as h_admin_audit from "../_impl/admin/audit/route";
 import * as h_admin_backfill_slugs from "../_impl/admin/backfill-slugs/route";
 import * as h_admin_bootstrap from "../_impl/admin/bootstrap/route";
+import * as h_admin_datos_fuentes from "../_impl/admin/datos-fuentes/route";
 import * as h_admin_emails from "../_impl/admin/emails/route";
 import * as h_admin_export_csv from "../_impl/admin/export-csv/route";
 import * as h_admin_import from "../_impl/admin/import/route";
@@ -121,6 +122,7 @@ const TABLE: Array<{ seg: string[]; h: Record<string, Handler | unknown> }> = [
   { seg: ["admin", "audit"], h: h_admin_audit },
   { seg: ["admin", "backfill-slugs"], h: h_admin_backfill_slugs },
   { seg: ["admin", "bootstrap"], h: h_admin_bootstrap },
+  { seg: ["admin", "datos-fuentes"], h: h_admin_datos_fuentes },
   { seg: ["admin", "emails"], h: h_admin_emails },
   { seg: ["admin", "export-csv"], h: h_admin_export_csv },
   { seg: ["admin", "import"], h: h_admin_import },
